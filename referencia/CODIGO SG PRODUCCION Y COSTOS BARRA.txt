@@ -1,0 +1,1415 @@
+/**
+ * SGI-COSTOS · Motor de producción y costo de MPI — v1.1
+ * Di Égida · Tosca Bistró · Fase 3 del proyecto "Costo real de cada MPI" · 05/10/2026
+ *
+ * v1.1 (05/10/2026): CÓCTELES Y PESAJE
+ *   - Las 50 fichas de coctelería («5 Formato De Cocteleria General») quedan en RECETAS_COCTEL y se costean
+ *     solas con el mismo motor: COSTO_COCTELES (resumen, precio, % costo, margen) y COSTO_COCTELES_DETALLE.
+ *   - 49 códigos nuevos en el catálogo (licores, vinos, mixers) con su alias de recepción.
+ *   - Hoja PESAJE para el iPad: una sola lista de lo que falta medir (densidades, ml por botella, taras).
+ *     Se llena la columna VALOR, se marca GUARDAR MEDIDAS y el motor lo reparte en PARAMETROS,
+ *     FACTORES_COMPRA y TARAS, completa los lotes pendientes y recalcula todo.
+ *   - Para instalar sobre la v1.0: pegar este archivo en lugar del anterior y ejecutar  instalar.
+ *     No borra ni reescribe nada que ya exista: solo agrega lo que falta.
+ *
+ * ÚNICO archivo .gs de este proyecto. Si hay otro (Código.gs u otro), bórralo.
+ * Instalación (desde computador, con una cuenta que pueda ABRIR SGI-COSTOS y REG FMT-REC-BAR-001):
+ *   1. Archivo → Importar → Subir SGI-COSTOS_v0.4.xlsx → "Reemplazar hoja de cálculo".
+ *   2. Extensiones → Apps Script → pegar este archivo completo → guardar.
+ *   3. Ejecutar  instalar  (autorizar permisos).  Luego usar el menú ⚙ SGI-COSTOS.
+ *
+ * Decisiones de Anthony (05/10/2026) que este motor implementa:
+ *   - Una sola hoja CAPTURA; se elige el MPI y la ficha precarga los ingredientes.
+ *   - Costo de insumos = promedio ponderado de las compras de la ventana (CONFIG), con aviso
+ *     si el último precio se aparta más de DESVIO_PRECIO_AVISO_PCT.
+ *   - El MPI se costea por gramo y su costo entra en cascada al lote que lo usa.
+ *   - Rendimiento fuera de la ficha: SOLO AVISA, nunca bloquea.
+ *   - Histórico de REG-PRO-001 migrado (65 lotes), costeado con el precio vigente en su fecha.
+ *
+ * Restricciones del entorno: motor Rhino (sin ES6), cuenta Gmail personal, iPad sin menús
+ * (solo casillas con onEdit instalable).
+ */
+
+// =====================================================================================
+// CONSTANTES (solo literales, nada que dependa de otro archivo)
+// =====================================================================================
+var VERSION = '1.1';
+var H = {
+  CAP: 'CAPTURA', LOTES: 'BD_PRODUCCION', CONS: 'BD_CONSUMOS', CAT: 'CATALOGO_MAESTRO',
+  FD: 'FICHAS_DETALLE', FI: 'FICHAS', PAR: 'PARAMETROS', FAC: 'FACTORES_COMPRA',
+  CI: 'COSTO_INSUMOS', CM: 'COSTO_MPI', TAB: 'TABLERO', DIA: 'DIAGNOSTICO',
+  BIT: 'BITACORA', CFG: 'CONFIG', INS: 'INSTRUCCIONES',
+  COC: 'COCTELES', REC: 'RECETAS_COCTEL', CC: 'COSTO_COCTELES', CCD: 'COSTO_COCTELES_DETALLE', PES: 'PESAJE', TAR: 'TARAS'
+};
+var COL_LOTE = ['ID_LOTE', 'FECHA', 'SESION', 'MPI_COD', 'MPI', 'NOMBRE_ORIGINAL', 'RESPONSABLE', 'SUPERVISOR',
+  'TECNICA', 'TIEMPO_MIN', 'ENTRADA_TOTAL', 'NETO_G', 'UNIDADES', 'EMPAQUE', 'VIDA_UTIL_DIAS', 'TEMPERATURA',
+  'RENDIMIENTO', 'REND_FICHA', 'DESVIO_REND_PCT', 'COSTO_TOTAL', 'COSTO_G', 'OBSERVACIONES', 'USUARIO',
+  'TIMESTAMP', 'ESTADO_LOTE', 'REF_REVERSA', 'ORIGEN', 'HALLAZGOS', 'LINEAS_SIN_PRECIO', 'ESTADO_COSTO', 'MOTIVO_OVERRIDE'];
+var COL_CONS = ['ID_LINEA', 'ID_LOTE', 'FECHA', 'INSUMO_COD', 'INSUMO', 'TIPO', 'NOMBRE_ORIGINAL', 'CANTIDAD',
+  'UNIDAD', 'MERMA', 'LOTE_ORIGEN', 'COSTO_UNIT', 'COSTO_LINEA', 'FUENTE_COSTO', 'ESTADO', 'HALLAZGOS'];
+var CFG_DEF = [
+  ['ID_RECEPCION_BAR', '1h2t8IVzlSRUXthp5Sj04lKVd3QzSdMUH-Vi-ZQibNd0', 'ID del Sheet REG FMT-REC-BAR-001 (de ahí salen los precios de compra).'],
+  ['HOJA_RECEPCION', 'BD_RECEPCION_BAR', 'Hoja del libro mayor de recepción.'],
+  ['VENTANA_COSTO_DIAS', 90, 'Días hacia atrás que entran al promedio ponderado del costo de un insumo.'],
+  ['DESVIO_PRECIO_AVISO_PCT', 15, 'Aviso si el último precio de compra se aparta más de este % del promedio.'],
+  ['DESVIO_REND_AVISO_PCT', 15, 'Aviso (no bloquea) si el rendimiento del lote se aparta más de este % del de la ficha.'],
+  ['MAX_CANTIDAD_LINEA', 50000, 'Una línea de ingrediente mayor a esto (g/ml/und) pide motivo: ¿sobra un dígito?'],
+  ['MIN_MOTIVO_OVERRIDE', 15, 'Largo mínimo del motivo para guardar un lote bloqueado.'],
+  ['RESPONSABLES', 'Frank Motato, Francisco González, Anthony España', 'Lista cerrada de quién produce (separada por comas).'],
+  ['CORREO_ADMIN', 'antonimora200166@gmail.com', 'Alerta diaria.'],
+  ['CORREO_2', 'diegidabarra@gmail.com', 'Alerta diaria.'],
+  ['CORREO_3', 'frankmotato2@gmail.com', 'Alerta diaria.'],
+  ['ALERTA_DIARIA_ACTIVA', 'SI', 'SI / NO.'],
+  ['AREA', 'BAR', 'Área de este archivo. Cocina entra en la Fase 5.'],
+  ['ID_RECEPCION_COCINA', '1aD3S8VyEkETCqRLQtAKtIYJv8sQzzTaknA8a0FBzg_M', 'ID de REG_REC_COC_003: segunda fuente de precios. Vacío = no se lee.'],
+  ['HOJA_RECEPCION_COCINA', 'BD_RECEPCIONES', 'Hoja del libro mayor de la recepción de cocina.'],
+  ['IMPOCONSUMO_PCT', 8, 'Impuesto al consumo incluido en el precio de carta. El % de costo de un cóctel se calcula sobre el precio sin él.'],
+  ['META_COSTO_BEBIDA_PCT', '', 'Meta de costo de un cóctel como % del precio sin impoconsumo (ej. 22). Vacío = sin meta.'],
+  ['DENSIDAD_SUPUESTA_ML_G', '', 'Solo para cócteles: si escribes un valor (ej. 1), los líquidos sin densidad medida se costean con él y quedan marcados «DENSIDAD SUPUESTA». Vacío = no se supone nada.']
+];
+// CAPTURA: celdas fijas
+var CAP = { FECHA: 'C4', RESP: 'F4', MPI: 'C5', INFO: 'F5', TIEMPO: 'C6', UNID: 'F6',
+  FILA_ENC: 8, FILA1: 9, NFILAS: 25, NETO: 'C35', OBS: 'F35', ENTRADA: 'C36', REND: 'F36',
+  GUARDAR: 'C38', MOTIVO: 'F38', MSG: 'B39', LIMPIAR: 'C40', AVISO: 'A2' };
+
+// =====================================================================================
+// MENÚ, INSTALACIÓN Y DISPARADORES
+// =====================================================================================
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi().createMenu('⚙ SGI-COSTOS')
+      .addItem('Instalar / reparar', 'instalar')
+      .addItem('Recalcular costos y tablero', 'recalcularTodo')
+      .addItem('Completar costos pendientes', 'completarCostosPendientes')
+      .addItem('Reversar un lote', 'reversarLoteMenu')
+      .addItem('Enviar alerta ahora', 'enviarAlertaDiaria')
+      .addItem('Diagnóstico técnico', 'diagnosticoTecnico')
+      .addItem('Estado en una línea', 'estadoCorto')
+      .addSeparator()
+      .addItem('Rehacer la lista de PESAJE', 'construirPesajeMenu')
+      .addToUi();
+  } catch (e) {}
+}
+
+function instalar() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var rep = [];
+  pasoSeguro_(rep, 'CONFIG', function () { asegurarConfig_(ss); });
+  pasoSeguro_(rep, 'Libros mayores', function () {
+    asegurarHoja_(ss, H.LOTES, COL_LOTE); asegurarHoja_(ss, H.CONS, COL_CONS);
+    asegurarHoja_(ss, H.BIT, ['TIMESTAMP', 'USUARIO', 'ACCIÓN', 'DETALLE', 'MOTIVO', 'VERSIÓN']);
+    asegurarHoja_(ss, H.FAC, ['INSUMO', 'UNIDAD_RECEPCION', 'FACTOR_A_BASE', 'NOTA']);
+  });
+  pasoSeguro_(rep, 'Semilla v1.1 (catálogo, cócteles, parámetros, taras)', function () { rep.push('   ' + sembrarV11_(ss)); });
+  pasoSeguro_(rep, 'Hoja CAPTURA', function () { construirCaptura_(ss); });
+  pasoSeguro_(rep, 'Instrucciones', function () { construirInstrucciones_(ss); });
+  pasoSeguro_(rep, 'Disparadores', function () { instalarDisparadores_(ss); });
+  pasoSeguro_(rep, 'Costear histórico', function () { rep.push('   ' + completarCostosPendientes_(true)); });
+  pasoSeguro_(rep, 'Derivados', function () { recalcularDerivados_(ss); });
+  pasoSeguro_(rep, 'Hoja PESAJE', function () { rep.push('   ' + construirPesaje_(ss, '') + ' medida(s) pendiente(s)'); });
+  bitacora_('INSTALACIÓN', rep.join(' | '), '');
+  alerta_('Instalación v' + VERSION + '\n\n' + rep.join('\n'));
+}
+
+function pasoSeguro_(lista, nombre, fn) {
+  try { fn(); lista.push('✔ ' + nombre); SpreadsheetApp.flush(); }
+  catch (e) { lista.push('✘ ' + nombre + ': ' + e.message); }
+}
+
+function instalarDisparadores_(ss) {
+  var t = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < t.length; i++) {
+    var f = t[i].getHandlerFunction();
+    if (f === 'alEditar' || f === 'enviarAlertaDiaria') { ScriptApp.deleteTrigger(t[i]); }
+  }
+  ScriptApp.newTrigger('alEditar').forSpreadsheet(ss).onEdit().create();
+  ScriptApp.newTrigger('enviarAlertaDiaria').timeBased().everyDays(1).atHour(22).create();
+}
+
+// =====================================================================================
+// onEdit instalable — única vía en iPad
+// =====================================================================================
+function alEditar(e) {
+  if (!e || !e.range) { return; }
+  var sh = e.range.getSheet();
+  var a1 = e.range.getA1Notation();
+  if (sh.getName() === H.PES) {
+    if (a1 === PES.GUARDAR && e.range.getValue() === true) {
+      try { aplicarPesaje_(sh); }
+      catch (errP) { sh.getRange(PES.MSG).setValue('ERROR: ' + errP.message + ' — avisa a Administración.'); sh.getRange(PES.GUARDAR).setValue(false); bitacora_('ERROR', 'PESAJE: ' + errP.message, ''); }
+    }
+    return;
+  }
+  if (sh.getName() !== H.CAP) { return; }
+  try {
+    if (a1 === CAP.MPI) { cargarFicha_(sh); }
+    else if (a1 === CAP.GUARDAR && e.range.getValue() === true) { guardarLote_(sh); }
+    else if (a1 === CAP.LIMPIAR && e.range.getValue() === true) { limpiarCaptura_(sh, 'Formulario en blanco. Elige el MPI en C5.'); }
+  } catch (err) {
+    sh.getRange(CAP.MSG).setValue('ERROR: ' + err.message + ' — avisa a Administración.');
+    bitacora_('ERROR', a1 + ': ' + err.message, '');
+    if (a1 === CAP.GUARDAR) { sh.getRange(CAP.GUARDAR).setValue(false); }
+  }
+}
+
+// =====================================================================================
+// CAPTURA
+// =====================================================================================
+function construirCaptura_(ss) {
+  var sh = ss.getSheetByName(H.CAP);
+  if (!sh) { sh = ss.insertSheet(H.CAP, 0); }
+  var datosPrevios = sh.getRange(CAP.MPI).getValue();
+  var verde = '#0D3B33', oro = '#B08D57', gris = '#F2F2F2', amb = '#FFF2CC';
+  sh.getRange('A1:H1').setBackground(verde);
+  sh.getRange('A1').setValue('SGI-COSTOS · REGISTRO DE PRODUCCIÓN — ' + cfg_('AREA'))
+    .setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13);
+  var etiquetas = [['B4', 'Fecha'], ['E4', 'Responsable'], ['B5', 'MPI a producir'], ['E5', 'Ficha'],
+    ['B6', 'Tiempo (min)'], ['E6', 'N.º unidades / bolsas'], ['B35', 'PESO NETO FINAL (g)'], ['E35', 'Observaciones'],
+    ['B36', 'Entrada total'], ['E36', 'Rendimiento'], ['B38', 'GUARDAR LOTE ▶'], ['E38', 'Motivo (solo si bloquea)'],
+    ['B40', 'NUEVO LOTE (limpiar) ▶']];
+  for (var i = 0; i < etiquetas.length; i++) { sh.getRange(etiquetas[i][0]).setValue(etiquetas[i][1]).setFontWeight('bold').setFontColor(verde); }
+  var enc = ['#', 'INSUMO', 'REF. FICHA', 'CANTIDAD USADA', 'UNIDAD', 'NOTA'];
+  sh.getRange(CAP.FILA_ENC, 1, 1, enc.length).setValues([enc]).setBackground(oro).setFontColor('#FFFFFF').setFontWeight('bold');
+  var nums = [], unidadF = [];
+  for (i = 0; i < CAP.NFILAS; i++) {
+    var r = CAP.FILA1 + i;
+    nums.push([i + 1]);
+    unidadF.push(['=IF(B' + r + '="","",IFERROR(INDEX(' + H.CAT + '!$F:$F,MATCH(B' + r + ',' + H.CAT + '!$B:$B,0)),"?"))']);
+  }
+  var ult = CAP.FILA1 + CAP.NFILAS - 1;
+  sh.getRange(CAP.FILA1, 1, CAP.NFILAS, 1).setValues(nums).setBackground(gris);
+  sh.getRange(CAP.FILA1, 5, CAP.NFILAS, 1).setFormulas(unidadF).setBackground(gris);
+  sh.getRange(CAP.FILA1, 3, CAP.NFILAS, 1).setBackground(gris).setFontColor('#666666');
+  sh.getRange(CAP.FILA1, 2, CAP.NFILAS, 1).setBackground('#FFFFFF');
+  sh.getRange(CAP.FILA1, 4, CAP.NFILAS, 1).setBackground('#FFFFFF').setNumberFormat('#,##0.0');
+  sh.getRange(CAP.ENTRADA).setFormula('=SUM(D' + CAP.FILA1 + ':D' + ult + ')').setBackground(gris).setNumberFormat('#,##0');
+  sh.getRange(CAP.REND).setFormula('=IF(OR(' + CAP.NETO + '="",' + CAP.ENTRADA + '=0),"",' + CAP.NETO + '/' + CAP.ENTRADA + ')').setBackground(gris).setNumberFormat('0.0%');
+  sh.getRange(CAP.INFO).setBackground(gris);
+  var oblig = [CAP.FECHA, CAP.RESP, CAP.MPI, CAP.NETO];
+  for (i = 0; i < oblig.length; i++) { sh.getRange(oblig[i]).setBackground(amb); }
+  sh.getRange(CAP.FECHA).setNumberFormat('dd/mm/yyyy');
+  if (!sh.getRange(CAP.FECHA).getValue()) { sh.getRange(CAP.FECHA).setValue(hoy_()); }
+  // listas cerradas
+  var mpis = listaCatalogo_(ss, 'MPI');
+  sh.getRange(CAP.MPI).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(mpis, true).setAllowInvalid(false).build());
+  sh.getRange(CAP.RESP).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(responsables_(), true).setAllowInvalid(false).build());
+  var todos = listaCatalogo_(ss, '');
+  sh.getRange(CAP.FILA1, 2, CAP.NFILAS, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(todos.slice(0, 500), true).setAllowInvalid(false).build());
+  sh.getRange(CAP.FILA1, 4, CAP.NFILAS, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireNumberGreaterThanOrEqualTo(0).setAllowInvalid(false).build());
+  sh.getRange(CAP.NETO).setDataValidation(SpreadsheetApp.newDataValidation().requireNumberGreaterThan(0).setAllowInvalid(false).build());
+  sh.getRange(CAP.GUARDAR).insertCheckboxes(); sh.getRange(CAP.LIMPIAR).insertCheckboxes();
+  sh.getRange(CAP.MSG + ':H39').merge().setWrap(true).setFontWeight('bold');
+  sh.getRange('A2:H2').merge().setWrap(true).setFontColor('#7F6000').setBackground(amb);
+  var anchos = [30, 230, 110, 120, 70, 230, 20, 20];
+  for (i = 0; i < anchos.length; i++) { sh.setColumnWidth(i + 1, anchos[i]); }
+  sh.setRowHeights(CAP.FILA1, CAP.NFILAS, 30);
+  sh.setFrozenRows(CAP.FILA_ENC);
+  try { sh.setHiddenGridlines(true); } catch (e) {}
+  if (!datosPrevios) { sh.getRange(CAP.AVISO).setValue('Elige el MPI en C5: la ficha carga sola los ingredientes. Escribe SOLO la columna CANTIDAD USADA, el peso neto final y marca GUARDAR.'); }
+}
+
+function cargarFicha_(sh) {
+  var ss = sh.getParent();
+  var mpi = String(sh.getRange(CAP.MPI).getValue() || '');
+  var filas = [], info = 'Sin ficha: escribe los insumos a mano.';
+  var cat = catalogo_(ss);
+  var m = cat.porNombre[norm_(mpi)];
+  if (m && m.ficha && m.ficha !== 'SIN FICHA') {
+    var fd = ss.getSheetByName(H.FD).getDataRange().getValues();
+    for (var i = 3; i < fd.length; i++) {
+      if (String(fd[i][0]) !== m.ficha) { continue; }
+      var ref = fd[i][15];
+      var refTxt = (ref !== '' && ref !== null && !isNaN(Number(ref))) ? Number(ref) : (fd[i][8] !== '' ? (fd[i][8] + ' ' + fd[i][9]) : 'sin cantidad');
+      filas.push([fd[i][6], refTxt]);
+    }
+    var fi = ss.getSheetByName(H.FI).getDataRange().getValues();
+    for (i = 3; i < fi.length; i++) {
+      if (String(fi[i][0]) === m.ficha) { info = 'Ficha ' + m.ficha + (fi[i][5] ? ' · neto esperado ' + fi[i][5] + ' ' + fi[i][6] : '') + ' · ' + fi[i][9]; }
+    }
+  }
+  var bloque = sh.getRange(CAP.FILA1, 2, CAP.NFILAS, 3);
+  bloque.clearContent();
+  if (filas.length) {
+    var v = [];
+    for (i = 0; i < filas.length && i < CAP.NFILAS; i++) { v.push([filas[i][0], filas[i][1], '']); }
+    sh.getRange(CAP.FILA1, 2, v.length, 3).setValues(v);
+  }
+  sh.getRange(CAP.FILA1, 6, CAP.NFILAS, 1).clearContent();
+  sh.getRange(CAP.INFO).setValue(mpi ? info : '');
+  sh.getRange(CAP.MSG).setValue(mpi ? (filas.length ? 'Ficha cargada: ' + filas.length + ' ingrediente(s). Pesa y escribe la CANTIDAD USADA de cada uno.' : info) : '');
+}
+
+function limpiarCaptura_(sh, msg) {
+  sh.getRange(CAP.MPI).clearContent(); sh.getRange(CAP.INFO).clearContent();
+  sh.getRange(CAP.TIEMPO).clearContent(); sh.getRange(CAP.UNID).clearContent();
+  sh.getRange(CAP.FILA1, 2, CAP.NFILAS, 3).clearContent(); sh.getRange(CAP.FILA1, 6, CAP.NFILAS, 1).clearContent();
+  sh.getRange(CAP.NETO).clearContent(); sh.getRange(CAP.OBS).clearContent(); sh.getRange(CAP.MOTIVO).clearContent();
+  sh.getRange(CAP.FECHA).setValue(hoy_());
+  sh.getRange(CAP.GUARDAR).setValue(false); sh.getRange(CAP.LIMPIAR).setValue(false);
+  sh.getRange(CAP.MSG).setValue(msg || '');
+}
+
+// =====================================================================================
+// GUARDAR — compuertas, costeo, escritura
+// =====================================================================================
+function guardarLote_(sh) {
+  var ss = sh.getParent();
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(20000)) { sh.getRange(CAP.MSG).setValue('Otro guardado está en curso. Vuelve a marcar en un minuto.'); sh.getRange(CAP.GUARDAR).setValue(false); return; }
+  try {
+    var f = leerCaptura_(sh);
+    var cat = catalogo_(ss);
+    var fatales = [], bloqueos = [], avisos = [];
+    // F — fatales
+    if (!esFecha_(f.fecha)) { fatales.push('F1 La fecha (C4) no es una fecha.'); }
+    else if (aMedianoche_(f.fecha).getTime() > aMedianoche_(new Date()).getTime()) { fatales.push('F1 La fecha es futura.'); }
+    if (!f.resp) { fatales.push('F2 Falta el responsable (F4).'); }
+    var mpi = cat.porNombre[norm_(f.mpi)];
+    if (!mpi || mpi.tipo !== 'MPI') { fatales.push('F3 El MPI de C5 no está en el catálogo.'); }
+    var lineas = [];
+    for (var i = 0; i < f.filas.length; i++) {
+      var x = f.filas[i];
+      if (!x.insumo && (x.cant === '' || x.cant === null)) { continue; }
+      var ins = cat.porNombre[norm_(x.insumo)];
+      if (!ins) { fatales.push('F5 Fila ' + x.fila + ': «' + x.insumo + '» no está en el catálogo.'); continue; }
+      if (x.cant === '' || x.cant === null) { avisos.push('Fila ' + x.fila + ': ' + x.insumo + ' sin cantidad (no se registra).'); continue; }
+      var q = Number(x.cant);
+      if (isNaN(q) || q <= 0) { fatales.push('F6 Fila ' + x.fila + ': cantidad no válida.'); continue; }
+      if (q > Number(cfg_('MAX_CANTIDAD_LINEA'))) { bloqueos.push('B1 Fila ' + x.fila + ': ' + q + ' ' + ins.ub + ' de ' + ins.nombre + ' — ¿sobra un dígito?'); }
+      lineas.push({ ins: ins, cant: q, unidad: ins.ub, nombre: x.insumo, nota: x.nota });
+    }
+    if (!lineas.length) { fatales.push('F4 No hay ningún ingrediente con cantidad.'); }
+    var neto = Number(f.neto);
+    if (!f.neto || isNaN(neto) || neto <= 0) { fatales.push('F7 Falta el PESO NETO FINAL (C35).'); }
+    var entrada = 0;
+    for (i = 0; i < lineas.length; i++) { entrada += lineas[i].cant; }
+    if (neto > 0 && entrada > 0 && neto > entrada * 1.10) { bloqueos.push('B2 El neto (' + neto + ' g) supera la entrada (' + Math.round(entrada) + ') en más de 10 %.'); }
+    if (fatales.length) { return rechazar_(sh, 'NO SE GUARDÓ — corrige:\n' + lista8_(fatales), fatales); }
+    var motivo = String(f.motivo || '');
+    if (bloqueos.length && motivo.length < Number(cfg_('MIN_MOTIVO_OVERRIDE'))) {
+      return rechazar_(sh, 'BLOQUEADO — escribe el motivo en F38 (mínimo ' + cfg_('MIN_MOTIVO_OVERRIDE') + ' caracteres) y vuelve a marcar GUARDAR:\n' + lista8_(bloqueos), bloqueos);
+    }
+    // costeo
+    var ctx = contextoCosto_(ss);
+    var idLote = siguienteIdLote_(ss, f.fecha);
+    var lote = { id: idLote, fecha: aMedianoche_(f.fecha), mpi: mpi, neto: neto, entrada: entrada };
+    var res = costearLineas_(ctx, lote, lineas);
+    var rendFicha = rendimientoFicha_(ss, mpi.ficha);
+    var rend = entrada > 0 ? neto / entrada : '';
+    var desvio = (rendFicha && rend !== '') ? (rend - rendFicha) / rendFicha : '';
+    var hall = [];
+    if (desvio !== '' && Math.abs(desvio) * 100 > Number(cfg_('DESVIO_REND_AVISO_PCT'))) { hall.push('REND_FUERA'); avisos.push('Rendimiento ' + pct_(rend) + ' vs ficha ' + pct_(rendFicha) + ' (' + pct_(desvio) + ').'); }
+    if (res.sinPrecio) { hall.push('COSTO_PARCIAL'); avisos.push(res.sinPrecio + ' insumo(s) sin precio: costo parcial.'); }
+    if (bloqueos.length) { hall.push('OVERRIDE'); }
+    var costoG = (!res.sinPrecio && neto > 0) ? res.total / neto : '';
+    var usuario = usuario_();
+    var ahora = new Date();
+    var filaLote = [idLote, lote.fecha, '', mpi.cod, mpi.nombre, f.mpi, f.resp, '', '', f.tiempo === '' ? '' : Number(f.tiempo),
+      entrada, neto, f.unid === '' ? '' : Number(f.unid), '', '', '', rend, rendFicha || '', desvio, res.total, costoG,
+      f.obs, usuario, ahora, 'ACTIVA', '', 'CAPTURA', hall.join(';'), res.sinPrecio,
+      res.sinPrecio ? (res.total > 0 ? 'PARCIAL' : 'SIN COSTO') : 'COMPLETO', bloqueos.length ? motivo : ''];
+    var filasCons = [];
+    for (i = 0; i < res.lineas.length; i++) {
+      var L = res.lineas[i];
+      filasCons.push([idLote + '-' + pad3_(i + 1), idLote, lote.fecha, L.ins.cod, L.ins.nombre, L.ins.tipo, L.nombre, L.cant, L.unidad, '', L.loteOrigen || '',
+        L.cu === null ? '' : L.cu, L.costo === null ? '' : L.costo, L.fuente, 'ACTIVA', L.hall || '']);
+    }
+    agregarFilas_(ss.getSheetByName(H.LOTES), [filaLote]);
+    agregarFilas_(ss.getSheetByName(H.CONS), filasCons);
+    bitacora_('LOTE GUARDADO', idLote + ' · ' + mpi.nombre + ' · ' + neto + ' g · ' + (costoG !== '' ? '$' + fmt_(costoG, 2) + '/g' : 'costo ' + filaLote[29]) + (bloqueos.length ? ' · FORZADO' : ''), bloqueos.length ? motivo : '');
+    var msg = '✔ GUARDADO ' + idLote + ' · ' + mpi.nombre + ' · ' + fmt_(neto, 0) + ' g · costo $' + fmt_(res.total, 0) +
+      (costoG !== '' ? ' = $' + fmt_(costoG, 2) + ' por gramo' : ' (parcial)') + (rend !== '' ? ' · rendimiento ' + pct_(rend) : '');
+    if (avisos.length) { msg += '\nAvisos: ' + lista8_(avisos).replace(/\n/g, ' · '); }
+    limpiarCaptura_(sh, msg);
+    try { recalcularDerivados_(ss); } catch (e2) { bitacora_('AVISO', 'Derivados no recalculados: ' + e2.message, ''); }
+  } finally {
+    try { lock.releaseLock(); } catch (e3) {}
+  }
+}
+
+function rechazar_(sh, msg, lista) {
+  sh.getRange(CAP.MSG).setValue(msg);
+  sh.getRange(CAP.GUARDAR).setValue(false);
+  bitacora_('GUARDADO RECHAZADO', lista.join(' | ').substring(0, 450), '');
+}
+
+function leerCaptura_(sh) {
+  var v = sh.getRange(CAP.FILA1, 2, CAP.NFILAS, 5).getValues();
+  var filas = [];
+  for (var i = 0; i < v.length; i++) {
+    filas.push({ fila: CAP.FILA1 + i, insumo: String(v[i][0] || '').replace(/^\s+|\s+$/g, ''), cant: v[i][2], nota: v[i][4] });
+  }
+  return { fecha: sh.getRange(CAP.FECHA).getValue(), resp: String(sh.getRange(CAP.RESP).getValue() || ''),
+    mpi: String(sh.getRange(CAP.MPI).getValue() || ''), tiempo: sh.getRange(CAP.TIEMPO).getValue(), unid: sh.getRange(CAP.UNID).getValue(),
+    neto: sh.getRange(CAP.NETO).getValue(), obs: String(sh.getRange(CAP.OBS).getValue() || ''), motivo: String(sh.getRange(CAP.MOTIVO).getValue() || ''), filas: filas };
+}
+
+function siguienteIdLote_(ss, fecha) {
+  var v = ss.getSheetByName(H.LOTES).getDataRange().getValues();
+  var anio = (esFecha_(fecha) ? fecha : new Date()).getFullYear();
+  var max = 0;
+  for (var i = 1; i < v.length; i++) {
+    var m = String(v[i][0]).match(/^PRO-(\d{4})-(\d{3,})/);
+    if (m && Number(m[1]) === anio && Number(m[2]) > max) { max = Number(m[2]); }
+  }
+  return 'PRO-' + anio + '-' + pad3_(max + 1);
+}
+
+// =====================================================================================
+// MOTOR DE COSTO
+// =====================================================================================
+/** Lee catálogo, parámetros, factores, compras de recepción y lotes costeados. */
+function contextoCosto_(ss) {
+  var cat = catalogo_(ss);
+  var par = {};
+  var p = ss.getSheetByName(H.PAR).getDataRange().getValues();
+  for (var i = 3; i < p.length; i++) {
+    if (p[i][0] !== '' && p[i][3] !== '' && p[i][3] !== null && !isNaN(Number(p[i][3]))) { par[String(p[i][0])] = Number(p[i][3]); }
+  }
+  var fac = {};
+  var fs = ss.getSheetByName(H.FAC);
+  if (fs) {
+    var f = fs.getDataRange().getValues();
+    for (i = 1; i < f.length; i++) {
+      if (f[i][0] && f[i][1] && f[i][2] !== '' && !isNaN(Number(f[i][2]))) { fac[norm_(f[i][0]) + '|' + String(f[i][1]).toUpperCase()] = Number(f[i][2]); }
+    }
+  }
+  var ctx = { cat: cat, par: par, fac: fac, compras: {}, sinFactor: {}, lotes: {}, porMpi: {} };
+  leerCompras_(ctx);
+  var lv = ss.getSheetByName(H.LOTES).getDataRange().getValues();
+  var c = idx_(lv[0]);
+  for (i = 1; i < lv.length; i++) {
+    var id = String(lv[i][c.ID_LOTE] || ''); if (!id) { continue; }
+    var o = { id: id, fecha: lv[i][c.FECHA], mpi: String(lv[i][c.MPI_COD]), costoG: lv[i][c.COSTO_G], estado: String(lv[i][c.ESTADO_LOTE]), estadoCosto: String(lv[i][c.ESTADO_COSTO]) };
+    ctx.lotes[id] = o;
+    if (o.estado !== 'REVERSADA' && o.costoG !== '' && o.costoG !== null) { (ctx.porMpi[o.mpi] = ctx.porMpi[o.mpi] || []).push(o); }
+  }
+  return ctx;
+}
+
+function leerCompras_(ctx) {
+  ctx.fuentes = [];
+  leerFuente_(ctx, 'BAR', String(cfg_('ID_RECEPCION_BAR')), String(cfg_('HOJA_RECEPCION')), true);
+  var idc = String(cfg_('ID_RECEPCION_COCINA') || '');
+  if (idc) { leerFuente_(ctx, 'COCINA', idc, String(cfg_('HOJA_RECEPCION_COCINA') || 'BD_RECEPCIONES'), false); }
+  ctx.descartadas = {};
+  for (var k in ctx.compras) {
+    if (!Object.prototype.hasOwnProperty.call(ctx.compras, k)) { continue; }
+    var cs = ctx.compras[k];
+    // precios contradictorios: un error de unidad no puede entrar al promedio
+    var pus = [], i;
+    for (i = 0; i < cs.length; i++) { pus.push(cs[i].valor / cs[i].base); }
+    var orden = pus.slice(0).sort(function (a, b) { return a - b; });
+    var med = orden.length % 2 ? orden[(orden.length - 1) / 2] : (orden[orden.length / 2 - 1] + orden[orden.length / 2]) / 2;
+    var quedan = [];
+    for (i = 0; i < cs.length; i++) {
+      var malo = (cs.length >= 3 && (pus[i] > med * 5 || pus[i] < med / 5)) || (cs.length === 2 && (orden[1] / orden[0]) > 5);
+      if (malo) { ctx.descartadas[k] = (ctx.descartadas[k] || 0) + 1; } else { quedan.push(cs[i]); }
+    }
+    quedan.sort(function (a, b) { return a.fecha - b.fecha; });
+    if (quedan.length) { ctx.compras[k] = quedan; } else { delete ctx.compras[k]; }
+  }
+}
+
+/** Lee un libro mayor de recepción (bar o cocina) ubicando las columnas por su encabezado. */
+function leerFuente_(ctx, etiqueta, id, hoja, obligatoria) {
+  var ext, hs;
+  try { ext = SpreadsheetApp.openById(id); hs = ext.getSheetByName(hoja); if (!hs) { throw new Error('no existe la hoja ' + hoja); } }
+  catch (e) {
+    if (obligatoria) { throw new Error('No puedo leer la recepción de ' + etiqueta + ' (' + e.message + '). La cuenta que corre el motor necesita acceso a ese archivo.'); }
+    ctx.fuentes.push(etiqueta + ': NO LEÍDA (' + e.message + ')'); return;
+  }
+  var v = hs.getDataRange().getValues(), fe = -1;
+  for (var r = 0; r < Math.min(12, v.length); r++) { if (norm_(v[r][0]).indexOf('id_linea') === 0) { fe = r; break; } }
+  if (fe < 0) { throw new Error('Recepción de ' + etiqueta + ': no encuentro la fila de encabezados (ID_LINEA).'); }
+  var enc = [];
+  for (var j = 0; j < v[fe].length; j++) { enc.push(norm_(String(v[fe][j]).split('\n')[0])); }
+  var col = function (cands) { for (var a = 0; a < cands.length; a++) { var p = enc.indexOf(norm_(cands[a])); if (p >= 0) { return p; } } return -1; };
+  var c = { fecha: col(['FECHA_RECEPCION', 'Fecha']), prod: col(['PRODUCTO', 'Producto']), un: col(['UNIDAD', 'Un.']),
+    cant: col(['CANT_RECIBIDA', 'Cant. real']), valor: col(['VALOR_TOTAL', 'Valor línea']), est: col(['ESTADO_LINEA', 'Estado de']) };
+  for (var x in c) { if (Object.prototype.hasOwnProperty.call(c, x) && c[x] < 0) { throw new Error('Recepción de ' + etiqueta + ': falta la columna ' + x); } }
+  var alias = ctx.cat.porRecepcion, n = 0;
+  for (var i = fe + 1; i < v.length; i++) {
+    var row = v[i];
+    if (!row[0] || String(row[c.est]) === 'REVERSADA') { continue; }
+    var ins = alias[norm_(row[c.prod])];
+    if (!ins) { continue; }
+    var q = Number(row[c.cant]), val = Number(row[c.valor]);
+    if (!(q > 0) || !(val > 0) || !esFecha_(row[c.fecha])) { continue; }
+    var u = String(row[c.un] || '').toUpperCase();
+    if (u === 'G') { u = 'GR'; } if (u === 'UN') { u = 'UND'; }
+    var factor = factorCompra_(ctx, ins, u);
+    if (factor === null) { if (String(ctx.sinFactor[ins.cod] || '').indexOf(u) < 0) { ctx.sinFactor[ins.cod] = (ctx.sinFactor[ins.cod] ? ctx.sinFactor[ins.cod] + ', ' : '') + u; } continue; }
+    (ctx.compras[ins.cod] = ctx.compras[ins.cod] || []).push({ fecha: aMedianoche_(row[c.fecha]), base: q * factor, valor: val, id: etiqueta + ':' + String(row[0]) });
+    n++;
+  }
+  ctx.fuentes.push(etiqueta + ': ' + n + ' compra(s) utilizables');
+}
+
+function factorCompra_(ctx, ins, u) {
+  var ub = ins.ub;
+  if (ub === 'g' && (u === 'GR' || u === 'G')) { return 1; }
+  if (ub === 'g' && u === 'KG') { return 1000; }
+  if (ub === 'ml' && u === 'ML') { return 1; }
+  if (ub === 'ml' && (u === 'L' || u === 'LT')) { return 1000; }
+  if (ub === 'und' && (u === 'UND' || u === 'UN')) { return 1; }
+  var k = norm_(ins.nombre) + '|' + u;
+  if (Object.prototype.hasOwnProperty.call(ctx.fac, k)) { return ctx.fac[k]; }
+  if (ub === 'g' && u === 'UND') {
+    var p = ins.nombre + '|und→g';
+    if (Object.prototype.hasOwnProperty.call(ctx.par, p)) { return ctx.par[p]; }
+  }
+  return null;
+}
+
+/** Precio por unidad base de un insumo comprado, vigente a una fecha. */
+function precioInsumo_(ctx, cod, fecha) {
+  var cs = ctx.compras[cod];
+  if (!cs || !cs.length) { return null; }
+  var t = aMedianoche_(fecha).getTime();
+  var ventana = Number(cfg_('VENTANA_COSTO_DIAS')) * 86400000;
+  var v = 0, q = 0, n = 0, previas = 0, i;
+  for (i = 0; i < cs.length; i++) {
+    var ct = cs[i].fecha.getTime();
+    if (ct <= t) { previas++; if (ct >= t - ventana) { v += cs[i].valor; q += cs[i].base; n++; } }
+  }
+  if (n) { return { pu: v / q, fuente: 'PROMEDIO ' + n + ' COMPRA(S) ≤' + cfg_('VENTANA_COSTO_DIAS') + 'd' }; }
+  if (previas) {
+    for (i = cs.length - 1; i >= 0; i--) { if (cs[i].fecha.getTime() <= t) { return { pu: cs[i].valor / cs[i].base, fuente: 'ÚLTIMA COMPRA (' + fmtFecha_(cs[i].fecha) + ', fuera de ventana)' }; } }
+  }
+  return { pu: cs[0].valor / cs[0].base, fuente: 'PRIMERA COMPRA POSTERIOR (' + fmtFecha_(cs[0].fecha) + ')' };
+}
+
+/** Costo por gramo de un MPI para un lote: el lote de origen indicado o el último costeado ≤ fecha. */
+function precioMpi_(ctx, cod, fecha, loteOrigen, idPropio) {
+  if (loteOrigen && ctx.lotes[loteOrigen] && ctx.lotes[loteOrigen].costoG !== '' && ctx.lotes[loteOrigen].costoG !== null && ctx.lotes[loteOrigen].estado !== 'REVERSADA') {
+    return { pu: Number(ctx.lotes[loteOrigen].costoG), fuente: 'LOTE ' + loteOrigen, lote: loteOrigen };
+  }
+  var ls = ctx.porMpi[cod] || [];
+  var t = aMedianoche_(fecha).getTime(), mejor = null;
+  for (var i = 0; i < ls.length; i++) {
+    if (ls[i].id === idPropio || !esFecha_(ls[i].fecha)) { continue; }
+    var lt = aMedianoche_(ls[i].fecha).getTime();
+    if (lt <= t && (!mejor || lt >= aMedianoche_(mejor.fecha).getTime())) { mejor = ls[i]; }
+  }
+  if (mejor) { return { pu: Number(mejor.costoG), fuente: 'ÚLTIMO LOTE ' + mejor.id, lote: mejor.id }; }
+  return null;
+}
+
+function aBase_(ctx, ins, cant, unidad) {
+  var u = String(unidad || ins.ub).toLowerCase();
+  if (u === ins.ub) { return cant; }
+  if ((u === 'g' && ins.ub === 'ml') || (u === 'ml' && ins.ub === 'g')) {
+    if (ins.tipo === 'SIN_COSTO') { return cant; }
+    var k = ins.nombre + '|' + u + '→' + ins.ub;
+    if (Object.prototype.hasOwnProperty.call(ctx.par, k)) { return cant * ctx.par[k]; }
+    return null;
+  }
+  var k2 = ins.nombre + '|' + u + '→' + ins.ub;
+  if (Object.prototype.hasOwnProperty.call(ctx.par, k2)) { return cant * ctx.par[k2]; }
+  return null;
+}
+
+/** lineas: [{ins, cant, unidad, nombre, loteOrigen}] → costo por línea y total. */
+function costearLineas_(ctx, lote, lineas) {
+  var out = [], total = 0, sinPrecio = 0;
+  for (var i = 0; i < lineas.length; i++) {
+    var L = lineas[i], ins = L.ins, r = { ins: ins, cant: L.cant, unidad: L.unidad || ins.ub, nombre: L.nombre, loteOrigen: L.loteOrigen || '', cu: null, costo: null, fuente: '', hall: L.hall || '' };
+    if (ins.tipo === 'SIN_COSTO') { r.cu = 0; r.costo = 0; r.fuente = 'SIN COSTO'; out.push(r); continue; }
+    var base = aBase_(ctx, ins, L.cant, r.unidad);
+    if (base === null) { r.fuente = 'FALTA PARÁMETRO ' + ins.nombre + '|' + String(r.unidad).toLowerCase() + '→' + ins.ub; sinPrecio++; out.push(r); continue; }
+    var p = ins.tipo === 'MPI' ? precioMpi_(ctx, ins.cod, lote.fecha, L.loteOrigen, lote.id) : precioInsumo_(ctx, ins.cod, lote.fecha);
+    if (!p) {
+      r.fuente = ins.tipo === 'MPI' ? 'MPI SIN LOTE COSTEADO' : (ctx.sinFactor[ins.cod] ? 'COMPRA EN ' + ctx.sinFactor[ins.cod] + ' SIN FACTOR' : 'SIN COMPRAS REGISTRADAS');
+      sinPrecio++; out.push(r); continue;
+    }
+    r.cu = p.pu; r.costo = base * p.pu; r.fuente = p.fuente; if (p.lote && !r.loteOrigen) { r.loteOrigen = p.lote; }
+    total += r.costo; out.push(r);
+  }
+  return { lineas: out, total: total, sinPrecio: sinPrecio };
+}
+
+/** Rendimiento esperado de una ficha = neto / suma de entradas en base (solo si está completa). */
+function rendimientoFicha_(ss, ficha) {
+  if (!ficha || ficha === 'SIN FICHA') { return null; }
+  var fi = ss.getSheetByName(H.FI).getDataRange().getValues(), neto = null;
+  for (var i = 3; i < fi.length; i++) { if (String(fi[i][0]) === ficha) { neto = Number(fi[i][5]) || null; } }
+  if (!neto) { return null; }
+  var fd = ss.getSheetByName(H.FD).getDataRange().getValues(), suma = 0;
+  for (i = 3; i < fd.length; i++) {
+    if (String(fd[i][0]) !== ficha) { continue; }
+    var b = fd[i][15];
+    if (b === '' || b === null || isNaN(Number(b))) { return null; }
+    suma += Number(b);
+  }
+  return suma > 0 ? neto / suma : null;
+}
+
+/**
+ * Costea lotes con ESTADO_COSTO distinto de COMPLETO (histórico migrado o lotes con faltantes).
+ * Nunca toca un lote COMPLETO: su costo quedó fijado al guardarse.
+ */
+function completarCostosPendientes() { alerta_(completarCostosPendientes_(false)); }
+function completarCostosPendientes_(silencioso) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(30000)) { throw new Error('Otro proceso está escribiendo.'); }
+  try {
+    var ctx = contextoCosto_(ss);
+    var hl = ss.getSheetByName(H.LOTES), hc = ss.getSheetByName(H.CONS);
+    var lv = hl.getDataRange().getValues(), cv = hc.getDataRange().getValues();
+    var cl = idx_(lv[0]), cc = idx_(cv[0]);
+    var porLote = {};
+    for (var i = 1; i < cv.length; i++) { var id = String(cv[i][cc.ID_LOTE] || ''); if (id) { (porLote[id] = porLote[id] || []).push(i); } }
+    var orden = [];
+    for (i = 1; i < lv.length; i++) {
+      if (!lv[i][cl.ID_LOTE] || String(lv[i][cl.ESTADO_LOTE]) === 'REVERSADA' || String(lv[i][cl.ESTADO_COSTO]) === 'COMPLETO') { continue; }
+      orden.push(i);
+    }
+    orden.sort(function (a, b) {
+      var fa = esFecha_(lv[a][cl.FECHA]) ? lv[a][cl.FECHA].getTime() : 0, fb = esFecha_(lv[b][cl.FECHA]) ? lv[b][cl.FECHA].getTime() : 0;
+      return fa !== fb ? fa - fb : (String(lv[a][cl.ID_LOTE]) < String(lv[b][cl.ID_LOTE]) ? -1 : 1);
+    });
+    var hechos = 0, completos = 0, revisados = {};
+    for (var pasada = 0; pasada < 4; pasada++) {
+    var mejoro = false;
+    for (var k = 0; k < orden.length; k++) {
+      var r = orden[k], idl = String(lv[r][cl.ID_LOTE]);
+      if (String(lv[r][cl.ESTADO_COSTO]) === 'COMPLETO' && revisados[idl]) { continue; }
+      var filasC = porLote[idl] || [];
+      var lineas = [], idxs = [];
+      for (var j = 0; j < filasC.length; j++) {
+        var rc = cv[filasC[j]];
+        if (String(rc[cc.ESTADO]) === 'REVERSADA') { continue; }
+        var ins = ctx.cat.porCodigo[String(rc[cc.INSUMO_COD])];
+        var q = Number(rc[cc.CANTIDAD]);
+        if (!ins || !(q > 0)) { continue; }
+        lineas.push({ ins: ins, cant: q, unidad: String(rc[cc.UNIDAD] || ins.ub), nombre: rc[cc.NOMBRE_ORIGINAL], loteOrigen: String(rc[cc.LOTE_ORIGEN] || ''), hall: rc[cc.HALLAZGOS] });
+        idxs.push(filasC[j]);
+      }
+      var fecha = esFecha_(lv[r][cl.FECHA]) ? lv[r][cl.FECHA] : new Date();
+      var res = costearLineas_(ctx, { id: idl, fecha: fecha }, lineas);
+      var entrada = 0;
+      for (j = 0; j < lineas.length; j++) { entrada += aBase_(ctx, lineas[j].ins, lineas[j].cant, lineas[j].unidad) || lineas[j].cant; }
+      for (j = 0; j < res.lineas.length; j++) {
+        var L = res.lineas[j], row = cv[idxs[j]];
+        row[cc.COSTO_UNIT] = L.cu === null ? '' : L.cu; row[cc.COSTO_LINEA] = L.costo === null ? '' : L.costo;
+        row[cc.FUENTE_COSTO] = L.fuente; row[cc.LOTE_ORIGEN] = L.loteOrigen || row[cc.LOTE_ORIGEN];
+      }
+      var neto = Number(lv[r][cl.NETO_G]);
+      var costoG = (!res.sinPrecio && neto > 0 && lineas.length) ? res.total / neto : '';
+      var rendF = rendimientoFicha_(ss, ctx.cat.porCodigo[String(lv[r][cl.MPI_COD])] ? ctx.cat.porCodigo[String(lv[r][cl.MPI_COD])].ficha : '');
+      var rend = (neto > 0 && entrada > 0) ? neto / entrada : '';
+      lv[r][cl.ENTRADA_TOTAL] = entrada || ''; lv[r][cl.RENDIMIENTO] = rend; lv[r][cl.REND_FICHA] = rendF || '';
+      lv[r][cl.DESVIO_REND_PCT] = (rendF && rend !== '') ? (rend - rendF) / rendF : '';
+      lv[r][cl.COSTO_TOTAL] = res.total; lv[r][cl.COSTO_G] = costoG; lv[r][cl.LINEAS_SIN_PRECIO] = res.sinPrecio;
+      lv[r][cl.ESTADO_COSTO] = !lineas.length ? 'SIN INGREDIENTES' : (res.sinPrecio ? (res.total > 0 ? 'PARCIAL' : 'SIN COSTO') : (neto > 0 ? 'COMPLETO' : 'SIN NETO'));
+      // el lote recién costeado ya sirve de origen a los siguientes (cascada)
+      ctx.lotes[idl] = { id: idl, fecha: fecha, mpi: String(lv[r][cl.MPI_COD]), costoG: costoG, estado: String(lv[r][cl.ESTADO_LOTE]) };
+      if (costoG !== '') { (ctx.porMpi[String(lv[r][cl.MPI_COD])] = ctx.porMpi[String(lv[r][cl.MPI_COD])] || []).push(ctx.lotes[idl]); if (pasada > 0) { mejoro = true; } }
+      revisados[idl] = 1;
+    }
+    if (pasada > 0 && !mejoro) { break; }
+    }
+    for (k = 0; k < orden.length; k++) { hechos++; if (String(lv[orden[k]][cl.ESTADO_COSTO]) === 'COMPLETO') { completos++; } }
+    if (lv.length > 1) { hl.getRange(1, 1, lv.length, lv[0].length).setValues(lv); }
+    if (cv.length > 1) { hc.getRange(1, 1, cv.length, cv[0].length).setValues(cv); }
+    var msg = 'Costeo de pendientes: ' + hechos + ' lote(s) revisado(s), ' + completos + ' con costo completo.';
+    bitacora_('COSTEO PENDIENTES', msg, '');
+    if (!silencioso) { try { recalcularDerivados_(ss); } catch (e) {} }
+    return msg;
+  } finally { try { lock.releaseLock(); } catch (e2) {} }
+}
+
+// =====================================================================================
+// DERIVADOS: COSTO_INSUMOS · COSTO_MPI · TABLERO · DIAGNÓSTICO
+// =====================================================================================
+function recalcularTodo() { var ss = SpreadsheetApp.getActiveSpreadsheet(); recalcularDerivados_(ss); alerta_('Costos y tablero recalculados.'); }
+
+function recalcularDerivados_(ss) {
+  var ctx = contextoCosto_(ss);
+  var hoyD = hoy_();
+  var aviso = Number(cfg_('DESVIO_PRECIO_AVISO_PCT')) / 100;
+  // --- COSTO_INSUMOS
+  var filas = [], alertasPrecio = 0, conPrecio = 0, mpe = 0;
+  var cods = ctx.cat.lista;
+  for (var i = 0; i < cods.length; i++) {
+    var ins = cods[i];
+    if (ins.tipo !== 'MPe') { continue; }
+    mpe++;
+    var p = precioInsumo_(ctx, ins.cod, hoyD), cs = ctx.compras[ins.cod] || [];
+    var ultimo = cs.length ? cs[cs.length - 1] : null;
+    var ult = ultimo ? ultimo.valor / ultimo.base : '';
+    var desv = (p && ultimo) ? (ult - p.pu) / p.pu : '';
+    var nota = !cs.length ? (ctx.sinFactor[ins.cod] ? 'Compras en ' + ctx.sinFactor[ins.cod] + ' sin factor: llenar FACTORES_COMPRA' : 'Sin compras en la recepción de bar') :
+      (desv !== '' && Math.abs(desv) > aviso ? '⚠ Último precio ' + pct_(desv) + ' vs promedio' : '');
+    if (ctx.descartadas && ctx.descartadas[ins.cod]) { nota = (nota ? nota + ' · ' : '') + ctx.descartadas[ins.cod] + ' compra(s) descartada(s) por precio contradictorio'; }
+    if (p) { conPrecio++; }
+    if (nota.indexOf('⚠') === 0) { alertasPrecio++; }
+    filas.push([ins.cod, ins.nombre, ins.categoria, ins.ub, p ? p.pu : '', ult, ultimo ? ultimo.fecha : '', desv, cs.length, p ? p.fuente : '', nota]);
+  }
+  escribirDerivado_(ss, H.CI, 'COSTO VIGENTE DE INSUMOS COMPRADOS', 'Promedio ponderado de compras de los últimos ' + cfg_('VENTANA_COSTO_DIAS') + ' días (recepción de bar). Lo escribe el motor.',
+    ['CÓDIGO', 'INSUMO', 'CATEGORÍA', 'UNIDAD', '$ / UNIDAD VIGENTE', 'ÚLTIMO $ / UNIDAD', 'ÚLTIMA COMPRA', 'DESVÍO ÚLTIMO', 'N.º COMPRAS', 'FUENTE', 'AVISO'],
+    filas, { 5: '#,##0.00', 6: '#,##0.00', 7: 'dd/mm/yyyy', 8: '0.0%' }, [13, 30, 14, 8, 14, 14, 12, 11, 9, 34, 46]);
+  // --- COSTO_MPI
+  var lv = ss.getSheetByName(H.LOTES).getDataRange().getValues(), cl = idx_(lv[0]);
+  var agg = {}, lotesTot = 0, completos = 0, parciales = 0, rendFuera = 0;
+  for (i = 1; i < lv.length; i++) {
+    var r = lv[i];
+    if (!r[cl.ID_LOTE] || String(r[cl.ESTADO_LOTE]) === 'REVERSADA') { continue; }
+    lotesTot++;
+    var ec = String(r[cl.ESTADO_COSTO]);
+    if (ec === 'COMPLETO') { completos++; } else { parciales++; }
+    if (String(r[cl.HALLAZGOS]).indexOf('REND_FUERA') >= 0 || (r[cl.DESVIO_REND_PCT] !== '' && Math.abs(Number(r[cl.DESVIO_REND_PCT])) * 100 > Number(cfg_('DESVIO_REND_AVISO_PCT')))) { rendFuera++; }
+    var k = String(r[cl.MPI_COD]);
+    var a = agg[k] = agg[k] || { n: 0, neto: 0, costo: 0, nCost: 0, rendS: 0, rendN: 0, ult: null };
+    a.n++;
+    if (r[cl.COSTO_G] !== '' && r[cl.COSTO_G] !== null) { a.neto += Number(r[cl.NETO_G]); a.costo += Number(r[cl.COSTO_TOTAL]); a.nCost++; }
+    if (r[cl.RENDIMIENTO] !== '' && r[cl.RENDIMIENTO] !== null) { a.rendS += Number(r[cl.RENDIMIENTO]); a.rendN++; }
+    if (esFecha_(r[cl.FECHA]) && (!a.ult || r[cl.FECHA].getTime() >= a.ult.fecha.getTime())) {
+      a.ult = { id: r[cl.ID_LOTE], fecha: r[cl.FECHA], costoG: r[cl.COSTO_G], ec: ec };
+    }
+  }
+  var fm = [], conCosto = 0;
+  for (i = 0; i < cods.length; i++) {
+    var m = cods[i];
+    if (m.tipo !== 'MPI') { continue; }
+    var g = agg[m.cod];
+    var est = costoEstandar_(ss, ctx, m.ficha, hoyD);
+    if (g && g.nCost) { conCosto++; }
+    fm.push([m.cod, m.nombre, m.ficha, g ? g.n : 0, g && g.ult ? g.ult.id : '', g && g.ult ? g.ult.fecha : '',
+      g && g.ult && g.ult.costoG !== '' ? g.ult.costoG : '', g && g.nCost ? g.costo / g.neto : '', g && g.rendN ? g.rendS / g.rendN : '',
+      rendimientoFicha_(ss, m.ficha) || '', est.total, est.porUnidad, est.nota]);
+  }
+  fm.sort(function (x, y) { return y[3] - x[3]; });
+  escribirDerivado_(ss, H.CM, 'COSTO REAL DE CADA MPI', 'Real = lotes registrados (costo fijado al guardar). Estándar = ficha × precio vigente de hoy. Lo escribe el motor.',
+    ['CÓD. MPI', 'MPI', 'FICHA', 'LOTES', 'ÚLTIMO LOTE', 'FECHA', '$/g ÚLTIMO LOTE', '$/g PROMEDIO', 'REND. REAL PROM.', 'REND. FICHA', 'COSTO ESTÁNDAR TANDA', 'ESTÁNDAR $/UNIDAD NETA', 'NOTA'],
+    fm, { 6: 'dd/mm/yyyy', 7: '#,##0.00', 8: '#,##0.00', 9: '0.0%', 10: '0.0%', 11: '$#,##0', 12: '#,##0.00' }, [13, 32, 9, 7, 15, 11, 13, 12, 11, 10, 14, 14, 50]);
+  // --- TABLERO
+  var t = ss.getSheetByName(H.TAB) || ss.insertSheet(H.TAB, 1);
+  t.clear();
+  t.getRange('A1:D1').setBackground('#0D3B33');
+  t.getRange('A1').setValue('SGI-COSTOS · TABLERO — ' + cfg_('AREA') + '   |   actualizado ' + fmtFecha_(new Date())).setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13);
+  var kp = [['Lotes registrados (vigentes)', lotesTot], ['Lotes con costo completo', completos], ['Lotes con costo parcial o pendiente', parciales],
+    ['Cobertura de costeo de lotes', lotesTot ? completos / lotesTot : 0], ['MPI con costo real', conCosto + ' de ' + fm.length],
+    ['Insumos comprados con precio vigente', conPrecio + ' de ' + mpe], ['Insumos con último precio fuera de banda (±' + cfg_('DESVIO_PRECIO_AVISO_PCT') + ' %)', alertasPrecio],
+    ['Lotes con rendimiento fuera de ficha (±' + cfg_('DESVIO_REND_AVISO_PCT') + ' %)', rendFuera]];
+  t.getRange(3, 1, kp.length, 2).setValues(kp);
+  t.getRange(6, 2).setNumberFormat('0.0%');
+  t.getRange(3, 1, kp.length, 1).setFontWeight('bold');
+  t.setColumnWidth(1, 380); t.setColumnWidth(2, 140);
+  var top = [];
+  for (i = 0; i < fm.length && top.length < 15; i++) { if (fm[i][7] !== '') { top.push(fm[i]); } }
+  t.getRange(13, 1).setValue('MPI MÁS PRODUCIDOS — COSTO REAL').setFontWeight('bold').setFontColor('#0D3B33');
+  if (top.length) {
+    var tv = [['MPI', '$/g promedio', 'Lotes', 'Rend. real']];
+    for (i = 0; i < top.length; i++) { tv.push([top[i][1], top[i][7], top[i][3], top[i][8]]); }
+    t.getRange(14, 1, tv.length, 4).setValues(tv);
+    t.getRange(14, 1, 1, 4).setBackground('#B08D57').setFontColor('#FFFFFF').setFontWeight('bold');
+    t.getRange(15, 2, top.length, 1).setNumberFormat('#,##0.00'); t.getRange(15, 4, top.length, 1).setNumberFormat('0.0%');
+  }
+  try { t.setHiddenGridlines(true); } catch (e) {}
+  // --- CÓCTELES (v1.1): nunca debe tumbar los derivados de producción
+  try { tableroCocteles_(t, costoCocteles_(ss, ctx)); } catch (eC) { t.getRange('F3').setValue('Cócteles: ' + eC.message); bitacora_('AVISO', 'Cócteles no costeados: ' + eC.message, ''); }
+  // --- DIAGNÓSTICO + aviso vivo en CAPTURA
+  var diag = diagnostico_(ss, ctx);
+  var cap = ss.getSheetByName(H.CAP);
+  if (cap) {
+    var abiertos = [];
+    for (i = 0; i < diag.length; i++) { if (diag[i][4] === 'ABIERTO') { abiertos.push(diag[i][2] + ' ' + String(diag[i][1]).toLowerCase()); } }
+    var txt = abiertos.length ? '⚠ PENDIENTES: ' + abiertos.join(' · ') : '✔ Sin pendientes de integridad.';
+    cap.getRange(CAP.AVISO).setValue(txt);
+  }
+}
+
+function costoEstandar_(ss, ctx, ficha, fecha) {
+  if (!ficha || ficha === 'SIN FICHA') { return { total: '', porUnidad: '', nota: 'Sin ficha' }; }
+  var fd = ss.getSheetByName(H.FD).getDataRange().getValues(), lineas = [], faltan = 0;
+  for (var i = 3; i < fd.length; i++) {
+    if (String(fd[i][0]) !== ficha) { continue; }
+    var ins = ctx.cat.porCodigo[String(fd[i][5])], b = fd[i][15];
+    if (!ins || b === '' || b === null || isNaN(Number(b))) { faltan++; continue; }
+    lineas.push({ ins: ins, cant: Number(b), unidad: ins.ub, nombre: ins.nombre });
+  }
+  if (!lineas.length) { return { total: '', porUnidad: '', nota: 'Ficha sin cantidades' }; }
+  var res = costearLineas_(ctx, { id: '', fecha: fecha }, lineas);
+  var neto = null, fi = ss.getSheetByName(H.FI).getDataRange().getValues(), um = '';
+  for (i = 3; i < fi.length; i++) { if (String(fi[i][0]) === ficha) { neto = Number(fi[i][5]) || null; um = fi[i][6]; } }
+  var nota = faltan ? faltan + ' línea(s) de la ficha sin cantidad en base (ver PARAMETROS)' : (res.sinPrecio ? res.sinPrecio + ' insumo(s) sin precio' : 'Completo');
+  var completo = !faltan && !res.sinPrecio;
+  return { total: completo ? res.total : '', porUnidad: (completo && neto) ? res.total / neto : '', nota: completo && neto ? 'Completo · por ' + um : nota };
+}
+
+function diagnostico_(ss, ctx) {
+  var lv = ss.getSheetByName(H.LOTES).getDataRange().getValues(), cl = idx_(lv[0]);
+  var cv = ss.getSheetByName(H.CONS).getDataRange().getValues(), cc = idx_(cv[0]);
+  var ids = {}, dup = 0, revisar = 0, sinCosto = 0, sinNeto = 0, forz = 0, rev = 0, lotesIds = {};
+  for (var i = 1; i < lv.length; i++) {
+    var id = String(lv[i][cl.ID_LOTE] || ''); if (!id) { continue; }
+    if (ids[id]) { dup++; } ids[id] = 1; lotesIds[id] = 1;
+    var est = String(lv[i][cl.ESTADO_LOTE]);
+    if (est === 'REVERSADA') { rev++; continue; }
+    if (est === 'REVISAR') { revisar++; }
+    if (String(lv[i][cl.ESTADO_COSTO]) !== 'COMPLETO') { sinCosto++; }
+    if (!(Number(lv[i][cl.NETO_G]) > 0)) { sinNeto++; }
+    if (String(lv[i][cl.HALLAZGOS]).indexOf('OVERRIDE') >= 0) { forz++; }
+  }
+  var huerf = 0, idsL = {}, dupL = 0, faltaPar = {}, sinCompra = {};
+  for (i = 1; i < cv.length; i++) {
+    var il = String(cv[i][cc.ID_LINEA] || ''); if (!il) { continue; }
+    if (idsL[il]) { dupL++; } idsL[il] = 1;
+    if (!lotesIds[String(cv[i][cc.ID_LOTE])]) { huerf++; }
+    var fu = String(cv[i][cc.FUENTE_COSTO]);
+    if (fu.indexOf('FALTA PARÁMETRO') === 0) { faltaPar[fu.replace('FALTA PARÁMETRO ', '')] = 1; }
+    if (fu === 'SIN COMPRAS REGISTRADAS' || fu.indexOf('SIN FACTOR') > 0) { sinCompra[String(cv[i][cc.INSUMO])] = 1; }
+  }
+  var nPar = 0, nSC = 0, k;
+  for (k in faltaPar) { if (Object.prototype.hasOwnProperty.call(faltaPar, k)) { nPar++; } }
+  for (k in sinCompra) { if (Object.prototype.hasOwnProperty.call(sinCompra, k)) { nSC++; } }
+  var d = [
+    ['INT-01', 'IDs de lote duplicados', dup, 0], ['INT-02', 'IDs de línea duplicados', dupL, 0],
+    ['INT-03', 'Líneas de consumo sin lote', huerf, 0], ['INT-04', 'Lotes sin costo completo', sinCosto, 0],
+    ['INT-05', 'Parámetros físicos que faltan (en lotes)', nPar, 0], ['INT-06', 'Insumos usados sin compras con precio', nSC, 0],
+    ['INT-07', 'Lotes sin peso neto', sinNeto, 0], ['INT-08', 'Lotes del histórico en REVISAR', revisar, 0],
+    ['INT-09', 'Lotes guardados con motivo (forzados)', forz, '—'], ['INT-10', 'Lotes reversados', rev, '—']
+  ];
+  var filas = [];
+  for (i = 0; i < d.length; i++) {
+    var estado = d[i][3] === '—' ? 'RECONOCIDO' : (Number(d[i][2]) > 0 ? 'ABIERTO' : 'OK');
+    filas.push([d[i][0], d[i][1], d[i][2], d[i][3], estado]);
+  }
+  var det = [];
+  for (k in faltaPar) { if (Object.prototype.hasOwnProperty.call(faltaPar, k)) { det.push(['INT-05', k, '', '', 'Llenar en PARAMETROS']); } }
+  for (k in sinCompra) { if (Object.prototype.hasOwnProperty.call(sinCompra, k)) { det.push(['INT-06', k, '', '', 'Registrar su compra en la recepción o un factor en FACTORES_COMPRA']); } }
+  escribirDerivado_(ss, H.DIA, 'DIAGNÓSTICO DE INTEGRIDAD', 'Un control ABIERTO es trabajo pendiente. Debajo, el detalle de qué falta.',
+    ['CÓDIGO', 'CONTROL', 'VALOR', 'META', 'ESTADO'], filas.concat([['', '', '', '', '']]).concat(det), {}, [9, 50, 10, 8, 50]);
+  return filas;
+}
+
+function escribirDerivado_(ss, nombre, titulo, sub, enc, filas, formatos, anchos) {
+  var sh = ss.getSheetByName(nombre) || ss.insertSheet(nombre);
+  sh.clear();
+  sh.getRange(1, 1, 1, enc.length).setBackground('#0D3B33');
+  sh.getRange(1, 1).setValue(titulo).setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13);
+  sh.getRange(2, 1).setValue(sub).setFontStyle('italic').setFontColor('#0D3B33');
+  sh.getRange(3, 1, 1, enc.length).setValues([enc]).setBackground('#B08D57').setFontColor('#FFFFFF').setFontWeight('bold').setWrap(true);
+  if (filas.length) {
+    sh.getRange(4, 1, filas.length, enc.length).setValues(filas);
+    for (var c in formatos) { if (Object.prototype.hasOwnProperty.call(formatos, c)) { sh.getRange(4, Number(c), filas.length, 1).setNumberFormat(formatos[c]); } }
+  }
+  for (var i = 0; i < anchos.length; i++) { sh.setColumnWidth(i + 1, anchos[i] * 7); }
+  sh.setFrozenRows(3);
+  try { sh.setHiddenGridlines(true); } catch (e) {}
+}
+
+// =====================================================================================
+// REVERSA, ALERTA, DIAGNÓSTICO TÉCNICO
+// =====================================================================================
+function reversarLoteMenu() {
+  var ui = SpreadsheetApp.getUi();
+  var r1 = ui.prompt('Reversar lote', 'ID del lote (ej. PRO-2026-066):', ui.ButtonSet.OK_CANCEL);
+  if (r1.getSelectedButton() !== ui.Button.OK) { return; }
+  var r2 = ui.prompt('Reversar ' + r1.getResponseText(), 'Motivo (mínimo ' + cfg_('MIN_MOTIVO_OVERRIDE') + ' caracteres):', ui.ButtonSet.OK_CANCEL);
+  if (r2.getSelectedButton() !== ui.Button.OK) { return; }
+  ui.alert(reversarLote_(String(r1.getResponseText()).replace(/^\s+|\s+$/g, ''), r2.getResponseText()));
+}
+function reversarLote_(id, motivo) {
+  if (String(motivo || '').length < Number(cfg_('MIN_MOTIVO_OVERRIDE'))) { return 'Motivo demasiado corto. No se reversó nada.'; }
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hl = ss.getSheetByName(H.LOTES), hc = ss.getSheetByName(H.CONS);
+  var lv = hl.getDataRange().getValues(), cl = idx_(lv[0]), hecho = false;
+  for (var i = 1; i < lv.length; i++) {
+    if (String(lv[i][cl.ID_LOTE]) === id && String(lv[i][cl.ESTADO_LOTE]) !== 'REVERSADA') {
+      hl.getRange(i + 1, cl.ESTADO_LOTE + 1).setValue('REVERSADA');
+      hl.getRange(i + 1, cl.REF_REVERSA + 1).setValue(fmtFecha_(new Date()) + ' · ' + usuario_() + ' · ' + motivo);
+      hecho = true;
+    }
+  }
+  if (!hecho) { return 'No encontré un lote vigente con ID ' + id + '.'; }
+  var cv = hc.getDataRange().getValues(), cc = idx_(cv[0]), n = 0;
+  for (i = 1; i < cv.length; i++) { if (String(cv[i][cc.ID_LOTE]) === id) { hc.getRange(i + 1, cc.ESTADO + 1).setValue('REVERSADA'); n++; } }
+  bitacora_('LOTE REVERSADO', id + ' · ' + n + ' línea(s)', motivo);
+  try { recalcularDerivados_(ss); } catch (e) {}
+  return 'Lote ' + id + ' reversado (' + n + ' línea(s)). El registro original queda en el libro mayor.';
+}
+
+function enviarAlertaDiaria() {
+  if (String(cfg_('ALERTA_DIARIA_ACTIVA')).toUpperCase() !== 'SI') { return; }
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  try { recalcularDerivados_(ss); } catch (e) {}
+  var lv = ss.getSheetByName(H.LOTES).getDataRange().getValues(), cl = idx_(lv[0]);
+  var desde = new Date().getTime() - 86400000, lineas = [];
+  for (var i = 1; i < lv.length; i++) {
+    if (!esFecha_(lv[i][cl.TIMESTAMP]) || lv[i][cl.TIMESTAMP].getTime() < desde || String(lv[i][cl.ORIGEN]) !== 'CAPTURA') { continue; }
+    lineas.push('• ' + lv[i][cl.ID_LOTE] + ' ' + lv[i][cl.MPI] + ' — ' + fmt_(lv[i][cl.NETO_G], 0) + ' g · ' +
+      (lv[i][cl.COSTO_G] !== '' ? '$' + fmt_(lv[i][cl.COSTO_G], 2) + '/g' : 'costo ' + lv[i][cl.ESTADO_COSTO]) +
+      (lv[i][cl.HALLAZGOS] ? ' · ' + lv[i][cl.HALLAZGOS] : '') + ' (' + lv[i][cl.RESPONSABLE] + ')');
+  }
+  var ci = ss.getSheetByName(H.CI).getDataRange().getValues(), precios = [];
+  for (i = 3; i < ci.length; i++) { if (String(ci[i][10]).indexOf('⚠') === 0) { precios.push('• ' + ci[i][1] + ': ' + ci[i][10]); } }
+  if (!lineas.length && !precios.length) { return; }
+  var cuerpo = 'SGI-COSTOS · ' + cfg_('AREA') + ' · ' + fmtFecha_(new Date()) + '\n\nLOTES DE LAS ÚLTIMAS 24 H\n' + (lineas.join('\n') || '(ninguno)') +
+    '\n\nPRECIOS DE COMPRA FUERA DE BANDA\n' + (precios.join('\n') || '(ninguno)') + '\n\n' + ss.getUrl();
+  var cs = [cfg_('CORREO_ADMIN'), cfg_('CORREO_2'), cfg_('CORREO_3')], dl = [];
+  for (i = 0; i < cs.length; i++) { if (cs[i]) { dl.push(cs[i]); } }
+  var dest = dl.join(',');
+  MailApp.sendEmail(dest, 'SGI-COSTOS · producción y costos del día', cuerpo);
+  bitacora_('ALERTA ENVIADA', lineas.length + ' lote(s), ' + precios.length + ' aviso(s) de precio', '');
+}
+
+function diagnosticoTecnico() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), rep = ['Motor v' + VERSION];
+  pasoSeguro_(rep, 'Hojas', function () {
+    var falt = [];
+    for (var k in H) { if (Object.prototype.hasOwnProperty.call(H, k) && !ss.getSheetByName(H[k])) { falt.push(H[k]); } }
+    if (falt.length) { throw new Error('faltan ' + falt.join(', ')); }
+  });
+  pasoSeguro_(rep, 'Catálogo', function () { rep.push('   ' + catalogo_(ss).lista.length + ' códigos'); });
+  pasoSeguro_(rep, 'Lectura de la recepción de bar', function () {
+    var ctx = contextoCosto_(ss), n = 0, k;
+    for (k in ctx.compras) { if (Object.prototype.hasOwnProperty.call(ctx.compras, k)) { n++; } }
+    rep.push('   ' + n + ' insumo(s) con compras utilizables · ' + ctx.fuentes.join(' · '));
+  });
+  pasoSeguro_(rep, 'Disparadores', function () {
+    var t = ScriptApp.getProjectTriggers(), s = [];
+    for (var i = 0; i < t.length; i++) { s.push(t[i].getHandlerFunction()); }
+    rep.push('   ' + (s.join(', ') || 'ninguno'));
+  });
+  pasoSeguro_(rep, 'Cuenta', function () { rep.push('   ' + usuario_()); });
+  bitacora_('DIAGNÓSTICO TÉCNICO', rep.join(' | ').substring(0, 450), '');
+  alerta_(rep.join('\n'));
+}
+
+function estadoCorto() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var t = ss.getSheetByName(H.TAB);
+  var v = t ? t.getRange(3, 1, 8, 2).getValues() : [];
+  var s = [];
+  for (var i = 0; i < v.length; i++) { s.push(v[i][0] + ': ' + (typeof v[i][1] === 'number' && v[i][1] < 1 && v[i][1] > 0 ? pct_(v[i][1]) : v[i][1])); }
+  alerta_(s.join('\n') || 'Sin tablero: ejecuta Recalcular.');
+}
+
+// =====================================================================================
+// v1.1 · SEMILLA: catálogo, factores, parámetros, cócteles, recetas y taras
+// Idempotente: solo agrega lo que falta. Nunca reescribe un dato que alguien ya llenó.
+// =====================================================================================
+var PES = { GUARDAR: 'C4', MSG: 'B5', FILA_ENC: 7, FILA1: 8 };
+var UNID_TRAZA_ = { dash: 1, gts: 1 };
+
+function sembrarV11_(ss) {
+  var S = SEMILLA_V11, rep = [], i, n;
+  // --- catálogo
+  var cs = ss.getSheetByName(H.CAT), cv = cs.getDataRange().getValues(), cods = {}, noms = {};
+  for (i = 3; i < cv.length; i++) { if (cv[i][0]) { cods[String(cv[i][0])] = 1; noms[norm_(cv[i][1])] = 1; } }
+  var nuevos = [];
+  for (i = 0; i < S.CAT_ADD.length; i++) {
+    var c = S.CAT_ADD[i];
+    if (cods[c[0]] || noms[norm_(c[1])]) { continue; }
+    nuevos.push([c[0], c[1], c[2], c[3], 'BAR', c[4], c[5], c[6], c[2] === 'MPI' ? 'SIN FICHA' : '', 'v1.1 · cócteles']);
+  }
+  agregarFilas_(cs, nuevos);
+  rep.push(nuevos.length + ' código(s) nuevo(s)');
+  // --- factores de compra
+  var fs = ss.getSheetByName(H.FAC), fv = fs.getDataRange().getValues(), fk = {};
+  for (i = 1; i < fv.length; i++) { if (fv[i][0]) { fk[norm_(fv[i][0]) + '|' + String(fv[i][1]).toUpperCase()] = i; } }
+  var fNuevos = [], fLlenos = 0;
+  for (i = 0; i < S.FAC_ADD.length; i++) {
+    var f = S.FAC_ADD[i], k = norm_(f[0]) + '|' + String(f[1]).toUpperCase();
+    if (Object.prototype.hasOwnProperty.call(fk, k)) {
+      var r = fk[k];
+      if (fv[r][2] === '' || fv[r][2] === null) { fs.getRange(r + 1, 3, 1, 2).setValues([[f[2], f[3]]]); fLlenos++; }
+    } else { fNuevos.push(f); }
+  }
+  agregarFilas_(fs, fNuevos);
+  rep.push((fNuevos.length + fLlenos) + ' factor(es) de compra');
+  // --- parámetros
+  var ps = ss.getSheetByName(H.PAR), pv = ps.getDataRange().getValues(), pk = {};
+  for (i = 3; i < pv.length; i++) { if (pv[i][0]) { pk[String(pv[i][0])] = 1; } }
+  var pNuevos = [];
+  for (i = 0; i < S.PAR_ADD.length; i++) {
+    var p = S.PAR_ADD[i];
+    if (pk[p[0]]) { continue; }
+    pNuevos.push([p[0], p[1], p[2], p[3] === null ? '' : p[3], 0, p[5] + ' · lo usan cócteles (ver PESAJE)']);
+  }
+  agregarFilas_(ps, pNuevos);
+  rep.push(pNuevos.length + ' parámetro(s) nuevo(s)');
+  // --- cócteles (encabezado editable: precio de carta)
+  var hc = hojaTabla_(ss, H.COC, 'CÓCTELES DE LA CARTA', 'Escribe el PRECIO DE CARTA (con impoconsumo) en la columna amarilla. ACTIVO = NO lo saca del cálculo.',
+    ['ID', 'CÓCTEL', 'CATEGORÍA', 'PRECIO CARTA $ (con impoconsumo)', 'ACTIVO', 'FICHA ORIGEN', 'NOTA'], [6, 30, 18, 18, 8, 26, 40]);
+  var ccv = hc.getDataRange().getValues(), ids = {};
+  for (i = 3; i < ccv.length; i++) { if (ccv[i][0]) { ids[String(ccv[i][0])] = 1; } }
+  var cNuevos = [];
+  for (i = 0; i < S.COCTELES.length; i++) {
+    var o = S.COCTELES[i];
+    if (!ids[o[0]]) { cNuevos.push([o[0], o[1], o[2], '', 'SI', o[3], '']); }
+  }
+  agregarFilas_(hc, cNuevos);
+  n = hc.getLastRow();
+  if (n > 3) {
+    hc.getRange(4, 4, n - 3, 1).setBackground('#FFF2CC').setNumberFormat('$#,##0')
+      .setDataValidation(SpreadsheetApp.newDataValidation().requireNumberGreaterThan(0).setAllowInvalid(false).build());
+    hc.getRange(4, 5, n - 3, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).setAllowInvalid(false).build());
+  }
+  rep.push(cNuevos.length + ' cóctel(es)');
+  // --- recetas: solo se siembran si la hoja no tiene datos (después, la receta la edita Administración)
+  var hr = hojaTabla_(ss, H.REC, 'RECETAS DE COCTELERÍA (fichas técnicas)', 'Una fila por ingrediente. CÓDIGO manda: debe existir en CATALOGO_MAESTRO. Unidades: ml · g · und · bot · lata · cda · bola · casco · dash · gts.',
+    ['ID', 'CÓCTEL', '#', 'INGREDIENTE (como dice la ficha)', 'CÓDIGO', 'INSUMO DEL CATÁLOGO', 'CANTIDAD', 'UNIDAD', 'NOTA'], [6, 26, 4, 34, 14, 30, 10, 8, 44]);
+  if (hr.getLastRow() <= 3) {
+    var rv = [];
+    for (i = 0; i < S.RECETAS.length; i++) { rv.push(S.RECETAS[i].slice(0, 9)); }
+    agregarFilas_(hr, rv);
+    hr.getRange(4, 7, rv.length, 1).setNumberFormat('#,##0.##');
+    rep.push(rv.length + ' línea(s) de receta');
+  } else { rep.push('recetas ya existentes (no se tocan)'); }
+  hr.getRange(4, 8, Math.max(1, hr.getLastRow() - 3), 1).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList(['ml', 'g', 'und', 'bot', 'lata', 'cda', 'bola', 'casco', 'dash', 'gts'], true).setAllowInvalid(false).build());
+  // --- taras de botellas (maestro para el inventario de bar)
+  var ht = hojaTabla_(ss, H.TAR, 'TARAS DE BOTELLAS', 'Peso de la botella VACÍA (con tapa y pico, como se pesa en el conteo). La llena la hoja PESAJE. Base para el inventario de bar INV-BAR-003.',
+    ['PRODUCTO', 'TIPO', 'ML ETIQUETA', 'TARA (g)', 'DENSIDAD (g/ml)', 'FUENTE', 'FECHA MEDICIÓN'], [36, 14, 11, 10, 13, 34, 14]);
+  var tv = ht.getDataRange().getValues(), tk = {};
+  for (i = 3; i < tv.length; i++) { if (tv[i][0]) { tk[norm_(tv[i][0]) + '|' + tv[i][2]] = 1; } }
+  var tNuevos = [];
+  for (i = 0; i < S.TARAS.length; i++) {
+    var t = S.TARAS[i];
+    if (!tk[norm_(t[0]) + '|' + t[2]]) { tNuevos.push([t[0], t[1], t[2], t[3], t[4], t[5], '']); }
+  }
+  agregarFilas_(ht, tNuevos);
+  rep.push(tNuevos.length + ' botella(s) en TARAS');
+  bitacora_('SEMILLA v1.1', rep.join(' · '), '');
+  return rep.join(' · ');
+}
+
+/** Crea (si falta) una hoja con título, subtítulo y encabezados en la fila 3; datos desde la fila 4. */
+function hojaTabla_(ss, nombre, titulo, sub, enc, anchos) {
+  var sh = ss.getSheetByName(nombre);
+  if (!sh) { sh = ss.insertSheet(nombre); }
+  sh.getRange(1, 1, 1, enc.length).setBackground('#0D3B33');
+  sh.getRange(1, 1).setValue(titulo).setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13);
+  sh.getRange(2, 1).setValue(sub).setFontStyle('italic').setFontColor('#0D3B33');
+  sh.getRange(3, 1, 1, enc.length).setValues([enc]).setBackground('#B08D57').setFontColor('#FFFFFF').setFontWeight('bold').setWrap(true);
+  for (var i = 0; i < anchos.length; i++) { sh.setColumnWidth(i + 1, anchos[i] * 7); }
+  sh.setFrozenRows(3);
+  return sh;
+}
+
+// =====================================================================================
+// v1.1 · COSTO DE CÓCTELES
+// =====================================================================================
+function costoCocteles_(ss, ctx) {
+  var hc = ss.getSheetByName(H.COC), hr = ss.getSheetByName(H.REC);
+  if (!hc || !hr) { return null; }
+  var cv = hc.getDataRange().getValues(), rv = hr.getDataRange().getValues(), i;
+  var lista = [], porId = {};
+  for (i = 3; i < cv.length; i++) {
+    var id = String(cv[i][0] || '');
+    if (!id || String(cv[i][4]).toUpperCase() === 'NO') { continue; }
+    var o = { id: id, nombre: String(cv[i][1]), cat: String(cv[i][2]), precio: Number(cv[i][3]) || 0, n: 0, nCost: 0, costo: 0, falta: [], sup: 0 };
+    lista.push(o); porId[id] = o;
+  }
+  var fecha = hoy_(), dSup = Number(cfg_('DENSIDAD_SUPUESTA_ML_G')) || 0, det = [], bloq = {}, cache = {};
+  for (i = 3; i < rv.length; i++) {
+    var oc = porId[String(rv[i][0] || '')];
+    if (!oc) { continue; }
+    var cod = String(rv[i][4] || '').replace(/^\s+|\s+$/g, '');
+    var ins = ctx.cat.porCodigo[cod] || ctx.cat.porNombre[norm_(rv[i][5])] || null;
+    var q = rv[i][6], u = String(rv[i][7] || '').toLowerCase().replace(/^\s+|\s+$/g, '');
+    var res;
+    oc.n++;
+    if (!ins) { res = { base: '', pu: '', costo: '', fuente: 'CÓDIGO FUERA DEL CATÁLOGO', falta: 'Código ' + (cod || '(vacío)') + ' en RECETAS_COCTEL' }; }
+    else if (UNID_TRAZA_[u]) { res = { base: '', pu: '', costo: 0, fuente: 'TRAZA (no se costea)' }; }
+    else if (q === '' || q === null || isNaN(Number(q)) || Number(q) <= 0) { res = { base: '', pu: '', costo: '', fuente: 'SIN CANTIDAD EN LA FICHA', falta: 'Cantidad de ' + ins.nombre + ' en la receta' }; }
+    else { res = costearLineaCoctel_(ss, ctx, ins, Number(q), u, fecha, dSup, cache); }
+    if (res.costo === '') {
+      if (oc.falta.indexOf(res.falta) < 0) { oc.falta.push(res.falta); }
+      var b = bloq[res.falta] = bloq[res.falta] || { n: 0, ids: {} };
+      if (!b.ids[oc.id]) { b.ids[oc.id] = 1; b.n++; }
+    } else { oc.costo += res.costo; oc.nCost++; if (res.sup) { oc.sup++; } }
+    det.push([oc.id, oc.nombre, rv[i][3], cod, ins ? ins.nombre : '', q, u, res.base, res.pu, res.costo, res.fuente]);
+  }
+  var imp = Number(cfg_('IMPOCONSUMO_PCT')) || 0, meta = Number(cfg_('META_COSTO_BEBIDA_PCT')) || 0;
+  var filas = [], completos = 0, conPrecio = 0, sumPct = 0, sobreMeta = 0;
+  for (i = 0; i < lista.length; i++) {
+    var x = lista[i];
+    var completo = x.n > 0 && x.nCost === x.n;
+    var estado = !x.n ? 'SIN RECETA' : (completo ? (x.sup ? 'COMPLETO (densidad supuesta)' : 'COMPLETO') : (x.costo > 0 ? 'PARCIAL' : 'SIN COSTO'));
+    var neto = x.precio > 0 ? x.precio / (1 + imp / 100) : '';
+    var pct = (completo && neto) ? x.costo / neto : '';
+    var vsMeta = '';
+    if (pct !== '' && meta > 0) { vsMeta = pct * 100 > meta ? '⚠ ' + pct_(pct - meta / 100) + ' sobre la meta' : '✔ dentro de la meta'; if (pct * 100 > meta) { sobreMeta++; } }
+    if (completo) { completos++; }
+    if (pct !== '') { conPrecio++; sumPct += pct; }
+    filas.push([x.id, x.nombre, x.cat, estado, x.n ? x.costo : '', x.nCost + ' de ' + x.n, x.precio || '', neto, pct, neto !== '' && completo ? neto - x.costo : '', vsMeta,
+      x.falta.join(' · ') || (completo ? '' : '—')]);
+  }
+  escribirDerivado_(ss, H.CC, 'COSTO REAL DE CADA CÓCTEL', 'Costo de la receta con el precio vigente de hoy (insumos) y el último lote costeado (MPI). Sin decoración. % de costo sobre el precio sin impoconsumo (' + imp + ' %). Lo escribe el motor.',
+    ['ID', 'CÓCTEL', 'CATEGORÍA', 'ESTADO', 'COSTO RECETA $', 'LÍNEAS CON COSTO', 'PRECIO CARTA $', 'PRECIO SIN IMPOCONSUMO $', '% COSTO', 'MARGEN BRUTO $', 'VS META', 'QUÉ FALTA PARA COMPLETARLO'],
+    filas, { 5: '$#,##0', 7: '$#,##0', 8: '$#,##0', 9: '0.0%', 10: '$#,##0' }, [6, 28, 16, 16, 13, 11, 13, 14, 9, 13, 18, 80]);
+  escribirDerivado_(ss, H.CCD, 'DETALLE DEL COSTO POR INGREDIENTE', 'Una fila por línea de receta: cantidad, conversión a la unidad base, precio por unidad base y de dónde sale.',
+    ['ID', 'CÓCTEL', 'INGREDIENTE (ficha)', 'CÓDIGO', 'INSUMO', 'CANTIDAD', 'UNIDAD', 'CANT. EN UNIDAD BASE', '$ / UNIDAD BASE', 'COSTO $', 'FUENTE DEL COSTO'],
+    det, { 8: '#,##0.##', 9: '#,##0.00', 10: '$#,##0' }, [6, 26, 30, 14, 28, 9, 7, 12, 12, 11, 60]);
+  var top = [];
+  for (var kk in bloq) { if (Object.prototype.hasOwnProperty.call(bloq, kk)) { top.push([kk, bloq[kk].n]); } }
+  top.sort(function (a, c2) { return c2[1] - a[1]; });
+  return { total: lista.length, completos: completos, conPrecio: conPrecio, pctProm: conPrecio ? sumPct / conPrecio : '', sobreMeta: sobreMeta, meta: meta, top: top };
+}
+
+/** Costea una línea de receta. Devuelve {base, pu, costo, fuente, falta?, sup?}; costo '' = no se pudo. */
+function costearLineaCoctel_(ss, ctx, ins, q, u, fecha, dSup, cache) {
+  if (ins.tipo === 'SIN_COSTO') { return { base: q, pu: 0, costo: 0, fuente: 'SIN COSTO (subproducto ya pagado)' }; }
+  var base, sup = false;
+  if (ins.ub === 'und' && (u === 'bot' || u === 'lata' || u === 'und')) { base = q; }
+  else { base = aBase_(ctx, ins, q, u || ins.ub); }
+  if (base === null && dSup > 0 && ((u === 'ml' && ins.ub === 'g') || (u === 'g' && ins.ub === 'ml'))) { base = u === 'ml' ? q * dSup : q / dSup; sup = true; }
+  if (base === null) {
+    return { base: '', pu: '', costo: '', fuente: 'FALTA PARÁMETRO ' + ins.nombre + '|' + u + '→' + ins.ub, falta: 'Medir ' + ins.nombre + ' (' + u + '→' + ins.ub + ') en PESAJE' };
+  }
+  var p;
+  if (ins.tipo === 'MPI') {
+    if (!Object.prototype.hasOwnProperty.call(cache, ins.cod)) { cache[ins.cod] = precioMpiCoctel_(ss, ctx, ins, fecha); }
+    p = cache[ins.cod];
+  } else { p = precioInsumo_(ctx, ins.cod, fecha); }
+  if (!p) {
+    if (ins.tipo === 'MPI') { return { base: base, pu: '', costo: '', fuente: 'MPI SIN COSTO (sin lote costeado ni ficha completa)', falta: 'Costo del MPI ' + ins.nombre + ' (registrar un lote o completar su ficha)' }; }
+    if (ctx.sinFactor[ins.cod]) { return { base: base, pu: '', costo: '', fuente: 'COMPRA EN ' + ctx.sinFactor[ins.cod] + ' SIN FACTOR', falta: 'Cuánto trae 1 ' + ctx.sinFactor[ins.cod] + ' de ' + ins.nombre + ' (PESAJE)' }; }
+    return { base: base, pu: '', costo: '', fuente: 'SIN COMPRAS REGISTRADAS', falta: 'Registrar en la recepción una compra de ' + ins.nombre };
+  }
+  return { base: base, pu: p.pu, costo: base * p.pu, fuente: p.fuente + (sup ? ' · DENSIDAD SUPUESTA' : ''), sup: sup };
+}
+
+/** Costo por unidad base de un MPI para cócteles: último lote costeado; si no hay, la ficha estándar (si su unidad coincide). */
+function precioMpiCoctel_(ss, ctx, ins, fecha) {
+  var p = precioMpi_(ctx, ins.cod, fecha, '', '');
+  if (p) { return p; }
+  if (!ins.ficha || ins.ficha === 'SIN FICHA') { return null; }
+  var fi = ss.getSheetByName(H.FI).getDataRange().getValues(), um = '';
+  for (var i = 3; i < fi.length; i++) { if (String(fi[i][0]) === ins.ficha) { um = String(fi[i][6] || '').toLowerCase(); } }
+  if (um !== ins.ub) { return null; }
+  var est = costoEstandar_(ss, ctx, ins.ficha, fecha);
+  if (est.porUnidad === '' || est.porUnidad === null) { return null; }
+  return { pu: Number(est.porUnidad), fuente: 'ESTÁNDAR FICHA ' + ins.ficha + ' (sin lote costeado)' };
+}
+
+function tableroCocteles_(t, r) {
+  if (!r) { return; }
+  t.getRange('F1:I1').setBackground('#0D3B33');
+  t.getRange(3, 6, 1, 2).setValues([['CÓCTELES — COSTO REAL', '']]).setFontWeight('bold').setFontColor('#0D3B33');
+  var kp = [['Cócteles activos', r.total], ['Con costo completo', r.completos + ' de ' + r.total], ['Con precio de carta y costo completo', r.conPrecio],
+    ['% de costo promedio (sobre precio sin impoconsumo)', r.pctProm === '' ? 'falta precio de carta' : pct_(r.pctProm)],
+    ['Sobre la meta de costo', r.meta ? r.sobreMeta : 'sin meta en CONFIG']];
+  t.getRange(4, 6, kp.length, 2).setValues(kp);
+  t.getRange(4, 6, kp.length, 1).setFontWeight('bold');
+  t.getRange(13, 6).setValue('LO QUE MÁS CÓCTELES DESTRABA (Pareto)').setFontWeight('bold').setFontColor('#0D3B33');
+  var tv = [['Dato que falta', 'Cócteles']];
+  for (var i = 0; i < r.top.length && i < 15; i++) { tv.push([r.top[i][0], r.top[i][1]]); }
+  t.getRange(14, 6, tv.length, 2).setValues(tv);
+  t.getRange(14, 6, 1, 2).setBackground('#B08D57').setFontColor('#FFFFFF').setFontWeight('bold');
+  t.setColumnWidth(6, 520); t.setColumnWidth(7, 110);
+}
+
+// =====================================================================================
+// v1.1 · PESAJE — una sola lista de lo que falta medir (iPad)
+// =====================================================================================
+function construirPesajeMenu() { alerta_('PESAJE: ' + construirPesaje_(SpreadsheetApp.getActiveSpreadsheet(), 'Lista rehecha.') + ' medida(s) pendiente(s).'); }
+
+function construirPesaje_(ss, msg) {
+  var sh = ss.getSheetByName(H.PES);
+  if (!sh) { sh = ss.insertSheet(H.PES, 1); }
+  var it = [], i;
+  // 1) factores de compra (cada uno destraba todas las compras de ese insumo)
+  var cat = catalogo_(ss);
+  var fv = ss.getSheetByName(H.FAC).getDataRange().getValues();
+  for (i = 1; i < fv.length; i++) {
+    if (!fv[i][0] || !fv[i][1] || (fv[i][2] !== '' && fv[i][2] !== null)) { continue; }
+    var ins = cat.porNombre[norm_(fv[i][0])];
+    it.push({ g: 1, peso: 100, que: '¿Cuánto trae 1 ' + fv[i][1] + ' de ' + fv[i][0] + '?', como: String(fv[i][3] || 'Leer la etiqueta o contar'),
+      unidad: ins ? ins.ub + ' por ' + fv[i][1] : 'unidad base', dest: H.FAC, clave: fv[i][0] + '|' + fv[i][1] });
+  }
+  // 2) parámetros físicos (peso = líneas de ficha de producción + líneas de cóctel que destraba)
+  var enCoctel = clavesCoctel_(ss, cat);
+  var pv = ss.getSheetByName(H.PAR).getDataRange().getValues();
+  for (i = 3; i < pv.length; i++) {
+    if (!pv[i][0] || (pv[i][3] !== '' && pv[i][3] !== null)) { continue; }
+    var conv = String(pv[i][2]), de = conv.split('→')[0], a = conv.split('→')[1] || '';
+    var que = conv === 'ml→g' ? '¿Cuántos gramos pesa 1 ml de ' + pv[i][1] + '?' : (conv === 'bot→ml' ? '¿Cuántos ml trae la botella de ' + pv[i][1] + '?' : '¿Cuánto pesa 1 ' + de + ' de ' + pv[i][1] + '?');
+    var nf = Number(pv[i][4]) || 0, nc = enCoctel[String(pv[i][0])] || 0;
+    it.push({ g: 2, peso: nf + nc, txt: (nf ? nf + ' de producción' : '') + (nf && nc ? ' · ' : '') + (nc ? nc + ' de cóctel' : '') || '—',
+      que: que, como: String(pv[i][5] || ''), unidad: a + ' por ' + de, dest: H.PAR, clave: String(pv[i][0]) });
+  }
+  // 3) taras de botellas
+  var ht = ss.getSheetByName(H.TAR);
+  if (ht) {
+    var tv = ht.getDataRange().getValues();
+    for (i = 3; i < tv.length; i++) {
+      if (!tv[i][0] || (tv[i][3] !== '' && tv[i][3] !== null)) { continue; }
+      it.push({ g: 3, peso: 0, que: 'Peso de la botella VACÍA de ' + tv[i][0] + ' (' + tv[i][2] + ' ml)', como: 'Báscula en g. Botella vacía, limpia y seca, con tapa y pico, como se pesa en el conteo.',
+        unidad: 'g', dest: H.TAR, clave: tv[i][0] + '|' + tv[i][2] });
+    }
+  }
+  it.sort(function (x, y) { return x.g !== y.g ? x.g - y.g : y.peso - x.peso; });
+  // hoja
+  sh.clear();
+  try { sh.getRange(1, 1, Math.max(sh.getMaxRows(), 10), 8).clearDataValidations(); } catch (e0) {}
+  sh.getRange('A1:H1').setBackground('#0D3B33');
+  sh.getRange('A1').setValue('SGI-COSTOS · PESAJE — lo que falta medir').setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13);
+  sh.getRange('A2').setValue('Mide, escribe SOLO la columna VALOR (amarilla) y marca GUARDAR MEDIDAS. Puedes guardar de a pocas: lo guardado sale de la lista.')
+    .setFontStyle('italic').setFontColor('#0D3B33');
+  sh.getRange('B4').setValue('GUARDAR MEDIDAS ▶').setFontWeight('bold').setFontColor('#0D3B33');
+  sh.getRange(PES.GUARDAR).insertCheckboxes();
+  sh.getRange(PES.MSG + ':H5').merge().setWrap(true).setFontWeight('bold');
+  sh.getRange(PES.MSG).setValue(msg || '');
+  var enc = ['#', 'QUÉ MEDIR', 'CÓMO', 'VALOR', 'UNIDAD DEL VALOR', 'DESTRABA', 'VA A', 'CLAVE'];
+  sh.getRange(PES.FILA_ENC, 1, 1, enc.length).setValues([enc]).setBackground('#B08D57').setFontColor('#FFFFFF').setFontWeight('bold');
+  if (it.length) {
+    var v = [];
+    for (i = 0; i < it.length; i++) {
+      v.push([i + 1, it[i].que, it[i].como, '', it[i].unidad, it[i].g === 1 ? 'todas las compras' : (it[i].g === 2 ? it[i].txt : 'inventario'), it[i].dest, it[i].clave]);
+    }
+    sh.getRange(PES.FILA1, 1, v.length, enc.length).setValues(v);
+    sh.getRange(PES.FILA1, 4, v.length, 1).setBackground('#FFF2CC').setNumberFormat('#,##0.###')
+      .setDataValidation(SpreadsheetApp.newDataValidation().requireNumberGreaterThan(0).setAllowInvalid(false).build());
+    sh.getRange(PES.FILA1, 7, v.length, 2).setFontColor('#888888');
+    sh.getRange(PES.FILA1, 2, v.length, 2).setWrap(true);
+  }
+  var an = [30, 330, 330, 80, 110, 100, 120, 200];
+  for (i = 0; i < an.length; i++) { sh.setColumnWidth(i + 1, an[i]); }
+  sh.setFrozenRows(PES.FILA_ENC);
+  try { sh.setHiddenGridlines(true); } catch (e1) {}
+  return it.length;
+}
+
+/** Cuántas líneas de receta de cóctel necesitan cada clave de PARAMETROS (conversión a la unidad base). */
+function clavesCoctel_(ss, cat) {
+  var out = {}, hr = ss.getSheetByName(H.REC);
+  if (!hr) { return out; }
+  var rv = hr.getDataRange().getValues();
+  for (var i = 3; i < rv.length; i++) {
+    var ins = cat.porCodigo[String(rv[i][4] || '')];
+    var u = String(rv[i][7] || '').toLowerCase();
+    if (!ins || !u || u === ins.ub || UNID_TRAZA_[u] || ins.tipo === 'SIN_COSTO') { continue; }
+    if (ins.ub === 'und' && (u === 'bot' || u === 'lata')) { continue; }
+    var k = ins.nombre + '|' + u + '→' + ins.ub;
+    out[k] = (out[k] || 0) + 1;
+  }
+  return out;
+}
+
+/** Rango creíble para cada tipo de medida: un dígito de más no entra. */
+function rangoPesaje_(dest, clave) {
+  if (dest === H.TAR) { return [50, 3000]; }
+  if (dest === H.FAC) { return [0.01, 100000]; }
+  var conv = String(clave).split('|')[1] || '';
+  if (conv === 'ml→g') { return [0.5, 2]; }
+  if (conv === 'bot→ml') { return [100, 3000]; }
+  if (conv === 'gota→ml') { return [0.01, 0.2]; }
+  return [0.05, 5000];
+}
+
+function aplicarPesaje_(sh) {
+  var ss = sh.getParent();
+  var lock = LockService.getDocumentLock();
+  if (!lock.tryLock(20000)) { sh.getRange(PES.MSG).setValue('Otro guardado está en curso. Vuelve a marcar en un minuto.'); sh.getRange(PES.GUARDAR).setValue(false); return; }
+  var ok = [], malos = [], i, j;
+  try {
+    var n = sh.getLastRow();
+    var v = n >= PES.FILA1 ? sh.getRange(PES.FILA1, 1, n - PES.FILA1 + 1, 8).getValues() : [];
+    var pv = ss.getSheetByName(H.PAR).getDataRange().getValues();
+    var fs = ss.getSheetByName(H.FAC), fv = fs.getDataRange().getValues();
+    var ht = ss.getSheetByName(H.TAR), tv = ht ? ht.getDataRange().getValues() : [];
+    var hoyTxt = fmtFecha_(new Date()), usu = usuario_();
+    for (i = 0; i < v.length; i++) {
+      var val = v[i][3];
+      if (val === '' || val === null) { continue; }
+      var x = Number(val), dest = String(v[i][6]), clave = String(v[i][7]), fila = PES.FILA1 + i;
+      var rg = rangoPesaje_(dest, clave);
+      if (isNaN(x) || x < rg[0] || x > rg[1]) { malos.push('Fila ' + fila + ': ' + val + ' no es creíble (' + rg[0] + ' a ' + rg[1] + ' ' + v[i][4] + ')'); continue; }
+      var hecho = false;
+      if (dest === H.PAR) {
+        for (j = 3; j < pv.length; j++) { if (String(pv[j][0]) === clave) { ss.getSheetByName(H.PAR).getRange(j + 1, 4).setValue(x); hecho = true; break; } }
+      } else if (dest === H.FAC) {
+        for (j = 1; j < fv.length; j++) {
+          if (String(fv[j][0]) + '|' + String(fv[j][1]) === clave) { fs.getRange(j + 1, 3, 1, 2).setValues([[x, String(fv[j][3] || '') + ' · medido ' + hoyTxt + ' (' + usu + ')']]); hecho = true; break; }
+        }
+      } else if (dest === H.TAR) {
+        for (j = 3; j < tv.length; j++) {
+          if (String(tv[j][0]) + '|' + String(tv[j][2]) === clave) { ht.getRange(j + 1, 4).setValue(x); ht.getRange(j + 1, 6, 1, 2).setValues([['Pesaje ' + hoyTxt + ' · ' + usu, new Date()]]); hecho = true; break; }
+        }
+      }
+      if (hecho) { ok.push(v[i][1] + ' = ' + x); bitacora_('PESAJE', clave + ' = ' + x + ' → ' + dest, ''); }
+      else { malos.push('Fila ' + fila + ': no encontré «' + clave + '» en ' + dest + ' (rehaz la lista desde el menú)'); }
+    }
+    SpreadsheetApp.flush();
+  } finally { try { lock.releaseLock(); } catch (e2) {} }
+  var msg = ok.length ? '✔ ' + ok.length + ' medida(s) guardada(s).' : 'No había ninguna medida escrita en la columna VALOR.';
+  if (malos.length) { msg += '\nNO SE GUARDARON (corrige y vuelve a marcar):\n' + lista8_(malos); }
+  if (ok.length) {
+    try { completarCostosPendientes_(true); } catch (e3) { msg += '\nAviso: no se completaron los lotes pendientes (' + e3.message + ').'; }
+    try { recalcularDerivados_(ss); } catch (e4) { msg += '\nAviso: no se recalculó el tablero (' + e4.message + ').'; }
+  }
+  // las que fallaron se conservan escritas para corregirlas
+  var pend = [];
+  if (malos.length) {
+    for (i = 0; i < v.length; i++) {
+      var vv = v[i][3];
+      if (vv === '' || vv === null) { continue; }
+      var xx = Number(vv), rr = rangoPesaje_(String(v[i][6]), String(v[i][7]));
+      if (isNaN(xx) || xx < rr[0] || xx > rr[1]) { pend.push([String(v[i][7]), vv]); }
+    }
+  }
+  construirPesaje_(ss, msg);
+  if (pend.length) {
+    var nv = sh.getRange(PES.FILA1, 8, Math.max(1, sh.getLastRow() - PES.FILA1 + 1), 1).getValues();
+    for (i = 0; i < pend.length; i++) {
+      for (j = 0; j < nv.length; j++) { if (String(nv[j][0]) === pend[i][0]) { try { sh.getRange(PES.FILA1 + j, 4).setDataValidation(null).setValue(pend[i][1]).setBackground('#F4CCCC'); } catch (e5) {} } }
+    }
+  }
+}
+
+// =====================================================================================
+// CATÁLOGO, CONFIG, UTILIDADES
+// =====================================================================================
+function catalogo_(ss) {
+  var v = ss.getSheetByName(H.CAT).getDataRange().getValues();
+  var out = { porNombre: {}, porCodigo: {}, porRecepcion: {}, lista: [] };
+  for (var i = 3; i < v.length; i++) {
+    var cod = String(v[i][0] || ''); if (!cod) { continue; }
+    var o = { cod: cod, nombre: String(v[i][1]), tipo: String(v[i][2]), categoria: String(v[i][3]), ub: String(v[i][5] || 'g').toLowerCase(), ficha: String(v[i][8] || '') };
+    out.porNombre[norm_(o.nombre)] = o; out.porCodigo[cod] = o; out.lista.push(o);
+    var rec = String(v[i][6] || '').split('|');
+    for (var j = 0; j < rec.length; j++) { var a = norm_(rec[j]); if (a) { out.porRecepcion[a] = o; } }
+  }
+  return out;
+}
+function listaCatalogo_(ss, tipo) {
+  var c = catalogo_(ss), l = [];
+  for (var i = 0; i < c.lista.length; i++) { if (!tipo || c.lista[i].tipo === tipo) { l.push(c.lista[i].nombre); } }
+  l.sort();
+  return l;
+}
+function responsables_() {
+  var s = String(cfg_('RESPONSABLES') || '').split(','), l = [];
+  for (var i = 0; i < s.length; i++) { var x = s[i].replace(/^\s+|\s+$/g, ''); if (x) { l.push(x); } }
+  return l;
+}
+
+var CFG_CACHE_ = null;
+function cfg_(k) {
+  if (!CFG_CACHE_) {
+    CFG_CACHE_ = {};
+    for (var j = 0; j < CFG_DEF.length; j++) { CFG_CACHE_[CFG_DEF[j][0]] = CFG_DEF[j][1]; }
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(H.CFG);
+    if (sh) {
+      var v = sh.getDataRange().getValues();
+      for (var i = 1; i < v.length; i++) { if (v[i][0] !== '' && v[i][1] !== '') { CFG_CACHE_[String(v[i][0])] = v[i][1]; } }
+    }
+  }
+  return CFG_CACHE_[k];
+}
+function asegurarConfig_(ss) {
+  var sh = ss.getSheetByName(H.CFG);
+  if (!sh) { sh = ss.insertSheet(H.CFG); sh.getRange(1, 1, 1, 3).setValues([['PARÁMETRO', 'VALOR', 'QUÉ HACE']]); }
+  var v = sh.getDataRange().getValues(), hay = {};
+  for (var i = 1; i < v.length; i++) { hay[String(v[i][0])] = 1; }
+  var nuevos = [];
+  for (i = 0; i < CFG_DEF.length; i++) { if (!hay[CFG_DEF[i][0]]) { nuevos.push(CFG_DEF[i]); } }
+  if (nuevos.length) { sh.getRange(sh.getLastRow() + 1, 1, nuevos.length, 3).setValues(nuevos); }
+  sh.getRange(1, 1, 1, 3).setBackground('#0D3B33').setFontColor('#FFFFFF').setFontWeight('bold');
+  CFG_CACHE_ = null;
+}
+function asegurarHoja_(ss, nombre, enc) {
+  var sh = ss.getSheetByName(nombre);
+  if (!sh) { sh = ss.insertSheet(nombre); }
+  if (!sh.getRange(1, 1).getValue()) { sh.getRange(1, 1, 1, enc.length).setValues([enc]); }
+  sh.getRange(1, 1, 1, enc.length).setBackground('#0D3B33').setFontColor('#FFFFFF').setFontWeight('bold');
+  sh.setFrozenRows(1);
+  try {
+    var pr = sh.protect().setDescription('Libro mayor: solo el motor escribe');
+    pr.setWarningOnly(true);
+  } catch (e) {}
+}
+function construirInstrucciones_(ss) {
+  var sh = ss.getSheetByName(H.INS) || ss.insertSheet(H.INS);
+  sh.clear();
+  var t = [
+    'SGI-COSTOS · CÓMO SE REGISTRA UN LOTE (iPad)',
+    '1. Abre CAPTURA. Si quedó algo del lote anterior, marca NUEVO LOTE (C40).',
+    '2. Revisa la fecha (C4) y elige quién produce (F4).',
+    '3. Elige el MPI en C5. La ficha carga sola los ingredientes y su cantidad de referencia (columna gris).',
+    '4. Pesa y escribe SOLO la columna CANTIDAD USADA, en la unidad que muestra la columna UNIDAD (g, ml o und).',
+    '   Si usaste algo que no está en la ficha, elígelo en una fila vacía de la columna INSUMO.',
+    '   Si un ingrediente de la ficha no se usó, deja su cantidad vacía: no se registra.',
+    '5. Pesa el producto terminado y escribe el PESO NETO FINAL en gramos (C35).',
+    '6. Marca GUARDAR (C38) y lee el mensaje de la fila 39.',
+    '   - NO SE GUARDÓ: corrige lo que dice el mensaje y vuelve a marcar.',
+    '   - BLOQUEADO: si el dato es correcto, escribe el motivo en F38 y vuelve a marcar.',
+    '   - GUARDADO: el mensaje dice el costo del lote y el costo por gramo.',
+    '',
+    'CÓMO SE CALCULA EL COSTO',
+    '• Insumo comprado: promedio ponderado de sus compras en la recepción de bar en los últimos ' + cfg_('VENTANA_COSTO_DIAS') + ' días antes del lote.',
+    '• MPI usado como ingrediente (p. ej. Sirope Simple): el costo por gramo del lote de origen, o del último lote costeado.',
+    '• Agua y subproductos ya pagados en otro insumo: $0.',
+    '• Costo por gramo del lote = costo de todo lo que entró ÷ peso neto final. La merma ya queda pagada dentro del costo.',
+    '• El costo de un lote COMPLETO queda fijo al guardarse. Un lote PARCIAL se completa con el menú cuando llega el dato que faltaba.',
+    '',
+    'CÓCTELES (v1.1)',
+    '• RECETAS_COCTEL tiene las 50 fichas de coctelería. Cada línea apunta a un código del catálogo. Si una receta cambia, se edita ahí.',
+    '• COCTELES: escribe el PRECIO DE CARTA (con impoconsumo) en la columna amarilla. ACTIVO = NO saca el cóctel del cálculo.',
+    '• COSTO_COCTELES se recalcula solo: costo de la receta, % de costo sobre el precio sin impoconsumo, margen y QUÉ FALTA para completarlo.',
+    '• No incluye decoración (garnish): las fichas no traen su cantidad.',
+    '',
+    'PESAJE (v1.1)',
+    '• La hoja PESAJE lista todo lo que falta medir, ordenado por lo que más destraba. Llena la columna VALOR y marca GUARDAR MEDIDAS (C4).',
+    '• El motor guarda cada medida donde corresponde, completa los lotes pendientes y recalcula. Las medidas guardadas salen de la lista.',
+    '',
+    'MENÚ ⚙ SGI-COSTOS (solo computador): recalcular, completar costos pendientes, reversar un lote, alerta, diagnóstico, rehacer la lista de pesaje.',
+    'Las hojas BD_PRODUCCION y BD_CONSUMOS son el libro mayor: nunca se editan a mano.'
+  ];
+  var v = []; for (var i = 0; i < t.length; i++) { v.push([t[i]]); }
+  sh.getRange(1, 1, v.length, 1).setValues(v);
+  sh.getRange(1, 1).setFontWeight('bold').setFontSize(13).setFontColor('#0D3B33');
+  sh.getRange(14, 1).setFontWeight('bold').setFontColor('#0D3B33');
+  sh.setColumnWidth(1, 900);
+}
+
+function agregarFilas_(sh, filas) {
+  if (!filas.length) { return; }
+  var ult = 0, n = sh.getLastRow();
+  if (n > 0) {
+    var col = sh.getRange(1, 1, n, 1).getValues();
+    for (var i = col.length - 1; i >= 0; i--) { if (String(col[i][0]) !== '') { ult = i + 1; break; } }
+  }
+  sh.getRange(ult + 1, 1, filas.length, filas[0].length).setValues(filas);
+}
+function bitacora_(accion, detalle, motivo) {
+  try {
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(H.BIT);
+    if (!sh) { return; }
+    agregarFilas_(sh, [[new Date(), usuario_(), accion, String(detalle).substring(0, 500), String(motivo || ''), VERSION]]);
+  } catch (e) {}
+}
+function alerta_(t) { try { SpreadsheetApp.getUi().alert(t); } catch (e) { Logger.log(t); } }
+function usuario_() { try { var e = Session.getActiveUser().getEmail(); return e || 'sin correo visible'; } catch (x) { return 'sin correo visible'; } }
+function idx_(enc) { var o = {}; for (var i = 0; i < enc.length; i++) { o[String(enc[i]).replace(/^\s+|\s+$/g, '')] = i; } return o; }
+function esFecha_(v) { return !!(v && typeof v.getTime === 'function' && !isNaN(v.getTime())); }
+function aMedianoche_(d) { var x = new Date(d.getTime()); x.setHours(0, 0, 0, 0); return x; }
+function hoy_() { return aMedianoche_(new Date()); }
+function pad3_(n) { return ('00' + n).slice(-3); }
+function pct_(x) { return (Math.round(Number(x) * 1000) / 10) + ' %'; }
+function fmt_(n, d) {
+  var x = Number(n); if (isNaN(x)) { return String(n); }
+  var s = x.toFixed(d).split('.');
+  var ent = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return s.length > 1 ? ent + ',' + s[1] : ent;
+}
+function fmtFecha_(d) { return esFecha_(d) ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'dd/MM/yyyy') : ''; }
+function lista8_(l) { var s = l.slice(0, 8).join('\n'); if (l.length > 8) { s += '\n…y ' + (l.length - 8) + ' más'; } return s; }
+var TILDES_ = { 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u', 'ñ': 'n', 'Á': 'a', 'É': 'e', 'Í': 'i', 'Ó': 'o', 'Ú': 'u', 'Ü': 'u', 'Ñ': 'n' };
+function norm_(s) {
+  var t = String(s === null || s === undefined ? '' : s), o = '';
+  for (var i = 0; i < t.length; i++) { var ch = t.charAt(i); o += TILDES_[ch] || ch; }
+  return o.toLowerCase().replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '');
+}
+
+// =====================================================================================
+// SEMILLA v1.1 (generada desde «5 Formato De Cocteleria General.xlsx», el catálogo vivo y el inventario semanal del 27/09/2026)
+// =====================================================================================
+var SEMILLA_V11 = {"CAT_ADD":[["BAR_MPe_0086","Tequila Olmeca Reposado","MPe","LICOR","ml","","tequila olmeca reposado | tequila"],["BAR_MPe_0087","Tequila Olmeca Chocolate","MPe","LICOR","ml","Tequila Olmeca dark chocolate","tequila de chocolate | tequila olmeca chocolate"],["BAR_MPe_0088","Triple sec Convier","MPe","LICOR","ml","Triple sec convier","triple sec"],["BAR_MPe_0089","Triple sec azul Convier (curazao)","MPe","LICOR","ml","","triple sec azul | triple sec azul convier"],["BAR_MPe_0090","Campari","MPe","LICOR","ml","Aperitivo Campari","campari"],["BAR_MPe_0091","Vermouth extra dry Cinzano","MPe","LICOR","ml","","vermouth extra dry | vermouth extra dry cinzano"],["BAR_MPe_0092","Ron Bacardí Añejo","MPe","LICOR","ml","","ron bacardi | ron bacardi anejo | ron"],["BAR_MPe_0093","Ron La Hechicera Banano","MPe","LICOR","ml","","ron de banano"],["BAR_MPe_0094","Licor 43","MPe","LICOR","ml","","licor 43"],["BAR_MPe_0095","Licor de chile Ancho Reyes","MPe","LICOR","ml","","licor de chile ancho"],["BAR_MPe_0096","Licor de durazno Convier","MPe","LICOR","ml","","licor de durazno convier"],["BAR_MPe_0097","Limoncello Villa Massa","MPe","LICOR","ml","","limoncello"],["BAR_MPe_0098","Soho (licor de lychee)","MPe","LICOR","ml","","soho"],["BAR_MPe_0099","Aperol","MPe","LICOR","ml","","aperol"],["BAR_MPe_0100","Cointreau","MPe","LICOR","ml","","cointreau"],["BAR_MPe_0101","Amaretto Disaronno","MPe","LICOR","ml","","amareto dissarono"],["BAR_MPe_0102","Baileys","MPe","LICOR","ml","","baeileys | baeilys"],["BAR_MPe_0103","Jägermeister","MPe","LICOR","ml","Jagermaister","jagermaister"],["BAR_MPe_0104","Cachaça Jamel","MPe","LICOR","ml","","cazhaza"],["BAR_MPe_0105","Pisco Demonio de los Andes","MPe","LICOR","ml","","pisco acholado demonio de los andes | pisco demonio de los andes"],["BAR_MPe_0106","Mezcal Montelobos","MPe","LICOR","ml","","mezcal montelobos"],["BAR_MPe_0107","Whisky Bulleit Bourbon","MPe","LICOR","ml","","whikey bullet bourbon | whisky boullet bourbon | whisky bullet bourbon"],["BAR_MPe_0108","Ginebra Beefeater Pink","MPe","LICOR","ml","","ginebra beefeater pink | ginebra beffeater pink"],["BAR_MPe_0109","Prosecco","MPe","VINO","ml","","proseco"],["BAR_MPe_0110","Espumante Barón de Rothberg","MPe","VINO","ml","","espumante | vino espumante | vino espumante (baron de rothberg)"],["BAR_MPe_0111","Vino Rosaleda Rosé","MPe","VINO","ml","vino rosaleda Rosé","vino rosaleda rose | vino rosaleda (a eleccion del comensal"],["BAR_MPe_0112","Vino Rosaleda Sauvignon Blanc","MPe","VINO","ml","","vino blanco rosaleda sauvignon blanc | vino blanco"],["BAR_MPe_0113","Vino Rosaleda Merlot","MPe","VINO","ml","","vino tinto"],["BAR_MPe_0114","Ginger ale","MPe","MIXER","ml","Ginger Canad Dry x300","ginger swepers"],["BAR_MPe_0115","Ginger beer Mil976","MPe","MIXER","und","Mil976 Ginger beef","ginger beer"],["BAR_MPe_0116","Tónica Mil976 Pink","MPe","MIXER","und","Mil976 agua tónica pink | Mil976 fourpack pink","agua tonica pink | tonica pink"],["BAR_MPe_0117","Tónica Mil976 Ocean","MPe","MIXER","und","","agua tonica 1976 ocean/indian | tonica"],["BAR_MPe_0118","Sparkling manzana Mil976","MPe","MIXER","und","Mil976 sparkling manzana","tonica manzana"],["BAR_MPe_0119","Soda Hatsu frambuesa-rosas","MPe","MIXER","und","","soda hatsu frambuesa rosas"],["BAR_MPe_0120","JP Chenet fizzy rosé (lata)","MPe","MIXER","und","","fizzi frizante rose"],["BAR_MPe_0121","Cerveza BBC Rosé","MPe","CERVEZA","und","","cerveza bbc rosada"],["BAR_MPe_0122","Cerveza BBC Roja","MPe","CERVEZA","und","","cerveza bbc roja"],["BAR_MPe_0123","Lychee en almíbar (lata)","MPe","INSUMO_SECO","g","","lychee (para majar) | jugo de lychee | jugo de lychie"],["BAR_MPe_0124","Aceituna verde deshuesada","MPe","INSUMO_SECO","g","","aceituna verde deshuesada"],["BAR_MPe_0125","Sandía","MPe","FRUVER","g","","trozos de sandia"],["BAR_MPe_0126","Pimienta rosada","MPe","INSUMO_SECO","g","","pimienta rosada"],["BAR_MPe_0127","Sal rosada","MPe","INSUMO_SECO","g","","sal rosada"],["BAR_MPe_0128","Helado de macadamia","MPe","LACTEO","g","","helado de macadamia"],["BAR_MPe_0129","Bala de CO2","MPe","OTROS","und","","bala de co2"],["BAR_MPe_0130","Angostura bitters","MPe","LICOR","ml","","amargos de angostura | angostura bitters | bitters de angostura"],["BAR_MPe_0131","Orange bitters","MPe","LICOR","ml","","orange bitters"],["BAR_MPi_0072","Té de flor de clitoria","MPI","MPI sin ficha","g","","te de flor clitoria"],["BAR_SC_0008","Líquido de cereza en vermouth","SIN_COSTO","SUBPRODUCTO","ml","","liquido de cereza en vermouth"],["BAR_SC_0009","Líquido de encurtido de aceituna","SIN_COSTO","SUBPRODUCTO","ml","","liquido del encurtido de aceituna (opcional)"]],"FAC_ADD":[["Ginebra Tanqueray","BOT",700,"ml por botella según inventario semanal 27/09 (Tanqueray Clásica 700). Confirmar etiqueta en la sesión de pesaje."],["Vodka Absolut","BOT",1000,"ml por botella según inventario semanal 27/09 (Absolut 1000). Confirmar etiqueta."],["Campari","BOT",750,"ml por botella según inventario semanal 27/09. Confirmar etiqueta."],["Jägermeister","BOT",700,"ml por botella según inventario semanal 27/09. Confirmar etiqueta."],["Tequila Olmeca Chocolate","BOT",700,"ml por botella según inventario semanal 27/09. Confirmar etiqueta."],["Triple sec Convier","BOT",750,"ml por botella según inventario semanal 27/09. Confirmar etiqueta."],["Vino Rosaleda Rosé","UND",750,"ml por botella según inventario semanal 27/09."],["Ginger ale","BOT",300,"«x300» en el nombre de la compra."],["Ginger beer Mil976","BOT",1,"1 botella = 1 unidad."],["Ginger beer Mil976","PAQ",4,"Deducido: el precio del PAQ es 4 veces el de la botella (fourpack). Confirmar."],["Tónica Mil976 Pink","BOT",1,"1 botella = 1 unidad."],["Tónica Mil976 Pink","PAQ",4,"«fourpack» en el nombre de la compra."],["Sparkling manzana Mil976","BOT",1,"1 botella = 1 unidad."],["Sparkling manzana Mil976","PAQ",4,"Deducido: el precio del PAQ es 4 veces el de la botella (fourpack). Confirmar."]],"PAR_ADD":[["Zumo de Limón (Súper limón)|ml→g","Zumo de Limón (Súper limón)","ml→g",null,22,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope Simple|ml→g","Sirope Simple","ml→g",null,12,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Zumo De Naranja|ml→g","Zumo De Naranja","ml→g",null,7,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Mix De Citricos|ml→g","Mix De Citricos","ml→g",null,6,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Zumo de Mandarina|ml→g","Zumo de Mandarina","ml→g",null,5,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Licor De Flor De Jamaica|ml→g","Licor De Flor De Jamaica","ml→g",null,5,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Licor De Manzanilla|ml→g","Licor De Manzanilla","ml→g",null,3,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Zumo Manzana-Pera|ml→g","Zumo Manzana-Pera","ml→g",null,3,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Licor De Limoncillo|ml→g","Licor De Limoncillo","ml→g",null,3,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Licor De Menta Fresca|ml→g","Licor De Menta Fresca","ml→g",null,3,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Arándano fresco|und→g","Arándano fresco","und→g",null,2,"Pesar 10 unidades típicas y escribir el promedio en g"],["Lychee en almíbar (lata)|ml→g","Lychee en almíbar (lata)","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Ginger ale|bot→ml","Ginger ale","bot→ml",null,2,"ml de la botella entera que se usa en la jarra (leer etiqueta)"],["Vino Rosaleda Rosé|bot→ml","Vino Rosaleda Rosé","bot→ml",750,2,"ml de la botella entera que se usa en la jarra (leer etiqueta) · 750 según inventario 27/09"],["Picadillo De Sangria Tradicional|cda→g","Picadillo De Sangria Tradicional","cda→g",null,2,"Pesar 5 cucharadas como se sirven en la copa y escribir el promedio en g"],["Licor De Vainilla|ml→g","Licor De Vainilla","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope Morfeo Pee|ml→g","Sirope Morfeo Pee","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Vino Rosaleda Sauvignon Blanc|bot→ml","Vino Rosaleda Sauvignon Blanc","bot→ml",750,2,"ml de la botella entera que se usa en la jarra (leer etiqueta) · 750 según inventario 27/09"],["Horchata Di Égida|ml→g","Horchata Di Égida","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Picadillo y Sirope Fairy Blood|ml→g","Picadillo y Sirope Fairy Blood","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope Green Velvet|ml→g","Sirope Green Velvet","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope De Chamoy|ml→g","Sirope De Chamoy","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope De Tamarindo|ml→g","Sirope De Tamarindo","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope de Romero|ml→g","Sirope de Romero","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope Naranja Amarga|ml→g","Sirope Naranja Amarga","ml→g",null,2,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Aceituna verde deshuesada|und→g","Aceituna verde deshuesada","und→g",null,1,"Pesar 10 unidades típicas y escribir el promedio en g"],["Sirope De Jengibre|ml→g","Sirope De Jengibre","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Limón Tahití|casco→g","Limón Tahití","casco→g",null,1,"Pesar 8 cascos como se cortan para el cóctel y escribir el promedio en g"],["Sirope Stella Du Solei|ml→g","Sirope Stella Du Solei","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope Stella Di Mango|ml→g","Sirope Stella Di Mango","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope Stella Di Rosso|ml→g","Sirope Stella Di Rosso","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Lychee en almíbar (lata)|und→g","Lychee en almíbar (lata)","und→g",null,1,"Pesar 10 unidades típicas y escribir el promedio en g"],["Picadillo Morfeo Pee|cda→g","Picadillo Morfeo Pee","cda→g",null,1,"Pesar 5 cucharadas como se sirven en la copa y escribir el promedio en g"],["Vino Rosaleda Merlot|bot→ml","Vino Rosaleda Merlot","bot→ml",750,1,"ml de la botella entera que se usa en la jarra (leer etiqueta) · 750 según inventario 27/09"],["Picadillo y Sirope Fairy Blood|cda→g","Picadillo y Sirope Fairy Blood","cda→g",null,1,"Pesar 5 cucharadas como se sirven en la copa y escribir el promedio en g"],["Picadillo Green Velvet|cda→g","Picadillo Green Velvet","cda→g",null,1,"Pesar 5 cucharadas como se sirven en la copa y escribir el promedio en g"],["Sirope De Cardamomo|ml→g","Sirope De Cardamomo","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Licor de Granadilla|ml→g","Licor de Granadilla","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Té de flor de clitoria|ml→g","Té de flor de clitoria","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope Pinefizz|ml→g","Sirope Pinefizz","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Sirope Scarlet Kiss|ml→g","Sirope Scarlet Kiss","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"],["Helado de macadamia|bola→g","Helado de macadamia","bola→g",null,1,"Pesar 5 bolas como se sirven y escribir el promedio en g"],["Sirope Tabaco-Naranja|ml→g","Sirope Tabaco-Naranja","ml→g",null,1,"Pesar 100 ml medidos en probeta (en g) y dividir entre 100"]],"COCTELES":[["C01","Margarita","CLÁSICA","Margarita#1"],["C02","Negroni","CLÁSICA","Negroni#2"],["C03","Mojito","CLÁSICA","Mojito#3"],["C04","Pisco Sour","CLÁSICA","Pisco Sour#4"],["C05","Tom Collins","CLÁSICA","Tom Collins#5"],["C06","Dry Martini","CLÁSICA","Dry Martini#6"],["C07","Cosmopolitan","CLÁSICA","Cosmopolitan#7"],["C08","Aperol Spritz","CLÁSICA","Aperol Spritz#8"],["C09","Old Fashioned","CLÁSICA","Old fhasioned#9"],["C10","Moscow Mule","CLÁSICA","Moscow Mule#10"],["C11","Gin And Tonic","CLÁSICA","Gin And Tonic#11"],["C12","Lychee Martini","CLÁSICA","Lychie Martini#12"],["C13","Manhattan","CLÁSICA","Manhatan# 13"],["C14","Caipiriña","CLÁSICA","Caipirinha# 14"],["C15","Orgasmo","CLÁSICA","Orgasmo#15"],["C16","Stella Di Fiore","MOCKTAIL (STELLA)","Stella Di Fiore#16"],["C17","Stella Du Solei","MOCKTAIL (STELLA)","Stella Du Solei#17"],["C18","Stella Di Mango","MOCKTAIL (STELLA)","Stella Di Mango#18"],["C19","Stella Di Rosso","MOCKTAIL (STELLA)","Stella Di Rosso#19"],["C20","Stella Di Lychee","MOCKTAIL (STELLA)","stella di lychee#20"],["C21J","Sangría Chocolate (jarra)","SANGRÍA","Sangria de chocolate#21"],["C21C","Sangría Chocolate (copa)","SANGRÍA","Sangria de chocolate#21"],["C22J","Sangría Vainilla (jarra)","SANGRÍA","Sangria de vainilla#22"],["C22C","Sangría Vainilla (copa)","SANGRÍA","Sangria de vainilla#22"],["C23J","Morfeo Pee (jarra)","SANGRÍA","Morfeo pee#23"],["C23C","Morfeo Pee (copa)","SANGRÍA","Morfeo pee#23"],["C24J","Fairy Blood (jarra)","SANGRÍA","Fairy blood#24"],["C24C","Fairy Blood (copa)","SANGRÍA","Fairy blood#24"],["C25J","Green Velvet (jarra)","SANGRÍA","Green Velvet#25"],["C25C","Green Velvet (copa)","SANGRÍA","Green Velvet#25"],["C26","Nettare Di Carnale","MIMOSA","Netare di carnale#26"],["C27","Mimosa De Fuego","MIMOSA","Mimosa de fuego#27"],["C28","Mimosa De Agua","MIMOSA","Mimosa de agua#28"],["C29","Mimosa De Viento","MIMOSA","Mimosa de viento#29"],["C30","Mimosa De Tierra","MIMOSA","Mimosa de tierra#30"],["C31","Azzurro Abissale","AUTOR","Azurro Abisale#31"],["C32","Brisa De Jazmín","AUTOR","Brisa De Jazmin#32"],["C33","Manzanilla Royale","AUTOR","Manzanilla Royale#33"],["C34","Golden Pinefizz","AUTOR","Golden Pinefizz#34"],["C35","Scarlet Kiss","AUTOR","Scarlet Kiss#35"],["C36","Jamaitini","AUTOR","Jamaitini#36"],["C37","Pinky Promise","AUTOR","Pinky Promise#37"],["C38","Loomp","AUTOR","Loomp#38"],["C39","Sour Café Almendrado","AUTOR","Sour Cafe Almendrado#39"],["C40","Menjurje De Las Dríades","AUTOR","Menjurge De Las Driades#40"],["C41","Il Dono Di Apolo","AUTOR","Il Donno Di Apolo#41"],["C42","Alcabullet","AUTOR","Alcabullet#42"],["C43","Imperatore Mexica","AUTOR","Imperatore Mexica#43"],["C44","Birra Primaveral","AUTOR","Birra Primaveral#44"],["C45","Birra Al Tamarindo","AUTOR","Birra Al Tamarindo#45"]],"RECETAS":[["C01","Margarita",1,"tequila olmeca reposado","BAR_MPe_0086","Tequila Olmeca Reposado",60,"ml",""],["C01","Margarita",2,"triple sec","BAR_MPe_0088","Triple sec Convier",30,"ml",""],["C01","Margarita",3,"zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C02","Negroni",1,"Ginebra tanqueray","BAR_MPe_0079","Ginebra Tanqueray",30,"ml",""],["C02","Negroni",2,"Campari","BAR_MPe_0090","Campari",30,"ml",""],["C02","Negroni",3,"vermouth rosso cinzano","BAR_MPe_0063","Vermouth rosso",30,"ml",""],["C03","Mojito",1,"Ron bacardi","BAR_MPe_0092","Ron Bacardí Añejo",60,"ml",""],["C03","Mojito",2,"Sirope simple","BAR_MPi_0006","Sirope Simple",30,"ml",""],["C03","Mojito",3,"Zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C03","Mojito",4,"Hojas de menta francesa","BAR_MPe_0042","Menta francesa",8,"und",""],["C03","Mojito",5,"Soda swepers","BAR_MPe_0058","Soda Bretaña",1,"dash",""],["C04","Pisco Sour",1,"Pisco acholado demonio de los andes","BAR_MPe_0105","Pisco Demonio de los Andes",60,"ml",""],["C04","Pisco Sour",2,"Zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C04","Pisco Sour",3,"Sirope Simple","BAR_MPi_0006","Sirope Simple",30,"ml",""],["C04","Pisco Sour",4,"Huevo (solo la clara)","BAR_MPe_0023","Huevo",1,"und","Solo la clara: se costea el huevo entero"],["C05","Tom Collins",1,"Ginebra Tanqueray","BAR_MPe_0079","Ginebra Tanqueray",60,"ml",""],["C05","Tom Collins",2,"Sirope Simple","BAR_MPi_0006","Sirope Simple",30,"ml",""],["C05","Tom Collins",3,"Zumo De Limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C05","Tom Collins",4,"Soda Swepers","BAR_MPe_0058","Soda Bretaña",1,"dash",""],["C05","Tom Collins",5,"Liquido de cereza en vermouth","BAR_SC_0008","Líquido de cereza en vermouth",15,"ml",""],["C06","Dry Martini",1,"Ginebra Tanqueraay","BAR_MPe_0079","Ginebra Tanqueray",90,"ml",""],["C06","Dry Martini",2,"Vermouth extra dry cinzano","BAR_MPe_0091","Vermouth extra dry Cinzano",25,"ml",""],["C06","Dry Martini",3,"Aceituna verde deshuesada","BAR_MPe_0124","Aceituna verde deshuesada",3,"und",""],["C06","Dry Martini",4,"Liquido del encurtido de aceituna (opcional)","BAR_SC_0009","Líquido de encurtido de aceituna",15,"ml",""],["C07","Cosmopolitan",1,"Vodka absolut","BAR_MPe_0069","Vodka Absolut",60,"ml",""],["C07","Cosmopolitan",2,"Cointreau","BAR_MPe_0100","Cointreau",30,"ml",""],["C07","Cosmopolitan",3,"arandanos frescos","BAR_MPe_0072","Arándano fresco",8,"und",""],["C07","Cosmopolitan",4,"Zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C07","Cosmopolitan",5,"Sirope simple","BAR_MPi_0006","Sirope Simple",10,"ml",""],["C08","Aperol Spritz",1,"Aperol","BAR_MPe_0099","Aperol",60,"ml",""],["C08","Aperol Spritz",2,"Soda swepers","BAR_MPe_0058","Soda Bretaña",60,"ml",""],["C08","Aperol Spritz",3,"Proseco","BAR_MPe_0109","Prosecco",90,"ml",""],["C09","Old Fashioned",1,"Whisky boullet bourbon","BAR_MPe_0107","Whisky Bulleit Bourbon",60,"ml",""],["C09","Old Fashioned",2,"Sirope simple","BAR_MPi_0006","Sirope Simple",10,"ml",""],["C09","Old Fashioned",3,"Bitters de angostura","BAR_MPe_0130","Angostura bitters",3,"gts",""],["C10","Moscow Mule",1,"Vodka absolut","BAR_MPe_0069","Vodka Absolut",60,"ml",""],["C10","Moscow Mule",2,"Zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C10","Moscow Mule",3,"Sirope de jengibre","BAR_MPi_0007","Sirope De Jengibre",25,"ml",""],["C10","Moscow Mule",4,"Ginger beer","BAR_MPe_0115","Ginger beer Mil976",1,"bot",""],["C11","Gin And Tonic",1,"Ginebra Tanqueray","BAR_MPe_0079","Ginebra Tanqueray",60,"ml",""],["C11","Gin And Tonic",2,"Agua tonica 1976 ocean/indian","BAR_MPe_0117","Tónica Mil976 Ocean",1,"bot",""],["C12","Lychee Martini",1,"Vodka absolut","BAR_MPe_0069","Vodka Absolut",60,"ml",""],["C12","Lychee Martini",2,"Soho","BAR_MPe_0098","Soho (licor de lychee)",30,"ml",""],["C12","Lychee Martini",3,"Jugo de lychie","BAR_MPe_0123","Lychee en almíbar (lata)",30,"ml",""],["C13","Manhattan",1,"Whikey bullet bourbon","BAR_MPe_0107","Whisky Bulleit Bourbon",60,"ml",""],["C13","Manhattan",2,"Vermouth rosso","BAR_MPe_0063","Vermouth rosso",30,"ml",""],["C13","Manhattan",3,"Sirope simple","BAR_MPi_0006","Sirope Simple",10,"ml",""],["C13","Manhattan",4,"Angostura bitters","BAR_MPe_0130","Angostura bitters",2,"gts",""],["C14","Caipiriña",1,"Cazhaza","BAR_MPe_0104","Cachaça Jamel",60,"ml",""],["C14","Caipiriña",2,"Zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",10,"ml",""],["C14","Caipiriña",3,"Sirope simple","BAR_MPi_0006","Sirope Simple",30,"ml",""],["C14","Caipiriña",4,"Cascos de limon","BAR_MPe_0030","Limón Tahití",4,"casco",""],["C15","Orgasmo",1,"Licor de café coloma","BAR_MPe_0028","Licor de café",30,"ml",""],["C15","Orgasmo",2,"Amareto dissarono","BAR_MPe_0101","Amaretto Disaronno",30,"ml",""],["C15","Orgasmo",3,"Baeileys","BAR_MPe_0102","Baileys",45,"ml",""],["C16","Stella Di Fiore",1,"Menta francesa","BAR_MPe_0042","Menta francesa",8,"und",""],["C16","Stella Di Fiore",2,"Arandano fresco","BAR_MPe_0072","Arándano fresco",8,"und",""],["C16","Stella Di Fiore",3,"Zuno de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C16","Stella Di Fiore",4,"Sirope simple","BAR_MPi_0006","Sirope Simple",30,"ml",""],["C16","Stella Di Fiore",5,"Ginger beer","BAR_MPe_0115","Ginger beer Mil976",1,"bot",""],["C17","Stella Du Solei",1,"Sirpe stella du solei","BAR_MPi_0013","Sirope Stella Du Solei",90,"ml",""],["C17","Stella Du Solei",2,"Zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C17","Stella Du Solei",3,"Agua tonica pink","BAR_MPe_0116","Tónica Mil976 Pink",1,"bot",""],["C18","Stella Di Mango",1,"Sirope stella di mango","BAR_MPi_0014","Sirope Stella Di Mango",90,"ml",""],["C18","Stella Di Mango",2,"Zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C18","Stella Di Mango",3,"Tonica pink","BAR_MPe_0116","Tónica Mil976 Pink",1,"bot",""],["C19","Stella Di Rosso",1,"Sirope reduccione di rosso","BAR_MPi_0015","Sirope Stella Di Rosso",90,"ml",""],["C19","Stella Di Rosso",2,"Zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C19","Stella Di Rosso",3,"Ginger Beer","BAR_MPe_0115","Ginger beer Mil976",1,"bot",""],["C20","Stella Di Lychee",1,"Lychee (para majar)","BAR_MPe_0123","Lychee en almíbar (lata)",1,"und",""],["C20","Stella Di Lychee",2,"Jugo De Lychee","BAR_MPe_0123","Lychee en almíbar (lata)",60,"ml",""],["C20","Stella Di Lychee",3,"Zumo De Limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C20","Stella Di Lychee",4,"Sirope Simple","BAR_MPi_0006","Sirope Simple",30,"ml",""],["C20","Stella Di Lychee",5,"soda hatsu frambuesa rosas","BAR_MPe_0119","Soda Hatsu frambuesa-rosas",1,"lata",""],["C21J","Sangría Chocolate (jarra)",1,"Tequila De Chocolate","BAR_MPe_0087","Tequila Olmeca Chocolate",60,"ml",""],["C21J","Sangría Chocolate (jarra)",2,"Ron Bacardi Añejo","BAR_MPe_0092","Ron Bacardí Añejo",45,"ml",""],["C21J","Sangría Chocolate (jarra)",3,"Vodka Absolut","BAR_MPe_0069","Vodka Absolut",45,"ml",""],["C21J","Sangría Chocolate (jarra)",4,"Zumo De Naraja","BAR_MPi_0003","Zumo De Naranja",150,"ml",""],["C21J","Sangría Chocolate (jarra)",5,"Ginger Swepers","BAR_MPe_0114","Ginger ale",0.5,"bot","Ficha dice «med BOT»: se toma media botella"],["C21J","Sangría Chocolate (jarra)",6,"Vino Rosaleda (A Eleccion Del Comensal","BAR_MPe_0111","Vino Rosaleda Rosé",1,"bot",""],["C21J","Sangría Chocolate (jarra)",7,"Picadillo De Sangria tradicional","BAR_MPi_0021","Picadillo De Sangria Tradicional",150,"g",""],["C21C","Sangría Chocolate (copa)",1,"Tequila De Chocolate","BAR_MPe_0087","Tequila Olmeca Chocolate",25,"ml",""],["C21C","Sangría Chocolate (copa)",2,"Ron Bacardi Añejo","BAR_MPe_0092","Ron Bacardí Añejo",15,"ml",""],["C21C","Sangría Chocolate (copa)",3,"Vodka Absolut","BAR_MPe_0069","Vodka Absolut",15,"ml",""],["C21C","Sangría Chocolate (copa)",4,"Zumo De Naraja","BAR_MPi_0003","Zumo De Naranja",45,"ml",""],["C21C","Sangría Chocolate (copa)",5,"Ginger Swepers","BAR_MPe_0114","Ginger ale",1,"dash",""],["C21C","Sangría Chocolate (copa)",6,"Vino Rosaleda (A Eleccion Del Comensal","BAR_MPe_0111","Vino Rosaleda Rosé",150,"ml",""],["C21C","Sangría Chocolate (copa)",7,"Picadillo De Sangria tradicional","BAR_MPi_0021","Picadillo De Sangria Tradicional",2,"cda",""],["C22J","Sangría Vainilla (jarra)",1,"Licor De Vainilla","BAR_MPi_0030","Licor De Vainilla",120,"ml",""],["C22J","Sangría Vainilla (jarra)",2,"Ron Bacardi Añejo","BAR_MPe_0092","Ron Bacardí Añejo",45,"ml",""],["C22J","Sangría Vainilla (jarra)",3,"Zumo De Naraja","BAR_MPi_0003","Zumo De Naranja",200,"ml",""],["C22J","Sangría Vainilla (jarra)",4,"Ginger Swepers","BAR_MPe_0114","Ginger ale",0.5,"bot","Ficha dice «med BOT»: se toma media botella"],["C22J","Sangría Vainilla (jarra)",5,"Vino Rosaleda (A Eleccion Del Comensal","BAR_MPe_0111","Vino Rosaleda Rosé",1,"bot",""],["C22J","Sangría Vainilla (jarra)",6,"Picadillo De Sangria tradicional","BAR_MPi_0021","Picadillo De Sangria Tradicional",150,"g",""],["C22C","Sangría Vainilla (copa)",1,"Licor De Vainilla","BAR_MPi_0030","Licor De Vainilla",60,"ml",""],["C22C","Sangría Vainilla (copa)",2,"Ron Bacardi Añejo","BAR_MPe_0092","Ron Bacardí Añejo",15,"ml",""],["C22C","Sangría Vainilla (copa)",3,"Zumo De Naraja","BAR_MPi_0003","Zumo De Naranja",90,"ml",""],["C22C","Sangría Vainilla (copa)",4,"Ginger Swepers","BAR_MPe_0114","Ginger ale",1,"dash",""],["C22C","Sangría Vainilla (copa)",5,"Vino Rosaleda (A Eleccion Del Comensal","BAR_MPe_0111","Vino Rosaleda Rosé",150,"ml",""],["C22C","Sangría Vainilla (copa)",6,"Picadillo De Sangria tradicional","BAR_MPi_0021","Picadillo De Sangria Tradicional",2,"cda",""],["C23J","Morfeo Pee (jarra)",1,"Licor De manzanilla","BAR_MPi_0033","Licor De Manzanilla",60,"ml",""],["C23J","Morfeo Pee (jarra)",2,"Ron Bacardi añejo","BAR_MPe_0092","Ron Bacardí Añejo",30,"ml",""],["C23J","Morfeo Pee (jarra)",3,"licor 43","BAR_MPe_0094","Licor 43",30,"ml",""],["C23J","Morfeo Pee (jarra)",4,"zumo de mandarina","BAR_MPi_0004","Zumo de Mandarina",150,"ml",""],["C23J","Morfeo Pee (jarra)",5,"sirope morfeo pee","BAR_MPi_0023","Sirope Morfeo Pee",90,"ml",""],["C23J","Morfeo Pee (jarra)",6,"vino blanco rosaleda sauvignon blanc","BAR_MPe_0112","Vino Rosaleda Sauvignon Blanc",1,"bot",""],["C23J","Morfeo Pee (jarra)",7,"Picadillo morfeo pee","BAR_MPi_0022","Picadillo Morfeo Pee",150,"g",""],["C23C","Morfeo Pee (copa)",1,"Licor De manzanilla","BAR_MPi_0033","Licor De Manzanilla",25,"ml",""],["C23C","Morfeo Pee (copa)",2,"Ron Bacardi añejo","BAR_MPe_0092","Ron Bacardí Añejo",15,"ml",""],["C23C","Morfeo Pee (copa)",3,"licor 43","BAR_MPe_0094","Licor 43",15,"ml",""],["C23C","Morfeo Pee (copa)",4,"zumo de mandarina","BAR_MPi_0004","Zumo de Mandarina",45,"ml",""],["C23C","Morfeo Pee (copa)",5,"Sirope Morfeo Pee","BAR_MPi_0023","Sirope Morfeo Pee",25,"ml",""],["C23C","Morfeo Pee (copa)",6,"vino blanco rosaleda sauvignon blanc","BAR_MPe_0112","Vino Rosaleda Sauvignon Blanc",150,"ml",""],["C23C","Morfeo Pee (copa)",7,"Picadillo morfeo pee","BAR_MPi_0022","Picadillo Morfeo Pee",2,"cda",""],["C24J","Fairy Blood (jarra)",1,"orchata artesanal di egida","BAR_MPi_0026","Horchata Di Égida",180,"ml",""],["C24J","Fairy Blood (jarra)",2,"Sirope fairy blood","BAR_MPi_0024","Picadillo y Sirope Fairy Blood",60,"ml",""],["C24J","Fairy Blood (jarra)",3,"Vino Tinto","BAR_MPe_0113","Vino Rosaleda Merlot",1,"bot",""],["C24J","Fairy Blood (jarra)",4,"picadillo fairy blood","BAR_MPi_0024","Picadillo y Sirope Fairy Blood",150,"g",""],["C24J","Fairy Blood (jarra)",5,"zumo de manzana pera","BAR_MPi_0002","Zumo Manzana-Pera",120,"ml",""],["C24J","Fairy Blood (jarra)",6,"alaicor De jamaica","BAR_MPi_0039","Licor De Flor De Jamaica",60,"ml",""],["C24J","Fairy Blood (jarra)",7,"Vodka Absolut","BAR_MPe_0069","Vodka Absolut",60,"ml",""],["C24C","Fairy Blood (copa)",1,"orchata artesanal di egida","BAR_MPi_0026","Horchata Di Égida",180,"ml",""],["C24C","Fairy Blood (copa)",2,"Sirope fairy blood","BAR_MPi_0024","Picadillo y Sirope Fairy Blood",25,"ml",""],["C24C","Fairy Blood (copa)",3,"Vino Tinto","BAR_MPe_0113","Vino Rosaleda Merlot",150,"ml",""],["C24C","Fairy Blood (copa)",4,"picadillo fairy blood","BAR_MPi_0024","Picadillo y Sirope Fairy Blood",2,"cda",""],["C24C","Fairy Blood (copa)",5,"zumo de manzana pera","BAR_MPi_0002","Zumo Manzana-Pera",30,"ml",""],["C24C","Fairy Blood (copa)",6,"alaicor De jamaica","BAR_MPi_0039","Licor De Flor De Jamaica",15,"ml",""],["C24C","Fairy Blood (copa)",7,"Vodka Absolut","BAR_MPe_0069","Vodka Absolut",15,"ml",""],["C25J","Green Velvet (jarra)",1,"Picadillo green velvet","BAR_MPi_0027","Picadillo Green Velvet",150,"g",""],["C25J","Green Velvet (jarra)",2,"Limoncello","BAR_MPe_0097","Limoncello Villa Massa",60,"ml",""],["C25J","Green Velvet (jarra)",3,"Licor de limoncillo","BAR_MPi_0042","Licor De Limoncillo",60,"ml",""],["C25J","Green Velvet (jarra)",4,"Sirope green velvet","BAR_MPi_0028","Sirope Green Velvet",90,"ml",""],["C25J","Green Velvet (jarra)",5,"Vino blanco","BAR_MPe_0112","Vino Rosaleda Sauvignon Blanc",1,"bot",""],["C25J","Green Velvet (jarra)",6,"Zumo de naranjja","BAR_MPi_0003","Zumo De Naranja",120,"ml",""],["C25J","Green Velvet (jarra)",7,"Ron","BAR_MPe_0092","Ron Bacardí Añejo",30,"ml","Ficha dice GR: se toma ml"],["C25C","Green Velvet (copa)",1,"Picadillo green velvet","BAR_MPi_0027","Picadillo Green Velvet",2,"cda",""],["C25C","Green Velvet (copa)",2,"Limoncello","BAR_MPe_0097","Limoncello Villa Massa",15,"ml",""],["C25C","Green Velvet (copa)",3,"Licor de limoncillo","BAR_MPi_0042","Licor De Limoncillo",15,"ml",""],["C25C","Green Velvet (copa)",4,"Sirope green velvet","BAR_MPi_0028","Sirope Green Velvet",30,"ml",""],["C25C","Green Velvet (copa)",5,"Vino blanco","BAR_MPe_0112","Vino Rosaleda Sauvignon Blanc",150,"ml",""],["C25C","Green Velvet (copa)",6,"Zumo de mandarina","BAR_MPi_0004","Zumo de Mandarina",45,"ml",""],["C25C","Green Velvet (copa)",7,"Ron","BAR_MPe_0092","Ron Bacardí Añejo",15,"ml",""],["C26","Nettare Di Carnale",1,"Licor de durazno convier","BAR_MPe_0096","Licor de durazno Convier",45,"ml",""],["C26","Nettare Di Carnale",2,"Vodka absolut","BAR_MPe_0069","Vodka Absolut",30,"ml",""],["C26","Nettare Di Carnale",3,"Zumo de naranja","BAR_MPi_0003","Zumo De Naranja",45,"ml",""],["C26","Nettare Di Carnale",4,"Sirope de cardamomo","BAR_MPi_0009","Sirope De Cardamomo",15,"ml",""],["C26","Nettare Di Carnale",5,"vino espumante (baron de rothberg)","BAR_MPe_0110","Espumante Barón de Rothberg",90,"ml",""],["C27","Mimosa De Fuego",1,"mezcal montelobos","BAR_MPe_0106","Mezcal Montelobos",15,"ml",""],["C27","Mimosa De Fuego",2,"tequila","BAR_MPe_0086","Tequila Olmeca Reposado",10,"ml",""],["C27","Mimosa De Fuego",3,"espumante","BAR_MPe_0110","Espumante Barón de Rothberg",120,"ml",""],["C27","Mimosa De Fuego",4,"Sirope De Romero","BAR_MPi_0011","Sirope de Romero",1,"dash",""],["C27","Mimosa De Fuego",5,"zumo de mandarina","BAR_MPi_0004","Zumo de Mandarina",30,"ml",""],["C27","Mimosa De Fuego",6,"Sirope De Chamoy","BAR_MPi_0020","Sirope De Chamoy",25,"ml",""],["C28","Mimosa De Agua",1,"triple sec azul","BAR_MPe_0089","Triple sec azul Convier (curazao)",15,"ml",""],["C28","Mimosa De Agua",2,"mix de citricos","BAR_MPi_0012","Mix De Citricos",15,"ml",""],["C28","Mimosa De Agua",3,"pisco demonio de los andes","BAR_MPe_0105","Pisco Demonio de los Andes",15,"ml",""],["C28","Mimosa De Agua",4,"orange bitters","BAR_MPe_0131","Orange bitters",5,"gts",""],["C28","Mimosa De Agua",5,"zumo de mandarina","BAR_MPi_0004","Zumo de Mandarina",60,"ml",""],["C28","Mimosa De Agua",6,"vino espumante","BAR_MPe_0110","Espumante Barón de Rothberg",120,"ml",""],["C29","Mimosa De Viento",1,"soho","BAR_MPe_0098","Soho (licor de lychee)",10,"ml",""],["C29","Mimosa De Viento",2,"vodka","BAR_MPe_0069","Vodka Absolut",30,"ml",""],["C29","Mimosa De Viento",3,"zumo de manzana pera","BAR_MPi_0002","Zumo Manzana-Pera",60,"ml",""],["C29","Mimosa De Viento",4,"mix de citricos","BAR_MPi_0012","Mix De Citricos",15,"ml",""],["C29","Mimosa De Viento",5,"vino espumante","BAR_MPe_0110","Espumante Barón de Rothberg",90,"ml",""],["C30","Mimosa De Tierra",1,"concentrado de romero","BAR_MPi_0011","Sirope de Romero",1,"dash",""],["C30","Mimosa De Tierra",2,"Sirope De Tamarindo","BAR_MPi_0016","Sirope De Tamarindo",15,"ml",""],["C30","Mimosa De Tierra",3,"zumo de naranja","BAR_MPi_0003","Zumo De Naranja",45,"ml",""],["C30","Mimosa De Tierra",4,"licor 43","BAR_MPe_0094","Licor 43",10,"ml",""],["C30","Mimosa De Tierra",5,"ron de banano","BAR_MPe_0093","Ron La Hechicera Banano",15,"ml",""],["C30","Mimosa De Tierra",6,"vino espumante","BAR_MPe_0110","Espumante Barón de Rothberg",120,"ml",""],["C31","Azzurro Abissale",1,"Ron bacardi","BAR_MPe_0092","Ron Bacardí Añejo",30,"ml",""],["C31","Azzurro Abissale",2,"Triple sec azul convier","BAR_MPe_0089","Triple sec azul Convier (curazao)",30,"ml",""],["C31","Azzurro Abissale",3,"Zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C31","Azzurro Abissale",4,"Sirope simple","BAR_MPi_0006","Sirope Simple",30,"ml",""],["C31","Azzurro Abissale",5,"Vino rosaleda rose","BAR_MPe_0111","Vino Rosaleda Rosé",120,"ml",""],["C31","Azzurro Abissale",6,"Soda swepers","BAR_MPe_0058","Soda Bretaña",1,"dash",""],["C32","Brisa De Jazmín",1,"Licor de granadilla","BAR_MPi_0029","Licor de Granadilla",45,"ml",""],["C32","Brisa De Jazmín",2,"ginebra tanqueray","BAR_MPe_0079","Ginebra Tanqueray",30,"ml",""],["C32","Brisa De Jazmín",3,"zumon de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",15,"ml",""],["C32","Brisa De Jazmín",4,"Sirope simple","BAR_MPi_0006","Sirope Simple",15,"ml",""],["C32","Brisa De Jazmín",5,"Hojas De Menta Francesa","BAR_MPe_0042","Menta francesa",3,"und",""],["C32","Brisa De Jazmín",6,"Te De Flor Clitoria","BAR_MPi_0072","Té de flor de clitoria",60,"ml",""],["C32","Brisa De Jazmín",7,"Pimienta rosada","BAR_MPe_0126","Pimienta rosada",3,"g",""],["C32","Brisa De Jazmín",8,"Soda","BAR_MPe_0058","Soda Bretaña",1,"dash",""],["C33","Manzanilla Royale",1,"Licor De Manzanilla","BAR_MPi_0033","Licor De Manzanilla",45,"ml",""],["C33","Manzanilla Royale",2,"ginebra tanqueray","BAR_MPe_0079","Ginebra Tanqueray",30,"ml",""],["C33","Manzanilla Royale",3,"vermouth rosso","BAR_MPe_0063","Vermouth rosso",15,"ml",""],["C33","Manzanilla Royale",4,"campari","BAR_MPe_0090","Campari",15,"ml",""],["C33","Manzanilla Royale",5,"orange bitters","BAR_MPe_0131","Orange bitters",3,"gts",""],["C34","Golden Pinefizz",1,"ginebra tanqueray","BAR_MPe_0079","Ginebra Tanqueray",30,"ml",""],["C34","Golden Pinefizz",2,"zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C34","Golden Pinefizz",3,"sirope pinefizz","BAR_MPi_0017","Sirope Pinefizz",30,"ml",""],["C34","Golden Pinefizz",4,"fizzi frizante rose","BAR_MPe_0120","JP Chenet fizzy rosé (lata)",1,"lata",""],["C34","Golden Pinefizz",5,"sirope de romero","BAR_MPi_0011","Sirope de Romero",15,"ml",""],["C35","Scarlet Kiss",1,"Sirope Scarlet Kiss","BAR_MPi_0018","Sirope Scarlet Kiss",45,"ml",""],["C35","Scarlet Kiss",2,"Tequila","BAR_MPe_0086","Tequila Olmeca Reposado",45,"ml",""],["C35","Scarlet Kiss",3,"Zumo De Limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",15,"ml",""],["C35","Scarlet Kiss",4,"Triple Sec","BAR_MPe_0088","Triple sec Convier",15,"ml",""],["C35","Scarlet Kiss",5,"Licor De Menta Fresca","BAR_MPi_0036","Licor De Menta Fresca",15,"ml",""],["C36","Jamaitini",1,"Licor de jamaica","BAR_MPi_0039","Licor De Flor De Jamaica",45,"ml",""],["C36","Jamaitini",2,"vermouth Extra Dry","BAR_MPe_0091","Vermouth extra dry Cinzano",15,"ml",""],["C36","Jamaitini",3,"sirope de romero","BAR_MPi_0011","Sirope de Romero",1,"dash",""],["C36","Jamaitini",4,"Ginebra tanqueray","BAR_MPe_0079","Ginebra Tanqueray",30,"ml",""],["C36","Jamaitini",5,"mix de citricos","BAR_MPi_0012","Mix De Citricos",10,"ml",""],["C37","Pinky Promise",1,"Ginebra beefeater pink","BAR_MPe_0108","Ginebra Beefeater Pink",60,"ml",""],["C37","Pinky Promise",2,"Sirope De naranja agria","BAR_MPi_0010","Sirope Naranja Amarga",30,"ml",""],["C37","Pinky Promise",3,"licor de flor de jamaica","BAR_MPi_0039","Licor De Flor De Jamaica",30,"ml",""],["C37","Pinky Promise",4,"zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",15,"ml",""],["C37","Pinky Promise",5,"tonica manzana","BAR_MPe_0118","Sparkling manzana Mil976",1,"bot",""],["C37","Pinky Promise",6,"Trozos de sandia","BAR_MPe_0125","Sandía",20,"g",""],["C38","Loomp",1,"mix citricos","BAR_MPi_0012","Mix De Citricos",25,"ml",""],["C38","Loomp",2,"baeilys","BAR_MPe_0102","Baileys",45,"ml",""],["C38","Loomp",3,"Tequila de chocolate","BAR_MPe_0087","Tequila Olmeca Chocolate",45,"ml",""],["C38","Loomp",4,"helado de macadamia","BAR_MPe_0128","Helado de macadamia",2,"bola",""],["C39","Sour Café Almendrado",1,"Amareto dissarono","BAR_MPe_0101","Amaretto Disaronno",30,"ml",""],["C39","Sour Café Almendrado",2,"clara de huevo","BAR_MPe_0023","Huevo",1,"und","Solo la clara: se costea el huevo entero"],["C39","Sour Café Almendrado",3,"sirope simple","BAR_MPi_0006","Sirope Simple",15,"ml",""],["C39","Sour Café Almendrado",4,"zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",15,"ml",""],["C39","Sour Café Almendrado",5,"Espuma de café","BAR_MPi_0045","Espuma de Café","","g","Ficha sin cantidad («para coronar»): pesar una porción"],["C39","Sour Café Almendrado",6,"Amargos de angostura","BAR_MPe_0130","Angostura bitters",3,"gts",""],["C40","Menjurje De Las Dríades",1,"sirope de romero","BAR_MPi_0011","Sirope de Romero",30,"ml",""],["C40","Menjurje De Las Dríades",2,"mix de citricos","BAR_MPi_0012","Mix De Citricos",30,"ml",""],["C40","Menjurje De Las Dríades",3,"ginebra tanqueray","BAR_MPe_0079","Ginebra Tanqueray",60,"ml",""],["C40","Menjurje De Las Dríades",4,"licor de menta Fresca","BAR_MPi_0036","Licor De Menta Fresca",30,"ml",""],["C40","Menjurje De Las Dríades",5,"tonica","BAR_MPe_0117","Tónica Mil976 Ocean",1,"bot",""],["C40","Menjurje De Las Dríades",6,"Jagermaister","BAR_MPe_0103","Jägermeister",15,"ml",""],["C41","Il Dono Di Apolo",1,"Tequila","BAR_MPe_0086","Tequila Olmeca Reposado",45,"ml",""],["C41","Il Dono Di Apolo",2,"tequila olmeca chocolate","BAR_MPe_0087","Tequila Olmeca Chocolate",15,"ml",""],["C41","Il Dono Di Apolo",3,"siroope naranja agria","BAR_MPi_0010","Sirope Naranja Amarga",30,"ml",""],["C41","Il Dono Di Apolo",4,"ralladura de canela","BAR_MPe_0010","Canela cassia",2,"g",""],["C41","Il Dono Di Apolo",5,"Zumo delimon","BAR_MPi_0001","Zumo de Limón (Súper limón)",30,"ml",""],["C42","Alcabullet",1,"sirope de tabaco y cascara de naranja importada","BAR_MPi_0019","Sirope Tabaco-Naranja",30,"ml",""],["C42","Alcabullet",2,"whisky bullet bourbon","BAR_MPe_0107","Whisky Bulleit Bourbon",45,"ml",""],["C42","Alcabullet",3,"Sal Rosada","BAR_MPe_0127","Sal rosada",3,"g",""],["C42","Alcabullet",4,"vermouth rosso","BAR_MPe_0063","Vermouth rosso",30,"ml",""],["C42","Alcabullet",5,"zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",15,"ml",""],["C43","Imperatore Mexica",1,"Mezcal montelobos","BAR_MPe_0106","Mezcal Montelobos",45,"ml",""],["C43","Imperatore Mexica",2,"licor de limoncillo","BAR_MPi_0042","Licor De Limoncillo",30,"ml",""],["C43","Imperatore Mexica",3,"licor de chile ancho","BAR_MPe_0095","Licor de chile Ancho Reyes",15,"ml",""],["C43","Imperatore Mexica",4,"mix de citricos","BAR_MPi_0012","Mix De Citricos",30,"ml",""],["C43","Imperatore Mexica",5,"bala de co2","BAR_MPe_0129","Bala de CO2",1,"und","Ficha dice 1 ML: es 1 bala"],["C44","Birra Primaveral",1,"cerveza bbc rosada","BAR_MPe_0121","Cerveza BBC Rosé",1,"bot",""],["C44","Birra Primaveral",2,"licor de jamaica","BAR_MPi_0039","Licor De Flor De Jamaica",15,"ml",""],["C44","Birra Primaveral",3,"ginebra beffeater pink","BAR_MPe_0108","Ginebra Beefeater Pink",30,"ml",""],["C44","Birra Primaveral",4,"sirope de chamoy","BAR_MPi_0020","Sirope De Chamoy",30,"ml",""],["C44","Birra Primaveral",5,"zumo de limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",15,"ml",""],["C45","Birra Al Tamarindo",1,"Cerveza BBC Roja","BAR_MPe_0122","Cerveza BBC Roja",1,"bot",""],["C45","Birra Al Tamarindo",2,"Licor De Menta Fresca","BAR_MPi_0036","Licor De Menta Fresca",15,"ml",""],["C45","Birra Al Tamarindo",3,"Ginebra Tanqueray","BAR_MPe_0079","Ginebra Tanqueray",30,"ml",""],["C45","Birra Al Tamarindo",4,"Zumo De Limon","BAR_MPi_0001","Zumo de Limón (Súper limón)",15,"ml",""],["C45","Birra Al Tamarindo",5,"Sirope De Tamarindo","BAR_MPi_0016","Sirope De Tamarindo",30,"ml",""]],"TARAS":[["Beefeater Pink","Ginebra",700,510.0,0.95,"Inventario semanal 27/09/2026"],["Hendrick's","Ginebra",1000,723.0,0.95,"Inventario semanal 27/09/2026"],["Hendrick's","Ginebra",750,450.0,0.95,"Inventario semanal 27/09/2026"],["Monkey 47","Ginebra",500,437.0,0.95,"Inventario semanal 27/09/2026"],["Tanqueray Clásica","Ginebra",700,580.0,0.95,"Inventario semanal 27/09/2026"],["Montelobos","Mezcal",750,1148.0,0.95,"Inventario semanal 27/09/2026"],["Ojo de Tigre","Mezcal",750,650.0,0.95,"Inventario semanal 27/09/2026"],["Demonio de los Andes","Pisco",700,500.0,0.95,"Inventario semanal 27/09/2026"],["La Botija — Tabernero","Pisco",700,330.0,0.95,"Inventario semanal 27/09/2026"],["Bacardí Añejo","Ron",750,455.0,0.95,"Inventario semanal 27/09/2026"],["La Hechicera Banano","Ron",700,533.0,0.95,"Inventario semanal 27/09/2026"],["La Hechicera Original","Ron",700,556.0,0.95,"Inventario semanal 27/09/2026"],["Zacapa 23 años","Ron",700,516.0,0.95,"Inventario semanal 27/09/2026"],["Zacapa Ámbar","Ron",750,547.0,0.95,"Inventario semanal 27/09/2026"],["Don Julio 1942","Tequila",750,390.0,0.95,"Inventario semanal 27/09/2026"],["Don Julio 70","Tequila",700,840.0,0.95,"Inventario semanal 27/09/2026"],["Don Julio Reposado","Tequila",750,758.0,0.95,"Inventario semanal 27/09/2026"],["José Cuervo Especial","Tequila",375,"","",""],["José Cuervo Especial","Tequila",750,530.0,0.95,"Inventario semanal 27/09/2026"],["Olmeca Chocolate","Tequila",700,616.0,1.0,"Inventario semanal 27/09/2026"],["Olmeca Reposado","Tequila",700,"","",""],["Absolut","Vodka",1000,638.0,0.95,"Inventario semanal 27/09/2026"],["Grey Goose","Vodka",700,612.0,0.95,"Inventario semanal 27/09/2026"],["Buchanan's Two Souls","Whisky",750,520.0,0.94,"Inventario semanal 27/09/2026"],["Bulleit Bourbon","Whisky",750,585.0,0.94,"Inventario semanal 27/09/2026"],["Glenfiddich 12 años","Whisky",750,540.0,0.94,"Inventario semanal 27/09/2026"],["Glenfiddich 18 años","Whisky",750,536.0,0.94,"Inventario semanal 27/09/2026"],["Monkey Shoulder","Whisky",1000,"",0.94,""],["Baileys Crema de Whisky","Licor",1000,630.0,1.1,"Inventario semanal 27/09/2026"],["Licor 43 Aperitivo","Licor",750,512.0,1.06,"Inventario semanal 27/09/2026"],["Cachaça 51","Licor",965,"",1.1,""],["Cachaça Jamel","Licor",1000,"","",""],["Jerez Tío Pepe","Licor",750,490.0,0.95,"Inventario semanal 27/09/2026"],["Amaretto Disaronno","Licor",750,728.0,1.05,"Inventario semanal 27/09/2026"],["Coloma — Licor de café","Licor",700,"",1.05,""],["Ancho Reyes — Licor de chile","Licor",750,"",1.01,""],["Cointreau — Licor de naranja","Licor",700,"",1.04,""],["Convier — Licor de durazno","Licor",750,"",1.07,""],["Absenta — Licor de hierbas","Licor",700,"",0.9,""],["Jägermeister","Licor",700,618.0,1.07,"Inventario semanal 27/09/2026"],["Soho — Licor de lychee","Licor",700,490.0,1.05,"Inventario semanal 27/09/2026"],["Convier — Licor de maracuyá","Licor",750,"",1.08,""],["Campari — Aperitivo de hierbas","Licor",750,507.0,1.04,"Inventario semanal 27/09/2026"],["Aperol","Licor",750,550.0,1.01,"Inventario semanal 27/09/2026"],["Villa Massa Limoncello","Licor",700,619.0,1.03,"Inventario semanal 27/09/2026"],["Pastis Ricard","Licor",700,544.0,0.97,"Inventario semanal 27/09/2026"],["Sambuca Luxardo","Licor",750,400.0,1.08,"Inventario semanal 27/09/2026"],["Convier Triple Sec Azul","Licor",750,580.0,1.04,"Inventario semanal 27/09/2026"],["Convier Triple Sec","Licor",750,580.0,1.04,"Inventario semanal 27/09/2026"],["Cinzano Vermouth Extra Dry","Licor",750,480.0,1.01,"Inventario semanal 27/09/2026"],["Cinzano Vermouth Rosso","Licor",1000,600.0,1.05,"Inventario semanal 27/09/2026"],["Aguardiente Origen Atardecer","Licor",750,"",0.96,""],["Dubonnet — Vino Fortificado","Licor",750,"",1.03,""],["Monkey Shoulder","Whisky",700,"",0.94,""],["Cacique 500","Ron",750,"",0.94,""],["Flor de Caña","Ron",750,"",0.94,""],["Aguardiente Amarillo","Aguardiente",750,"",0.96,""],["Aguardiente Amarillo","Aguardiente",375,"",0.96,""],["Aguardiente Cumbre Premium","Aguardiente",750,"",0.96,""],["Diablo Dark — Blend","Vino Tinto",750,"","",""],["Finca de las Moras — Malbec","Vino Tinto",375,"","",""],["Marqués de Riscal Reserva — Tempranillo","Vino Tinto",750,"","",""],["Marqués de Riscal Gran Reserva — Tempranillo","Vino Tinto",750,"","",""],["Morandé Pionero — Cabernet Sauvignon","Vino Tinto",750,"","",""],["Rosaleda — Merlot","Vino Tinto",750,390.0,0.98,"Inventario semanal 27/09/2026"],["Tarapacá Reserva — Merlot","Vino Tinto",750,"","",""],["Trapiche Medalla — Malbec","Vino tinto",750,"","",""],["Cono Sur Bicicleta — Pinot Noir","Vino Rosado",750,"","",""],["Rosaleda Rosé","Vino Rosado",750,390.0,0.98,"Inventario semanal 27/09/2026"],["Mar de Frades — Albariño","Vino Blanco",750,"","",""],["Rosaleda — Sauvignon Blanc","Vino Blanco",750,390.0,0.98,"Inventario semanal 27/09/2026"],["Tarapacá Reserva — Chardonnay","Vino Blanco",750,"","",""],["Tarapacá Sauvignon Blanc","Vino Blanco",750,"","",""],["Disaronno Amaretto Velbet","Licor",700,400.0,1.1,"Inventario semanal 27/09/2026"]]};

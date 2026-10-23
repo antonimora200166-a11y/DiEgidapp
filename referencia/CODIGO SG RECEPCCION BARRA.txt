@@ -1,0 +1,2903 @@
+/*******************************************************************************************
+ *  DI ÉGIDA — TOSCA BISTRÓ  ·  SGI
+ *  REG FMT-REC-BAR-001  —  Motor de Recepción de Pedidos de BAR
+ *  Versión 1.1  ·  Arquitectura heredada de FMT-REC-COC-003 v3.3.2 (probada en producción)
+ *
+ *  NOVEDADES v1.1
+ *    · CAT_PROVEEDORES: el proveedor pasa a ser lista cerrada, con alta y fusión por menú.
+ *    · Detección de duplicados por FORMA del nombre, no por porcentaje: se acabaron los
+ *      falsos positivos tipo «Mítica Easy Lager» = «Mítica Pale Lager».
+ *    · CAPTURA rediseñada: fondo blanco = se escribe, fondo gris = lo calcula el motor.
+ *
+ *  ENTORNO OBJETIVO (verificado, no negociable):
+ *    · Motor de ejecución ANTIGUO (Rhino) — solo ES5. Sin =>, let, const, plantillas,
+ *      Set, Map, Object.assign, Array.from, spread, .includes, .startsWith, .normalize.
+ *    · Cuenta Gmail personal — canDomainEdit() LANZA EXCEPCIÓN: siempre en try/catch.
+ *    · Uso diario en iPad — los menús no existen en móvil: el guardado va por CASILLA.
+ *    · No se puede ocultar la hoja activa: activarHojaSegura_() antes de ocultar nada.
+ *
+ *  ESTE ARCHIVO ES EL MOTOR COMPLETO. Debe ser el ÚNICO archivo .gs del proyecto:
+ *  Apps Script ejecuta los archivos en orden y el último que define una función gana,
+ *  así que un segundo archivo con las mismas funciones anula al otro en silencio.
+ *
+ *  INSTALACIÓN SOBRE UN ARCHIVO QUE YA TIENE v1.0
+ *    1. Extensiones → Apps Script
+ *    2. Borra cualquier archivo .gs suelto del parche (por ejemplo «2.gs»)
+ *    3. Abre el archivo principal, Ctrl+A, y pega ESTE contenido encima
+ *    4. Guardar → ejecutar  aplicarParche11  → autorizar
+ *
+ *  INSTALACIÓN DESDE CERO
+ *    1. Pegar este archivo → Guardar → ejecutar  instalar  → autorizar
+ *    2. Menú ⚙ Di Égida Bar → Migrar histórico
+ *    3. Menú ⚙ Di Égida Bar → Mejorar la vista para el iPad
+ *******************************************************************************************/
+
+/* ============================== 1 · CONSTANTES ============================== */
+
+var VERSION = '1.1';
+var CODIGO  = 'FMT-REC-BAR-001';
+
+/* Hojas */
+var H = {
+  TAB:  'TABLERO',
+  CAP:  'CAPTURA',
+  BD:   'BD_RECEPCION_BAR',
+  MAE:  'MAESTRO_INSUMOS_BAR',
+  CAT:  'CATALOGO',
+  PRV:  'CAT_PROVEEDORES',
+  BAN:  'BANDAS',
+  DIA:  'DIAGNOSTICO',
+  BIT:  'BITACORA',
+  CFG:  'CONFIG',
+  INS:  'INSTRUCCIONES'
+};
+
+/* Columnas del libro mayor BD_RECEPCION_BAR (1-based) */
+var B = {
+  ID_LINEA:1, ID_DOC:2, FECHA:3, PROVEEDOR:4, PROV_NORM:5, DOCUMENTO:6,
+  PRODUCTO:7, PROD_NORM:8, CATEGORIA:9, PRESENTACION:10, UNIDAD:11,
+  CANT_PED:12, CANT_REC:13, DIFERENCIA:14, PRECIO_UNIT:15, VALOR_TOTAL:16,
+  CONDICION:17, SELLO:18, VENCIMIENTO:19, LOTE:20, OBSERVACIONES:21,
+  RECIBE:22, USUARIO:23, TIMESTAMP:24, OVERRIDE:25, MOTIVO:26,
+  ESTADO:27, REF_REVERSA:28, ORIGEN:29, HALLAZGOS:30
+};
+var BD_ULT_COL = 30;
+
+var BD_ENCABEZADOS = ['ID_LINEA','ID_DOCUMENTO','FECHA_RECEPCION','PROVEEDOR','PROVEEDOR_NORM',
+  'DOCUMENTO_SOPORTE','PRODUCTO','PRODUCTO_NORM','CATEGORIA','PRESENTACION','UNIDAD',
+  'CANT_PEDIDA','CANT_RECIBIDA','DIFERENCIA','PRECIO_UNITARIO','VALOR_TOTAL',
+  'CONDICION','SELLO_INTACTO','VENCIMIENTO','LOTE_GUIA','OBSERVACIONES',
+  'RECIBE','USUARIO_SISTEMA','TIMESTAMP','OVERRIDE','MOTIVO_OVERRIDE',
+  'ESTADO_LINEA','REF_REVERSA','ORIGEN','HALLAZGOS'];
+
+/* Geometría de la hoja CAPTURA — respeta el diseño impreso original */
+var C = {
+  FECHA:'D5', DOC:'J5', PROV:'D6', RECIBE:'J6', TRANSP:'D7', TEMP:'J7',
+  AVISOS:'A8',
+  FILA_INI:10, FILA_FIN:44, TOTALES:45,
+  ESTADO:'D47', OBS:'H47',
+  CHK_GUARDAR:'C56', MOTIVO:'H56', MSG:'A57', CHK_NUEVA:'C58',
+  ULT_COL:14
+};
+
+/* Columnas de la tabla de CAPTURA (1-based sobre la hoja) */
+var R = {
+  NUM:1, PRODUCTO:2, PRESENTACION:3, UNIDAD:4, CANT_PED:5, CANT_REC:6,
+  DIFERENCIA:7, PRECIO:8, TOTAL:9, CONDICION:10, SELLO:11, VENCIMIENTO:12,
+  LOTE:13, OBSERVACIONES:14
+};
+
+/* Paleta */
+var COL = {
+  TINTA:'#1B1B1B', VINO:'#6E1423', ORO:'#B08D3F', HUESO:'#F7F4EF',
+  GRIS:'#6B6B6B', BORDE:'#D8D2C6',
+  OK:'#1E6B3A', OKBG:'#E8F3EC', AVISO:'#8A6100', AVISOBG:'#FDF3DC',
+  MAL:'#8C1C1C', MALBG:'#FBEAEA', AZUL:'#1F4E79', AZULBG:'#EAF1F8'
+};
+
+/* Listas cerradas del dominio */
+var LISTA_CONDICION = ['✓ OK','⚠ Dañado','✕ No llegó','~ Incompleto'];
+var LISTA_SELLO     = ['SÍ','NO','N/A'];
+var LISTA_ESTADO_PED= ['✅ COMPLETO','⚠ CON NOVEDAD','✕ RECHAZADO','⏳ PARCIAL'];
+
+var CATEGORIAS = ['LICOR','VINO','CERVEZA','MIXER','FRUVER','HIELO','INSUMO_SECO',
+                  'DESECHABLE','SERVICIO','OTROS'];
+
+var UNIDADES = ['UND','BOT','CJA','SIX','PAQ','LATA','GR','KG','ML','L'];
+
+/* Códigos de hallazgo */
+var HALL = {
+  H01:'H01 Fecha inválida',
+  H02:'H02 Unidad faltante',
+  H03:'H03 Sin precio',
+  H04:'H04 Total no cuadra',
+  H05:'H05 Documento duplicado',
+  H06:'H06 Recibido 0 marcado OK',
+  H07:'H07 No llegó con cantidad',
+  H08:'H08 Diferencia sin observación',
+  H09:'H09 Unidad incoherente con cantidad',
+  H10:'H10 Sello sin marcar en licor/vino',
+  H11:'H11 Sin documento soporte',
+  H12:'H12 Precio fuera de banda',
+  H13:'H13 Producto fuera de catálogo'
+};
+
+/* Parámetros por defecto de CONFIG */
+var CFG_DEFECTO = [
+  ['FACTOR_BANDA_PRECIO', 20,    'Multiplicador de la mediana por categoría+unidad (capa 1).'],
+  ['FACTOR_BANDA_HEREDADA', 3,   'Ensanche adicional cuando la banda se hereda de otra unidad.'],
+  ['DESVIO_AVISO_PCT', 15,       'Desvío % contra la mediana del propio producto que solo avisa.'],
+  ['DESVIO_BLOQUEO_PCT', 60,     'Desvío % contra la mediana del propio producto que bloquea.'],
+  ['DESVIO_ATIPICO_X', 3,        'Múltiplo de la mediana del producto que bloquea como atípico.'],
+  ['MIN_MOTIVO_OVERRIDE', 15,    'Longitud mínima del motivo para forzar un guardado bloqueado.'],
+  ['DIAS_ATRAS_MAXIMO', 60,      'Aviso si la fecha de recepción es más antigua que estos días.'],
+  ['DIAS_VENCIMIENTO_AVISO', 15, 'Aviso si el producto vence dentro de estos días.'],
+  ['CORREO_ADMIN', 'antonimora200166@gmail.com', 'Destinatario principal de la alerta diaria.'],
+  ['CORREO_2', '',               'Segundo destinatario de la alerta diaria (llenar).'],
+  ['CORREO_3', '',               'Tercer destinatario de la alerta diaria (llenar).'],
+  ['ALERTA_DIARIA_ACTIVA', 'SI', 'SI / NO — envía el resumen diario de hallazgos críticos.'],
+  ['BLOQUEA_SELLO', 'SI',        'SI = sello roto o sin marcar en licor/vino impide guardar.'],
+  ['BLOQUEA_BANDA', 'SI',        'SI = precio fuera de banda impide guardar.'],
+  ['BLOQUEA_COHERENCIA', 'SI',   'SI = cantidad 0 o condición incoherente impide guardar.'],
+  ['BLOQUEA_DIFERENCIA', 'NO',   'NO = diferencia pedida/recibida sin observación solo avisa.'],
+  ['PROVEEDOR_LISTA_CERRADA', 'SI', 'SI = la celda D6 rechaza cualquier proveedor que no esté en CAT_PROVEEDORES. NO = lo admite marcado en rojo, y el bloqueo actúa al guardar.'],
+  ['SIMILITUD_DUPLICADO_PCT', 55,   'Parecido mínimo (%) para marcar dos nombres como posible duplicado.']
+];
+
+/* ============================== 2 · UTILIDADES BASE (ES5 puro) ============================== */
+
+function ss_(){ return SpreadsheetApp.getActiveSpreadsheet(); }
+
+function hoja_(nombre){
+  var h = ss_().getSheetByName(nombre);
+  if (!h) throw new Error('Falta la hoja ' + nombre + '. Ejecuta instalar.');
+  return h;
+}
+function hojaOpcional_(nombre){ return ss_().getSheetByName(nombre); }
+
+function txt_(v){
+  if (v === null || v === undefined) return '';
+  var s = String(v);
+  return s.replace(/^[\s ]+/, '').replace(/[\s ]+$/, '');
+}
+
+function num_(v){
+  if (v === null || v === undefined || v === '') return '';
+  if (typeof v === 'number') return isNaN(v) ? '' : v;
+  var s = String(v).replace(/[$\s ]/g, '').replace(/\./g, '').replace(/,/g, '.');
+  var n = parseFloat(s);
+  return isNaN(n) ? '' : n;
+}
+
+function esNumero_(v){ return typeof v === 'number' && !isNaN(v); }
+
+/* Sustituto de String.normalize(), que NO existe en Rhino. Tabla explícita. */
+var MAPA_TILDES = {
+  'á':'a','à':'a','ä':'a','â':'a','ã':'a','å':'a',
+  'é':'e','è':'e','ë':'e','ê':'e',
+  'í':'i','ì':'i','ï':'i','î':'i',
+  'ó':'o','ò':'o','ö':'o','ô':'o','õ':'o',
+  'ú':'u','ù':'u','ü':'u','û':'u',
+  'ñ':'n','ç':'c','ý':'y','ÿ':'y',
+  'Á':'a','À':'a','Ä':'a','Â':'a','Ã':'a','Å':'a',
+  'É':'e','È':'e','Ë':'e','Ê':'e',
+  'Í':'i','Ì':'i','Ï':'i','Î':'i',
+  'Ó':'o','Ò':'o','Ö':'o','Ô':'o','Õ':'o',
+  'Ú':'u','Ù':'u','Ü':'u','Û':'u',
+  'Ñ':'n','Ç':'c','Ý':'y'
+};
+function sinTildes_(s){
+  var t = String(s === null || s === undefined ? '' : s);
+  var out = '';
+  for (var i = 0; i < t.length; i++){
+    var c = t.charAt(i);
+    out += (MAPA_TILDES[c] !== undefined) ? MAPA_TILDES[c] : c;
+  }
+  return out;
+}
+
+/* Clave de comparación: sin tildes, minúsculas, sin signos, espacios colapsados */
+function clave_(s){
+  var t = sinTildes_(txt_(s)).toLowerCase();
+  t = t.replace(/[^a-z0-9 ]/g, ' ');
+  t = t.replace(/\s+/g, ' ');
+  return txt_(t);
+}
+
+/* ¿contiene? sin usar .includes (no existe en Rhino) */
+function tiene_(cadena, aguja){
+  return String(cadena).indexOf(String(aguja)) >= 0;
+}
+function empiezaCon_(cadena, prefijo){
+  return String(cadena).substring(0, String(prefijo).length) === String(prefijo);
+}
+
+/* ---------------------------------------------------------------------------------------
+   MOTOR DE SIMILITUD  (v1.1)
+
+   Tokens únicos de un nombre, ya sin tildes ni signos.
+--------------------------------------------------------------------------------------- */
+function tokens_(s){
+  var partes = clave_(s).split(' '), out = [], visto = {}, i;
+  for (i = 0; i < partes.length; i++){
+    var p = partes[i];
+    if (p === '' || visto[p]) continue;
+    visto[p] = true;
+    out.push(p);
+  }
+  return out;
+}
+
+function tieneDigito_(t){
+  var i;
+  for (i = 0; i < t.length; i++){
+    var c = t.charAt(i);
+    if (c >= '0' && c <= '9') return true;
+  }
+  return false;
+}
+
+/*  Palabras que NO son ruido: son la variante que distingue dos productos hermanos.
+    Si la diferencia entre dos nombres está solo en una de ellas, NO son duplicados.
+    Este es el filtro que evita marcar «Mítica Easy Lager» = «Mítica Pale Lager».      */
+var TOKENS_DISCRIMINANTES = {
+  'easy':1,'pale':1,'ipa':1,'lager':1,'stout':1,'porter':1,'ale':1,'pilsen':1,'trigo':1,
+  'negra':1,'negro':1,'roja':1,'rojo':1,'rubia':1,'blanca':1,'blanco':1,'verde':1,'amarilla':1,
+  'tinto':1,'rosado':1,'rose':1,'brut':1,'seco':1,'semiseco':1,'dulce':1,'reserva':1,'gran':1,
+  'merlot':1,'cabernet':1,'chardonnay':1,'albarino':1,'syrah':1,'malbec':1,'carmenere':1,
+  'sauvignon':1,'prosecco':1,'espumoso':1,'tempranillo':1,'pinot':1,'moscatel':1,
+  'anejo':1,'reposado':1,'joven':1,'extra':1,'premium':1,'dark':1,'milk':1,'white':1,'gold':1,'dorado':1,
+  'zero':1,'light':1,'diet':1,'azucar':1,'sin':1,'con':1,
+  'gala':1,'tahiti':1,'criolla':1,'comun':1,'importada':1,'nacional':1,'francesa':1,'italiana':1,
+  'espanola':1,'chilena':1,'argentina':1,'tropical':1,'pink':1,'ginger':1,'tonica':1,'soda':1,
+  'maduro':1,'oro':1,'miel':1,'fresca':1,'fresco':1,'seca':1,'congelado':1,
+  'grande':1,'pequeno':1,'mediano':1,'mini':1,'maxi':1,'jumbo':1
+};
+function hayDiscriminante_(lista){
+  var i;
+  for (i = 0; i < lista.length; i++){
+    if (TOKENS_DISCRIMINANTES[lista[i]]) return true;
+    if (tieneDigito_(lista[i])) return true;   /* x300, x250, 750, «12 años» */
+  }
+  return false;
+}
+
+/* Jaccard = intersección / UNIÓN. Nunca sobre el mínimo:
+   con el mínimo «Camarón 51/60» y «Camarón 36/40» darían 100%. */
+function jaccard_(a, b){
+  var A = tokens_(a), Bx = tokens_(b), i;
+  if (A.length === 0 || Bx.length === 0) return 0;
+  var setA = {}, setB = {};
+  for (i = 0; i < A.length; i++) setA[A[i]] = true;
+  for (i = 0; i < Bx.length; i++) setB[Bx[i]] = true;
+  var inter = 0, exclB = 0;
+  for (i = 0; i < A.length; i++){ if (setB[A[i]]) inter++; }
+  for (i = 0; i < Bx.length; i++){ if (!setA[Bx[i]]) exclB++; }
+  var union = A.length + exclB;
+  return union === 0 ? 0 : (inter / union);
+}
+
+/*  Decide si dos nombres de PRODUCTO son el mismo insumo escrito de dos maneras.
+    Devuelve { dup, pct, razon }.
+
+    Por qué no basta el Jaccard: «Hielo iglú» / «Hielo iglú bolsa» y
+    «Mítica Easy Lager x300» / «Mítica Pale Lager x300» dan ambos 67%, y solo el
+    primero es duplicado. Lo que los separa no es el porcentaje sino la FORMA:
+      · contención  → un nombre es el otro más un detalle  → mismo insumo
+      · divergencia → cada nombre tiene un token propio     → productos hermanos
+    Y un token propio que sea variante o lleve dígitos cierra el caso: no son el mismo. */
+function esDuplicadoProbable_(a, b){
+  var A = tokens_(a), Bx = tokens_(b), i;
+  var nulo = { dup:false, pct:0, razon:'' };
+  if (A.length === 0 || Bx.length === 0) return nulo;
+
+  var setA = {}, setB = {};
+  for (i = 0; i < A.length; i++) setA[A[i]] = true;
+  for (i = 0; i < Bx.length; i++) setB[Bx[i]] = true;
+
+  var inter = 0, exclA = [], exclB = [];
+  for (i = 0; i < A.length; i++){ if (setB[A[i]]) inter++; else exclA.push(A[i]); }
+  for (i = 0; i < Bx.length; i++){ if (!setA[Bx[i]]) exclB.push(Bx[i]); }
+  if (inter === 0) return nulo;
+
+  var union = A.length + exclB.length;
+  var pct = Math.round(inter / union * 100);
+
+  /* Un token propio discriminante = son productos distintos, no un duplicado. */
+  if (hayDiscriminante_(exclA) || hayDiscriminante_(exclB)) return { dup:false, pct:pct, razon:'' };
+
+  /* Contención: uno es el otro más un detalle. */
+  if ((exclA.length === 0 || exclB.length === 0) && pct >= 50){
+    return { dup:true, pct:pct, razon:'uno contiene al otro' };
+  }
+  if (pct >= 80) return { dup:true, pct:pct, razon:'nombres casi iguales' };
+  return { dup:false, pct:pct, razon:'' };
+}
+
+/*  Para PROVEEDORES la comparación por palabras no sirve: los nombres se abrevian y
+    se parten («Surtitienda Cañaveral» vs «Súper tiendas cañaveral» comparten una sola
+    palabra y dan 25%). Ahí lo que se parece es la cadena de letras, no el juego de
+    palabras, así que se usa similitud por trigramas (Dice), que los sube a 65%.       */
+function trigramas_(s){
+  var t = clave_(s).replace(/ /g, '');
+  var out = [], visto = {}, i;
+  if (t.length < 3) { if (t !== '') out.push(t); return out; }
+  for (i = 0; i <= t.length - 3; i++){
+    var g = t.substring(i, i + 3);
+    if (!visto[g]){ visto[g] = true; out.push(g); }
+  }
+  return out;
+}
+function simTrigramas_(a, b){
+  var A = trigramas_(a), Bx = trigramas_(b), i;
+  if (A.length === 0 || Bx.length === 0) return 0;
+  var setB = {};
+  for (i = 0; i < Bx.length; i++) setB[Bx[i]] = true;
+  var inter = 0;
+  for (i = 0; i < A.length; i++){ if (setB[A[i]]) inter++; }
+  return (2 * inter) / (A.length + Bx.length);   /* Dice */
+}
+
+function mediana_(arr){
+  var v = [], i;
+  for (i = 0; i < arr.length; i++){ if (esNumero_(arr[i]) && arr[i] > 0) v.push(arr[i]); }
+  if (v.length === 0) return '';
+  v.sort(function(x, y){ return x - y; });
+  var n = v.length, mit = Math.floor(n / 2);
+  return (n % 2) ? v[mit] : (v[mit - 1] + v[mit]) / 2;
+}
+
+function redondear_(n, d){
+  if (!esNumero_(n)) return n;
+  var f = Math.pow(10, d || 0);
+  return Math.round(n * f) / f;
+}
+
+function fmtFecha_(d){
+  if (!(d instanceof Date) || isNaN(d.getTime())) return txt_(d);
+  return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+}
+function fmtFechaHora_(d){
+  if (!(d instanceof Date) || isNaN(d.getTime())) return txt_(d);
+  return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+}
+function soloFecha_(d){
+  if (!(d instanceof Date) || isNaN(d.getTime())) return '';
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function aFecha_(v){
+  /* Se normaliza a medianoche: una celda con hora hacía que hoy pareciera futuro. */
+  if (v instanceof Date && !isNaN(v.getTime())) return soloFecha_(v);
+  var s = txt_(v);
+  if (s === '') return '';
+  var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) { var d1 = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])); return isNaN(d1.getTime()) ? '' : soloFecha_(d1); }
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m){
+    var dd = Number(m[1]), mm = Number(m[2]), aa = Number(m[3]);
+    if (dd < 1 || dd > 31 || mm < 1 || mm > 12) return '';
+    var d2 = new Date(aa, mm - 1, dd);
+    if (d2.getDate() !== dd || d2.getMonth() !== mm - 1) return '';
+    return soloFecha_(d2);
+  }
+  return '';
+}
+function diasEntre_(a, b){
+  if (!(a instanceof Date) || !(b instanceof Date)) return '';
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+function hoy_(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+function usuario_(){
+  var u = '';
+  try { u = Session.getActiveUser().getEmail(); } catch(e){ u = ''; }
+  if (!u) { try { u = Session.getEffectiveUser().getEmail(); } catch(e2){ u = ''; } }
+  return u || '(no identificado)';
+}
+
+/* ---- CONFIG por nombre de parámetro ---- */
+function cfg_(nombre, porDefecto){
+  var h = hojaOpcional_(H.CFG);
+  if (!h) return porDefecto;
+  var n = h.getLastRow();
+  if (n < 2) return porDefecto;
+  var d = h.getRange(2, 1, n - 1, 2).getValues();
+  for (var i = 0; i < d.length; i++){
+    if (clave_(d[i][0]) === clave_(nombre)){
+      var v = d[i][1];
+      if (v === '' || v === null || v === undefined) return porDefecto;
+      return v;
+    }
+  }
+  return porDefecto;
+}
+function cfgNum_(nombre, porDefecto){
+  var v = num_(cfg_(nombre, porDefecto));
+  return esNumero_(v) ? v : porDefecto;
+}
+function cfgSi_(nombre, porDefecto){
+  var v = clave_(cfg_(nombre, porDefecto));
+  return v === 'si' || v === 'true' || v === '1';
+}
+
+/* ---- BITÁCORA append-only ---- */
+function bitacora_(accion, detalle, motivo){
+  try {
+    var h = hojaOpcional_(H.BIT);
+    if (!h) return;
+    h.appendRow([new Date(), usuario_(), txt_(accion), txt_(detalle), txt_(motivo), VERSION]);
+  } catch(e){ /* la bitácora jamás puede tumbar una operación */ }
+}
+
+/* ---- BLINDAJE ---- */
+
+/* Cada paso corre aislado y se reporta por nombre.
+   Un detalle cosmético no puede abortar una instalación. */
+function pasoSeguro_(lista, nombre, fn){
+  try { fn(); lista.push('✔ ' + nombre); return true; }
+  catch(e){ lista.push('✕ ' + nombre + '  →  ' + (e && e.message ? e.message : e)); return false; }
+}
+
+/* canDomainEdit() LANZA EXCEPCIÓN en cuentas Gmail personales.
+   Un guardián del tipo if(p.canDomainEdit && p.canDomainEdit()) la LLAMA y revienta. */
+function protegerSeguro_(hojaObj, descripcion, rangosLibres){
+  try {
+    var protecciones = hojaObj.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+    var i;
+    for (i = 0; i < protecciones.length; i++){ try { protecciones[i].remove(); } catch(eR){} }
+    var p = hojaObj.protect().setDescription(descripcion || ('Protegida por SGI ' + CODIGO));
+    try { p.setWarningOnly(true); } catch(eW){}
+    try { p.removeEditors(p.getEditors()); } catch(eE){}
+    try { p.setDomainEdit(false); } catch(eD){ /* cuenta personal: se ignora */ }
+    if (rangosLibres && rangosLibres.length){
+      try { p.setUnprotectedRanges(rangosLibres); } catch(eU){}
+    }
+    return true;
+  } catch(e){ return false; }
+}
+
+/* Google Sheets se niega a ocultar la hoja que el usuario está viendo. */
+function activarHojaSegura_(){
+  try {
+    var libro = ss_();
+    var segura = libro.getSheetByName(H.CAP) || libro.getSheetByName(H.TAB) || libro.getSheets()[0];
+    if (segura && segura.isSheetHidden()) { try { segura.showSheet(); } catch(e1){} }
+    if (segura) libro.setActiveSheet(segura);
+    return segura;
+  } catch(e){ return null; }
+}
+function ocultarSeguro_(nombre){
+  try {
+    var h = hojaOpcional_(nombre);
+    if (!h) return false;
+    var act = ss_().getActiveSheet();
+    if (act && act.getName() === nombre) activarHojaSegura_();
+    if (ss_().getActiveSheet().getName() === nombre) return false;
+    h.hideSheet();
+    return true;
+  } catch(e){ return false; }
+}
+
+/* Diálogos y mensajes: en iPad no hay UI, así que nunca pueden ser fatales. */
+function avisarUI_(titulo, mensaje){
+  try { SpreadsheetApp.getUi().alert(titulo, mensaje, SpreadsheetApp.getUi().ButtonSet.OK); return true; }
+  catch(e){ try { ss_().toast(String(mensaje).substring(0, 240), titulo, 12); } catch(e2){} return false; }
+}
+function toast_(mensaje, titulo){
+  try { ss_().toast(String(mensaje).substring(0, 240), titulo || CODIGO, 8); } catch(e){}
+}
+
+/* ============================== 3 · DOMINIO DEL BAR ============================== */
+
+var PALABRAS_CATEGORIA = [
+  ['LICOR',     ['ginebra','gin ','hendricks','tequila','olmeca','ron ','vodka','whisky','whiskey','glenfiddich','aguardiente','licor','mezcal','brandy','cognac','amaretto','triple sec','vermouth','aperol','campari','baileys','sambuca','absenta','pisco','cachaca']],
+  ['VINO',      ['vino','albarino','merlot','rose','rosaleda','tarapaca','cabernet','chardonnay','espumoso','champagne','sauvignon','frades','carmenere','malbec','syrah','prosecco']],
+  ['CERVEZA',   ['cerveza','lager','ipa','mitica','corona','club colombia','heineken','stella','poker','aguila']],
+  ['MIXER',     ['tonica','tonic','ginger','soda','gaseosa','bretana','red bull','gatorade','agua','jugo','mil976','4pack','fourpack','four pack','pink','coca','sprite','quatro','hatsu']],
+  ['HIELO',     ['hielo','iglu']],
+  ['FRUVER',    ['manzana','fresa','romero','limoncillo','pina','menta','hierbabuena','albahaca','maracuya','granadilla','uchuva','pepino','uva','pera','jengibre','mora','naranja','limon','mango','banano','tomate','fruta','citrico fruta','apio','zanahoria','coco','sandia','papaya','lulo','curuba','feijoa','tomillo','lavanda','cilantro']],
+  ['INSUMO_SECO',['acido citrico','azucar','sal ','jarabe','sirope','bitter','esencia','colorante','miel','canela','clavo','anis','goma','gelatina','leche condensada','crema de leche','cafe']],
+  ['DESECHABLE',['bolsa','vaso','servilleta','pitillo','removedor','individual','papel','guante','film','vinipel','tapa']],
+  ['SERVICIO',  ['domicilio','flete','sobrecosto','transporte','envio','acarreo']]
+];
+
+function categoriaDe_(producto, presentacion, unidad){
+  var k = ' ' + clave_(producto) + ' ' + clave_(presentacion) + ' ';
+  var i, j;
+  for (i = 0; i < PALABRAS_CATEGORIA.length; i++){
+    var cat = PALABRAS_CATEGORIA[i][0], palabras = PALABRAS_CATEGORIA[i][1];
+    for (j = 0; j < palabras.length; j++){
+      if (tiene_(k, palabras[j])) return cat;
+    }
+  }
+  return 'OTROS';
+}
+
+var MAPA_UNIDAD = {
+  'u':'UND','und':'UND','unid':'UND','unidad':'UND','unidades':'UND','1und':'UND','un':'UND',
+  'bot':'BOT','botella':'BOT','botellas':'BOT','botx750':'BOT','botx700':'BOT','bot x750':'BOT','botx1000':'BOT',
+  'caja':'CJA','cja':'CJA','cajas':'CJA','cajax250':'CJA','caja 500':'CJA',
+  'six':'SIX','sixpack':'SIX','6pack':'SIX','six pack':'SIX',
+  'pack':'PAQ','4pack':'PAQ','fourpack':'PAQ','four pack':'PAQ','paquete':'PAQ','paq':'PAQ','bolsa':'PAQ',
+  'lata':'LATA','latas':'LATA',
+  'gr':'GR','g':'GR','gramo':'GR','gramos':'GR',
+  'kg':'KG','kl':'KG','kilo':'KG','kilos':'KG','kilogramo':'KG','kline':'KG','3 k':'KG','k':'KG',
+  'ml':'ML','mililitro':'ML','mililitros':'ML',
+  'l':'L','lt':'L','litro':'L','litros':'L'
+};
+function unidadNorm_(u){
+  var k = clave_(u);
+  if (k === '' || k === 'no ap' || k === 'n a' || k === 'na') return '';
+  if (MAPA_UNIDAD[k] !== undefined) return MAPA_UNIDAD[k];
+  var mayus = k.toUpperCase();
+  var i;
+  for (i = 0; i < UNIDADES.length; i++){ if (UNIDADES[i] === mayus) return mayus; }
+  return '';
+}
+
+function esLicorOVino_(categoria){
+  return categoria === 'LICOR' || categoria === 'VINO';
+}
+function esPerecedero_(categoria){
+  return categoria === 'FRUVER' || categoria === 'INSUMO_SECO' || categoria === 'MIXER' || categoria === 'CERVEZA';
+}
+/* Unidades de conteo: una cantidad enorme delata que se digitó peso en unidades. */
+function esUnidadDeConteo_(u){
+  return u === 'UND' || u === 'BOT' || u === 'CJA' || u === 'SIX' || u === 'PAQ' || u === 'LATA';
+}
+/*  Detecta la unidad incoherente con la cantidad, en los dos sentidos:
+      · 800 BOT de whisky   → no es conteo, es peso o volumen mal rotulado
+      · 2.421 KG de manzana → son gramos digitados bajo la etiqueta KG
+    Es el mismo error que el precio de paquete como unitario, visto desde la cantidad,
+    y si no se marca contamina la banda de esa categoría: en el histórico real las
+    cinco frutas «Kl» del 06/08 hundían la mediana de FRUVER/KG a $16 por kilo. */
+function cantidadIncoherente_(unidad, cantidad){
+  if (!esNumero_(cantidad) || cantidad <= 0) return false;
+  if (esUnidadDeConteo_(unidad) && cantidad > 500) return true;
+  if ((unidad === 'KG' || unidad === 'L') && cantidad > 100) return true;
+  return false;
+}
+
+/* ============================== 4 · LECTURA DEL LIBRO MAYOR ============================== */
+
+function leerBD_(){
+  var h = hojaOpcional_(H.BD);
+  if (!h) return [];
+  var n = h.getLastRow();
+  if (n < 2) return [];
+  var d = h.getRange(2, 1, n - 1, BD_ULT_COL).getValues();
+  var out = [], i;
+  for (i = 0; i < d.length; i++){
+    if (txt_(d[i][B.ID_LINEA - 1]) === '') continue;
+    out.push(d[i]);
+  }
+  return out;
+}
+function bdCampo_(fila, col){ return fila[col - 1]; }
+function esActiva_(fila){
+  var e = clave_(fila[B.ESTADO - 1]);
+  return e !== 'reversada';
+}
+/*  Hallazgos que invalidan el PRECIO de una línea: esa línea no puede alimentar
+    bandas ni maestro. Los demás hallazgos son documentales (fecha, documento,
+    sello, observación) y no ensucian la estadística de costo, así que una línea
+    en REVISAR por esos motivos SÍ computa: si no, el 82% del histórico migrado
+    quedaría fuera y las bandas nacerían vacías. */
+var HALL_INVALIDAN_PRECIO = ['H02','H03','H04','H09','H12'];
+function computable_(fila){
+  if (clave_(fila[B.ESTADO - 1]) === 'reversada') return false;
+  var hall = txt_(fila[B.HALLAZGOS - 1]);
+  var i;
+  for (i = 0; i < HALL_INVALIDAN_PRECIO.length; i++){
+    if (tiene_(hall, HALL_INVALIDAN_PRECIO[i])) return false;
+  }
+  return true;
+}
+
+/* ============================== 5 · BANDAS DE PRECIO (doble capa) ============================== */
+
+/*  Capa 1 — rango razonable por (CATEGORÍA, UNIDAD): mediana robusta × FACTOR.
+    Funciona en la PRIMERA compra de un producto, donde la capa 2 todavía no puede.
+    Filtro crítico: la mediana de referencia EXCLUYE los precios ya marcados fuera de
+    banda; si no, un dato corrupto se vuelve la referencia y el sistema rechaza lo bueno. */
+function calcularBandas_(){
+  var filas = leerBD_(), i;
+  var grupos = {};
+  for (i = 0; i < filas.length; i++){
+    var f = filas[i];
+    if (!computable_(f)) continue;
+    var p = num_(f[B.PRECIO_UNIT - 1]);
+    if (!esNumero_(p) || p <= 0) continue;
+    var cat = txt_(f[B.CATEGORIA - 1]) || 'OTROS';
+    var uni = txt_(f[B.UNIDAD - 1]) || '(sin unidad)';
+    var hall = txt_(f[B.HALLAZGOS - 1]);
+    if (tiene_(hall, 'H12')) continue;   /* no se autoalimenta con lo que ya está fuera de banda */
+    var k = cat + '|' + uni;
+    if (!grupos[k]) grupos[k] = { cat: cat, uni: uni, v: [] };
+    grupos[k].v.push(p);
+  }
+  var factor = cfgNum_('FACTOR_BANDA_PRECIO', 20);
+  var heredado = cfgNum_('FACTOR_BANDA_HEREDADA', 3);
+  var salida = [];
+  var porCategoria = {};
+  var k2;
+  for (k2 in grupos){
+    if (!grupos.hasOwnProperty(k2)) continue;
+    var g = grupos[k2];
+    var med = mediana_(g.v);
+    if (!esNumero_(med) || med <= 0) continue;
+    if (!porCategoria[g.cat]) porCategoria[g.cat] = [];
+    porCategoria[g.cat].push(med);
+    /* Menos de 3 datos limpios = poca confianza: se ensancha igual que una banda heredada. */
+    var f = (g.v.length < 3) ? (factor * heredado) : factor;
+    salida.push({
+      cat: g.cat, uni: g.uni, n: g.v.length, mediana: med,
+      min: med / f, max: med * f, heredada: (g.v.length < 3) ? 'POCOS DATOS' : 'NO'
+    });
+  }
+  return { bandas: salida, porCategoria: porCategoria, factor: factor, heredado: heredado };
+}
+
+function buscarBanda_(bandas, cat, uni){
+  var i;
+  for (i = 0; i < bandas.length; i++){
+    if (bandas[i].cat === cat && bandas[i].uni === uni) return bandas[i];
+  }
+  return null;
+}
+
+/*  Mediana del propio producto EN LA MISMA UNIDAD, excluyendo lo ya marcado fuera
+    de banda. Sin el filtro de unidad se compara $/gramo contra $/kilo del mismo
+    insumo: el maracuyá a $8.000/kg salía «100% desviado» frente a su propio
+    histórico en gramos. La unidad es parte de la identidad del precio. */
+function medianaProducto_(filas, prodNorm, unidad){
+  var v = [], i;
+  for (i = 0; i < filas.length; i++){
+    var f = filas[i];
+    if (!computable_(f)) continue;
+    if (clave_(f[B.PROD_NORM - 1]) !== clave_(prodNorm)) continue;
+    if (txt_(unidad) !== '' && txt_(f[B.UNIDAD - 1]) !== txt_(unidad)) continue;
+    if (tiene_(txt_(f[B.HALLAZGOS - 1]), 'H12')) continue;
+    var p = num_(f[B.PRECIO_UNIT - 1]);
+    if (esNumero_(p) && p > 0) v.push(p);
+  }
+  return { mediana: mediana_(v), n: v.length };
+}
+
+/*  Evalúa un precio. Devuelve {nivel:'ok'|'aviso'|'bloquea', texto:''}
+    Capa 1 primero (sirve desde la primera observación), luego capa 2. */
+function evaluarPrecio_(filas, bandasCalc, prodNorm, cat, uni, precio){
+  if (!esNumero_(precio) || precio <= 0) return { nivel:'ok', texto:'' };
+  var res = { nivel:'ok', texto:'' };
+  var b = buscarBanda_(bandasCalc.bandas, cat, uni);
+  if (!b){
+    /* banda heredada de la categoría, ensanchada ×FACTOR_BANDA_HEREDADA */
+    var meds = bandasCalc.porCategoria[cat];
+    if (meds && meds.length){
+      var m = mediana_(meds);
+      if (esNumero_(m) && m > 0){
+        b = { cat:cat, uni:uni, n:0, mediana:m,
+              min: m / (bandasCalc.factor * bandasCalc.heredado),
+              max: m * bandasCalc.factor * bandasCalc.heredado, heredada:'SI' };
+      }
+    }
+  }
+  if (b && (precio < b.min || precio > b.max)){
+    var veces = redondear_(precio / b.mediana, 1);
+    return { nivel:'bloquea',
+             texto:'Precio ' + redondear_(precio,2) + ' fuera de la banda de ' + cat + '/' + (uni||'sin unidad') +
+                   ' (' + redondear_(b.min,2) + ' a ' + redondear_(b.max,2) + '; ' + veces + '× la mediana' +
+                   (b.heredada !== 'NO' ? ', banda ' + (b.heredada === 'SI' ? 'heredada' : 'ensanchada por pocos datos') : '') + ')' };
+  }
+  var mp = medianaProducto_(filas, prodNorm, uni);
+  if (esNumero_(mp.mediana) && mp.mediana > 0){
+    var x = precio / mp.mediana;
+    var pct = Math.abs(x - 1) * 100;
+    var atip = cfgNum_('DESVIO_ATIPICO_X', 3);
+    var blo  = cfgNum_('DESVIO_BLOQUEO_PCT', 60);
+    var avi  = cfgNum_('DESVIO_AVISO_PCT', 15);
+    if (x >= atip || x <= (1 / atip)){
+      return { nivel:'bloquea', texto:'Precio ' + redondear_(x,1) + '× la mediana histórica del producto en ' + (uni || 'esa unidad') + ' (' + redondear_(mp.mediana,2) + ')' };
+    }
+    if (pct > blo){
+      return { nivel:'bloquea', texto:'Precio se desvía ' + redondear_(pct,0) + '% de la mediana del producto en ' + (uni || 'esa unidad') + ' (' + redondear_(mp.mediana,2) + ')' };
+    }
+    if (pct > avi){
+      return { nivel:'aviso', texto:'Precio se desvía ' + redondear_(pct,0) + '% de la mediana del producto en ' + (uni || 'esa unidad') + ' (' + redondear_(mp.mediana,2) + ')' };
+    }
+  }
+  return res;
+}
+
+/* ============================== 6 · LECTURA DE LA HOJA CAPTURA ============================== */
+
+function leerCaptura_(){
+  var h = hoja_(H.CAP);
+  var enc = {
+    fechaCruda: h.getRange(C.FECHA).getValue(),
+    documento:  txt_(h.getRange(C.DOC).getValue()),
+    /* v1.1 · el proveedor se canoniza al leerlo: escribas «Postobon» o «POSTOBON»,
+       al libro mayor entra «Postobón». */
+    proveedor:  proveedorCanonico_(txt_(h.getRange(C.PROV).getValue())),
+    recibe:     txt_(h.getRange(C.RECIBE).getValue()),
+    transporte: txt_(h.getRange(C.TRANSP).getValue()),
+    temp:       txt_(h.getRange(C.TEMP).getValue()),
+    estado:     txt_(h.getRange(C.ESTADO).getValue()),
+    obs:        txt_(h.getRange(C.OBS).getValue()),
+    motivo:     txt_(h.getRange(C.MOTIVO).getValue())
+  };
+  enc.fecha = aFecha_(enc.fechaCruda);
+  var nFilas = C.FILA_FIN - C.FILA_INI + 1;
+  var d = h.getRange(C.FILA_INI, 1, nFilas, C.ULT_COL).getValues();
+  var lineas = [], i;
+  for (i = 0; i < d.length; i++){
+    var f = d[i];
+    var producto = txt_(f[R.PRODUCTO - 1]);
+    var hayAlgo = producto !== '' || txt_(f[R.CANT_REC - 1]) !== '' || txt_(f[R.PRECIO - 1]) !== '';
+    if (!hayAlgo) continue;
+    var presentacion = txt_(f[R.PRESENTACION - 1]);
+    var unidadCruda  = f[R.UNIDAD - 1];
+    var cat = categoriaDe_(producto, presentacion, unidadCruda);
+    lineas.push({
+      fila: C.FILA_INI + i,
+      producto: producto,
+      prodNorm: clave_(producto),
+      presentacion: presentacion,
+      unidadCruda: txt_(unidadCruda),
+      unidad: unidadNorm_(unidadCruda),
+      categoria: cat,
+      pedida: num_(f[R.CANT_PED - 1]),
+      recibida: num_(f[R.CANT_REC - 1]),
+      precio: num_(f[R.PRECIO - 1]),
+      condicion: txt_(f[R.CONDICION - 1]),
+      sello: txt_(f[R.SELLO - 1]),
+      vencimiento: aFecha_(f[R.VENCIMIENTO - 1]),
+      vencCrudo: txt_(f[R.VENCIMIENTO - 1]),
+      lote: txt_(f[R.LOTE - 1]),
+      obs: txt_(f[R.OBSERVACIONES - 1])
+    });
+  }
+  return { enc: enc, lineas: lineas };
+}
+
+/* ============================== 7 · COMPUERTAS DE VALIDACIÓN ============================== */
+
+/*  Dos niveles:
+      FATAL      — no guarda nunca.
+      BLOQUEANTE — no guarda, pero admite forzado con motivo (≥ MIN_MOTIVO_OVERRIDE),
+                   firmado en BITÁCORA. Nunca bloqueo duro sin salida: eso empuja al
+                   equipo a llevar registros paralelos en papel.
+    Los AVISOS no impiden nada. */
+function validarRecepcion_(cap){
+  var fatales = [], bloqueantes = [], avisos = [];
+  var enc = cap.enc, L = cap.lineas, i, j;
+
+  /* ---- F1 encabezado ---- */
+  var faltan = [];
+  if (!(enc.fecha instanceof Date)) faltan.push('fecha');
+  if (enc.proveedor === '') faltan.push('proveedor');
+  if (enc.recibe === '')    faltan.push('responsable que recibe');
+  if (faltan.length) fatales.push('F1 · Encabezado incompleto: falta ' + faltan.join(', ') + '.');
+
+  /* ---- F2 fecha razonable ---- */
+  if (enc.fecha instanceof Date){
+    var hoy = hoy_();
+    var dif = diasEntre_(enc.fecha, hoy);
+    if (dif < 0) fatales.push('F2 · La fecha de recepción es futura (' + fmtFecha_(enc.fecha) + ').');
+    else if (dif > cfgNum_('DIAS_ATRAS_MAXIMO', 60)) avisos.push('Fecha de hace ' + dif + ' días.');
+  } else if (txt_(enc.fechaCruda) !== ''){
+    fatales.push('F2 · La fecha "' + txt_(enc.fechaCruda) + '" no es una fecha válida.');
+  }
+
+  /* ---- F3 al menos una línea ---- */
+  if (L.length === 0) fatales.push('F3 · No hay ninguna línea de producto.');
+
+  /*  ---- B11 proveedor dentro del catálogo (v1.1) ----
+      Es BLOQUEANTE CON OVERRIDE, no fatal, a propósito: la validación de D6 ya impide
+      escribirlo, pero un PEGADO se salta cualquier validación de datos. B11 es la red
+      que atrapa ese caso, y admite forzado firmado para no dejar al bar sin poder
+      registrar una compra de urgencia un domingo a las once de la noche.              */
+  if (enc.proveedor !== '' && !existeProveedor_(enc.proveedor)){
+    var listaP = proveedoresCatalogo_(), parecidos = [];
+    var umbralP = cfgNum_('SIMILITUD_DUPLICADO_PCT', 55) / 100;
+    for (i = 0; i < listaP.length; i++){
+      if (simTrigramas_(enc.proveedor, listaP[i].nombre) >= umbralP) parecidos.push(listaP[i].nombre);
+    }
+    bloqueantes.push('B11 · "' + enc.proveedor + '" no está en el catálogo de proveedores.' +
+      (parecidos.length ? ' ¿Querías decir ' + parecidos.join(' / ') + '?'
+                        : ' Si es realmente nuevo, dalo de alta en ⚙ Di Égida Bar → Dar de alta un proveedor.'));
+  }
+
+  /* ---- F4 documento duplicado ---- */
+  if (enc.documento === ''){
+    bloqueantes.push('B1 · Recepción sin N° de remisión o factura.');
+  } else {
+    var filas = leerBD_();
+    var avisoOtroProv = '';
+    for (i = 0; i < filas.length; i++){
+      if (!esActiva_(filas[i])) continue;
+      if (clave_(filas[i][B.DOCUMENTO - 1]) !== clave_(enc.documento)) continue;
+      var provBD = txt_(filas[i][B.PROVEEDOR - 1]);
+      if (clave_(provBD) === clave_(enc.proveedor)){
+        fatales.push('F4 · El documento "' + enc.documento + '" ya está registrado para ' + provBD +
+                     ' (' + fmtFecha_(filas[i][B.FECHA - 1]) + '). Si es una corrección, usa Reversar línea.');
+        avisoOtroProv = '';
+        break;
+      }
+      avisoOtroProv = 'El documento "' + enc.documento + '" ya existe con otro proveedor (' + provBD +
+                      '). Verifica que no sea un número copiado por error.';
+    }
+    if (avisoOtroProv !== '') avisos.push(avisoOtroProv);
+  }
+
+  /* ---- Por línea ---- */
+  var filasBD = leerBD_();
+  var bandas = calcularBandas_();
+  var vistos = {};
+  for (i = 0; i < L.length; i++){
+    var l = L[i], ref = 'Fila ' + l.fila + ' (' + (l.producto || 'sin nombre') + ')';
+
+    if (l.producto === ''){
+      fatales.push('F5 · ' + ref + ': hay datos pero el nombre del producto está vacío.');
+      continue;
+    }
+    if (vistos[l.prodNorm]) avisos.push(ref + ': producto repetido en esta misma recepción.');
+    vistos[l.prodNorm] = true;
+
+    /* unidad */
+    if (l.unidad === ''){
+      bloqueantes.push('B2 · ' + ref + ': unidad vacía o no reconocida ("' + l.unidadCruda + '"). ' +
+                       'Sin unidad no hay control de precio posible.');
+    }
+
+    /* cantidades */
+    if (!esNumero_(l.recibida)){
+      bloqueantes.push('B3 · ' + ref + ': cantidad recibida vacía o no numérica.');
+    } else if (l.recibida < 0){
+      bloqueantes.push('B3 · ' + ref + ': cantidad recibida negativa.');
+    }
+
+    /* coherencia cantidad / condición */
+    if (cfgSi_('BLOQUEA_COHERENCIA', 'SI')){
+      if (esNumero_(l.recibida) && l.recibida === 0 && tiene_(clave_(l.condicion), 'ok')){
+        bloqueantes.push('B4 · ' + ref + ': recibido 0 pero marcado como "✓ OK". Corrige la cantidad o la condición.');
+      }
+      if (tiene_(clave_(l.condicion), 'no llego') && esNumero_(l.recibida) && l.recibida > 0){
+        bloqueantes.push('B4 · ' + ref + ': marcado "✕ No llegó" pero con cantidad recibida ' + l.recibida + '.');
+      }
+      if (esNumero_(l.recibida) && l.recibida === 0 && esNumero_(l.precio) && l.precio > 0 && !tiene_(clave_(l.condicion), 'no llego')){
+        bloqueantes.push('B4 · ' + ref + ': cantidad 0 con precio ' + l.precio + '. El valor del ítem quedaría en cero.');
+      }
+    }
+
+    /* diferencia pedida vs recibida */
+    if (esNumero_(l.pedida) && esNumero_(l.recibida) && l.pedida !== l.recibida){
+      var d = l.recibida - l.pedida;
+      var texto = ref + ': diferencia de ' + (d > 0 ? '+' : '') + d + ' frente a lo pedido sin observación.';
+      if (l.obs === ''){
+        if (cfgSi_('BLOQUEA_DIFERENCIA', 'NO')) bloqueantes.push('B5 · ' + texto);
+        else avisos.push(texto);
+      }
+    }
+
+    /* unidad incoherente con la cantidad */
+    if (cantidadIncoherente_(l.unidad, l.recibida)){
+      bloqueantes.push('B10 · ' + ref + ': ' + l.recibida + ' ' + l.unidad +
+                       ' no es una cantidad plausible. ¿Estás digitando gramos o mililitros bajo otra unidad?');
+    }
+
+    /* precio */
+    if (!esNumero_(l.precio) || l.precio <= 0){
+      bloqueantes.push('B6 · ' + ref + ': sin precio unitario. Una línea sin precio no cuesta nada y ensucia el costeo.');
+    } else if (cfgSi_('BLOQUEA_BANDA', 'SI')){
+      var ev = evaluarPrecio_(filasBD, bandas, l.prodNorm, l.categoria, l.unidad, l.precio);
+      if (ev.nivel === 'bloquea') bloqueantes.push('B7 · ' + ref + ': ' + ev.texto + '.');
+      else if (ev.nivel === 'aviso') avisos.push(ref + ': ' + ev.texto + '.');
+    }
+
+    /* sello en licores y vinos */
+    if (esLicorOVino_(l.categoria) && cfgSi_('BLOQUEA_SELLO', 'SI')){
+      var s = clave_(l.sello);
+      if (s === '') bloqueantes.push('B8 · ' + ref + ': licor o vino sin marcar el sello de seguridad.');
+      else if (s === 'no') bloqueantes.push('B8 · ' + ref + ': sello ROTO. Deja constancia en observaciones antes de forzar.');
+    }
+
+    /* vencimiento */
+    if (l.vencimiento instanceof Date){
+      var dv = diasEntre_(hoy_(), l.vencimiento);
+      if (dv < 0) bloqueantes.push('B9 · ' + ref + ': producto VENCIDO desde hace ' + Math.abs(dv) + ' días.');
+      else if (dv <= cfgNum_('DIAS_VENCIMIENTO_AVISO', 15)) avisos.push(ref + ': vence en ' + dv + ' días.');
+    } else if (esPerecedero_(l.categoria) && l.vencCrudo !== '' && clave_(l.vencCrudo) !== 'no ap' && clave_(l.vencCrudo) !== 'n a'){
+      avisos.push(ref + ': el vencimiento "' + l.vencCrudo + '" no es una fecha válida.');
+    }
+
+    /* catálogo de productos: producto nuevo o gemelo de uno existente (v1.1) */
+    if (!existeEnCatalogo_(l.prodNorm)){
+      var gemelo = productoParecido_(l.producto, l.categoria);
+      if (gemelo !== '') avisos.push(ref + ': producto nuevo, pero se parece a "' + gemelo +
+                                     '" que ya está en el catálogo. Si es el mismo, úsalo desde la lista.');
+      else avisos.push(ref + ': producto nuevo, se agregará al CATÁLOGO.');
+    }
+  }
+
+  return { fatales: fatales, bloqueantes: bloqueantes, avisos: avisos };
+}
+
+function existeEnCatalogo_(prodNorm){
+  var h = hojaOpcional_(H.CAT);
+  if (!h) return false;
+  var n = h.getLastRow();
+  if (n < 2) return false;
+  var d = h.getRange(2, 1, n - 1, 1).getValues(), i;
+  for (i = 0; i < d.length; i++){ if (clave_(d[i][0]) === clave_(prodNorm)) return true; }
+  return false;
+}
+
+/* v1.1 · gemelo probable dentro de la misma categoría, para avisar al capturar */
+function productoParecido_(nombre, categoria){
+  var h = hojaOpcional_(H.CAT);
+  if (!h) return '';
+  var n = h.getLastRow();
+  if (n < FILA_DATOS) return '';
+  var d = h.getRange(FILA_DATOS, 1, n - FILA_DATOS + 1, 3).getValues(), i;
+  for (i = 0; i < d.length; i++){
+    var otro = txt_(d[i][1]);
+    if (otro === '') continue;
+    if (txt_(categoria) !== '' && txt_(d[i][2]) !== '' && txt_(d[i][2]) !== txt_(categoria)) continue;
+    var r = esDuplicadoProbable_(nombre, otro);
+    if (r.dup) return otro;
+  }
+  return '';
+}
+
+/* ============================== 8 · GUARDADO ============================== */
+
+function guardarRecepcion(){
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch(e){ escribirMensaje_('⏳ Otra operación está en curso. Espera unos segundos y vuelve a marcar la casilla.', 'aviso'); return; }
+  try {
+    var cap = leerCaptura_();
+    var v = validarRecepcion_(cap);
+
+    if (v.fatales.length){
+      escribirMensaje_('✕ NO SE GUARDÓ — ' + v.fatales.length + ' problema(s) que no admiten forzado:\n· ' +
+                       v.fatales.join('\n· ') + (v.bloqueantes.length ? '\nAdemás: ' + v.bloqueantes.length + ' bloqueo(s).' : ''), 'mal');
+      bitacora_('GUARDADO RECHAZADO', v.fatales.join(' | '), '');
+      return;
+    }
+
+    var minMotivo = cfgNum_('MIN_MOTIVO_OVERRIDE', 15);
+    var motivo = cap.enc.motivo;
+    var forzado = 'NO';
+
+    if (v.bloqueantes.length){
+      if (motivo.length < minMotivo){
+        escribirMensaje_('⛔ NO SE GUARDÓ — ' + v.bloqueantes.length + ' bloqueo(s):\n· ' + v.bloqueantes.join('\n· ') +
+                         '\n\nCorrige, o escribe el motivo del forzado en ' + C.MOTIVO + ' (mínimo ' + minMotivo +
+                         ' caracteres) y vuelve a marcar la casilla.', 'mal');
+        bitacora_('GUARDADO BLOQUEADO', v.bloqueantes.join(' | '), '');
+        return;
+      }
+      forzado = 'SI';
+    }
+
+    var idDoc = siguienteIdDocumento_(cap.enc.fecha);
+    var hBD = hoja_(H.BD);
+    var ahora = new Date();
+    var user = usuario_();
+    var provNorm = clave_(cap.enc.proveedor);
+    var filasNuevas = [], i;
+
+    for (i = 0; i < cap.lineas.length; i++){
+      var l = cap.lineas[i];
+      var hallazgos = hallazgosDeLinea_(l, v);
+      var f = [];
+      f[B.ID_LINEA - 1]     = idDoc + '-' + pad3_(i + 1);
+      f[B.ID_DOC - 1]       = idDoc;
+      f[B.FECHA - 1]        = cap.enc.fecha;
+      f[B.PROVEEDOR - 1]    = cap.enc.proveedor;
+      f[B.PROV_NORM - 1]    = provNorm;
+      f[B.DOCUMENTO - 1]    = cap.enc.documento;
+      f[B.PRODUCTO - 1]     = l.producto;
+      f[B.PROD_NORM - 1]    = l.prodNorm;
+      f[B.CATEGORIA - 1]    = l.categoria;
+      f[B.PRESENTACION - 1] = l.presentacion;
+      f[B.UNIDAD - 1]       = l.unidad;
+      f[B.CANT_PED - 1]     = esNumero_(l.pedida) ? l.pedida : '';
+      f[B.CANT_REC - 1]     = esNumero_(l.recibida) ? l.recibida : '';
+      f[B.DIFERENCIA - 1]   = (esNumero_(l.pedida) && esNumero_(l.recibida)) ? (l.recibida - l.pedida) : '';
+      f[B.PRECIO_UNIT - 1]  = esNumero_(l.precio) ? l.precio : '';
+      f[B.VALOR_TOTAL - 1]  = (esNumero_(l.precio) && esNumero_(l.recibida)) ? redondear_(l.precio * l.recibida, 2) : '';
+      f[B.CONDICION - 1]    = l.condicion;
+      f[B.SELLO - 1]        = l.sello;
+      f[B.VENCIMIENTO - 1]  = (l.vencimiento instanceof Date) ? l.vencimiento : l.vencCrudo;
+      f[B.LOTE - 1]         = l.lote;
+      f[B.OBSERVACIONES - 1]= l.obs;
+      f[B.RECIBE - 1]       = cap.enc.recibe;
+      f[B.USUARIO - 1]      = user;
+      f[B.TIMESTAMP - 1]    = ahora;
+      f[B.OVERRIDE - 1]     = forzado;
+      f[B.MOTIVO - 1]       = forzado === 'SI' ? motivo : '';
+      f[B.ESTADO - 1]       = 'ACTIVA';
+      f[B.REF_REVERSA - 1]  = '';
+      f[B.ORIGEN - 1]       = 'CAPTURA';
+      f[B.HALLAZGOS - 1]    = hallazgos;
+      var j;
+      for (j = 0; j < BD_ULT_COL; j++){ if (f[j] === undefined) f[j] = ''; }
+      filasNuevas.push(f);
+    }
+
+    hBD.getRange(hBD.getLastRow() + 1, 1, filasNuevas.length, BD_ULT_COL).setValues(filasNuevas);
+
+    bitacora_('RECEPCIÓN GUARDADA',
+              idDoc + ' · ' + cap.enc.proveedor + ' · doc ' + cap.enc.documento + ' · ' + filasNuevas.length + ' línea(s)' +
+              (forzado === 'SI' ? ' · FORZADA' : ''), forzado === 'SI' ? motivo : '');
+
+    /* El refresco de derivados es NO FATAL: jamás puede revertir un guardado. */
+    var problemasRecalc = '';
+    try { recalcularTodo_(); } catch(eR){ problemasRecalc = ' (los tableros se actualizarán en el próximo recálculo)'; }
+
+    var resumen = '✔ GUARDADO — ' + idDoc + ' · ' + filasNuevas.length + ' línea(s) en el libro mayor' +
+                  (forzado === 'SI' ? ' · FORZADA con motivo registrado' : '') + problemasRecalc;
+    if (v.avisos.length) resumen += '\nAvisos: · ' + v.avisos.join('\n· ');
+    resumen += '\n\nMarca "Nueva recepción" (' + C.CHK_NUEVA + ') para limpiar el formulario.';
+    escribirMensaje_(resumen, forzado === 'SI' ? 'aviso' : 'ok');
+
+  } catch(e){
+    escribirMensaje_('✕ Error al guardar: ' + (e && e.message ? e.message : e), 'mal');
+    bitacora_('ERROR AL GUARDAR', (e && e.message ? e.message : String(e)), '');
+  } finally {
+    try { hoja_(H.CAP).getRange(C.CHK_GUARDAR).setValue(false); } catch(e2){}
+    try { lock.releaseLock(); } catch(e3){}
+  }
+}
+
+function hallazgosDeLinea_(l, v){
+  var cods = [];
+  if (!esNumero_(l.precio) || l.precio <= 0) cods.push('H03');
+  if (l.unidad === '') cods.push('H02');
+  if (esNumero_(l.recibida) && l.recibida === 0 && tiene_(clave_(l.condicion), 'ok')) cods.push('H06');
+  if (tiene_(clave_(l.condicion), 'no llego') && esNumero_(l.recibida) && l.recibida > 0) cods.push('H07');
+  if (esNumero_(l.pedida) && esNumero_(l.recibida) && l.pedida !== l.recibida && l.obs === '') cods.push('H08');
+  if (cantidadIncoherente_(l.unidad, l.recibida)) cods.push('H09');
+  if (esLicorOVino_(l.categoria) && clave_(l.sello) === '') cods.push('H10');
+  var i;
+  for (i = 0; i < v.bloqueantes.length; i++){
+    if (tiene_(v.bloqueantes[i], 'Fila ' + l.fila + ' ') && tiene_(v.bloqueantes[i], 'B7 ·')) { cods.push('H12'); break; }
+  }
+  return cods.join(';');
+}
+
+function pad3_(n){
+  var s = String(n);
+  while (s.length < 3) s = '0' + s;
+  return s;
+}
+
+function siguienteIdDocumento_(fecha){
+  var f = (fecha instanceof Date) ? fecha : hoy_();
+  var base = 'BAR-' + Utilities.formatDate(f, Session.getScriptTimeZone(), 'yyyyMMdd');
+  var filas = leerBD_(), max = 0, i;
+  for (i = 0; i < filas.length; i++){
+    var id = txt_(filas[i][B.ID_DOC - 1]);
+    if (empiezaCon_(id, base + '-')){
+      var n = parseInt(id.substring(base.length + 1), 10);
+      if (!isNaN(n) && n > max) max = n;
+    }
+  }
+  return base + '-' + pad3_(max + 1);
+}
+
+function escribirMensaje_(texto, nivel){
+  try {
+    var h = hoja_(H.CAP);
+    var r = h.getRange(C.MSG);
+    r.setValue(texto);
+    var fondo = COL.OKBG, letra = COL.OK;
+    if (nivel === 'mal'){ fondo = COL.MALBG; letra = COL.MAL; }
+    else if (nivel === 'aviso'){ fondo = COL.AVISOBG; letra = COL.AVISO; }
+    r.setBackground(fondo).setFontColor(letra).setFontWeight('bold').setWrap(true)
+     .setVerticalAlignment('middle').setHorizontalAlignment('left');
+  } catch(e){}
+  toast_(String(texto).substring(0, 200), CODIGO);
+}
+
+/* ============================== 9 · CASILLAS (única vía en iPad) ============================== */
+
+function alEditar_(e){
+  try {
+    if (!e || !e.range) return;
+    var h = e.range.getSheet();
+    if (h.getName() !== H.CAP) return;
+    var a1 = e.range.getA1Notation();
+    if (a1 === C.CHK_GUARDAR && e.range.getValue() === true){ guardarRecepcion(); return; }
+    if (a1 === C.CHK_NUEVA && e.range.getValue() === true){ nuevaRecepcion(); return; }
+  } catch(err){
+    try { escribirMensaje_('✕ Error en el disparador: ' + (err && err.message ? err.message : err), 'mal'); } catch(e2){}
+  }
+}
+
+function nuevaRecepcion(){
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(15000); } catch(e){}
+  try {
+    var h = hoja_(H.CAP);
+    var nFilas = C.FILA_FIN - C.FILA_INI + 1;
+    h.getRange(C.FILA_INI, R.PRODUCTO, nFilas, C.ULT_COL - 1).clearContent();
+    h.getRange(C.FECHA).setValue(hoy_());
+    h.getRange(C.DOC).clearContent();
+    h.getRange(C.PROV).clearContent();
+    h.getRange(C.TRANSP).clearContent();
+    h.getRange(C.TEMP).clearContent();
+    h.getRange(C.ESTADO).clearContent();
+    h.getRange(C.OBS).clearContent();
+    h.getRange(C.MOTIVO).clearContent();
+    escribirMensaje_('Formulario en blanco. Llena el encabezado y las líneas, revisa la banda de avisos y marca ' + C.CHK_GUARDAR + ' para guardar.', 'ok');
+    bitacora_('NUEVA RECEPCIÓN', 'Formulario limpiado', '');
+  } catch(e){
+    escribirMensaje_('✕ No se pudo limpiar: ' + (e && e.message ? e.message : e), 'mal');
+  } finally {
+    try { hoja_(H.CAP).getRange(C.CHK_NUEVA).setValue(false); } catch(e2){}
+    try { lock.releaseLock(); } catch(e3){}
+  }
+}
+
+/* ============================== 10 · DERIVADOS (valores, no fórmulas) ============================== */
+/*  Regla de rendimiento: maestro, catálogo, bandas, diagnóstico y tablero son VALORES
+    escritos por el motor en el único momento en que pueden cambiar (al guardar).
+    Las únicas fórmulas vivas del archivo están en CAPTURA, donde deben responder al digitar. */
+
+function recalcularTodo(){
+  var pasos = [];
+  pasoSeguro_(pasos, 'Reconstruir CATÁLOGO',          function(){ reconstruirCatalogo_(); });
+  pasoSeguro_(pasos, 'Reconstruir CAT_PROVEEDORES',   function(){ reconstruirProveedores_(); });
+  pasoSeguro_(pasos, 'Refrescar la lista de D6',      function(){ aplicarValidacionProveedor_(); });
+  pasoSeguro_(pasos, 'Reconstruir BANDAS',            function(){ reconstruirBandas_(); });
+  pasoSeguro_(pasos, 'Marcar precios fuera de banda', function(){ marcarFueraDeBanda_(); });
+  pasoSeguro_(pasos, 'Reconstruir MAESTRO',           function(){ reconstruirMaestro_(); });
+  pasoSeguro_(pasos, 'Reconstruir DIAGNÓSTICO',       function(){ reconstruirDiagnostico_(); });
+  pasoSeguro_(pasos, 'Reconstruir TABLERO',           function(){ reconstruirTablero_(); });
+  pasoSeguro_(pasos, 'Refrescar avisos vivos',        function(){ refrescarAvisos_(); });
+  bitacora_('RECÁLCULO', pasos.join(' | '), '');
+  return pasos;
+}
+function recalcularTodo_(){ return recalcularTodo(); }
+
+/*  v1.1 · la marca de duplicado usa esDuplicadoProbable_ y solo compara productos de la
+    MISMA categoría. Con el umbral viejo (Jaccard ≥ 0.6 a secas) el catálogo real
+    marcaba 3 pares y solo 1 era duplicado; dos avisos falsos de tres enseñan a ignorar
+    la columna, que es la peor manera de perder un control.                              */
+function reconstruirCatalogo_(){
+  var filas = leerBD_(), i;
+  var mapa = {};
+  for (i = 0; i < filas.length; i++){
+    var f = filas[i];
+    if (!esActiva_(f)) continue;
+    var k = clave_(f[B.PROD_NORM - 1] || f[B.PRODUCTO - 1]);
+    if (k === '') continue;
+    if (!mapa[k]){
+      mapa[k] = { clave:k, nombre: txt_(f[B.PRODUCTO - 1]), cat: txt_(f[B.CATEGORIA - 1]),
+                  unidades:{}, n:0, ultima:'' };
+    }
+    var u = txt_(f[B.UNIDAD - 1]);
+    if (u !== '') mapa[k].unidades[u] = (mapa[k].unidades[u] || 0) + 1;
+    mapa[k].n++;
+    var fe = f[B.FECHA - 1];
+    if (fe instanceof Date && (!(mapa[k].ultima instanceof Date) || fe > mapa[k].ultima)) mapa[k].ultima = fe;
+  }
+  var claves = [], k2;
+  for (k2 in mapa){ if (mapa.hasOwnProperty(k2)) claves.push(k2); }
+  claves.sort();
+  var out = [], j;
+  for (j = 0; j < claves.length; j++){
+    var m = mapa[claves[j]];
+    var us = [], uk, mejor = '', mejorN = -1;
+    for (uk in m.unidades){
+      if (!m.unidades.hasOwnProperty(uk)) continue;
+      us.push(uk);
+      if (m.unidades[uk] > mejorN){ mejorN = m.unidades[uk]; mejor = uk; }
+    }
+    var estado = 'OK';
+    if (us.length === 0) estado = 'SIN UNIDAD';
+    else if (us.length > 1) estado = 'UNIDAD AMBIGUA (' + us.join('/') + ')';
+    out.push([m.clave, m.nombre, m.cat, mejor, us.join(' / '), m.n, m.ultima, estado, '']);
+  }
+
+  /* Posibles duplicados: misma categoría + forma del nombre, no porcentaje a secas. */
+  var a, b2;
+  for (a = 0; a < out.length; a++){
+    for (b2 = a + 1; b2 < out.length; b2++){
+      if (txt_(out[a][2]) !== '' && txt_(out[b2][2]) !== '' && txt_(out[a][2]) !== txt_(out[b2][2])) continue;
+      var r = esDuplicadoProbable_(out[a][1], out[b2][1]);
+      if (r.dup){
+        out[a][8]  = txt_(out[a][8]  + ' ¿= ' + out[b2][1] + '? (' + r.pct + '%, ' + r.razon + ')');
+        out[b2][8] = txt_(out[b2][8] + ' ¿= ' + out[a][1]  + '? (' + r.pct + '%, ' + r.razon + ')');
+      }
+    }
+  }
+  var h = hoja_(H.CAT);
+  limpiarCuerpo_(h, FILA_DATOS, 9);
+  if (out.length) h.getRange(FILA_DATOS, 1, out.length, 9).setValues(out);
+  h.getRange(FILA_DATOS, 7, Math.max(out.length, 1), 1).setNumberFormat('yyyy-mm-dd');
+  return out.length;
+}
+
+/* ---------------------------------------------------------------------------------------
+   CATÁLOGO DE PROVEEDORES  (v1.1)
+--------------------------------------------------------------------------------------- */
+
+var _cacheProv = null;
+function invalidarCacheProv_(){ _cacheProv = null; }
+
+function proveedoresCatalogo_(){
+  if (_cacheProv) return _cacheProv;
+  var out = [];
+  try {
+    var h = hojaOpcional_(H.PRV);
+    if (h){
+      var n = h.getLastRow();
+      if (n >= FILA_DATOS){
+        var d = h.getRange(FILA_DATOS, 1, n - FILA_DATOS + 1, 2).getValues(), i;
+        for (i = 0; i < d.length; i++){
+          var nombre = txt_(d[i][1]);
+          if (nombre === '') continue;
+          out.push({ clave: clave_(txt_(d[i][0]) !== '' ? d[i][0] : nombre), nombre: nombre });
+        }
+      }
+    }
+  } catch(e){ out = []; }
+  _cacheProv = out;
+  return out;
+}
+
+function existeProveedor_(nombre){
+  var lista = proveedoresCatalogo_(), k = clave_(nombre), i;
+  if (k === '') return false;
+  for (i = 0; i < lista.length; i++){ if (lista[i].clave === k) return true; }
+  return false;
+}
+
+/*  Deriva la lista del libro mayor y CONSERVA las altas manuales que todavía no
+    tienen compras. Sin esa conservación un proveedor nuevo nunca podría entrar:
+    la lista cerrada lo rechaza y el libro mayor no lo conoce todavía.                  */
+function reconstruirProveedores_(){
+  var h = hoja_(H.PRV);
+  invalidarCacheProv_();
+
+  /* 1 · altas manuales previas (0 recepciones) que hay que preservar */
+  var manuales = {}, n = h.getLastRow(), i;
+  if (n >= FILA_DATOS){
+    var prev = h.getRange(FILA_DATOS, 1, n - FILA_DATOS + 1, 3).getValues();
+    for (i = 0; i < prev.length; i++){
+      var nom = txt_(prev[i][1]);
+      if (nom === '') continue;
+      var rec = num_(prev[i][2]);
+      if (!esNumero_(rec) || rec === 0) manuales[clave_(nom)] = nom;
+    }
+  }
+
+  /* 2 · lo que dice el libro mayor */
+  var filas = leerBD_();
+  var mapa = {};
+  for (i = 0; i < filas.length; i++){
+    var f = filas[i];
+    if (!esActiva_(f)) continue;
+    var nombre = txt_(f[B.PROVEEDOR - 1]);
+    if (nombre === '') continue;
+    var k = clave_(f[B.PROV_NORM - 1] !== '' ? f[B.PROV_NORM - 1] : nombre);
+    if (!mapa[k]) mapa[k] = { clave:k, nombre:nombre, docs:{}, lineas:0, ultima:'', valor:0 };
+    mapa[k].docs[txt_(f[B.ID_DOC - 1])] = true;
+    mapa[k].lineas++;
+    var v = num_(f[B.VALOR_TOTAL - 1]); if (esNumero_(v)) mapa[k].valor += v;
+    var fe = f[B.FECHA - 1];
+    if (fe instanceof Date && (!(mapa[k].ultima instanceof Date) || fe > mapa[k].ultima)) mapa[k].ultima = fe;
+  }
+  var mk;
+  for (mk in manuales){
+    if (!manuales.hasOwnProperty(mk)) continue;
+    if (!mapa[mk]) mapa[mk] = { clave:mk, nombre:manuales[mk], docs:{}, lineas:0, ultima:'', valor:0 };
+  }
+
+  /* 3 · a filas ordenadas */
+  var claves = [], k2;
+  for (k2 in mapa){ if (mapa.hasOwnProperty(k2)) claves.push(k2); }
+  claves.sort();
+  var out = [], j;
+  for (j = 0; j < claves.length; j++){
+    var m = mapa[claves[j]];
+    var nd = 0, dk;
+    for (dk in m.docs){ if (m.docs.hasOwnProperty(dk) && dk !== '') nd++; }
+    var estado = 'OK';
+    if (m.lineas === 0) estado = 'ALTA MANUAL (sin compras)';
+    else if (nd <= 1) estado = 'UNA SOLA RECEPCIÓN';
+    out.push([m.clave, m.nombre, nd, m.lineas, m.ultima, redondear_(m.valor, 0), estado, '']);
+  }
+
+  /* 4 · posibles duplicados por trigramas */
+  var umbral = cfgNum_('SIMILITUD_DUPLICADO_PCT', 55) / 100;
+  var a, b2;
+  for (a = 0; a < out.length; a++){
+    for (b2 = a + 1; b2 < out.length; b2++){
+      var s = simTrigramas_(out[a][1], out[b2][1]);
+      if (s >= umbral){
+        var pc = Math.round(s * 100);
+        out[a][7]  = txt_(out[a][7]  + ' ¿= ' + out[b2][1] + '? (' + pc + '%)');
+        out[b2][7] = txt_(out[b2][7] + ' ¿= ' + out[a][1]  + '? (' + pc + '%)');
+      }
+    }
+  }
+
+  limpiarCuerpo_(h, FILA_DATOS, 8);
+  if (out.length) h.getRange(FILA_DATOS, 1, out.length, 8).setValues(out);
+  h.getRange(FILA_DATOS, 5, Math.max(out.length, 1), 1).setNumberFormat('yyyy-mm-dd');
+  h.getRange(FILA_DATOS, 6, Math.max(out.length, 1), 1).setNumberFormat('$#,##0');
+  invalidarCacheProv_();
+  return out.length;
+}
+
+/*  Apunta la validación de D6 al catálogo. Si el catálogo está vacío NO se aplica
+    lista cerrada: dejaría el formato inutilizable en una instalación nueva.            */
+function aplicarValidacionProveedor_(){
+  var h = hoja_(H.CAP);
+  var hp = hojaOpcional_(H.PRV);
+  if (!hp || hp.getLastRow() < FILA_DATOS){
+    try { h.getRange(C.PROV).clearDataValidations(); } catch(e){}
+    return false;
+  }
+  var cerrada = cfgSi_('PROVEEDOR_LISTA_CERRADA', 'SI');
+  var dv = SpreadsheetApp.newDataValidation()
+    .requireValueInRange(hp.getRange('B' + FILA_DATOS + ':B1000'), true)
+    .setAllowInvalid(!cerrada)
+    .setHelpText('Elige un proveedor de la lista. Para uno nuevo: menú ⚙ Di Égida Bar → Dar de alta un proveedor.')
+    .build();
+  h.getRange(C.PROV).setDataValidation(dv);
+  return true;
+}
+
+function altaProveedor(){
+  var ui;
+  try { ui = SpreadsheetApp.getUi(); }
+  catch(e){ toast_('El alta de proveedor solo funciona desde computador.', CODIGO); return; }
+
+  var r1 = ui.prompt('Dar de alta un proveedor',
+                     'Nombre del proveedor, tal como debe quedar en todos los registros:',
+                     ui.ButtonSet.OK_CANCEL);
+  if (r1.getSelectedButton() !== ui.Button.OK) return;
+  var nombre = txt_(r1.getResponseText());
+  if (nombre === ''){ ui.alert('Nombre vacío. No se dio de alta nada.'); return; }
+
+  if (existeProveedor_(nombre)){ ui.alert('«' + nombre + '» ya está en el catálogo.'); return; }
+
+  /* Compuerta antiduplicado: se avisa ANTES de crear, no después. */
+  var lista = proveedoresCatalogo_(), i, parecidos = [];
+  var umbral = cfgNum_('SIMILITUD_DUPLICADO_PCT', 55) / 100;
+  for (i = 0; i < lista.length; i++){
+    var s = simTrigramas_(nombre, lista[i].nombre);
+    if (s >= umbral) parecidos.push(lista[i].nombre + '  (' + Math.round(s * 100) + '% de parecido)');
+  }
+  if (parecidos.length){
+    var r2 = ui.alert('Posible duplicado',
+      '«' + nombre + '» se parece a:\n\n· ' + parecidos.join('\n· ') +
+      '\n\n¿Aun así es un proveedor DISTINTO y quieres crearlo?',
+      ui.ButtonSet.YES_NO);
+    if (r2 !== ui.Button.YES){
+      ui.alert('No se creó nada. Si era el mismo, úsalo desde la lista; ' +
+               'si hay dos versiones ya escritas, usa Fusionar proveedores.');
+      return;
+    }
+  }
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch(e){ ui.alert('Otra operación en curso.'); return; }
+  try {
+    var h = hoja_(H.PRV);
+    h.appendRow([clave_(nombre), nombre, 0, 0, '', 0, 'ALTA MANUAL (sin compras)', '']);
+    invalidarCacheProv_();
+    pasoSeguro_([], 'Reconstruir proveedores', function(){ reconstruirProveedores_(); });
+    pasoSeguro_([], 'Revalidar D6',            function(){ aplicarValidacionProveedor_(); });
+    bitacora_('ALTA PROVEEDOR', nombre, parecidos.length ? 'confirmado pese a ' + parecidos.length + ' parecido(s)' : '');
+    ui.alert('«' + nombre + '» quedó en el catálogo y ya aparece en la lista de D6.');
+  } catch(e){ ui.alert('Error: ' + (e && e.message ? e.message : e)); }
+  finally { try { lock.releaseLock(); } catch(e3){} }
+}
+
+/*  Unifica dos nombres del MISMO proveedor ya escritos en el libro mayor.
+    El nombre del proveedor es un atributo de identidad, no un dato de la transacción:
+    corregirlo no altera cantidades, precios ni fechas, y queda firmado en BITÁCORA.     */
+function fusionarProveedor(){
+  var ui;
+  try { ui = SpreadsheetApp.getUi(); }
+  catch(e){ toast_('La fusión solo funciona desde computador.', CODIGO); return; }
+
+  var lista = proveedoresCatalogo_(), i, nombres = [];
+  for (i = 0; i < lista.length; i++) nombres.push('· ' + lista[i].nombre);
+
+  var r1 = ui.prompt('Fusionar proveedores (1 de 2)',
+    'Escribe el nombre EQUIVOCADO, el que hay que hacer desaparecer:\n\n' + nombres.join('\n'),
+    ui.ButtonSet.OK_CANCEL);
+  if (r1.getSelectedButton() !== ui.Button.OK) return;
+  var viejo = txt_(r1.getResponseText());
+
+  var r2 = ui.prompt('Fusionar proveedores (2 de 2)',
+    'Escribe el nombre CORRECTO, el que debe quedar:', ui.ButtonSet.OK_CANCEL);
+  if (r2.getSelectedButton() !== ui.Button.OK) return;
+  var nuevo = txt_(r2.getResponseText());
+
+  if (viejo === '' || nuevo === '' || clave_(viejo) === clave_(nuevo)){
+    ui.alert('Nombres vacíos o iguales. No se fusionó nada.');
+    return;
+  }
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch(e){ ui.alert('Otra operación en curso.'); return; }
+  try {
+    var h = hoja_(H.BD);
+    var n = h.getLastRow();
+    if (n < 2){ ui.alert('El libro mayor está vacío.'); return; }
+    var rng = h.getRange(2, B.PROVEEDOR, n - 1, 2);
+    var d = rng.getValues(), cambios = 0, j;
+    for (j = 0; j < d.length; j++){
+      if (clave_(d[j][0]) === clave_(viejo)){ d[j][0] = nuevo; d[j][1] = clave_(nuevo); cambios++; }
+    }
+    if (cambios === 0){ ui.alert('No hay ninguna línea con «' + viejo + '».'); return; }
+    rng.setValues(d);
+
+    /* quitar la fila del nombre viejo del catálogo */
+    var hp = hoja_(H.PRV);
+    var np = hp.getLastRow();
+    if (np >= FILA_DATOS){
+      var dp = hp.getRange(FILA_DATOS, 1, np - FILA_DATOS + 1, 2).getValues();
+      for (j = dp.length - 1; j >= 0; j--){
+        if (clave_(dp[j][1]) === clave_(viejo)){ hp.deleteRow(FILA_DATOS + j); }
+      }
+    }
+    invalidarCacheProv_();
+    bitacora_('FUSIÓN PROVEEDOR', viejo + ' → ' + nuevo + ' · ' + cambios + ' línea(s)', 'unificación de nombre');
+    try { recalcularTodo_(); } catch(eR){}
+    ui.alert(cambios + ' línea(s) pasaron de «' + viejo + '» a «' + nuevo + '».');
+    return cambios;
+  } catch(e){ ui.alert('Error: ' + (e && e.message ? e.message : e)); }
+  finally { try { lock.releaseLock(); } catch(e3){} }
+}
+
+function reconstruirBandas_(){
+  var calc = calcularBandas_();
+  var out = [], i;
+  for (i = 0; i < calc.bandas.length; i++){
+    var b = calc.bandas[i];
+    out.push([b.cat, b.uni, b.n, redondear_(b.mediana, 2), redondear_(b.min, 2), redondear_(b.max, 2),
+              b.heredada !== 'NO' ? 'ENSANCHADA (pocos datos)' : 'OK']);
+  }
+  out.sort(function(x, y){ return (x[0] + x[1] < y[0] + y[1]) ? -1 : 1; });
+  var h = hoja_(H.BAN);
+  limpiarCuerpo_(h, FILA_DATOS, 7);
+  if (out.length) h.getRange(FILA_DATOS, 1, out.length, 7).setValues(out);
+  return out.length;
+}
+
+/*  Marca H12 en el libro mayor. Se corre DESPUÉS de reconstruir bandas y
+    ANTES del maestro, para que la mediana del producto excluya lo corrupto. */
+function marcarFueraDeBanda_(){
+  var h = hojaOpcional_(H.BD);
+  if (!h) return 0;
+  var n = h.getLastRow();
+  if (n < 2) return 0;
+  var filas = leerBD_();
+  var calc = calcularBandas_();
+  var col = h.getRange(2, B.HALLAZGOS, n - 1, 1);
+  var vals = col.getValues();
+  var cambios = 0, i;
+  for (i = 0; i < filas.length; i++){
+    var f = filas[i];
+    var p = num_(f[B.PRECIO_UNIT - 1]);
+    var actual = txt_(vals[i] ? vals[i][0] : '');
+    var sinH12 = actual.replace(/H12;?/g, '').replace(/;;/g, ';').replace(/;$/, '');
+    var nuevo = sinH12;
+    if (esNumero_(p) && p > 0 && computable_(f)){
+      var b = buscarBanda_(calc.bandas, txt_(f[B.CATEGORIA - 1]), txt_(f[B.UNIDAD - 1]));
+      if (b && (p < b.min || p > b.max)) nuevo = sinH12 === '' ? 'H12' : (sinH12 + ';H12');
+    }
+    if (nuevo !== actual){ vals[i][0] = nuevo; cambios++; }
+  }
+  if (cambios) col.setValues(vals);
+  return cambios;
+}
+
+function reconstruirMaestro_(){
+  var filas = leerBD_(), i;
+  var mapa = {};
+  for (i = 0; i < filas.length; i++){
+    var f = filas[i];
+    if (!computable_(f)) continue;
+    var k = clave_(f[B.PROD_NORM - 1] || f[B.PRODUCTO - 1]);
+    if (k === '') continue;
+    if (!mapa[k]) mapa[k] = { nombre: txt_(f[B.PRODUCTO - 1]), cat: txt_(f[B.CATEGORIA - 1]),
+                              uni: txt_(f[B.UNIDAD - 1]), precios: [], limpios: [], ult: '', ultP: '',
+                              prov: {}, cant: 0, valor: 0, n: 0 };
+    var m = mapa[k];
+    var p = num_(f[B.PRECIO_UNIT - 1]);
+    var fe = f[B.FECHA - 1];
+    m.n++;
+    if (esNumero_(p) && p > 0){
+      m.precios.push(p);
+      if (!tiene_(txt_(f[B.HALLAZGOS - 1]), 'H12')) m.limpios.push(p);
+      if (!(m.ult instanceof Date) || (fe instanceof Date && fe >= m.ult)){ m.ult = fe; m.ultP = p; }
+    }
+    var c = num_(f[B.CANT_REC - 1]); if (esNumero_(c)) m.cant += c;
+    var v = num_(f[B.VALOR_TOTAL - 1]); if (esNumero_(v)) m.valor += v;
+    var pr = txt_(f[B.PROVEEDOR - 1]); if (pr !== '') m.prov[pr] = true;
+  }
+  var claves = [], k2;
+  for (k2 in mapa){ if (mapa.hasOwnProperty(k2)) claves.push(k2); }
+  claves.sort();
+  var out = [], j;
+  for (j = 0; j < claves.length; j++){
+    var d = mapa[claves[j]];
+    var base = d.limpios.length ? d.limpios : d.precios;
+    var med = mediana_(base);
+    var min = '', max = '', desv = '';
+    if (base.length){
+      min = base[0]; max = base[0];
+      var z;
+      for (z = 1; z < base.length; z++){ if (base[z] < min) min = base[z]; if (base[z] > max) max = base[z]; }
+      if (esNumero_(med) && med > 0 && esNumero_(d.ultP)) desv = redondear_((d.ultP / med - 1) * 100, 1);
+    }
+    var nProv = 0, pk;
+    for (pk in d.prov){ if (d.prov.hasOwnProperty(pk)) nProv++; }
+    var estado = 'OK';
+    if (base.length === 0) estado = 'SIN PRECIO';
+    else if (base.length === 1) estado = 'UN SOLO DATO';
+    else if (esNumero_(desv) && Math.abs(desv) > cfgNum_('DESVIO_AVISO_PCT', 15)) estado = 'ÚLTIMA COMPRA DESVIADA';
+    out.push([claves[j], d.nombre, d.cat, d.uni, d.n, d.cant ? redondear_(d.cant, 3) : '',
+              redondear_(d.valor, 0), d.ult, esNumero_(d.ultP) ? redondear_(d.ultP, 2) : '',
+              esNumero_(med) ? redondear_(med, 2) : '', esNumero_(min) ? redondear_(min, 2) : '',
+              esNumero_(max) ? redondear_(max, 2) : '', desv, nProv, estado]);
+  }
+  var h = hoja_(H.MAE);
+  limpiarCuerpo_(h, FILA_DATOS, 15);
+  if (out.length) h.getRange(FILA_DATOS, 1, out.length, 15).setValues(out);
+  h.getRange(FILA_DATOS, 8, Math.max(out.length, 1), 1).setNumberFormat('yyyy-mm-dd');
+  return out.length;
+}
+
+/* ============================== 11 · DIAGNÓSTICO ============================== */
+
+function reconstruirDiagnostico_(){
+  var filas = leerBD_(), i;
+  var c = { dupClave:0, refRota:0, sinPrecio:0, fueraBanda:0, sinUnidad:0, sinDoc:0,
+            vencidas:0, overrides:0, reversas:0, sinUsuario:0, unDato:0, revisar:0,
+            selloFalta:0, difSinObs:0, incoherente:0 };
+  var vistos = {}, prodPrecios = {};
+  var hoy = hoy_();
+  for (i = 0; i < filas.length; i++){
+    var f = filas[i];
+    var id = txt_(f[B.ID_LINEA - 1]);
+    if (vistos[id]) c.dupClave++; else vistos[id] = true;
+    if (txt_(f[B.PRODUCTO - 1]) === '' || txt_(f[B.ID_DOC - 1]) === '') c.refRota++;
+    var h12 = txt_(f[B.HALLAZGOS - 1]);
+    var p = num_(f[B.PRECIO_UNIT - 1]);
+    if (!esNumero_(p) || p <= 0) c.sinPrecio++;
+    if (tiene_(h12, 'H12')) c.fueraBanda++;
+    if (txt_(f[B.UNIDAD - 1]) === '') c.sinUnidad++;
+    if (txt_(f[B.DOCUMENTO - 1]) === '') c.sinDoc++;
+    var ve = f[B.VENCIMIENTO - 1];
+    var fr = f[B.FECHA - 1];
+    /* Vencido AL RECIBIRLO. Comparar contra hoy marcaría como hallazgo toda
+       remisión antigua y un aviso falso hace que dejen de creerse todos. */
+    if (ve instanceof Date && fr instanceof Date && ve < fr && esActiva_(f)) c.vencidas++;
+    if (clave_(f[B.OVERRIDE - 1]) === 'si') c.overrides++;
+    if (clave_(f[B.ESTADO - 1]) === 'reversada') c.reversas++;
+    if (clave_(f[B.ESTADO - 1]) === 'revisar') c.revisar++;
+    if (txt_(f[B.RECIBE - 1]) === '') c.sinUsuario++;
+    var deCaptura = clave_(f[B.ORIGEN - 1]) === 'captura';
+    if (deCaptura && tiene_(h12, 'H10')) c.selloFalta++;
+    if (deCaptura && tiene_(h12, 'H08')) c.difSinObs++;
+    if (deCaptura && (tiene_(h12, 'H06') || tiene_(h12, 'H07'))) c.incoherente++;
+    if (computable_(f) && esNumero_(p) && p > 0){
+      var k = clave_(f[B.PROD_NORM - 1]);
+      prodPrecios[k] = (prodPrecios[k] || 0) + 1;
+    }
+  }
+  var kk;
+  for (kk in prodPrecios){ if (prodPrecios.hasOwnProperty(kk) && prodPrecios[kk] === 1) c.unDato++; }
+
+  /* v1.1 · INT-16 e INT-17: duplicados abiertos de nombre */
+  var dupProd = contarMarcados_(H.CAT, 9);
+  var dupProv = contarMarcados_(H.PRV, 8);
+
+  var F = [
+    ['INT-01','Claves ID_LINEA duplicadas', c.dupClave, 0, 'Cada línea debe tener clave única. >0 = el motor escribió dos veces.'],
+    ['INT-02','Integridad referencial rota', c.refRota, 0, 'Líneas sin producto o sin documento padre.'],
+    ['INT-03','Líneas sin precio unitario', c.sinPrecio, 0, 'Sin precio no hay costeo: recupéralo de la factura original.'],
+    ['INT-04','Precios fuera de banda (H12)', c.fueraBanda, 0, 'Casi siempre precio de paquete metido como unitario.'],
+    ['INT-05','Líneas sin unidad normalizada', c.sinUnidad, 0, 'Sin unidad la banda de precio no puede compararse.'],
+    ['INT-06','Líneas sin documento soporte', c.sinDoc, 0, 'Recepción sin remisión ni factura: no es defendible ante Gerencia.'],
+    ['INT-07','Productos recibidos ya vencidos', c.vencidas, 0, 'Llegaron con fecha de vencimiento anterior a la recepción: escalar al proveedor.'],
+    ['INT-08','Guardados forzados (override)', c.overrides, '—', 'Estado reconocido: cada uno tiene motivo firmado en BITÁCORA.'],
+    ['INT-09','Líneas reversadas', c.reversas, '—', 'Estado reconocido: la original queda intacta con su reversa.'],
+    ['INT-10','Líneas sin responsable que recibe', c.sinUsuario, 0, 'Sin responsable no hay a quién preguntar.'],
+    ['INT-11','Productos con un solo dato de precio', c.unDato, '—', 'Estado reconocido: la capa 2 de banda necesita dos.'],
+    ['INT-12','Líneas migradas en estado REVISAR', c.revisar, 0, 'Histórico marcado: ciérralas contra la factura original.'],
+    ['INT-13','Licores/vinos sin sello marcado (H10)', c.selloFalta, 0, 'Solo recepciones capturadas con el motor. El control antimerma más caro del bar.'],
+    ['INT-14','Diferencias sin observación (H08)', c.difSinObs, 0, 'Solo recepciones capturadas con el motor: faltante o excedente sin explicación.'],
+    ['INT-15','Cantidad o condición incoherente (H06/H07)', c.incoherente, 0, 'Solo recepciones capturadas con el motor: recibido 0 marcado OK, o "no llegó" con cantidad.'],
+    ['INT-16','Productos con posible duplicado abierto', dupProd, 0, 'Dos nombres para el mismo insumo parten su histórico de precio en dos.'],
+    ['INT-17','Proveedores con posible duplicado abierto', dupProv, 0, 'Unifícalos con ⚙ Di Égida Bar → Fusionar proveedores.']
+  ];
+  var out = [], j, activos = 0;
+  for (j = 0; j < F.length; j++){
+    var r = F[j];
+    var meta = r[3];
+    var estado;
+    if (meta === '—') estado = 'RECONOCIDO';
+    else if (r[2] <= meta) estado = 'OK';
+    else { estado = 'ABIERTO'; activos++; }
+    out.push([r[0], r[1], r[2], meta, estado, r[4]]);
+  }
+  var h = hoja_(H.DIA);
+  limpiarCuerpo_(h, FILA_DATOS, 6);
+  if (out.length) h.getRange(FILA_DATOS, 1, out.length, 6).setValues(out);
+  /* Un control que nunca puede llegar a cero se cierra como estado reconocido
+     y sale del contador activo: un aviso falso hace que dejen de creerse todos. */
+  return { filas: out, activos: activos, c: c };
+}
+
+/* ============================== 12 · TABLERO ============================== */
+
+function reconstruirTablero_(){
+  var filas = leerBD_(), i;
+  var nDocs = {}, valor = 0, lineas = 0, sinPrecio = 0, fueraBanda = 0, revisar = 0, overrides = 0;
+  var ultima = '', prov = {};
+  var hace30 = new Date(hoy_().getTime() - 30 * 86400000);
+  var valor30 = 0;
+  for (i = 0; i < filas.length; i++){
+    var f = filas[i];
+    if (!esActiva_(f)) continue;
+    lineas++;
+    nDocs[txt_(f[B.ID_DOC - 1])] = true;
+    var v = num_(f[B.VALOR_TOTAL - 1]); if (esNumero_(v)) valor += v;
+    var fe = f[B.FECHA - 1];
+    if (fe instanceof Date){
+      if (!(ultima instanceof Date) || fe > ultima) ultima = fe;
+      if (fe >= hace30 && esNumero_(v)) valor30 += v;
+    }
+    var p = num_(f[B.PRECIO_UNIT - 1]); if (!esNumero_(p) || p <= 0) sinPrecio++;
+    if (tiene_(txt_(f[B.HALLAZGOS - 1]), 'H12')) fueraBanda++;
+    if (clave_(f[B.ESTADO - 1]) === 'revisar') revisar++;
+    if (clave_(f[B.OVERRIDE - 1]) === 'si') overrides++;
+    var pr = txt_(f[B.PROVEEDOR - 1]); if (pr !== '') prov[pr] = true;
+  }
+  var nD = 0, kd; for (kd in nDocs){ if (nDocs.hasOwnProperty(kd) && kd !== '') nD++; }
+  var nP = 0, kp; for (kp in prov){ if (prov.hasOwnProperty(kp)) nP++; }
+  var cob = lineas ? redondear_((lineas - sinPrecio) / lineas * 100, 1) : 0;
+
+  var kpis = [
+    ['Recepciones registradas', nD],
+    ['Líneas activas en el libro mayor', lineas],
+    ['Proveedores distintos', nP],
+    ['Última recepción', ultima],
+    ['Valor total registrado', redondear_(valor, 0)],
+    ['Valor recibido últimos 30 días', redondear_(valor30, 0)],
+    ['Cobertura de costeo (líneas con precio)', cob / 100],
+    ['Líneas sin precio', sinPrecio],
+    ['Líneas con precio fuera de banda', fueraBanda],
+    ['Líneas en estado REVISAR', revisar],
+    ['Guardados forzados', overrides]
+  ];
+  var h = hoja_(H.TAB);
+  limpiarCuerpo_(h, 5, 2);
+  h.getRange(5, 1, kpis.length, 2).setValues(kpis);
+  h.getRange(8, 2).setNumberFormat('yyyy-mm-dd');
+  h.getRange(9, 2, 2, 1).setNumberFormat('$#,##0');
+  h.getRange(11, 2).setNumberFormat('0.0%');
+
+  /* Hallazgos críticos, derivados — nunca texto escrito a mano */
+  var diag = reconstruirDiagnostico_();
+  var crit = [], j;
+  for (j = 0; j < diag.filas.length; j++){
+    if (diag.filas[j][4] === 'ABIERTO') crit.push([diag.filas[j][0], diag.filas[j][1], diag.filas[j][2], diag.filas[j][5]]);
+  }
+  var fila0 = 5 + kpis.length + 2;
+  h.getRange(fila0, 1).setValue('HALLAZGOS ABIERTOS').setFontWeight('bold').setFontColor(COL.VINO);
+  limpiarCuerpo_(h, fila0 + 1, 4);
+  if (crit.length){
+    h.getRange(fila0 + 1, 1, crit.length, 4).setValues(crit);
+  } else {
+    h.getRange(fila0 + 1, 1).setValue('✔ Sin hallazgos abiertos.').setFontColor(COL.OK).setFontWeight('bold');
+  }
+  return kpis;
+}
+
+function limpiarCuerpo_(h, filaInicio, nCols){
+  var maxF = h.getMaxRows();
+  if (maxF < filaInicio) return;
+  var nC = Math.min(nCols, h.getMaxColumns());
+  h.getRange(filaInicio, 1, maxF - filaInicio + 1, nC).clearContent();
+}
+
+/* ============================== 13 · AVISOS VIVOS ============================== */
+/*  Todo aviso se deriva de una comprobación que corre en cada recálculo:
+    aparece cuando el problema existe y desaparece al corregirlo.
+    Nunca texto de diagnóstico escrito a mano. */
+function refrescarAvisos_(){
+  var diag = reconstruirDiagnosticoLigero_();
+  var pend = [];
+  if (diag.c.sinPrecio > 0)   pend.push(diag.c.sinPrecio + ' línea(s) sin precio');
+  if (diag.c.fueraBanda > 0)  pend.push(diag.c.fueraBanda + ' precio(s) fuera de banda');
+  if (diag.c.revisar > 0)     pend.push(diag.c.revisar + ' línea(s) del histórico por revisar');
+  if (diag.c.sinUnidad > 0)   pend.push(diag.c.sinUnidad + ' sin unidad');
+  if (diag.c.selloFalta > 0)  pend.push(diag.c.selloFalta + ' licor/vino sin sello marcado');
+  if (diag.c.vencidas > 0)    pend.push(diag.c.vencidas + ' recibido(s) ya vencido(s)');
+
+  var dupProd = contarMarcados_(H.CAT, 9);
+  var dupProv = contarMarcados_(H.PRV, 8);
+  if (dupProd > 0) pend.push(dupProd + ' producto(s) con posible duplicado');
+  if (dupProv > 0) pend.push(dupProv + ' proveedor(es) con posible duplicado');
+
+  var correos = correosAlerta_();
+  if (correos.length === 0) pend.push('CONFIG sin correos de alerta');
+
+  var texto = pend.length ? ('⚠ PENDIENTES: ' + pend.join('  ·  ')) : '✔ Sin pendientes abiertos.';
+  var nivelBg = pend.length ? COL.AVISOBG : COL.OKBG;
+  var nivelFg = pend.length ? COL.AVISO : COL.OK;
+
+  var hojas = [H.TAB, H.MAE, H.CAT, H.PRV, H.BAN, H.DIA];
+  var i;
+  for (i = 0; i < hojas.length; i++){
+    try {
+      var h = hojaOpcional_(hojas[i]);
+      if (!h) continue;
+      h.getRange(2, 1).setValue(texto).setFontColor(nivelFg).setBackground(nivelBg)
+       .setFontWeight('bold').setFontSize(9);
+    } catch(e){ /* cosmético: nunca fatal */ }
+  }
+  return texto;
+}
+
+function contarMarcados_(nombreHoja, columna){
+  try {
+    var h = hojaOpcional_(nombreHoja);
+    if (!h) return 0;
+    var n = h.getLastRow();
+    if (n < FILA_DATOS) return 0;
+    var d = h.getRange(FILA_DATOS, columna, n - FILA_DATOS + 1, 1).getValues(), i, c = 0;
+    for (i = 0; i < d.length; i++){ if (txt_(d[i][0]) !== '') c++; }
+    return c;
+  } catch(e){ return 0; }
+}
+
+function reconstruirDiagnosticoLigero_(){
+  var filas = leerBD_(), i;
+  var c = { sinPrecio:0, fueraBanda:0, revisar:0, sinUnidad:0, selloFalta:0, vencidas:0 };
+  var hoy = hoy_();
+  for (i = 0; i < filas.length; i++){
+    var f = filas[i];
+    if (!esActiva_(f)) continue;
+    var p = num_(f[B.PRECIO_UNIT - 1]);
+    if (!esNumero_(p) || p <= 0) c.sinPrecio++;
+    var hall = txt_(f[B.HALLAZGOS - 1]);
+    if (tiene_(hall, 'H12')) c.fueraBanda++;
+    if (tiene_(hall, 'H10')) c.selloFalta++;
+    if (txt_(f[B.UNIDAD - 1]) === '') c.sinUnidad++;
+    if (clave_(f[B.ESTADO - 1]) === 'revisar') c.revisar++;
+    var ve = f[B.VENCIMIENTO - 1];
+    var fr = f[B.FECHA - 1];
+    if (ve instanceof Date && fr instanceof Date && ve < fr) c.vencidas++;
+  }
+  return { c: c };
+}
+
+function correosAlerta_(){
+  var out = [], i;
+  var claves = ['CORREO_ADMIN', 'CORREO_2', 'CORREO_3'];
+  for (i = 0; i < claves.length; i++){
+    var v = txt_(cfg_(claves[i], ''));
+    if (v !== '' && tiene_(v, '@')) out.push(v);
+  }
+  return out;
+}
+
+/* ============================== 14 · REVERSAR (solo escritorio) ============================== */
+/*  El libro mayor es append-only: una corrección NUNCA edita ni borra la línea original.
+    Marca ESTADO_LINEA = REVERSADA con fecha, responsable y motivo, y la original queda
+    intacta. Si un precio de hace dos meses se puede cambiar sin rastro, ningún margen
+    calculado sobre ese histórico es defendible ante Gerencia. */
+function reversarLinea(){
+  var ui;
+  try { ui = SpreadsheetApp.getUi(); }
+  catch(e){ toast_('Reversar solo funciona desde computador.', CODIGO); return; }
+
+  var r1 = ui.prompt('Reversar línea', 'ID_LINEA a reversar (ej. BAR-20260909-001-003):', ui.ButtonSet.OK_CANCEL);
+  if (r1.getSelectedButton() !== ui.Button.OK) return;
+  var id = txt_(r1.getResponseText());
+  if (id === '') return;
+
+  var r2 = ui.prompt('Motivo de la reversa', 'Motivo (mínimo ' + cfgNum_('MIN_MOTIVO_OVERRIDE', 15) + ' caracteres):', ui.ButtonSet.OK_CANCEL);
+  if (r2.getSelectedButton() !== ui.Button.OK) return;
+  var motivo = txt_(r2.getResponseText());
+  if (motivo.length < cfgNum_('MIN_MOTIVO_OVERRIDE', 15)){
+    ui.alert('Motivo demasiado corto. No se reversó nada.');
+    return;
+  }
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch(e){ ui.alert('Otra operación en curso.'); return; }
+  try {
+    var h = hoja_(H.BD);
+    var n = h.getLastRow();
+    if (n < 2){ ui.alert('El libro mayor está vacío.'); return; }
+    var d = h.getRange(2, 1, n - 1, BD_ULT_COL).getValues();
+    var i, encontrada = -1;
+    for (i = 0; i < d.length; i++){ if (clave_(d[i][B.ID_LINEA - 1]) === clave_(id)) { encontrada = i; break; } }
+    if (encontrada < 0){ ui.alert('No existe la línea ' + id + '.'); return; }
+    if (clave_(d[encontrada][B.ESTADO - 1]) === 'reversada'){ ui.alert('Esa línea ya está reversada.'); return; }
+
+    var refRev = 'REV-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss');
+    h.getRange(encontrada + 2, B.ESTADO).setValue('REVERSADA');
+    h.getRange(encontrada + 2, B.REF_REVERSA).setValue(refRev);
+    h.getRange(encontrada + 2, B.MOTIVO).setValue(motivo);
+    bitacora_('REVERSA', id + ' → ' + refRev, motivo);
+    try { recalcularTodo_(); } catch(eR){}
+    ui.alert('Línea ' + id + ' marcada como REVERSADA. La original queda intacta.');
+  } catch(e){
+    try { ui.alert('Error: ' + (e && e.message ? e.message : e)); } catch(e2){}
+  } finally { try { lock.releaseLock(); } catch(e3){} }
+}
+
+/* ============================== 15 · ALERTA DIARIA ============================== */
+
+function enviarAlertaDiaria(){
+  try {
+    if (!cfgSi_('ALERTA_DIARIA_ACTIVA', 'SI')) return 'desactivada';
+    var correos = correosAlerta_();
+    if (correos.length === 0) return 'sin correos';
+    var diag = reconstruirDiagnostico_();
+    var criticos = [], i;
+    for (i = 0; i < diag.filas.length; i++){
+      if (diag.filas[i][4] === 'ABIERTO') criticos.push(diag.filas[i]);
+    }
+    if (criticos.length === 0) return 'sin hallazgos';
+    var url = ss_().getUrl();
+    var cuerpo = 'SGI Di Égida — ' + CODIGO + ' (Recepción de Bar)\n' +
+                 'Resumen del ' + fmtFecha_(hoy_()) + '\n\n' +
+                 'HALLAZGOS ABIERTOS (' + criticos.length + '):\n';
+    for (i = 0; i < criticos.length; i++){
+      cuerpo += '  · ' + criticos[i][0] + '  ' + criticos[i][1] + ':  ' + criticos[i][2] + '\n' +
+                '      ' + criticos[i][5] + '\n';
+    }
+    cuerpo += '\nArchivo: ' + url + '\n\nMensaje automático del motor v' + VERSION + '.';
+    MailApp.sendEmail(correos.join(','), '[Di Égida · Bar] ' + criticos.length + ' hallazgo(s) abierto(s) en recepción', cuerpo);
+    bitacora_('ALERTA ENVIADA', correos.join(', ') + ' · ' + criticos.length + ' hallazgo(s)', '');
+    return 'enviada a ' + correos.length;
+  } catch(e){
+    bitacora_('ERROR ALERTA', (e && e.message ? e.message : String(e)), '');
+    return 'error';
+  }
+}
+
+/* ============================== 16 · MIGRACIÓN DEL HISTÓRICO ============================== */
+/*  Las 12 hojas por fecha del archivo original, tal como estaban al 10/09/2026.
+    Se migran TODAS: las líneas con problema entran marcadas ESTADO_LINEA = REVISAR
+    y con su código de hallazgo, para cerrarlas una por una contra la factura original.
+    Estructura: [hoja, fecha, fechaValida, proveedor, documento, recibe, producto,
+                 presentación, unidad, pedida, recibida, precio, total, condición,
+                 sello, vencimiento, lote, observaciones] */
+var HISTORICO = [
+  ['09072026','2026-07-09','1','Súper tiendas cañaveral','V06-109585','Francisco y frank','Manzana gala','Granel','U',8,8,2260.375,18083,'✓ OK','SÍ','','',''],
+  ['09072026','2026-07-09','1','Súper tiendas cañaveral','V06-109585','Francisco y frank','Fresa','Caja *500','Caja',600,1000,13.4,13400,'✓ OK','SÍ','2026-07-15','2804',''],
+  ['09072026','2026-07-09','1','Súper tiendas cañaveral','V06-109585','Francisco y frank','Romero','Bolsa *50','Gramos',100,200,23.18,4636,'✓ OK','SÍ','2026-07-30','',''],
+  ['09072026','2026-07-09','1','Súper tiendas cañaveral','V06-109585','Francisco y frank','Limoncillo','Bolsa','Gramos',500,270,17.037037,4600,'✓ OK','SÍ','2026-07-30','',''],
+  ['09072026','2026-07-09','1','Súper tiendas cañaveral','V06-109585','Francisco y frank','Piña oro  miel','Granel','Gramos',3000,4370,3.6,15732,'✓ OK','SÍ','2026-07-30','',''],
+  ['09072026','2026-07-09','1','Súper tiendas cañaveral','V06-109585','Francisco y frank','Menta Francesa','Caja*50','Caja',150,150,141,21150,'✓ OK','SÍ','','2804',''],
+  ['09072026','2026-07-09','1','Súper tiendas cañaveral','V06-109585','Francisco y frank','Manzana verde','Bolsa','U',8,6,2133.333333,12800,'✓ OK','SÍ','','',''],
+  ['17072026','2026-07-17','1','Distribuidora de vinos y licores (dislicores)','701f25865','Francisco y frank','Sobrecosto por flete','Costo de domicilio','1und',0,0,11000,11000,'','','No ap','Fle003',''],
+  ['17072026','2026-07-17','1','Distribuidora de vinos y licores (dislicores)','701f25865','Francisco y frank','Ginebra hendricks','BOTX750','Ml',0,1,258990,258990,'✓ OK','SÍ','No ap','954005','esta botella es la reposicion de la botella que gasto gerencia en evento privado'],
+  ['17072026','2026-07-17','1','Distribuidora de vinos y licores (dislicores)','701f25865','Francisco y frank','Mil976 Ginger beef','4pack','Bot',18,21,5925,497700,'✓ OK','SÍ','No ap','177077',''],
+  ['17072026','2026-07-17','1','Distribuidora de vinos y licores (dislicores)','701f25865','Francisco y frank','Mil976 agua tónica pink','4pack','Bot',6,6,5925,284400,'✓ OK','SÍ','No ap','177013',''],
+  ['17072026','2026-07-17','1','Distribuidora de vinos y licores (dislicores)','701f25865','Francisco y frank','Tequila Olmeca dark chocolate','BOTX700','Bot',3,6,106990,641940,'✓ OK','SÍ','No ap','304016',''],
+  ['25-07-2026','2026-07-25','1','Éter','FEH6738','Francisco González','Ácido cítrico','Bolsa X1000gr','',2,2,13000,26000,'✓ OK','SÍ','','Et11001',''],
+  ['25-07-2026','2026-07-25','1','Éter','FEH6738','Francisco González','Domicilio','','','','',3000,3000,'✓ OK','','','',''],
+  ['28-07-2026','2026-07-28','1','Fruver jc','FEH6738','Frank','Pera','Granel','Und',3,3,2000,6000,'✓ OK','SÍ','','Et11001','Llegaron 3 peras y las 3 peras pesaron 531 gr'],
+  ['28-07-2026','2026-07-28','1','Fruver jc','FEH6738','Frank','Maracuya','Bolsa','Gr',1200,1200,7.5,9000,'✓ OK','N/A','','',''],
+  ['28-07-2026','2026-07-28','1','Fruver jc','FEH6738','Frank','Fresa','Bolsa','Gr',1000,1000,16,16000,'✓ OK','N/A','','',''],
+  ['28-07-2026','2026-07-28','1','Fruver jc','FEH6738','Frank','Jengibre','Bolsa','Gr',600,600,20,12000,'✓ OK','N/A','','',''],
+  ['28-07-2026','2026-07-28','1','Fruver jc','FEH6738','Frank','Granadilla','Granel','Gr',600,600,15,9000,'✓ OK','N/A','','',''],
+  ['31072026','32-08/2026','0','Carulla la maria','RJ554022','Frank','Hielo iglú','Bolsa','3 k',3,3,6150,18450,'✓ OK','SÍ','N/a','33918','Se compra personalmente por equipo de bar'],
+  ['06082026','2026-08-06','1','Surtitienda Cañaveral','09FR61091','Frank','Maracuya','Bolsa','Kl',3000,1330,6.27218,8342,'✓ OK','N/A','','',''],
+  ['06082026','2026-08-06','1','Surtitienda Cañaveral','09FR61091','Frank','Granadilla','Bolsa','Kl',400,1500,12.996667,19495,'✓ OK','N/A','','',''],
+  ['06082026','2026-08-06','1','Surtitienda Cañaveral','09FR61091','Frank','Manzana gala','Bolsa','Kl',500,2421,10.235853,24781,'✓ OK','N/A','','',''],
+  ['06082026','2026-08-06','1','Surtitienda Cañaveral','09FR61091','Frank','Manzana roja','Bolsa','Kl',500,1511,16.400397,24781,'✓ OK','N/A','','',''],
+  ['06082026','2026-08-06','1','Surtitienda Cañaveral','09FR61091','Frank','Manzana verde','Bolsa','Kl',500,1096,11.270073,12352,'✓ OK','N/A','','',''],
+  ['06082026','2026-08-06','1','Surtitienda Cañaveral','09FR61091','Frank','Uchuva','Cajax250','',400,500,20,10000,'✓ OK','SÍ','','',''],
+  ['06082026','2026-08-06','1','Surtitienda Cañaveral','09FR61091','Frank','Pepino','','',1,1,'','','✓ OK','N/A','','',''],
+  ['06082026','2026-08-06','1','Surtitienda Cañaveral','09FR61091','Frank','Menta francesa','','',5,0,'','','✕ No llegó','N/A','','',''],
+  ['06082026','2026-08-06','1','Surtitienda Cañaveral','09FR61091','Frank','Uva verde','','',300,0,'','','✕ No llegó','N/A','','',''],
+  ['22082026','2026-08-22','1','Frutería','No tiene','Francisco González','Manojo de menta fresca','bolsa','Gr',150,125,40,5000,'✓ OK','N/A','','',''],
+  ['22082026','2026-08-22','1','Frutería','No tiene','Francisco González','Piña','Unidad','Und',1,4,9000,36000,'✓ OK','N/A','','',''],
+  ['22082026','2026-08-22','1','Frutería','No tiene','Francisco González','Mango maduro','Unidad','Und',3,8,4550,36400,'✓ OK','N/A','','',''],
+  ['22082026','2026-08-22','1','Frutería','No tiene','Francisco González','Naranja','Kilos','Kl',10,15,4000,60000,'✓ OK','N/A','','','De este ítem solamente llegaron 11 kilos nada más'],
+  ['22082026','2026-08-22','1','Frutería','No tiene','Francisco González','Mora','Kilo','Kl',1,3,12000,36000,'✓ OK','N/A','','',''],
+  ['22082026','2026-08-22','1','Frutería','No tiene','Francisco González','Limón Tahití','Kilo','Kl',1,1,5000,5000,'✓ OK','SÍ','','',''],
+  ['22082026','2026-08-22','1','Frutería','No tiene','Francisco González','Maracuya','Kilo','Kl',3,6,8000,48000,'✓ OK','N/A','','',''],
+  [' 23-082026','2026-08-23','1','Carulla la maria','Rj48101134','Francisco González','Hielo iglú bolsa','Kilos','Kline',6,6,6150,36900,'✓ OK','N/A','','33918',''],
+  ['23-082026','2026-08-23','1','Surtitienda Cañaveral','14FR136061','Francisco','Bandeja menta francesa x25 und','Gramos','Gr',3,3,7050,21150,'✓ OK','N/A','','',''],
+  ['23-082026','2026-08-23','1','Surtitienda Cañaveral','14FR136061','Francisco','Bolsa','Unidad','Und',0,1,300,300,'✓ OK','N/A','','',''],
+  ['27-082026','2026-08-27','1','Dislicores','Se recibe sin factura','Francisco','Vino blanco Mar de frades Albariño','Bot','Und',0,0,241000,0,'✓ OK','N/A','','',''],
+  ['31082026','2026-08-31','1','Postobon','JM071009929/JM071009908','Frank','Cerveza Mítica  Easy Lager x300','Six','',0,4,10629.84,42519.36,'✓ OK','SÍ','','33918',''],
+  ['31082026','2026-08-31','1','Postobon','JM071009929/JM071009908','Frank','Cerveza mítica pale lager x300','Six','',0,8,10622.58,84980.64,'✓ OK','SÍ','','',''],
+  ['31082026','2026-08-31','1','Postobon','JM071009929/JM071009908','Frank','Red Bull x250','Lata','',0,24,5364.15,128739.6,'✓ OK','SÍ','','',''],
+  ['31082026','2026-08-31','1','Postobon','JM071009929/JM071009908','Frank','Bretaña vidrio x300','Und','',0,96,2287.5,219600,'✓ OK','SÍ','','',''],
+  ['31082026','2026-08-31','1','Postobon','JM071009929/JM071009908','Frank','Gatorade tropical','Und','',0,24,2731.09,65546.16,'✓ OK','SÍ','','',''],
+  ['05092026','2026-09-05','1','distribuidora de vinos y licores','187641044104419057','','Mil976 fourpack pink','4pack','',18,18,23700,426600,'✓ OK','SÍ','','177013',''],
+  ['05092026','2026-09-05','1','distribuidora de vinos y licores','187641044104419057','','Vino Tarapacá, reserva Merlot','Botella','',3,3,75500,226500,'✓ OK','SÍ','','176006',''],
+  ['05092026','2026-09-05','1','distribuidora de vinos y licores','187641044104419057','','Aguardiente origen atardecer sin azúcar','Botella','',2,2,50990,101980,'✓ OK','SÍ','','270010',''],
+  ['05092026','2026-09-05','1','distribuidora de vinos y licores','187641044104419057','','vino rosaleda Rosé','botella','',12,18,21500,387000,'✓ OK','SÍ','','100124',''],
+  ['05092026','2026-09-05','1','distribuidora de vinos y licores','187641044104419057','','Whisky glenfiddich 12 años','Botella','',2,2,227500,455000,'✓ OK','SÍ','','954002','']
+];
+
+/* Normalización de nombres de proveedor detectada en el histórico real. */
+var PROVEEDOR_CANONICO = [
+  ['surtitienda canaveral', 'Surtitienda Cañaveral'],
+  ['super tiendas canaveral', 'Surtitienda Cañaveral'],
+  ['distribuidora de vinos y licores dislicores', 'Dislicores'],
+  ['distribuidora de vinos y licores', 'Dislicores'],
+  ['dislicores', 'Dislicores'],
+  ['carulla la maria', 'Carulla La María'],
+  ['fruver jc', 'Fruver JC'],
+  ['fruteria', 'Frutería'],
+  ['eter', 'Éter'],
+  ['postobon', 'Postobón']
+];
+/*  v1.1 · primero la tabla fija de la migración, después el catálogo vivo. Así una
+    variante escrita hoy se endereza sola aunque no esté en la tabla de arranque.      */
+function proveedorCanonico_(nombre){
+  var k = clave_(nombre), i;
+  if (k === '') return txt_(nombre);
+  for (i = 0; i < PROVEEDOR_CANONICO.length; i++){
+    if (PROVEEDOR_CANONICO[i][0] === k) return PROVEEDOR_CANONICO[i][1];
+  }
+  var lista = proveedoresCatalogo_();
+  for (i = 0; i < lista.length; i++){
+    if (lista[i].clave === k) return lista[i].nombre;
+  }
+  return txt_(nombre);
+}
+
+/* Fecha de respaldo tomada del nombre de la hoja cuando la celda tenía basura
+   (caso real: la hoja 31072026 traía «32-08/2026»). */
+function fechaDeNombreHoja_(nombre){
+  var k = clave_(nombre).replace(/ /g, '');
+  var m = k.match(/^(\d{2})(\d{2})(\d{4})$/);
+  if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  m = k.match(/^(\d{1,2})[^0-9]?(\d{2})[^0-9]?(\d{4})$/);
+  if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  return '';
+}
+
+function migrarHistorico(){
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(60000); } catch(e){ avisarUI_(CODIGO, 'Otra operación en curso.'); return; }
+  try {
+    var hBD = hoja_(H.BD);
+    var yaMigrado = false;
+    var filas = leerBD_(), i;
+    for (i = 0; i < filas.length; i++){ if (empiezaCon_(clave_(filas[i][B.ORIGEN - 1]), 'migracion')){ yaMigrado = true; break; } }
+    if (yaMigrado){
+      avisarUI_(CODIGO, 'El histórico ya está migrado (hay líneas con ORIGEN = MIGRACION). ' +
+                        'No se duplica: el libro mayor es idempotente por clave primaria.');
+      return;
+    }
+
+    /* documentos duplicados dentro del propio histórico */
+    var porDoc = {};
+    for (i = 0; i < HISTORICO.length; i++){
+      var dk = clave_(HISTORICO[i][4]);
+      if (dk === '') continue;
+      if (!porDoc[dk]) porDoc[dk] = {};
+      porDoc[dk][clave_(HISTORICO[i][3])] = true;
+    }
+    var docsAmbiguos = {};
+    var dk2;
+    for (dk2 in porDoc){
+      if (!porDoc.hasOwnProperty(dk2)) continue;
+      var cuenta = 0, pk;
+      for (pk in porDoc[dk2]){ if (porDoc[dk2].hasOwnProperty(pk)) cuenta++; }
+      if (cuenta > 1) docsAmbiguos[dk2] = true;
+    }
+
+    var contadorDoc = {}, salida = [], nRevisar = 0;
+    var ahora = new Date();
+    for (i = 0; i < HISTORICO.length; i++){
+      var r = HISTORICO[i];
+      var hojaOrig = r[0];
+      var fecha = aFecha_(r[1]);
+      var fechaOK = (r[2] === '1' || r[2] === 1);
+      var hall = [];
+      if (!fechaOK || !(fecha instanceof Date)){
+        var alt = fechaDeNombreHoja_(hojaOrig);
+        if (alt instanceof Date){ fecha = alt; }
+        hall.push('H01');
+      }
+      var proveedor = proveedorCanonico_(r[3]);
+      var documento = txt_(r[4]);
+      if (documento === '' || clave_(documento) === 'no tiene' || tiene_(clave_(documento), 'sin factura')) hall.push('H11');
+      if (docsAmbiguos[clave_(documento)]) hall.push('H05');
+
+      var producto = txt_(r[6]);
+      var presentacion = txt_(r[7]);
+      var unidad = unidadNorm_(r[8]);
+      if (unidad === '') unidad = unidadNorm_(presentacion);
+      if (unidad === '') hall.push('H02');
+      var categoria = categoriaDe_(producto, presentacion, unidad);
+      var pedida  = num_(r[9]);
+      var recibida= num_(r[10]);
+      var precio  = num_(r[11]);
+      var totalOrig = num_(r[12]);
+      var condicion = txt_(r[13]);
+      var sello = txt_(r[14]);
+      var venc = aFecha_(r[15]);
+      var lote = txt_(r[16]);
+      var obs = txt_(r[17]);
+
+      if (!esNumero_(precio) || precio <= 0) hall.push('H03');
+      var totalCalc = (esNumero_(precio) && esNumero_(recibida)) ? redondear_(precio * recibida, 2) : '';
+      if (esNumero_(totalCalc) && esNumero_(totalOrig) && Math.abs(totalCalc - totalOrig) > 1) hall.push('H04');
+      if (esNumero_(recibida) && recibida === 0 && tiene_(clave_(condicion), 'ok')) hall.push('H06');
+      if (tiene_(clave_(condicion), 'no llego') && esNumero_(recibida) && recibida > 0) hall.push('H07');
+      if (esNumero_(pedida) && esNumero_(recibida) && pedida !== recibida && obs === '') hall.push('H08');
+      if (cantidadIncoherente_(unidad, recibida)) hall.push('H09');
+      if (esLicorOVino_(categoria) && (clave_(sello) === '' || clave_(sello) === 'n a')) hall.push('H10');
+
+      var clv = clave_(hojaOrig);
+      var base = 'BAR-' + (fecha instanceof Date ? Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'yyyyMMdd') : '00000000');
+      if (contadorDoc[clv] === undefined){
+        var usados = 0, ck;
+        for (ck in contadorDoc){ if (contadorDoc.hasOwnProperty(ck) && empiezaCon_(contadorDoc[ck].base, base)) usados++; }
+        contadorDoc[clv] = { base: base, id: base + '-' + pad3_(usados + 1), n: 0 };
+      }
+      contadorDoc[clv].n++;
+      var idDoc = contadorDoc[clv].id;
+
+      var f = [];
+      f[B.ID_LINEA - 1]     = idDoc + '-' + pad3_(contadorDoc[clv].n);
+      f[B.ID_DOC - 1]       = idDoc;
+      f[B.FECHA - 1]        = (fecha instanceof Date) ? fecha : '';
+      f[B.PROVEEDOR - 1]    = proveedor;
+      f[B.PROV_NORM - 1]    = clave_(proveedor);
+      f[B.DOCUMENTO - 1]    = documento;
+      f[B.PRODUCTO - 1]     = producto;
+      f[B.PROD_NORM - 1]    = clave_(producto);
+      f[B.CATEGORIA - 1]    = categoria;
+      f[B.PRESENTACION - 1] = presentacion;
+      f[B.UNIDAD - 1]       = unidad;
+      f[B.CANT_PED - 1]     = esNumero_(pedida) ? pedida : '';
+      f[B.CANT_REC - 1]     = esNumero_(recibida) ? recibida : '';
+      f[B.DIFERENCIA - 1]   = (esNumero_(pedida) && esNumero_(recibida)) ? (recibida - pedida) : '';
+      f[B.PRECIO_UNIT - 1]  = esNumero_(precio) ? precio : '';
+      f[B.VALOR_TOTAL - 1]  = esNumero_(totalCalc) ? totalCalc : '';
+      f[B.CONDICION - 1]    = condicion;
+      f[B.SELLO - 1]        = sello;
+      f[B.VENCIMIENTO - 1]  = (venc instanceof Date) ? venc : txt_(r[15]);
+      f[B.LOTE - 1]         = lote;
+      f[B.OBSERVACIONES - 1]= obs;
+      f[B.RECIBE - 1]       = txt_(r[5]);
+      f[B.USUARIO - 1]      = '(migración)';
+      f[B.TIMESTAMP - 1]    = ahora;
+      f[B.OVERRIDE - 1]     = 'NO';
+      f[B.MOTIVO - 1]       = '';
+      f[B.ESTADO - 1]       = hall.length ? 'REVISAR' : 'ACTIVA';
+      f[B.REF_REVERSA - 1]  = '';
+      f[B.ORIGEN - 1]       = 'MIGRACION (' + hojaOrig + ')';
+      f[B.HALLAZGOS - 1]    = hall.join(';');
+      var z;
+      for (z = 0; z < BD_ULT_COL; z++){ if (f[z] === undefined) f[z] = ''; }
+      if (hall.length) nRevisar++;
+      salida.push(f);
+    }
+
+    if (salida.length) hBD.getRange(hBD.getLastRow() + 1, 1, salida.length, BD_ULT_COL).setValues(salida);
+    bitacora_('MIGRACIÓN', salida.length + ' línea(s) del histórico · ' + nRevisar + ' en REVISAR', '');
+    try { recalcularTodo_(); } catch(eR){}
+    avisarUI_(CODIGO, 'Histórico migrado: ' + salida.length + ' línea(s), ' + nRevisar +
+                      ' marcada(s) como REVISAR con su código de hallazgo.\n\n' +
+                      'Revísalas en DIAGNÓSTICO (INT-12) y ciérralas contra la factura original.');
+    return { total: salida.length, revisar: nRevisar };
+  } catch(e){
+    avisarUI_(CODIGO, 'Error migrando: ' + (e && e.message ? e.message : e));
+    bitacora_('ERROR MIGRACIÓN', (e && e.message ? e.message : String(e)), '');
+  } finally { try { lock.releaseLock(); } catch(e3){} }
+}
+
+/* Unifica variantes de nombre de proveedor ya escritas en el libro mayor. */
+function depurarNombres(){
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch(e){ return; }
+  try {
+    var h = hoja_(H.BD);
+    var n = h.getLastRow();
+    if (n < 2){ avisarUI_(CODIGO, 'El libro mayor está vacío.'); return; }
+    var rng = h.getRange(2, B.PROVEEDOR, n - 1, 2);
+    var d = rng.getValues();
+    var cambios = 0, i;
+    for (i = 0; i < d.length; i++){
+      var canon = proveedorCanonico_(d[i][0]);
+      if (canon !== txt_(d[i][0])){ d[i][0] = canon; cambios++; }
+      d[i][1] = clave_(canon);
+    }
+    rng.setValues(d);
+    bitacora_('DEPURAR NOMBRES', cambios + ' nombre(s) de proveedor unificado(s)', '');
+    try { recalcularTodo_(); } catch(eR){}
+    avisarUI_(CODIGO, cambios + ' nombre(s) de proveedor unificado(s).');
+    return cambios;
+  } catch(e){ avisarUI_(CODIGO, 'Error: ' + (e && e.message ? e.message : e)); }
+  finally { try { lock.releaseLock(); } catch(e3){} }
+}
+
+/* ============================== 17 · CONSTRUCCIÓN DEL ARCHIVO ============================== */
+
+var FILA_DATOS = 4;   /* fila 1 título · fila 2 banda de avisos · fila 3 encabezados · fila 4 datos */
+
+var DEF_HOJAS = [
+  { n:'TABLERO',              t:'TABLERO — Recepción de Bar',                    e:null },
+  { n:'CAPTURA',              t:null,                                            e:null },
+  { n:'BD_RECEPCION_BAR',     t:null,                                            e:BD_ENCABEZADOS },
+  { n:'MAESTRO_INSUMOS_BAR',  t:'MAESTRO DE INSUMOS DE BAR (derivado, no editar)',
+    e:['CLAVE','PRODUCTO','CATEGORÍA','UNIDAD','N° COMPRAS','CANT. ACUMULADA','VALOR ACUMULADO',
+       'ÚLTIMA COMPRA','PRECIO ÚLTIMO','PRECIO MEDIANO','PRECIO MÍN','PRECIO MÁX','DESVÍO ÚLT. %','N° PROVEEDORES','ESTADO'] },
+  { n:'CATALOGO',             t:'CATÁLOGO DE PRODUCTOS DE BAR',
+    e:['CLAVE','PRODUCTO','CATEGORÍA','UNIDAD BASE','UNIDADES VISTAS','N° COMPRAS','ÚLTIMA COMPRA','ESTADO','POSIBLE DUPLICADO'] },
+  { n:'CAT_PROVEEDORES',      t:'CATÁLOGO DE PROVEEDORES DE BAR (lista cerrada)',
+    e:['CLAVE','PROVEEDOR','N° RECEPCIONES','N° LÍNEAS','ÚLTIMA RECEPCIÓN','VALOR ACUMULADO','ESTADO','POSIBLE DUPLICADO'] },
+  { n:'BANDAS',               t:'BANDAS DE PLAUSIBILIDAD DE PRECIO (capa 1)',
+    e:['CATEGORÍA','UNIDAD','N° DATOS','MEDIANA','MÍNIMO ACEPTADO','MÁXIMO ACEPTADO','ESTADO'] },
+  { n:'DIAGNOSTICO',          t:'DIAGNÓSTICO — controles de integridad',
+    e:['CÓDIGO','CONTROL','VALOR','META','ESTADO','QUÉ SIGNIFICA'] },
+  { n:'BITACORA',             t:null,
+    e:['TIMESTAMP','USUARIO','ACCIÓN','DETALLE','MOTIVO','VERSIÓN'] },
+  { n:'CONFIG',               t:null,
+    e:['PARÁMETRO','VALOR','QUÉ HACE'] },
+  { n:'INSTRUCCIONES',        t:null,                                            e:null }
+];
+
+function crearHojas_(){
+  var libro = ss_(), i;
+  for (i = 0; i < DEF_HOJAS.length; i++){
+    var d = DEF_HOJAS[i];
+    var h = libro.getSheetByName(d.n);
+    if (!h) h = libro.insertSheet(d.n);
+    if (d.t){
+      h.getRange(1, 1).setValue('DI ÉGIDA · TOSCA BISTRÓ  —  ' + d.t + '   |   ' + CODIGO + ' v' + VERSION);
+      h.getRange(2, 1).setValue('');
+    }
+    if (d.e){
+      var filaEnc = (d.n === 'BD_RECEPCION_BAR' || d.n === 'BITACORA' || d.n === 'CONFIG') ? 1 : 3;
+      if (h.getMaxColumns() < d.e.length) h.insertColumnsAfter(h.getMaxColumns(), d.e.length - h.getMaxColumns());
+      h.getRange(filaEnc, 1, 1, d.e.length).setValues([d.e]);
+    }
+  }
+}
+
+function escribirConfig_(){
+  var h = hoja_(H.CFG);
+  var n = h.getLastRow();
+  var existentes = {};
+  if (n >= 2){
+    var d = h.getRange(2, 1, n - 1, 1).getValues(), i;
+    for (i = 0; i < d.length; i++){ if (txt_(d[i][0]) !== '') existentes[clave_(d[i][0])] = true; }
+  }
+  var nuevos = [], j;
+  for (j = 0; j < CFG_DEFECTO.length; j++){
+    if (!existentes[clave_(CFG_DEFECTO[j][0])]) nuevos.push(CFG_DEFECTO[j]);
+  }
+  if (nuevos.length) h.getRange(h.getLastRow() + 1, 1, nuevos.length, 3).setValues(nuevos);
+  return nuevos.length;
+}
+
+function escribirInstrucciones_(){
+  var h = hoja_(H.INS);
+  h.clear();
+  var t = [
+    ['SGI DI ÉGIDA · TOSCA BISTRÓ  —  INSTRUCCIONES DE USO', '', ''],
+    [CODIGO + '  |  Recepción de Pedidos — Bar  |  v' + VERSION, '', ''],
+    ['', '', ''],
+    ['CÓMO SE USA EN EL iPAD (día a día)', '', ''],
+    ['1', 'Abre la hoja CAPTURA. Marca "Nueva recepción" (' + C.CHK_NUEVA + ') para empezar en blanco.', ''],
+    ['2', 'Llena el encabezado: fecha, proveedor (lista cerrada), N° de remisión o factura, y quién recibe.', ''],
+    ['3', 'Ingresa las líneas. Cuenta la mercancía ANTES de firmarle al transportista.', ''],
+    ['4', 'Mira la banda de avisos (fila 8): te dice en vivo qué falta. No es decorativa.', ''],
+    ['5', 'Marca la casilla GUARDAR (' + C.CHK_GUARDAR + '). El motor valida y escribe en el libro mayor.', ''],
+    ['6', 'Lee el mensaje de la fila 57. Si dice NO SE GUARDÓ, corrige lo que enumera.', ''],
+    ['', '', ''],
+    ['CÓMO SE LEE LA HOJA DE CAPTURA', '', ''],
+    ['', 'Fondo BLANCO con borde suave  →  aquí se escribe.', ''],
+    ['', 'Fondo GRIS sin borde propio   →  lo calcula el motor: no se toca (#, Diferencia, Total).', ''],
+    ['', 'Las líneas verticales marcan los tres bloques: identificación | cantidades | dinero.', ''],
+    ['', '', ''],
+    ['SI EL MOTOR BLOQUEA EL GUARDADO', '', ''],
+    ['', 'Un bloqueo admite forzado: escribe el motivo en ' + C.MOTIVO + ' (mínimo 15 caracteres) y vuelve', ''],
+    ['', 'a marcar la casilla. Queda firmado en BITÁCORA con tu usuario y la hora.', ''],
+    ['', 'Hay problemas que NO admiten forzado (F1 a F5): encabezado incompleto, fecha inválida,', ''],
+    ['', 'sin líneas, documento ya registrado o producto sin nombre. Esos hay que corregirlos.', ''],
+    ['', '', ''],
+    ['PROVEEDORES', '', ''],
+    ['', 'La celda de Proveedor es una LISTA CERRADA contra la hoja CAT_PROVEEDORES.', ''],
+    ['', 'Proveedor nuevo: ⚙ Di Égida Bar → Dar de alta un proveedor (solo desde computador).', ''],
+    ['', 'Antes de crearlo el motor avisa si se parece a uno que ya existe.', ''],
+    ['', 'Dos nombres del mismo proveedor ya escritos: ⚙ Di Égida Bar → Fusionar proveedores.', ''],
+    ['', '', ''],
+    ['COLUMNAS DE LA TABLA', '', ''],
+    ['B', 'Producto', 'Nombre tal como aparece en la remisión o factura.'],
+    ['C', 'Presentación', '750ml, Caja×6, Bolsa×500g, etc.'],
+    ['D', 'Unidad', 'UND · BOT · CJA · SIX · PAQ · LATA · GR · KG · ML · L. Sin unidad no hay control de precio.'],
+    ['E', 'Cant. Pedida', 'Lo que se ordenó al proveedor.'],
+    ['F', 'Cant. Recibida', 'Lo que físicamente llegó. Contar antes de firmar.'],
+    ['G', 'Diferencia', 'AUTO: F − E. Si no es cero, explica en Observaciones.'],
+    ['H', 'P. Unitario', 'Precio de UNA unidad, no del paquete. Es el error más caro y el motor lo vigila.'],
+    ['I', 'Total', 'AUTO: F × H.'],
+    ['J', 'Condición', '✓ OK · ⚠ Dañado · ✕ No llegó · ~ Incompleto.'],
+    ['K', 'Sello Intacto', 'SÍ / NO / N/A. En licores y vinos es obligatorio: sin él no guarda.'],
+    ['L', 'Vencimiento', 'dd/mm/aaaa. Un producto vencido bloquea el guardado.'],
+    ['M', 'N° Lote / Guía', 'Lote del proveedor o guía de transporte.'],
+    ['N', 'Observaciones', 'Golpes, derrames, faltantes, temperatura sospechosa.'],
+    ['', '', ''],
+    ['QUÉ ES CADA HOJA', '', ''],
+    ['TABLERO', 'Indicadores y hallazgos abiertos. Solo lectura.', ''],
+    ['CAPTURA', 'El formulario. Es la única hoja con fórmulas vivas.', ''],
+    ['BD_RECEPCION_BAR', 'Libro mayor. Solo se agrega al final: nunca se edita ni se borra una línea.', ''],
+    ['MAESTRO_INSUMOS_BAR', 'Precio último, mediano, mínimo y máximo por producto. Lo escribe el motor.', ''],
+    ['CATALOGO', 'Productos vistos, su unidad base y posibles duplicados de nombre.', ''],
+    ['CAT_PROVEEDORES', 'Lista cerrada de proveedores, con recepciones, valor acumulado y posibles duplicados.', ''],
+    ['BANDAS', 'Rango razonable de precio por categoría y unidad.', ''],
+    ['DIAGNOSTICO', 'Controles INT-01 a INT-17. Un control ABIERTO es trabajo pendiente.', ''],
+    ['BITACORA', 'Quién, cuándo, qué y por qué. Solo se agrega.', ''],
+    ['CONFIG', 'Umbrales y correos. El motor lee por nombre de parámetro, no por posición.', ''],
+    ['', '', ''],
+    ['CORREGIR UN REGISTRO YA GUARDADO', '', ''],
+    ['', 'No se edita el libro mayor. Menú ⚙ Di Égida Bar → Reversar línea (solo desde computador).', ''],
+    ['', 'La línea original queda intacta marcada REVERSADA, con fecha, responsable y motivo.', ''],
+    ['', '', ''],
+    ['SI ALGO FALLA', '', ''],
+    ['', 'Menú ⚙ Di Égida Bar → Diagnóstico técnico. Es lo primero que hay que correr.', '']
+  ];
+  h.getRange(1, 1, t.length, 3).setValues(t);
+  return t.length;
+}
+
+/* ---------- La hoja CAPTURA: respeta el diseño impreso original ---------- */
+function construirCaptura_(){
+  var libro = ss_();
+  var h = libro.getSheetByName(H.CAP);
+  if (!h) h = libro.insertSheet(H.CAP);
+  h.clear();
+  try { h.clearConditionalFormatRules(); } catch(e){}
+  if (h.getMaxColumns() < C.ULT_COL) h.insertColumnsAfter(h.getMaxColumns(), C.ULT_COL - h.getMaxColumns());
+  if (h.getMaxRows() < 60) h.insertRowsAfter(h.getMaxRows(), 60 - h.getMaxRows());
+
+  h.getRange('A1:N1').merge().setValue('SGI DI ÉGIDA BISTRÓ  —  FORMATO DE RECEPCIÓN DE PEDIDOS  —  BAR');
+  h.getRange('A2:G2').merge().setValue(CODIGO + '   |   Versión ' + VERSION + '   |   Área: Bar');
+  h.getRange('H2:N2').merge().setValue('Di Égida Bistró  —  Sistema de Gestión Interna');
+  h.getRange('A4:N4').merge().setValue('  INFORMACIÓN DEL PEDIDO');
+
+  h.getRange('A5').setValue('Fecha de Recepción:');
+  h.getRange('G5').setValue('N° Remisión / Factura:');
+  h.getRange('A6').setValue('Proveedor:');
+  h.getRange('G6').setValue('Responsable Recibe:');
+  h.getRange('A7').setValue('Transportista / Guía:');
+  h.getRange('G7').setValue('Temp. Ambiente (°C):');
+  h.getRange('D5:F5').merge(); h.getRange('J5:N5').merge();
+  h.getRange('D6:F6').merge(); h.getRange('J6:N6').merge();
+  h.getRange('D7:F7').merge(); h.getRange('J7:N7').merge();
+  h.getRange(C.FECHA).setValue(hoy_()).setNumberFormat('dd/mm/yyyy');
+
+  /* Banda de avisos vivos — la única fórmula de diagnóstico del archivo */
+  h.getRange('A8:N8').merge().setFormula(formulaAvisosCaptura_());
+
+  var enc = ['#','Producto','Presentación','Unidad','Cant.\nPedida','Cant.\nRecibida','Diferencia',
+             'P. Unitario\n($)','Total\n($)','Condición','Sello\nIntacto','Vencimiento','N° Lote /\nGuía','Observaciones'];
+  h.getRange(9, 1, 1, C.ULT_COL).setValues([enc]);
+
+  var nF = C.FILA_FIN - C.FILA_INI + 1, i;
+  var fA = [], fG = [], fI = [];
+  for (i = 0; i < nF; i++){
+    var r = C.FILA_INI + i;
+    fA.push(['=IF(B' + r + '<>"",ROW()-' + (C.FILA_INI - 1) + ',"")']);
+    fG.push(['=IF(AND(E' + r + '<>"",F' + r + '<>""),F' + r + '-E' + r + ',"")']);
+    fI.push(['=IF(AND(F' + r + '<>"",H' + r + '<>""),F' + r + '*H' + r + ',"")']);
+  }
+  h.getRange(C.FILA_INI, R.NUM, nF, 1).setFormulas(fA);
+  h.getRange(C.FILA_INI, R.DIFERENCIA, nF, 1).setFormulas(fG);
+  h.getRange(C.FILA_INI, R.TOTAL, nF, 1).setFormulas(fI);
+
+  h.getRange(C.TOTALES, 1).setValue('TOTALES DEL PEDIDO');
+  h.getRange(C.TOTALES, R.CANT_REC).setFormula('=IFERROR(SUM(F' + C.FILA_INI + ':F' + C.FILA_FIN + '),0)');
+  h.getRange(C.TOTALES, R.DIFERENCIA).setFormula('=COUNTIF(G' + C.FILA_INI + ':G' + C.FILA_FIN + ',"<0")&" faltante(s)  |  "&COUNTIF(G' + C.FILA_INI + ':G' + C.FILA_FIN + ',">0")&" excedente(s)"');
+  h.getRange(C.TOTALES, R.PRECIO).setValue('Total pedido:');
+  h.getRange(C.TOTALES, R.TOTAL).setFormula('=IFERROR(SUM(I' + C.FILA_INI + ':I' + C.FILA_FIN + '),0)');
+  h.getRange(C.TOTALES, R.CONDICION, 1, 5).merge().setValue('Sujeto a confirmación con la factura oficial del proveedor.');
+
+  h.getRange(47, 1).setValue('Estado del Pedido:');
+  h.getRange('D47:F47').merge();
+  h.getRange(47, 8).setValue('Observaciones Generales del Pedido:');
+  h.getRange('H48:N49').merge();
+
+  h.getRange(50, 1).setValue('Recibe (Bar):');
+  h.getRange(50, 5).setValue('Verifica / Audita (Admin):');
+  h.getRange(50, 10).setValue('Representante del Proveedor:');
+  h.getRange(54, 1).setValue('Nombre completo y cédula:');
+  h.getRange(54, 5).setValue('Nombre completo y cédula:');
+  h.getRange(54, 10).setValue('Nombre completo y cédula:');
+
+  /* Controles — abajo, para no ensuciar el documento impreso */
+  h.getRange('A56:B56').merge().setValue('GUARDAR EN EL LIBRO MAYOR  ▶');
+  h.getRange(C.CHK_GUARDAR).insertCheckboxes().setValue(false);
+  h.getRange('D56:G56').merge().setValue('Motivo del forzado (solo si hay bloqueos):');
+  h.getRange('H56:N56').merge();
+  h.getRange('A57:N57').merge().setValue('Listo. Llena el encabezado y las líneas.');
+  h.getRange('A58:B58').merge().setValue('NUEVA RECEPCIÓN (limpiar)  ▶');
+  h.getRange(C.CHK_NUEVA).insertCheckboxes().setValue(false);
+
+  aplicarValidacionesCaptura_(h);
+  aplicarFormatoCaptura_(h);
+  return true;
+}
+
+function formulaAvisosCaptura_(){
+  var i0 = C.FILA_INI, i1 = C.FILA_FIN;
+  var partes =
+    'IF(COUNTA($D$5,$D$6,$J$5,$J$6)<4,"Encabezado incompleto",""),' +
+    'IF($J$5="","Sin N° de documento",""),' +
+    'IF(COUNTA($B$' + i0 + ':$B$' + i1 + ')=0,"Sin líneas de producto",""),' +
+    'IF(SUMPRODUCT(($B$' + i0 + ':$B$' + i1 + '<>"")*($D$' + i0 + ':$D$' + i1 + '=""))>0,' +
+      'SUMPRODUCT(($B$' + i0 + ':$B$' + i1 + '<>"")*($D$' + i0 + ':$D$' + i1 + '=""))&" línea(s) sin unidad",""),' +
+    'IF(SUMPRODUCT(($B$' + i0 + ':$B$' + i1 + '<>"")*($H$' + i0 + ':$H$' + i1 + '=""))>0,' +
+      'SUMPRODUCT(($B$' + i0 + ':$B$' + i1 + '<>"")*($H$' + i0 + ':$H$' + i1 + '=""))&" línea(s) sin precio",""),' +
+    'IF(SUMPRODUCT(($B$' + i0 + ':$B$' + i1 + '<>"")*($F$' + i0 + ':$F$' + i1 + '=0))>0,' +
+      'SUMPRODUCT(($B$' + i0 + ':$B$' + i1 + '<>"")*($F$' + i0 + ':$F$' + i1 + '=0))&" línea(s) con cantidad recibida 0",""),' +
+    'IF(SUMPRODUCT(($G$' + i0 + ':$G$' + i1 + '<>"")*($G$' + i0 + ':$G$' + i1 + '<>0)*($N$' + i0 + ':$N$' + i1 + '=""))>0,' +
+      'SUMPRODUCT(($G$' + i0 + ':$G$' + i1 + '<>"")*($G$' + i0 + ':$G$' + i1 + '<>0)*($N$' + i0 + ':$N$' + i1 + '=""))&" diferencia(s) sin observación",""),' +
+    'IF(SUMPRODUCT(($B$' + i0 + ':$B$' + i1 + '<>"")*($J$' + i0 + ':$J$' + i1 + '=""))>0,' +
+      'SUMPRODUCT(($B$' + i0 + ':$B$' + i1 + '<>"")*($J$' + i0 + ':$J$' + i1 + '=""))&" línea(s) sin condición","")';
+  return '=IFERROR(IF(TEXTJOIN("  ·  ",TRUE,' + partes + ')="",' +
+         '"✔ Sin avisos — puedes marcar la casilla de guardar.",' +
+         '"⚠ "&TEXTJOIN("  ·  ",TRUE,' + partes + ')),"")';
+}
+
+function aplicarValidacionesCaptura_(h){
+  var i0 = C.FILA_INI, nF = C.FILA_FIN - C.FILA_INI + 1;
+  var lista = function(valores, estricto){
+    return SpreadsheetApp.newDataValidation().requireValueInList(valores, true)
+      .setAllowInvalid(!estricto).build();
+  };
+  h.getRange(i0, R.UNIDAD, nF, 1).setDataValidation(lista(UNIDADES, false));
+  h.getRange(i0, R.CONDICION, nF, 1).setDataValidation(lista(LISTA_CONDICION, false));
+  h.getRange(i0, R.SELLO, nF, 1).setDataValidation(lista(LISTA_SELLO, false));
+  h.getRange(C.ESTADO).setDataValidation(lista(LISTA_ESTADO_PED, false));
+  try {
+    var hc = hojaOpcional_(H.CAT);
+    if (hc){
+      var rango = hc.getRange('B' + FILA_DATOS + ':B1000');
+      var dv = SpreadsheetApp.newDataValidation().requireValueInRange(rango, true).setAllowInvalid(true)
+        .setHelpText('Elige el producto de la lista. Escribir un nombre nuevo crea un producto nuevo en el catálogo.')
+        .build();
+      h.getRange(i0, R.PRODUCTO, nF, 1).setDataValidation(dv);
+    }
+  } catch(e){ /* el catálogo puede estar vacío en la primera instalación */ }
+  try { aplicarValidacionProveedor_(); } catch(e2){ /* nunca fatal */ }
+  h.getRange(i0, R.VENCIMIENTO, nF, 1).setNumberFormat('dd/mm/yyyy');
+}
+
+/*  EL PROBLEMA QUE RESUELVE (v1.1)
+      A10:N44 eran 490 celdas con borde en los cuatro lados, todas del mismo color y
+      del mismo peso. La rejilla no informaba nada: no distinguía lo que se digita de
+      lo que calcula el motor, y a 21 px de alto no se acierta la celda en un iPad.
+
+    LA REGLA NUEVA, aprendible en diez segundos
+      Fondo BLANCO con borde suave  →  aquí se escribe.
+      Fondo GRIS sin borde propio   →  lo calcula el motor, no se toca (A, G, I).
+
+    Y la rejilla se reduce a lo que sí significa algo:
+      · separador horizontal entre filas, más marcado cada 5 para seguir el renglón
+      · vertical solo en los tres cortes lógicos: identificación | cantidades | dinero
+      · alto de fila a 30 px, que es el mínimo táctil real
+      · cuadrícula nativa de Sheets apagada, para que deje de competir con la del formato */
+function aplicarFormatoCaptura_(h){
+  var i0 = C.FILA_INI, i1 = C.FILA_FIN, nF = i1 - i0 + 1;
+  var SOL = SpreadsheetApp.BorderStyle.SOLID;
+  var GRIS_CALC = '#F1EFEA';   /* columnas que calcula el motor */
+  var LINEA_SUAVE = COL.BORDE; /* separador entre filas */
+  var LINEA_CORTE = '#B9B1A2'; /* cortes verticales y cada 5 filas */
+
+  /* ---------- Encabezado del documento ---------- */
+  h.getRange('A1:N1').setBackground(COL.VINO).setFontColor('#FFFFFF').setFontSize(13)
+   .setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  h.setRowHeight(1, 34);
+  h.getRange('A2:N2').setBackground(COL.HUESO).setFontColor(COL.GRIS).setFontSize(9).setFontStyle('italic');
+  h.getRange('H2:N2').setHorizontalAlignment('right');
+  h.getRange('A4:N4').setBackground(COL.ORO).setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(10);
+  h.setRowHeight(4, 26);
+
+  h.getRange('A5:A7').setFontWeight('bold'); h.getRange('G5:G7').setFontWeight('bold');
+  h.getRange('D5:F7').setBackground('#FFFFFF')
+   .setBorder(true, true, true, true, false, true, LINEA_SUAVE, SOL);
+  h.getRange('J5:N7').setBackground('#FFFFFF')
+   .setBorder(true, true, true, true, false, true, LINEA_SUAVE, SOL);
+  h.setRowHeights(5, 3, 26);
+
+  h.getRange('A8:N8').setFontSize(10).setFontWeight('bold').setHorizontalAlignment('left')
+   .setVerticalAlignment('middle').setWrap(true).setBackground(COL.AVISOBG).setFontColor(COL.AVISO);
+  h.setRowHeight(8, 30);
+
+  /* ---------- Encabezado de la tabla ---------- */
+  h.getRange(9, 1, 1, C.ULT_COL).setBackground(COL.TINTA).setFontColor('#FFFFFF').setFontWeight('bold')
+   .setFontSize(9).setWrap(true).setHorizontalAlignment('center').setVerticalAlignment('middle');
+  h.setRowHeight(9, 38);
+
+  /* ---------- Cuerpo de la tabla ---------- */
+  var cuerpo = h.getRange(i0, 1, nF, C.ULT_COL);
+  cuerpo.setFontSize(10).setVerticalAlignment('middle');
+  try { cuerpo.setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP); } catch(e){}
+  h.setRowHeights(i0, nF, 30);
+
+  /* fondos: blanco donde se digita, gris donde calcula el motor */
+  cuerpo.setBackground('#FFFFFF');
+  h.getRange(i0, R.NUM,        nF, 1).setBackground(GRIS_CALC).setFontColor(COL.GRIS);
+  h.getRange(i0, R.DIFERENCIA, nF, 1).setBackground(GRIS_CALC);
+  h.getRange(i0, R.TOTAL,      nF, 1).setBackground(GRIS_CALC);
+
+  /* bordes: primero se borra la rejilla entera, luego se dibuja solo lo que informa */
+  cuerpo.setBorder(false, false, false, false, false, false, null, null);
+  cuerpo.setBorder(true, true, true, true, false, true, LINEA_SUAVE, SOL);
+
+  /* tres cortes verticales: fin de identificación (D) · fin de cantidades (G) · fin de dinero (I) */
+  h.getRange(i0, R.UNIDAD,     nF, 1).setBorder(null, null, null, true, null, null, LINEA_CORTE, SOL);
+  h.getRange(i0, R.DIFERENCIA, nF, 1).setBorder(null, null, null, true, null, null, LINEA_CORTE, SOL);
+  h.getRange(i0, R.TOTAL,      nF, 1).setBorder(null, null, null, true, null, null, LINEA_CORTE, SOL);
+
+  /* refuerzo cada 5 filas para no perder el renglón hasta la columna N */
+  var r;
+  for (r = i0 + 4; r < i1; r += 5){
+    h.getRange(r, 1, 1, C.ULT_COL).setBorder(null, null, true, null, null, null, LINEA_CORTE, SOL);
+  }
+
+  h.getRange(i0, R.PRECIO,   nF, 2).setNumberFormat('$#,##0.00');
+  h.getRange(i0, R.CANT_PED, nF, 3).setNumberFormat('#,##0.###');
+  h.getRange(i0, R.NUM,      nF, 1).setHorizontalAlignment('center');
+  h.getRange(i0, R.SELLO,    nF, 1).setHorizontalAlignment('center');
+
+  /* ---------- Totales ---------- */
+  h.getRange(C.TOTALES, 1, 1, C.ULT_COL).setBackground(COL.HUESO).setFontWeight('bold')
+   .setBorder(true, true, true, true, false, false, COL.TINTA, SOL);
+  h.setRowHeight(C.TOTALES, 30);
+  h.getRange(C.TOTALES, R.TOTAL).setNumberFormat('$#,##0');
+  h.getRange(C.TOTALES, R.CONDICION).setFontWeight('normal').setFontStyle('italic')
+   .setFontSize(9).setFontColor(COL.GRIS);
+
+  /* ---------- Cierre y firmas ---------- */
+  h.getRange('A47').setFontWeight('bold');
+  h.getRange('H47').setFontWeight('bold');
+  h.getRange('D47:F47').setBackground('#FFFFFF')
+   .setBorder(true, true, true, true, false, false, LINEA_SUAVE, SOL);
+  h.getRange('H48:N49').setBackground('#FFFFFF')
+   .setBorder(true, true, true, true, false, false, LINEA_SUAVE, SOL);
+
+  h.getRange('A50').setFontWeight('bold'); h.getRange('E50').setFontWeight('bold'); h.getRange('J50').setFontWeight('bold');
+  h.setRowHeights(51, 2, 24);
+  /* la línea sobre la que se firma: antes no existía ninguna */
+  h.getRange(53, 1, 1, 4).setBorder(null, null, true, null, null, null, COL.TINTA, SOL);
+  h.getRange(53, 5, 1, 5).setBorder(null, null, true, null, null, null, COL.TINTA, SOL);
+  h.getRange(53, 10, 1, 5).setBorder(null, null, true, null, null, null, COL.TINTA, SOL);
+  h.getRange(54, 1, 1, C.ULT_COL).setFontSize(8).setFontColor(COL.GRIS);
+
+  /* ---------- Controles ---------- */
+  h.getRange('A56:B56').setFontWeight('bold').setFontColor(COL.VINO);
+  h.getRange('A58:B58').setFontWeight('bold').setFontColor(COL.AZUL);
+  h.getRange(C.CHK_GUARDAR).setHorizontalAlignment('left');
+  h.getRange(C.CHK_NUEVA).setHorizontalAlignment('left');
+  h.setRowHeights(56, 1, 30);
+  h.setRowHeights(58, 1, 30);
+  h.getRange('D56:G56').setFontSize(9).setFontColor(COL.GRIS).setHorizontalAlignment('right');
+  h.getRange('H56:N56').setBackground('#FFFFFF')
+   .setBorder(true, true, true, true, false, false, LINEA_SUAVE, SOL);
+  h.getRange('A57:N57').setWrap(true).setVerticalAlignment('middle')
+   .setBackground(COL.OKBG).setFontColor(COL.OK).setFontWeight('bold');
+  h.setRowHeight(57, 54);
+
+  /* ---------- Anchos ---------- */
+  var anchos = [40, 235, 112, 84, 78, 84, 86, 100, 104, 108, 80, 104, 98, 250];
+  var i;
+  for (i = 0; i < anchos.length; i++){ h.setColumnWidth(i + 1, anchos[i]); }
+
+  /* ---------- Semáforos ---------- */
+  var rangoG = h.getRange(i0, R.DIFERENCIA, nF, 1);
+  var reglas = [];
+  reglas.push(SpreadsheetApp.newConditionalFormatRule().whenNumberLessThan(0)
+    .setBackground(COL.MALBG).setFontColor(COL.MAL).setBold(true).setRanges([rangoG]).build());
+  reglas.push(SpreadsheetApp.newConditionalFormatRule().whenNumberGreaterThan(0)
+    .setBackground(COL.AVISOBG).setFontColor(COL.AVISO).setBold(true).setRanges([rangoG]).build());
+  reglas.push(SpreadsheetApp.newConditionalFormatRule().whenNumberEqualTo(0)
+    .setBackground(COL.OKBG).setFontColor(COL.OK).setRanges([rangoG]).build());
+  var rangoJ = h.getRange(i0, R.CONDICION, nF, 1);
+  reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextContains('No llegó')
+    .setBackground(COL.MALBG).setFontColor(COL.MAL).setRanges([rangoJ]).build());
+  reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextContains('Dañado')
+    .setBackground(COL.AVISOBG).setFontColor(COL.AVISO).setRanges([rangoJ]).build());
+  var rangoK = h.getRange(i0, R.SELLO, nF, 1);
+  reglas.push(SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo('NO')
+    .setBackground(COL.MALBG).setFontColor(COL.MAL).setBold(true).setRanges([rangoK]).build());
+  /* el renglón con producto pero sin precio se resalta: es el error más caro del bar */
+  reglas.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=AND($B' + i0 + '<>"",$H' + i0 + '="")')
+    .setBackground('#FFFBF0')
+    .setRanges([h.getRange(i0, R.PRODUCTO, nF, 1)]).build());
+  h.setConditionalFormatRules(reglas);
+
+  try { h.setFrozenRows(9); } catch(e){}
+  try { h.setFrozenColumns(2); } catch(e){}
+  /* la cuadrícula nativa de Sheets deja de competir con la del formato */
+  try { h.setHiddenGridlines(true); } catch(e){}
+}
+
+/*  Aplica la estética y las validaciones SIN borrar nada.
+    construirCaptura_ sí borra, y casi nunca es lo que se quiere. */
+function refrescarVistaCaptura(){
+  var pasos = [];
+  var h = hoja_(H.CAP);
+  pasoSeguro_(pasos, 'Rediseñar la cuadrícula de CAPTURA', function(){ aplicarFormatoCaptura_(h); });
+  pasoSeguro_(pasos, 'Reaplicar validaciones',             function(){ aplicarValidacionesCaptura_(h); });
+  bitacora_('VISTA CAPTURA', pasos.join(' | '), '');
+  avisarUI_(CODIGO + ' — Vista de captura', pasos.join('\n'));
+  return pasos;
+}
+
+/* ============================== 18 · INSTALACIÓN ============================== */
+
+var HOJAS_TECNICAS = ['BD_RECEPCION_BAR','MAESTRO_INSUMOS_BAR','CATALOGO','CAT_PROVEEDORES',
+                      'BANDAS','DIAGNOSTICO','BITACORA','CONFIG'];
+
+function instalar(){
+  var pasos = [];
+  pasoSeguro_(pasos, 'Crear hojas del sistema',        function(){ crearHojas_(); });
+  pasoSeguro_(pasos, 'Construir la hoja CAPTURA',      function(){ construirCaptura_(); });
+  pasoSeguro_(pasos, 'Escribir parámetros de CONFIG',  function(){ escribirConfig_(); });
+  pasoSeguro_(pasos, 'Escribir INSTRUCCIONES',         function(){ escribirInstrucciones_(); });
+  pasoSeguro_(pasos, 'Archivar las hojas por fecha',   function(){ archivarHojasViejas_(); });
+  pasoSeguro_(pasos, 'Crear disparadores',             function(){ crearDisparadores_(); });
+  pasoSeguro_(pasos, 'Aplicar estética',               function(){ ajustarEstetica(); });
+  pasoSeguro_(pasos, 'Proteger hojas técnicas',        function(){ protegerHojas_(); });
+  pasoSeguro_(pasos, 'Recalcular derivados',           function(){ recalcularTodo(); });
+  bitacora_('INSTALACIÓN', pasos.join(' | '), '');
+  var msg = 'Instalación v' + VERSION + '\n\n' + pasos.join('\n') +
+            '\n\nSiguiente paso: ⚙ Di Égida Bar → Migrar histórico.';
+  avisarUI_(CODIGO + ' — Instalación', msg);
+  return pasos;
+}
+
+/*  Actualiza un archivo que ya trae v1.0 instalado y con datos.
+    No borra nada: crea la hoja que falta, agrega los parámetros nuevos de CONFIG,
+    reconstruye derivados y redibuja la hoja de captura.                              */
+function aplicarParche11(){
+  var pasos = [];
+  pasoSeguro_(pasos, 'Crear CAT_PROVEEDORES',                function(){ crearHojas_(); });
+  pasoSeguro_(pasos, 'Agregar parámetros nuevos a CONFIG',   function(){ escribirConfig_(); });
+  pasoSeguro_(pasos, 'Construir el catálogo de proveedores', function(){ reconstruirProveedores_(); });
+  pasoSeguro_(pasos, 'Cerrar la lista de proveedores en D6', function(){ aplicarValidacionProveedor_(); });
+  pasoSeguro_(pasos, 'Rediseñar la hoja CAPTURA',            function(){ aplicarFormatoCaptura_(hoja_(H.CAP)); });
+  pasoSeguro_(pasos, 'Reaplicar validaciones',               function(){ aplicarValidacionesCaptura_(hoja_(H.CAP)); });
+  pasoSeguro_(pasos, 'Actualizar INSTRUCCIONES',             function(){ escribirInstrucciones_(); });
+  pasoSeguro_(pasos, 'Estética general',                     function(){ ajustarEstetica(); });
+  pasoSeguro_(pasos, 'Dar formato a CAT_PROVEEDORES',        function(){
+    var hp = hoja_(H.PRV);
+    hp.setTabColor('#4E6E58');
+    hp.getRange(1, 1, 1, 8).setBackground(COL.VINO).setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(11);
+    hp.getRange(3, 1, 1, 8).setBackground(COL.TINTA).setFontColor('#FFFFFF').setFontWeight('bold')
+      .setFontSize(9).setWrap(true);
+    hp.setColumnWidth(1, 190); hp.setColumnWidth(2, 240); hp.setColumnWidth(8, 320);
+    hp.setFrozenRows(3);
+  });
+  pasoSeguro_(pasos, 'Proteger hojas técnicas',              function(){ protegerHojas_(); });
+  pasoSeguro_(pasos, 'Recalcular derivados',                 function(){ recalcularTodo(); });
+
+  var hp2 = hojaOpcional_(H.PRV);
+  var nProv = hp2 ? Math.max(hp2.getLastRow() - FILA_DATOS + 1, 0) : 0;
+  bitacora_('PARCHE v1.1', pasos.join(' | '), '');
+  avisarUI_(CODIGO + ' — v1.1',
+    pasos.join('\n') + '\n\n' + nProv + ' proveedor(es) en el catálogo.\n\n' +
+    'Revisa CAT_PROVEEDORES: la columna POSIBLE DUPLICADO te dice cuáles unificar con\n' +
+    '⚙ Di Égida Bar → Fusionar proveedores.');
+  return pasos;
+}
+
+/* Las 12 hojas por fecha quedan intactas, solo ocultas. No se borra nada. */
+function archivarHojasViejas_(){
+  var libro = ss_();
+  var hojas = libro.getSheets(), i, n = 0;
+  var conocidas = {};
+  for (i = 0; i < DEF_HOJAS.length; i++){ conocidas[DEF_HOJAS[i].n] = true; }
+  activarHojaSegura_();
+  for (i = 0; i < hojas.length; i++){
+    var nom = hojas[i].getName();
+    if (conocidas[nom]) continue;
+    try { hojas[i].setTabColor('#9E9E9E'); } catch(e){}
+    if (ocultarSeguro_(nom)) n++;
+  }
+  return n;
+}
+
+function crearDisparadores_(){
+  var libro = ss_();
+  var existentes = ScriptApp.getProjectTriggers(), i;
+  for (i = 0; i < existentes.length; i++){
+    var f = existentes[i].getHandlerFunction();
+    if (f === 'alEditar_' || f === 'enviarAlertaDiaria'){
+      try { ScriptApp.deleteTrigger(existentes[i]); } catch(e){}
+    }
+  }
+  ScriptApp.newTrigger('alEditar_').forSpreadsheet(libro).onEdit().create();
+  ScriptApp.newTrigger('enviarAlertaDiaria').timeBased().atHour(8).everyDays(1).create();
+  return 2;
+}
+
+function protegerHojas_(){
+  var i, n = 0;
+  for (i = 0; i < HOJAS_TECNICAS.length; i++){
+    var h = hojaOpcional_(HOJAS_TECNICAS[i]);
+    if (!h) continue;
+    var libres = null;
+    if (HOJAS_TECNICAS[i] === 'CONFIG') libres = [h.getRange('B2:B100')];
+    if (protegerSeguro_(h, 'SGI ' + CODIGO + ' — no editar a mano', libres)) n++;
+  }
+  return n;
+}
+
+/* ============================== 19 · VISTA Y ESTÉTICA ============================== */
+
+function mejorarVistaiPad(){
+  var pasos = [];
+  pasoSeguro_(pasos, 'Poner CAPTURA al frente', function(){ activarHojaSegura_(); });
+  var i;
+  for (i = 0; i < HOJAS_TECNICAS.length; i++){
+    (function(nombre){
+      pasoSeguro_(pasos, 'Ocultar ' + nombre, function(){
+        if (!ocultarSeguro_(nombre)) throw new Error('no se pudo ocultar (¿es la hoja activa?)');
+      });
+    })(HOJAS_TECNICAS[i]);
+  }
+  pasoSeguro_(pasos, 'Congelar encabezados de CAPTURA', function(){ hoja_(H.CAP).setFrozenRows(9); });
+  pasoSeguro_(pasos, 'Mover CAPTURA a la primera posición', function(){
+    var libro = ss_(); var h = hoja_(H.CAP); libro.setActiveSheet(h); libro.moveActiveSheet(1);
+  });
+  bitacora_('MEJORAR VISTA', pasos.join(' | '), '');
+  avisarUI_(CODIGO + ' — Vista iPad', pasos.join('\n'));
+  return pasos;
+}
+
+function mostrarTodasLasHojas(){
+  var libro = ss_(), hojas = libro.getSheets(), i, n = 0;
+  for (i = 0; i < hojas.length; i++){
+    if (hojas[i].isSheetHidden()){ try { hojas[i].showSheet(); n++; } catch(e){} }
+  }
+  avisarUI_(CODIGO, n + ' hoja(s) visibles de nuevo.');
+  return n;
+}
+
+function ajustarEstetica(){
+  var pasos = [];
+  var tabs = [[H.TAB, COL.VINO], [H.CAP, COL.ORO], [H.BD, COL.TINTA], [H.MAE, COL.AZUL],
+              [H.CAT, '#4E6E58'], [H.PRV, '#4E6E58'], [H.BAN, '#7A5C3E'], [H.DIA, COL.MAL],
+              [H.BIT, COL.GRIS], [H.CFG, '#3F3F3F'], [H.INS, '#8A6100']];
+  var i;
+  for (i = 0; i < tabs.length; i++){
+    (function(par){
+      pasoSeguro_(pasos, 'Color de pestaña ' + par[0], function(){
+        var h = hojaOpcional_(par[0]);
+        if (h) h.setTabColor(par[1]);
+      });
+    })(tabs[i]);
+  }
+  pasoSeguro_(pasos, 'Encabezados de las hojas derivadas', function(){
+    var lista = [H.TAB, H.MAE, H.CAT, H.PRV, H.BAN, H.DIA], j;
+    for (j = 0; j < lista.length; j++){
+      var h = hojaOpcional_(lista[j]);
+      if (!h) continue;
+      h.getRange(1, 1, 1, Math.max(h.getMaxColumns(), 1)).setBackground(COL.VINO).setFontColor('#FFFFFF')
+       .setFontWeight('bold').setFontSize(11);
+      h.getRange(3, 1, 1, h.getMaxColumns()).setBackground(COL.TINTA).setFontColor('#FFFFFF')
+       .setFontWeight('bold').setFontSize(9).setWrap(true);
+      try { h.setFrozenRows(3); } catch(e){}
+    }
+  });
+  pasoSeguro_(pasos, 'Encabezado del libro mayor', function(){
+    var h = hoja_(H.BD);
+    h.getRange(1, 1, 1, BD_ULT_COL).setBackground(COL.TINTA).setFontColor('#FFFFFF')
+     .setFontWeight('bold').setFontSize(9).setWrap(true);
+    h.setFrozenRows(1);
+    h.getRange(2, B.FECHA, Math.max(h.getMaxRows() - 1, 1), 1).setNumberFormat('yyyy-mm-dd');
+    h.getRange(2, B.VENCIMIENTO, Math.max(h.getMaxRows() - 1, 1), 1).setNumberFormat('yyyy-mm-dd');
+    h.getRange(2, B.PRECIO_UNIT, Math.max(h.getMaxRows() - 1, 1), 2).setNumberFormat('$#,##0.00');
+  });
+  pasoSeguro_(pasos, 'Encabezados de BITÁCORA y CONFIG', function(){
+    var lista = [H.BIT, H.CFG], j;
+    for (j = 0; j < lista.length; j++){
+      var h = hojaOpcional_(lista[j]);
+      if (!h) continue;
+      h.getRange(1, 1, 1, h.getMaxColumns()).setBackground(COL.TINTA).setFontColor('#FFFFFF').setFontWeight('bold');
+      try { h.setFrozenRows(1); } catch(e){}
+    }
+    var hb = hojaOpcional_(H.BIT);
+    if (hb) hb.getRange(2, 1, Math.max(hb.getMaxRows() - 1, 1), 1).setNumberFormat('yyyy-mm-dd hh:mm');
+  });
+  pasoSeguro_(pasos, 'Formato de INSTRUCCIONES', function(){
+    var h = hoja_(H.INS);
+    h.getRange('A1:C1').merge().setBackground(COL.VINO).setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13);
+    h.getRange('A2:C2').merge().setFontColor(COL.GRIS).setFontStyle('italic');
+    h.setColumnWidth(1, 190); h.setColumnWidth(2, 560); h.setColumnWidth(3, 420);
+    h.getRange('A1:C70').setVerticalAlignment('middle').setWrap(true);
+  });
+  pasoSeguro_(pasos, 'Anchos de columna derivados', function(){
+    var h = hojaOpcional_(H.MAE);
+    if (h){ h.setColumnWidth(1, 190); h.setColumnWidth(2, 230); }
+    var h2 = hojaOpcional_(H.CAT);
+    if (h2){ h2.setColumnWidth(1, 190); h2.setColumnWidth(2, 230); h2.setColumnWidth(9, 300); }
+    var h5 = hojaOpcional_(H.PRV);
+    if (h5){ h5.setColumnWidth(1, 190); h5.setColumnWidth(2, 240); h5.setColumnWidth(8, 320); }
+    var h3 = hojaOpcional_(H.DIA);
+    if (h3){ h3.setColumnWidth(2, 300); h3.setColumnWidth(6, 460); }
+    var h4 = hojaOpcional_(H.TAB);
+    if (h4){ h4.setColumnWidth(1, 300); h4.setColumnWidth(2, 180); h4.setColumnWidth(4, 460); }
+  });
+  bitacora_('ESTÉTICA', pasos.join(' | '), '');
+  return pasos;
+}
+
+/* ============================== 20 · AUTODIAGNÓSTICO ============================== */
+
+function diagnosticoTecnico(){
+  var L = [];
+  L.push('DIAGNÓSTICO TÉCNICO — ' + CODIGO + ' v' + VERSION);
+  L.push('Fecha: ' + fmtFechaHora_(new Date()));
+
+  var motor = 'Rhino (motor antiguo)';
+  try { eval('(function(){ return ((x) => x)(1); })()'); motor = 'V8'; } catch(e){ motor = 'Rhino (motor antiguo)'; }
+  L.push('Motor de ejecución: ' + motor);
+
+  var cuenta = 'desconocida';
+  try {
+    var h = hoja_(H.BD);
+    var p = h.protect();
+    try { p.canDomainEdit(); cuenta = 'Workspace (dominio)'; }
+    catch(eD){ cuenta = 'Gmail personal (canDomainEdit lanza excepción — esperado)'; }
+    try { p.remove(); } catch(eR){}
+  } catch(e2){ cuenta = 'no verificable: ' + (e2 && e2.message ? e2.message : e2); }
+  L.push('Tipo de cuenta: ' + cuenta);
+  L.push('Usuario detectado: ' + usuario_());
+  L.push('');
+
+  L.push('ARCHIVOS DEL PROYECTO:');
+  L.push('  Este motor debe ser el único archivo .gs. Si ves otro con las mismas funciones,');
+  L.push('  bórralo: el último archivo que se carga gana y anula al otro en silencio.');
+  L.push('');
+
+  L.push('HOJAS:');
+  var libro = ss_(), hojas = libro.getSheets(), i;
+  for (i = 0; i < hojas.length; i++){
+    L.push('  · ' + hojas[i].getName() + (hojas[i].isSheetHidden() ? '  (oculta)' : '') +
+           '  ' + hojas[i].getLastRow() + ' fila(s)');
+  }
+  var faltan = [], j;
+  for (j = 0; j < DEF_HOJAS.length; j++){ if (!libro.getSheetByName(DEF_HOJAS[j].n)) faltan.push(DEF_HOJAS[j].n); }
+  L.push('  Faltantes: ' + (faltan.length ? faltan.join(', ') : 'ninguna'));
+  L.push('');
+
+  L.push('DISPARADORES:');
+  try {
+    var t = ScriptApp.getProjectTriggers();
+    if (!t.length) L.push('  ✕ Ninguno. Ejecuta instalar.');
+    for (i = 0; i < t.length; i++){ L.push('  · ' + t[i].getHandlerFunction() + '  (' + t[i].getEventType() + ')'); }
+  } catch(e3){ L.push('  no verificable: ' + (e3 && e3.message ? e3.message : e3)); }
+  L.push('');
+
+  L.push('CASILLAS DE CONTROL:');
+  try {
+    var hc = hoja_(H.CAP);
+    L.push('  · Guardar ' + C.CHK_GUARDAR + ' = ' + hc.getRange(C.CHK_GUARDAR).getValue());
+    L.push('  · Nueva ' + C.CHK_NUEVA + ' = ' + hc.getRange(C.CHK_NUEVA).getValue());
+    L.push('  · Banda de avisos = ' + String(hc.getRange(C.AVISOS).getDisplayValue()).substring(0, 120));
+  } catch(e4){ L.push('  ✕ ' + (e4 && e4.message ? e4.message : e4)); }
+  L.push('');
+
+  L.push('DATOS:');
+  var filas = leerBD_();
+  var act = 0, rev = 0, revi = 0;
+  for (i = 0; i < filas.length; i++){
+    var e = clave_(filas[i][B.ESTADO - 1]);
+    if (e === 'activa') act++; else if (e === 'reversada') rev++; else if (e === 'revisar') revi++;
+  }
+  L.push('  · Líneas en el libro mayor: ' + filas.length + '  (ACTIVA ' + act + ' · REVISAR ' + revi + ' · REVERSADA ' + rev + ')');
+  var hcat = hojaOpcional_(H.CAT);
+  L.push('  · Productos en catálogo: ' + (hcat ? Math.max(hcat.getLastRow() - FILA_DATOS + 1, 0) : 0));
+  var hprv = hojaOpcional_(H.PRV);
+  L.push('  · Proveedores en catálogo: ' + (hprv ? Math.max(hprv.getLastRow() - FILA_DATOS + 1, 0) : 0) +
+         (hprv ? '' : '  ✕ falta CAT_PROVEEDORES: ejecuta aplicarParche11'));
+  L.push('  · Lista de proveedores cerrada: ' + (cfgSi_('PROVEEDOR_LISTA_CERRADA', 'SI') ? 'SÍ' : 'NO'));
+  var hban = hojaOpcional_(H.BAN);
+  L.push('  · Bandas calculadas: ' + (hban ? Math.max(hban.getLastRow() - FILA_DATOS + 1, 0) : 0));
+  L.push('');
+
+  L.push('CORREOS DE ALERTA: ' + (correosAlerta_().length ? correosAlerta_().join(', ') : '✕ ninguno configurado en CONFIG'));
+  L.push('AVISOS VIVOS: ' + probarAvisos(true));
+
+  var texto = L.join('\n');
+  avisarUI_('Diagnóstico técnico', texto);
+  bitacora_('DIAGNÓSTICO TÉCNICO', 'Motor ' + motor + ' · ' + filas.length + ' línea(s)', '');
+  return texto;
+}
+
+/* Corre los bloques por separado y dice cuál falla. */
+function probarAvisos(silencioso){
+  var pasos = [];
+  pasoSeguro_(pasos, 'Leer libro mayor',        function(){ leerBD_(); });
+  pasoSeguro_(pasos, 'Calcular bandas',         function(){ calcularBandas_(); });
+  pasoSeguro_(pasos, 'Diagnóstico ligero',      function(){ reconstruirDiagnosticoLigero_(); });
+  pasoSeguro_(pasos, 'Leer catálogo de proveedores', function(){ proveedoresCatalogo_(); });
+  pasoSeguro_(pasos, 'Leer correos de CONFIG',  function(){ correosAlerta_(); });
+  pasoSeguro_(pasos, 'Escribir bandas de aviso',function(){ refrescarAvisos_(); });
+  var r = pasos.join('  |  ');
+  if (!silencioso) avisarUI_('Prueba de avisos', pasos.join('\n'));
+  return r;
+}
+
+/* Reporte corto en texto, para diagnosticar sin mover el archivo. */
+function reporteEstado(){
+  var filas = leerBD_(), i;
+  var lig = reconstruirDiagnosticoLigero_();
+  var docs = {}, valor = 0;
+  for (i = 0; i < filas.length; i++){
+    if (!esActiva_(filas[i])) continue;
+    docs[txt_(filas[i][B.ID_DOC - 1])] = true;
+    var v = num_(filas[i][B.VALOR_TOTAL - 1]);
+    if (esNumero_(v)) valor += v;
+  }
+  var nd = 0, k; for (k in docs){ if (docs.hasOwnProperty(k) && k !== '') nd++; }
+  var t = CODIGO + ' v' + VERSION + '  ·  ' + fmtFecha_(hoy_()) + '\n' +
+          nd + ' recepciones · ' + filas.length + ' líneas · $' + Math.round(valor) + ' registrados\n' +
+          'Proveedores en catálogo: ' + proveedoresCatalogo_().length + '\n' +
+          'Pendientes: ' + lig.c.sinPrecio + ' sin precio · ' + lig.c.fueraBanda + ' fuera de banda · ' +
+          lig.c.revisar + ' por revisar · ' + lig.c.sinUnidad + ' sin unidad · ' +
+          lig.c.selloFalta + ' sin sello · ' + lig.c.vencidas + ' vencidos';
+  avisarUI_('Estado del formato', t);
+  return t;
+}
+
+/* ============================== 21 · MENÚ ============================== */
+
+function onOpen(){
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu('⚙ Di Égida Bar')
+      .addItem('Guardar recepción', 'guardarRecepcion')
+      .addItem('Nueva recepción (limpiar)', 'nuevaRecepcion')
+      .addSeparator()
+      .addItem('Dar de alta un proveedor', 'altaProveedor')
+      .addItem('Fusionar proveedores', 'fusionarProveedor')
+      .addSeparator()
+      .addItem('Recalcular todo', 'recalcularTodo')
+      .addItem('Reversar línea', 'reversarLinea')
+      .addSeparator()
+      .addItem('Migrar histórico', 'migrarHistorico')
+      .addItem('Depurar nombres de proveedor', 'depurarNombres')
+      .addSeparator()
+      .addItem('Rediseñar la hoja de captura', 'refrescarVistaCaptura')
+      .addItem('Mejorar la vista para el iPad', 'mejorarVistaiPad')
+      .addItem('Mostrar todas las hojas', 'mostrarTodasLasHojas')
+      .addItem('Ajustar estética y márgenes', 'ajustarEstetica')
+      .addSeparator()
+      .addItem('Reporte de estado', 'reporteEstado')
+      .addItem('Probar los avisos', 'probarAvisos')
+      .addItem('Diagnóstico técnico', 'diagnosticoTecnico')
+      .addSeparator()
+      .addItem('Enviar alerta ahora', 'enviarAlertaDiaria')
+      .addItem('Actualizar a v1.1', 'aplicarParche11')
+      .addItem('Reinstalar / reparar', 'instalar')
+      .addToUi();
+  } catch(e){ /* en iPad no hay menú: es esperado */ }
+}

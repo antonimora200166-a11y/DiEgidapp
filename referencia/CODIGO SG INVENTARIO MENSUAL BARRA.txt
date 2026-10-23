@@ -1,0 +1,47 @@
+function actualizarPedidos() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var inv = ss.getSheetByName('Embotellados (resumen semanal)');
+  var NAVY='#1F3A5F', GOLD='#B08D2E', LGRAY='#F5F5F5';
+
+  // Crear o limpiar hoja PEDIDOS
+  var sh = ss.getSheetByName('PEDIDOS') || ss.insertSheet('PEDIDOS');
+  sh.clearContents();
+  sh.clearFormats();
+
+  // Encabezados
+  var headers = ['#','Tipo','Producto','ml/unid','Mín','Máx','Stock Actual','A Pedir','Fecha'];
+  sh.getRange(1,1,1,headers.length).setValues([headers])
+    .setBackground(NAVY).setFontColor('white').setFontWeight('bold');
+
+  // Recorrer inventario y copiar filas con SÍ
+  var data = inv.getRange(10, 1, 113, 12).getValues();
+  var pedidos = [];
+  var hoy = Utilities.formatDate(new Date(), 'America/Bogota', 'dd/MM/yyyy');
+
+  data.forEach(function(row) {
+    var total = row[10]; // Col K
+    var pedir = row[11]; // Col L
+    if (String(pedir).trim().toUpperCase() === 'SÍ') {
+      var max   = row[5];  // Col F
+      var aPedir = (max && total !== '') ? max - total : '?';
+      pedidos.push([row[0],row[1],row[2],row[3],row[4],max,total,aPedir,hoy]);
+    }
+  });
+
+  if (pedidos.length === 0) {
+    sh.getRange(2,1).setValue('✅ Sin pedidos pendientes');
+    return;
+  }
+
+  sh.getRange(2,1,pedidos.length,9).setValues(pedidos);
+
+  // Formato zebra
+  for (var i=0; i<pedidos.length; i++) {
+    sh.getRange(i+2,1,1,9).setBackground(i%2===0 ? LGRAY : 'white');
+  }
+  sh.getRange(2,8,pedidos.length,1).setBackground('#FFD966').setFontWeight('bold'); // Col "A Pedir" en amarillo
+  sh.autoResizeColumns(1,9);
+  sh.setFrozenRows(1);
+
+  SpreadsheetApp.getUi().alert('📋 Lista de pedidos actualizada: ' + pedidos.length + ' productos.');
+}

@@ -1,0 +1,23 @@
+# SGI Di Égida App
+
+App de control operativo para Di Égida – Tosca Bistró (Cali). Usuarios: jefe y aux. de barra, chef, sous chef, aux. de cocina, asesores de servicio, administración. Interfaz 100 % en español, pensada para celular e iPad.
+
+## Principios
+- El personal registra hechos; la app calcula costos, existencias y valores.
+- Lo que el sistema ya sabe no se vuelve a digitar.
+- Todo cambio de existencias es un movimiento en el kardex. Nunca se edita un saldo.
+- Nada se borra: los errores se corrigen con reversa y quedan en bitácora.
+- La IA propone y una persona confirma. La IA nunca escribe directo al kardex.
+- Cada genérico + marca + presentación es un código distinto.
+
+## Reglas de costeo
+- Costo de insumos: promedio ponderado móvil, recalculado en cada ENTRADA.
+- Costo de MPI por lote = suma de consumos / neto obtenido.
+- Costo de plato o bebida = suma de ingredientes de la ficha × costo vigente.
+- Unidades base: g, ml, und. Toda cantidad se guarda en unidad base.
+
+## Referencia
+- referencia/ contiene los Sheets y motores .gs actuales. Son la especificación: lee la lógica antes de reinventarla.
+
+## Stack
+Next.js (PWA) + Supabase (Postgres, Auth, Storage, RLS por rol) + API de Claude. Pruebas automáticas obligatorias para toda fórmula de costo.

@@ -1,0 +1,3654 @@
+/**
+ * ============================================================================
+ * DI ÉGIDA · TOSCA BISTRÓ — MOTOR DE INVENTARIO DE COCINA
+ * INV-COC-001 v6.5.1
+ * ============================================================================
+ * ESTE DEBE SER EL ÚNICO ARCHIVO .gs DEL PROYECTO.
+ * Apps Script concatena los archivos y ejecuta en orden: si queda otro .gs con
+ * funciones del mismo nombre, gana el último que carga y este motor queda
+ * anulado sin dar un solo mensaje de error.
+ *
+ * Escrito en ES5 puro: el proyecto corre en motor Rhino y con cuenta personal.
+ * Prohibido en este archivo: let, const, =>, plantillas con backtick, Set, Map,
+ * Object.keys, Array.from, .forEach, .includes, .startsWith, .normalize, spread.
+ * ============================================================================
+ */
+
+var VERSION = '6.5.1';
+
+var H = {
+  INSTR: 'INSTRUCCIONES',
+  TABLERO: 'TABLERO',
+  CAPTURA: 'CAPTURA',
+  ZONAS: 'CAT_ZONAS',
+  CATALOGO: 'CATALOGO',
+  LISTAS: 'LISTAS',
+  UBIC: 'CAT_UBICACION',
+  BD: 'BD_INVENTARIO',
+  MAESTRO: 'MAESTRO_STOCK',
+  BANDAS: 'BANDAS',
+  CONFIG: 'CONFIG',
+  DIAG: 'DIAGNOSTICO',
+  DUP: 'DUPLICADOS',
+  CONSULTA: 'CONSULTA',
+  ALTA: 'ALTA_PRODUCTO',
+  BITACORA: 'BITACORA',
+  SANEA: 'SANEAMIENTO',
+  HIST: 'HISTORIAL_CONTEOS',
+  PORCOMP: 'POR_COMPLETAR'
+};
+
+/* HISTORIAL_CONTEOS: un renglón por conteo cerrado. Lo escribe el motor. */
+var T_FOLIO = 1, T_FECHA = 2, T_CICLO = 3, T_ZONA = 4, T_RESP = 5, T_LIN = 6, T_G = 7,
+    T_ML = 8, T_UN = 9, T_SOBRA = 10, T_VALOR = 11, T_ORIGEN = 12;
+var HIST_NCOL = 12;
+
+/* POR_COMPLETAR: lo que falta y solo cocina sabe. El motor lo lee y lo lleva al
+   catálogo; nunca lo rellena por su cuenta. */
+var P_PROD = 1, P_CATEG = 2, P_TIPO = 3, P_FALTA = 4, P_ZONA = 5, P_UM = 6, P_UNI = 7,
+    P_PESO = 8, P_MIN = 9;
+var PORC_NCOL = 9;
+
+/* Filas de encabezado y primera fila de datos por hoja */
+var FILA_DATOS = 5;          // vale para CATALOGO, UBIC, ZONAS, BD, MAESTRO, BANDAS, CONFIG, DIAG, BITACORA
+var CAP_FILA_DATOS = 7;      // CAPTURA
+
+/* CAPTURA — celdas de cabecera */
+var CAP_ZONA = 'B2';
+var CAP_CICLO = 'D2';
+var CAP_FECHA = 'F2';
+var CAP_RESP = 'B3';
+var CAP_FOLIO = 'D3';
+var CAP_CERRAR = 'F3';
+var CAP_COMPLETO = 'F1';
+var CAP_ABRIR = 'H1';        /* en la plantilla: abrir un conteo nuevo */
+var CAP_ALTA = 'J1';         /* en la hoja de conteo: dar de alta lo que no estaba */
+var CAP_SELLO = 'P1';        /* marca oculta que dice que la hoja la creó el motor */
+
+/* Prefijo de las hojas de conteo. CAPTURA deja de ser donde se cuenta y pasa a ser
+   la pantalla de apertura: el motor copia la plantilla, la nombra CONTEO <COD> <ddMM>
+   y ahí se cuenta. Así dos personas pueden contar dos zonas a la vez —que es lo que
+   hacían el 23 de septiembre— sin tener que copiar la pestaña a mano. */
+var PREFIJO_CONTEO = 'CONTEO ';
+var CAP_AVISO = 'A4';
+
+/* CAPTURA — columnas.
+   SOBRANTE es la unidad incompleta en gramos o mililitros: media bolsa, el pedazo
+   de queso, el paquete abierto. Antes eso se escribía a mano en NOTA y no entraba
+   en ningún total. _PRES dice si la presentación del producto es ESTÁNDAR —el peso
+   llega del catálogo y no se toca— o VARIABLE —hay que pesarla en este conteo—. */
+/* v6.5 — la franja numérica va seguida. Hasta la v6.4 el orden era
+   CANTIDAD · UNIDAD · PESO · SOBRANTE, con la UNIDAD —un desplegable— sentada en
+   la mitad: en iPad cada fila obligaba a cambiar de teclado y a pasar por encima
+   de ella. Ahora la UNIDAD queda pegada al nombre, que es donde el ojo la
+   necesita ("Albahaca — bolsa") y fuera del camino del dedo, y CANTIDAD,
+   SOBRANTE y PESO quedan juntas: un solo teclado por fila. Las columnas ocultas
+   no se movieron. */
+var C_NUM = 1, C_PROD = 2, C_UNI = 3, C_ULT = 4, C_CANT = 5, C_SOBRA = 6, C_PESO = 7,
+    C_TOTAL = 8, C_ALERTA = 9, C_NOTA = 10, C_MIN = 11, C_UM = 12, C_CLAVE = 13,
+    C_UNICAT = 14, C_PESOCAT = 15, C_PRES = 16;
+/* letras de las columnas que usan las fórmulas de la rejilla */
+var L_PROD = 'B', L_UNI = 'C', L_CANT = 'E', L_SOBRA = 'F', L_PESO = 'G',
+    L_MIN = 'K', L_UM = 'L';
+var CAP_NCOL = 16;
+var CAP_TOT_G = 'H2', CAP_TOT_ML = 'H3';
+
+/* CONSULTA */
+var CONS_FECHA = 'B2', CONS_ZONA = 'D2', CONS_CICLO = 'F2', CONS_BUSCAR = 'H2',
+    CONS_AVISO = 'A3';
+var CONS_FILA_DATOS = 5, CONS_NCOL = 12, CONS_MAX = 900;
+
+/* ALTA_PRODUCTO — un alta que funciona en iPad: sin men\u00fas ni di\u00e1logos, solo
+   campos y una casilla. Escribir el producto a mano en el CAT\u00c1LOGO parece m\u00e1s
+   r\u00e1pido y deja la fila a medias: sin clave, sin ACTIVO y sin ubicaci\u00f3n. */
+var ALTA_MODO = 'B4', ALTA_BASE = 'B5', ALTA_MARCA = 'B6', ALTA_CATEG = 'B7', ALTA_UM = 'B8',
+    ALTA_UNIDAD = 'B9', ALTA_PESO = 'B10', ALTA_PRES = 'B11', ALTA_ZONA = 'B12', ALTA_MIN = 'B13',
+    ALTA_BAJA = 'B14', ALTA_MOTIVO = 'B15', ALTA_CREAR = 'B17', ALTA_FORZAR = 'B18',
+    ALTA_AVISO = 'A2';
+var ALTA_HIST = 21;
+
+/* CATALOGO */
+var K_COD = 1, K_BASE = 2, K_MARCA = 3, K_PROD = 4, K_CATEG = 5, K_TIPO = 6, K_UM = 7,
+    K_UNI = 8, K_PESO = 9, K_PRES = 10, K_MIN = 11, K_PRECIO = 12, K_CANTC = 13, K_COSTO = 14,
+    K_MERMA = 15, K_COSTON = 16, K_ACTIVO = 17, K_PROV = 18, K_ESTADO = 19, K_NOTAS = 20;
+var CAT_NCOL = 20;
+var PRES_VAR = 'VARIABLE', PRES_EST = 'ESTÁNDAR';
+var MARCA_PROPUESTA = 'presentación propuesta por el motor';
+
+/* CAT_UBICACION */
+var U_PROD = 1, U_ZONA = 2, U_ORDEN = 3, U_MIN = 4, U_ACTIVO = 5, U_CONTEOS = 6, U_ULT = 7;
+var UBI_NCOL = 7;
+
+/* CAT_ZONAS */
+var Z_COD = 1, Z_ZONA = 2, Z_CICLO = 3, Z_ORDEN = 4, Z_ACTIVO = 5, Z_ULTFECHA = 6, Z_LINEAS = 7;
+var ZON_NCOL = 7;
+
+/* BD_INVENTARIO */
+var B_IDLIN = 1, B_IDCON = 2, B_FECHA = 3, B_CICLO = 4, B_ZONA = 5, B_PROD = 6, B_CANT = 7,
+    B_UNI = 8, B_PESO = 9, B_UM = 10, B_TOTAL = 11, B_COSTO = 12, B_VALOR = 13, B_RESP = 14,
+    B_USER = 15, B_ESTADO = 16, B_OVER = 17, B_MOTIVO = 18, B_REFREV = 19, B_FESTIM = 20,
+    B_TS = 21, B_SOBRA = 22;
+var BD_NCOL = 22;
+
+/* MAESTRO_STOCK */
+var M_PROD = 1, M_UM = 2, M_ZONAS = 3, M_FECHA = 4, M_CANT = 5, M_TOTAL = 6, M_COSTO = 7,
+    M_VALOR = 8, M_MIN = 9, M_ALERTA = 10, M_CONTEOS = 11, M_CONSUMO = 12, M_DIAS = 13;
+var MAE_NCOL = 13;
+
+/* BANDAS */
+var N_AMBITO = 1, N_CLAVE = 2, N_OBS = 3, N_MEDIANA = 4, N_LO = 5, N_HI = 6, N_ORIGEN = 7;
+var BAN_NCOL = 7;
+
+var COLOR_GRIS = '#F2F1EE';
+var COLOR_GRISOSC = '#E3E1DC';
+var COLOR_BLANCO = '#FFFFFF';
+var COLOR_AMBAR = '#FFF4D6';
+var COLOR_VERDE = '#DCEFE3';
+var COLOR_ROJO = '#F8D7D3';
+
+/* ==========================================================================
+ * 1 · MENÚ Y ARRANQUE
+ * ========================================================================== */
+
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu('SGI Inventario')
+      .addItem('Abrir un conteo de la zona elegida', 'abrirConteoMenu')
+      .addItem('Recargar la lista de esta hoja', 'cargarZonaMenu')
+      .addItem('Cerrar y guardar este conteo', 'cerrarConteoMenu')
+      .addSeparator()
+      .addItem('Reversar un conteo…', 'reversarConteoMenu')
+      .addItem('Dar de alta un producto…', 'altaProductoMenu')
+      .addItem('Abrir la hoja de alta de productos', 'abrirAltaProducto')
+      .addItem('Fusionar dos productos…', 'fusionarProductosMenu')
+      .addItem('Actualizar el catálogo con la última presentación contada…', 'actualizarPresentacionesMenu')
+      .addItem('Depurar la lista de una zona…', 'depurarZonaMenu')
+      .addItem('Aplicar lo escrito en POR_COMPLETAR', 'aplicarPorCompletarMenu')
+      .addSeparator()
+      .addItem('Consultar un inventario', 'consultarInventarioMenu')
+      .addSeparator()
+      .addItem('Recalcular todo', 'recalcularTodo')
+      .addItem('Reporte de estado', 'reporteEstado')
+      .addItem('Autodiagnóstico', 'autodiagnostico')
+      .addSeparator()
+      .addItem('Instalar / reparar motor', 'instalar')
+      .addItem('Aplicar parche 02 (alta de productos)', 'aplicarParche02')
+      .addToUi();
+  } catch (e) {
+    // en móvil el menú no se crea; no es un error
+  }
+}
+
+/**
+ * Compuerta de versión del libro. El motor escribe y lee por POSICIÓN de columna.
+ * Si el libro es de una versión anterior, las posiciones no coinciden con sus
+ * rótulos y el motor lee la unidad donde espera la cantidad: nada guarda y lo
+ * que se digita se pierde. Pasó el 01/10/2026 al instalar el motor 6.5 sobre el
+ * libro 6.0. Por eso esta comprobación es FATAL y va antes de tocar nada.
+ */
+function layoutEsperado_() {
+  return {
+    CAPTURA: { fila: 6, cols: ['#', 'PRODUCTO', 'UNIDAD', 'ÚLTIMO', 'CANTIDAD',
+                               'SOBRANTE', 'PESO C/U', 'PESO TOTAL', 'ALERTA', 'NOTA'] },
+    CATALOGO: { fila: 4, cols: ['CÓDIGO POS', 'PRODUCTO BASE', 'MARCA', 'PRODUCTO (CLAVE)',
+                                'CATEGORÍA', 'TIPO', 'UM BASE', 'UNIDAD DE CONTEO',
+                                'PESO/VOL C/U', 'PRESENTACIÓN'] }
+  };
+}
+
+function cabeceraNormal_(v) {
+  var s = txt_(v).toUpperCase();
+  s = s.replace(/\n/g, ' ').replace(/\(.*$/, '');
+  return s.replace(/\s+/g, ' ')
+          .replace(/^\s+/, '').replace(/\s+$/, '');
+}
+
+function verificarLayout_(ss) {
+  var esp = layoutEsperado_();
+  var nombres = [H.CAPTURA, H.CATALOGO];
+  var malas = [];
+  var i, k, hoja, def, leido, quiere;
+  for (i = 0; i < nombres.length; i++) {
+    hoja = ss.getSheetByName(nombres[i]);
+    if (!hoja) { continue; }
+    def = nombres[i] === H.CAPTURA ? esp.CAPTURA : esp.CATALOGO;
+    leido = hoja.getRange(def.fila, 1, 1, def.cols.length).getValues()[0];
+    for (k = 0; k < def.cols.length; k++) {
+      quiere = cabeceraNormal_(def.cols[k]);
+      if (cabeceraNormal_(leido[k]) !== quiere) {
+        malas.push(nombres[i] + ' columna ' + colLetra_(k + 1) + ': dice "' +
+                   txt_(leido[k]).replace(/\n/g, ' ') + '" y debe decir "' + def.cols[k] + '"');
+      }
+    }
+  }
+  if (malas.length) {
+    throw new Error('ESTE LIBRO NO ES DE LA VERSIÓN DEL MOTOR. No se instaló nada y no se ' +
+      'tocó ningún dato. El motor ' + VERSION + ' lee y escribe por posición de columna; en este ' +
+      'libro las columnas están en otro orden, así que leería la unidad donde espera la cantidad ' +
+      'y ningún conteo se guardaría. Abra el libro INV-COC-001 v6.5 e instale el motor allí. ' +
+      'Diferencias encontradas: ' + malas.slice(0, 4).join(' · ') +
+      (malas.length > 4 ? ' (y ' + (malas.length - 4) + ' más)' : '') + '.');
+  }
+  return 'el libro corresponde al motor ' + VERSION;
+}
+
+function colLetra_(n) {
+  var s = '';
+  while (n > 0) {
+    var r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = (n - r - 1) / 26;
+  }
+  return s;
+}
+
+function instalar() {
+  var ss = SpreadsheetApp.getActive();
+  var pasos = [];
+
+  // FATAL y fuera de pasoSeguro_: si el libro no corresponde, no se instala nada.
+  verificarLayout_(ss);
+
+  pasoSeguro_(pasos, 'Verificar hojas obligatorias', function () {
+    var faltan = [];
+    var nombres = [H.TABLERO, H.CAPTURA, H.ZONAS, H.CATALOGO, H.UBIC, H.BD, H.MAESTRO,
+                   H.BANDAS, H.CONFIG, H.DIAG, H.BITACORA];
+    var i;
+    for (i = 0; i < nombres.length; i++) {
+      if (!ss.getSheetByName(nombres[i])) { faltan.push(nombres[i]); }
+    }
+    if (faltan.length) {
+      throw new Error('Faltan hojas: ' + faltan.join(', ') +
+        '. Este motor se instala sobre el libro INV-COC-001 v6.5, no sobre uno vacío.');
+    }
+    return 'las ' + nombres.length + ' hojas están';
+  });
+
+  pasoSeguro_(pasos, 'Registrar el disparador de edición', function () {
+    var tri = ScriptApp.getProjectTriggers();
+    var i, n = 0;
+    for (i = 0; i < tri.length; i++) {
+      if (tri[i].getHandlerFunction() === 'alEditar') { ScriptApp.deleteTrigger(tri[i]); n++; }
+    }
+    ScriptApp.newTrigger('alEditar').forSpreadsheet(ss).onEdit().create();
+    return n > 0 ? 'reemplazado (había ' + n + ')' : 'creado';
+  });
+
+  pasoSeguro_(pasos, 'Proteger el libro mayor', function () {
+    return protegerHoja_(ss, H.BD, 'Libro mayor inmutable: las correcciones se hacen por reversa.');
+  });
+
+  pasoSeguro_(pasos, 'Proteger las hojas derivadas', function () {
+    var r = [];
+    r.push(protegerHoja_(ss, H.MAESTRO, 'Derivado del libro mayor. Lo reescribe el motor.'));
+    r.push(protegerHoja_(ss, H.TABLERO, 'Lo escribe el motor.'));
+    r.push(protegerHoja_(ss, H.DIAG, 'Lo escribe el motor.'));
+    r.push(protegerHoja_(ss, H.BITACORA, 'Append-only.'));
+    return r.join(' · ');
+  });
+
+  pasoSeguro_(pasos, 'Preparar las casillas', function () {
+    var cp = ss.getSheetByName(H.CAPTURA);
+    cp.getRange(CAP_CERRAR).insertCheckboxes().uncheck();
+    cp.getRange(CAP_COMPLETO).insertCheckboxes().uncheck();
+    cp.getRange('E1').setValue('RECORRIDO COMPLETO')
+      .setFontWeight('bold').setFontColor('#24503F').setHorizontalAlignment('right');
+    cp.getRange('G1').setValue('ABRIR CONTEO')
+      .setFontWeight('bold').setFontColor('#24503F').setHorizontalAlignment('right');
+    cp.getRange(CAP_ABRIR).insertCheckboxes().uncheck();
+    cp.getRange(CAP_ABRIR).setNote(
+      'Elija la zona, escriba el responsable y marque esto. El motor abre una hoja de conteo propia ' +
+      'con los productos de esa área ya cargados. Puede abrir varias a la vez, una por persona.');
+    cp.getRange(CAP_COMPLETO).setNote(
+      'Márquela cuando haya recorrido la zona entera. Lo que no aparezca en la pantalla se guarda ' +
+      'en cero, firmado. Sin marcarla, lo que no aparezca queda SIN CONTAR, que no es lo mismo.');
+    var cons = ss.getSheetByName(H.CONSULTA);
+    if (cons) { cons.getRange(CONS_BUSCAR).insertCheckboxes().uncheck(); }
+    return 'listas (cerrar y guardar · recorrido completo · buscar)';
+  });
+
+  pasoSeguro_(pasos, 'Preparar la hoja de alta de productos', function () {
+    return construirAltaProducto_(ss);
+  });
+
+  pasoSeguro_(pasos, 'Completar filas del cat\u00e1logo escritas a mano', function () {
+    var r = sanearCatalogo_(ss);
+    return r.arregladas + ' fila(s)' + (r.avisos.length ? ' \u00b7 ' + r.avisos.length + ' aviso(s)' : '');
+  });
+
+  pasoSeguro_(pasos, 'Aplicar las listas desplegables', function () {
+    return aplicarValidaciones_(ss);
+  });
+
+  pasoSeguro_(pasos, 'Aplicar la estética de la pantalla de conteo', function () {
+    refrescarVistaCaptura_(ss);
+    return 'aplicada';
+  });
+
+  pasoSeguro_(pasos, 'Revisar los conteos abiertos', function () {
+    var ha = hojasDeConteo_(ss), nn = [], q;
+    for (q = 0; q < ha.length; q++) { nn.push(ha[q].getName()); }
+    return ha.length ? ha.length + ' abierto(s): ' + nn.join(', ') : 'ninguno';
+  });
+
+  pasoSeguro_(pasos, 'Marcar las copias sueltas de la pantalla de conteo', function () {
+    var nombres = hojasImpostoras_(ss);
+    if (!nombres.length) { return 'ninguna'; }
+    marcarImpostoras_(ss);
+    return nombres.length + ' marcada(s) en rojo: ' + nombres.join(', ') +
+           ' — no guardan, y así lo dicen en su propia primera fila';
+  });
+
+  pasoSeguro_(pasos, 'Recalcular derivados', function () {
+    reconstruirMaestro_(ss);
+    reconstruirBandas_(ss);
+    refrescarZonas_(ss);
+    refrescarTablero_(ss);
+    refrescarHistorial_(ss);
+    refrescarDiagnostico_(ss);
+    return 'ok';
+  });
+
+  bitacora_(ss, 'INSTALACIÓN', 'motor ' + VERSION, pasos.join(' | '));
+  mostrar_('Instalación del motor ' + VERSION, pasos.join('\n'));
+}
+
+/* ==========================================================================
+ * 2 · DISPARADOR DE EDICIÓN — el único control que responde en iPad
+ * ========================================================================== */
+
+function alEditar(e) {
+  if (!e || !e.range) { return; }
+  var hoja = e.range.getSheet();
+
+  /* Una hoja de conteo creada a mano —"Copia de CAPTURA", " CAPTURA BODEGA"— no es
+     CAPTURA para el motor: la casilla se marcaba, se ponía verde y no pasaba nada.
+     Entre el 13 y el 28 de septiembre eso dejó 606 celdas digitadas fuera del libro
+     mayor. Ahora esa hoja responde, aunque sea para decir que no guarda. */
+  if (esCapturaImpostora_(hoja)) {
+    try {
+      hoja.getRange(CAP_CERRAR).uncheck();
+      avisoCaptura_(hoja, '⛔ ESTA HOJA NO GUARDA. Es una copia de la pantalla de conteo, y el motor ' +
+        'solo guarda desde la hoja llamada exactamente CAPTURA. Lo que escriba aquí no entra al libro ' +
+        'mayor. Pase lo contado a CAPTURA, o pida que se rescate esta hoja antes de borrarla.', COLOR_ROJO);
+      hoja.setTabColor('#C0392B');
+    } catch (err) {}
+    return;
+  }
+
+  if (hoja.getName() === H.CONSULTA) {
+    if (e.range.getA1Notation() === CONS_BUSCAR && e.range.getValue() === true) {
+      try { consultarInventario_(SpreadsheetApp.getActive()); }
+      catch (err) {
+        hoja.getRange(CONS_BUSCAR).uncheck();
+        hoja.getRange(CONS_AVISO).setValue('⚠ ' + err.message).setBackground(COLOR_ROJO);
+      }
+    }
+    return;
+  }
+
+  if (hoja.getName() === H.ALTA) {
+    if (e.range.getA1Notation() === ALTA_CREAR && e.range.getValue() === true) {
+      try { altaDesdeHoja_(SpreadsheetApp.getActive()); }
+      catch (err) {
+        hoja.getRange(ALTA_CREAR).uncheck();
+        hoja.getRange(ALTA_AVISO).setValue('\u26a0 ' + err.message).setBackground(COLOR_ROJO);
+      }
+    }
+    return;
+  }
+
+  /* El cat\u00e1logo creci\u00f3: la lista desplegable tiene que crecer con \u00e9l.
+     Si no, el producto reci\u00e9n agregado existe pero no se puede elegir. */
+  if (hoja.getName() === H.CATALOGO) {
+    if (e.range.getColumn() <= K_PROD && e.range.getColumn() + e.range.getNumColumns() - 1 >= K_BASE) {
+      pasoSeguro_([], 'validaciones', function () {
+        return aplicarValidaciones_(SpreadsheetApp.getActive());
+      });
+    }
+    /* Tocar la PRESENTACIÓN de un producto es validarla: la nota de "propuesta por
+       el motor" deja de tener sentido y el control INT-18 baja solo. */
+    if (e.range.getColumn() === K_PRES && e.range.getNumColumns() === 1) {
+      try { validarPresentacion_(hoja, e.range.getRow(), e.range.getNumRows()); } catch (err) {}
+    }
+    return;
+  }
+
+  var esConteo = esHojaConteo_(hoja);
+  if (hoja.getName() !== H.CAPTURA && !esConteo) { return; }
+  var a1 = e.range.getA1Notation();
+  var ssA = SpreadsheetApp.getActive();
+
+  /* ---- la plantilla: solo abre conteos ---- */
+  if (!esConteo) {
+    if (a1 === CAP_ABRIR) {
+      if (e.range.getValue() === true) {
+        try { abrirConteo_(ssA); }
+        catch (err) {
+          hoja.getRange(CAP_ABRIR).uncheck();
+          avisoCaptura_(hoja, '⚠ ' + err.message, COLOR_ROJO);
+          try { mostrar_('No se abrió el conteo', err.message); } catch (e2) {}
+        }
+      }
+      return;
+    }
+    if (a1 === CAP_CICLO || a1 === CAP_FECHA) {
+      try { refrescarFolio_(ssA, hoja); } catch (err) {}
+      return;
+    }
+    if (a1 === CAP_CERRAR && e.range.getValue() === true) {
+      hoja.getRange(CAP_CERRAR).uncheck();
+      avisoCaptura_(hoja, '⚠ Desde esta pantalla no se guarda: es la de apertura. Elija la zona, ' +
+        'escriba el responsable y marque ABRIR CONTEO. El motor le abre una hoja propia y ahí cuenta.',
+        COLOR_AMBAR);
+      return;
+    }
+    return;
+  }
+
+  /* ---- una hoja de conteo ---- */
+  if (a1 === CAP_ALTA) {
+    if (e.range.getValue() === true) {
+      try { altaNuevosDeHoja_(ssA, hoja); }
+      catch (err) {
+        hoja.getRange(CAP_ALTA).uncheck();
+        avisoCaptura_(hoja, '⚠ ' + err.message, COLOR_ROJO);
+        try { mostrar_('No se dieron de alta', err.message); } catch (e2) {}
+      }
+    }
+    return;
+  }
+  if (a1 === CAP_ZONA) {
+    /* La zona de una hoja de conteo ya está decidida y está dentro del folio.
+       Cambiarla dejaría cantidades contadas en un congelador anotadas en una
+       alacena, así que el motor la devuelve a la que dice el folio. */
+    try { restituirZona_(ssA, hoja); } catch (err) {}
+    avisoCaptura_(hoja, '⚠ La zona de esta hoja no se cambia: ya tiene folio ' +
+      txt_(hoja.getRange(CAP_FOLIO).getValue()) + '. Si se equivocó de zona, deje esta hoja sin ' +
+      'guardar y abra otra desde CAPTURA.', COLOR_ROJO);
+    return;
+  }
+  if (a1 === CAP_CICLO || a1 === CAP_FECHA) {
+    try { refrescarFolio_(ssA, hoja); } catch (err) {}
+    return;
+  }
+  /* Escribir un producto en un renglón trae su unidad, su peso, su mínimo y lo
+     que había la última vez. Esto es lo que hace que el equipo pueda escribir la
+     lista en el orden en que camina la zona —que es como de verdad cuentan— sin
+     que las columnas ocultas se queden con los nombres viejos. */
+  if (e.range.getColumn() <= C_PROD &&
+      e.range.getColumn() + e.range.getNumColumns() - 1 >= C_PROD &&
+      e.range.getRow() >= CAP_FILA_DATOS) {
+    try { completarFila_(ssA, e.range.getRow(), e.range.getNumRows(), hoja); }
+    catch (err) { avisoCaptura_(hoja, '⚠ ' + err.message, COLOR_ROJO); }
+    return;
+  }
+
+  if (a1 === CAP_CERRAR) {
+    if (e.range.getValue() === true) {
+      try { guardarConteo_(hoja); }
+      catch (err) {
+        try { hoja.getRange(CAP_CERRAR).uncheck(); } catch (e3) {}
+        try { avisoCaptura_(hoja, '⚠ NO SE GUARDÓ. ' + err.message, COLOR_ROJO); } catch (e4) {}
+        try { mostrar_('El conteo no se guardó', err.message); } catch (e2) {}
+      }
+    }
+  }
+}
+
+/* Rellena las columnas de apoyo del renglón a partir del producto escrito. Si el
+   producto no está en el catálogo no revienta ni borra nada: deja el renglón con
+   el nombre tal cual y lo pinta, y al guardar esa línea sale como PENDIENTE_ALTA. */
+function completarFila_(ss, fila0, nfilas, sh) {
+  var cap = sh || ss.getSheetByName(H.CAPTURA);
+  var cat = indiceCatalogo_(ss);
+  var stock = indiceStock_(ss);
+  var i, r, clave, p, k;
+  for (i = 0; i < nfilas; i++) {
+    r = fila0 + i;
+    clave = txt_(cap.getRange(r, C_PROD).getValue());
+    if (clave === '') {
+      cap.getRange(r, C_ULT, 1, 1).clearContent();
+      cap.getRange(r, C_MIN, 1, 6).clearContent();
+      cap.getRange(r, C_PROD).setBackground(COLOR_BLANCO);
+      continue;
+    }
+    k = normalizar_(clave);
+    p = cat[k];
+    if (!p) {
+      /* producto que no está en el catálogo: se deja escrito y se marca */
+      cap.getRange(r, C_CLAVE).setValue(clave);
+      cap.getRange(r, C_UM).setValue('');
+      cap.getRange(r, C_PRES).setValue(PRES_VAR);
+      cap.getRange(r, C_PROD).setBackground(COLOR_AMBAR);
+      cap.getRange(r, C_NOTA).setNote('Este producto no está en el catálogo. Puede contarlo igual: ' +
+        'la línea se guarda aparte, como PENDIENTE_ALTA, y administración le abre la ficha después.');
+      continue;
+    }
+    cap.getRange(r, C_PROD).setBackground(COLOR_BLANCO);
+    cap.getRange(r, C_ULT).setValue(stock[k] ? stock[k].cant : '');
+    cap.getRange(r, C_UNI).setValue(txt_(p[K_UNI - 1]));
+    cap.getRange(r, C_PESO).setValue(num_(p[K_PESO - 1]) > 0 ? num_(p[K_PESO - 1]) : '');
+    cap.getRange(r, C_MIN, 1, 6).setValues([[
+      num_(p[K_MIN - 1]) || '', txt_(p[K_UM - 1]), txt_(p[K_PROD - 1]),
+      txt_(p[K_UNI - 1]), num_(p[K_PESO - 1]) > 0 ? num_(p[K_PESO - 1]) : '',
+      normalizar_(p[K_PRES - 1]).substring(0, 4) === 'vari' ? PRES_VAR : PRES_EST]]);
+  }
+  reponerFormulas_(cap, filasCaptura_(ss));
+  SpreadsheetApp.flush();
+}
+
+/* La hoja donde se está contando: la que disparó la edición si es una hoja de
+   conteo, y si no la plantilla, para no romper el flujo viejo. */
+function hojaDeTrabajo_(ss, sh) {
+  if (sh && esHojaConteo_(sh)) { return sh; }
+  return ss.getSheetByName(H.CAPTURA);
+}
+
+function cargarZonaMenu() {
+  var ss = SpreadsheetApp.getActive();
+  cargarZona_(ss, hojaActivaDeConteo_(ss));
+}
+function cerrarConteoMenu() {
+  var ss = SpreadsheetApp.getActive();
+  guardarConteo_(hojaActivaDeConteo_(ss));
+}
+
+/* La hoja en la que está parado quien usa el menú, si es una hoja de conteo. */
+function hojaActivaDeConteo_(ss) {
+  var a = ss.getActiveSheet();
+  if (a && esHojaConteo_(a)) { return a; }
+  var abiertas = hojasDeConteo_(ss);
+  if (abiertas.length === 1) { return abiertas[0]; }
+  if (abiertas.length > 1) {
+    throw new Error('Hay ' + abiertas.length + ' conteos abiertos. Párese en la hoja del conteo que ' +
+      'quiere cerrar y vuelva a usar el menú.');
+  }
+  return ss.getSheetByName(H.CAPTURA);
+}
+
+/* Una hoja es una copia de la pantalla de conteo si, quitándole tildes y espacios
+   de sobra, su nombre empieza por "captura" y no es la hoja CAPTURA. El nombre
+   exacto nunca alcanza: en el archivo vivo aparecieron " CAPTURA BODEGA" con un
+   espacio delante y "CAPTURA  REF" con dos en medio. */
+function esCapturaImpostora_(hoja) {
+  var n = hoja.getName();
+  if (n === H.CAPTURA) { return false; }
+  var k = normalizar_(n);
+  if (k.substring(0, 16) === 'copia de captura') { return true; }
+  if (k.substring(0, 15) === 'copia de conteo') { return true; }
+  if (k.substring(0, 7) === 'captura') { return true; }
+  /* una hoja que se llama CONTEO pero no la creó el motor tampoco guarda */
+  if (k.substring(0, 7) === 'conteo ') { return !tieneSello_(hoja); }
+  return false;
+}
+
+/* El motor le pone un sello a la hoja que crea. Si alguien la duplica, la copia
+   hereda el sello pero no el nombre: por eso el nombre manda y el sello solo
+   distingue una hoja CONTEO legítima de una escrita a mano. */
+function tieneSello_(hoja) {
+  try { return txt_(hoja.getRange(CAP_SELLO).getValue()).substring(0, 6) === 'SGI-6.'; }
+  catch (e) { return false; }
+}
+
+function esHojaConteo_(hoja) {
+  var k = normalizar_(hoja.getName());
+  return k.substring(0, 7) === 'conteo ' && tieneSello_(hoja) && !esCapturaImpostora_(hoja);
+}
+
+function hojasDeConteo_(ss) {
+  var hs = ss.getSheets(), out = [], i;
+  for (i = 0; i < hs.length; i++) { if (esHojaConteo_(hs[i])) { out.push(hs[i]); } }
+  return out;
+}
+
+function hojasImpostoras_(ss) {
+  var hs = ss.getSheets(), out = [], i;
+  for (i = 0; i < hs.length; i++) {
+    if (esCapturaImpostora_(hs[i])) { out.push(hs[i].getName()); }
+  }
+  return out;
+}
+
+function marcarImpostoras_(ss) {
+  var hs = ss.getSheets(), i, n = 0;
+  for (i = 0; i < hs.length; i++) {
+    if (!esCapturaImpostora_(hs[i])) { continue; }
+    try {
+      hs[i].setTabColor('#C0392B');
+      avisoCaptura_(hs[i], '⛔ ESTA HOJA NO GUARDA. Es una copia de la pantalla de conteo. El motor ' +
+        'solo guarda desde la hoja llamada exactamente CAPTURA.', COLOR_ROJO);
+      n++;
+    } catch (err) {}
+  }
+  return n;
+}
+
+function validarPresentacion_(sh, fila0, nfilas) {
+  var i, r, v;
+  for (i = 0; i < nfilas; i++) {
+    r = fila0 + i;
+    if (r < FILA_DATOS) { continue; }
+    v = txt_(sh.getRange(r, K_NOTAS).getValue());
+    if (v.indexOf(MARCA_PROPUESTA) < 0) { continue; }
+    sh.getRange(r, K_NOTAS).setValue(limpiarMarca_(v));
+  }
+}
+
+/* Quita del texto el fragmento de la propuesta, dejando el resto de la nota. */
+function limpiarMarca_(v) {
+  var partes = ('' + v).split(' · '), out = [], i;
+  for (i = 0; i < partes.length; i++) {
+    if (partes[i].indexOf(MARCA_PROPUESTA) < 0) { out.push(partes[i]); }
+  }
+  return out.join(' · ');
+}
+
+/* Convierte a número lo que el personal alcanzó a escribir. El 21/09 un apóstrofo
+   delante de un uno dejó el total de un congelador entero en cero, así que esto no
+   es cortesía: es la diferencia entre un conteo guardado y un conteo perdido.
+   Devuelve {ok, valor, aviso}. Lo ambiguo se rechaza, no se adivina. */
+function saneaNumero_(v) {
+  if (v === '' || v === null || v === undefined) { return { ok: true, valor: '', aviso: '' }; }
+  if (typeof v === 'number') {
+    return isNaN(v) ? { ok: false, valor: 0, aviso: '' } : { ok: true, valor: v, aviso: '' };
+  }
+  var s = ('' + v);
+  var limpio = '', i, c, quitados = 0;
+  for (i = 0; i < s.length; i++) {
+    c = s.charAt(i);
+    if (i === 0 || quitados === i) {
+      if (c === '\u00b4' || c === '\u2019' || c === '\'' || c === '`' || c === ' ') { quitados++; continue; }
+    }
+    limpio += c;
+  }
+  limpio = limpio.replace(/\s+$/, '').replace(/^\s+/, '').replace(',', '.');
+  if (limpio === '') { return { ok: true, valor: '', aviso: '' }; }
+  var m = limpio.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  if (m) {
+    return { ok: true, valor: parseInt(m[1], 10) + parseInt(m[2], 10) / parseInt(m[3], 10),
+             aviso: 'venía escrito como "' + s + '"' };
+  }
+  m = limpio.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (m) {
+    return { ok: true, valor: parseInt(m[1], 10) / parseInt(m[2], 10),
+             aviso: 'venía escrito como "' + s + '"' };
+  }
+  if (/^-?\d+(\.\d+)?$/.test(limpio)) {
+    return { ok: true, valor: parseFloat(limpio),
+             aviso: quitados ? 'venía como texto, con un carácter delante del número ("' + s + '")' : '' };
+  }
+  return { ok: false, valor: 0, aviso: '' };
+}
+
+/* ==========================================================================
+ * 3 · CARGAR LA LISTA DE UNA ZONA
+ * ========================================================================== */
+
+function cargarZona_(ss, sh) {
+  var cap = sh || ss.getSheetByName(H.CAPTURA);
+  var zona = txt_(cap.getRange(CAP_ZONA).getValue());
+  var nfilas = filasCaptura_(ss);
+
+  limpiarCaptura_(cap, nfilas);
+  if (zona === '') {
+    avisoCaptura_(cap, 'Elija una zona para cargar la lista.', COLOR_AMBAR);
+    return;
+  }
+
+  var zonas = indiceZonas_(ss);
+  var z = zonas[normalizar_(zona)];
+  if (!z) {
+    avisoCaptura_(cap, '⚠ La zona "' + zona + '" no está en CAT_ZONAS.', COLOR_ROJO);
+    return;
+  }
+
+  var cat = indiceCatalogo_(ss);
+  var ubic = leerTabla_(ss, H.UBIC, UBI_NCOL);
+  var stock = indiceStock_(ss);
+
+  var lista = [];
+  var nConStock = 0;
+  var i, u, clave, p;
+  for (i = 0; i < ubic.length; i++) {
+    u = ubic[i];
+    if (txt_(u[U_ZONA - 1]) === '') { continue; }
+    if (normalizar_(u[U_ZONA - 1]) !== normalizar_(zona)) { continue; }
+    if (normalizar_(u[U_ACTIVO - 1]) === 'no') { continue; }
+    clave = txt_(u[U_PROD - 1]);
+    if (clave === '') { continue; }
+    p = cat[normalizar_(clave)];
+    if (p && normalizar_(p[K_ACTIVO - 1]) === 'no') { continue; }
+    lista.push({
+      clave: clave,
+      orden: num_(u[U_ORDEN - 1]),
+      min: num_(u[U_MIN - 1]) || (p ? num_(p[K_MIN - 1]) : 0),
+      uni: p ? txt_(p[K_UNI - 1]) : '',
+      peso: p ? num_(p[K_PESO - 1]) : 0,
+      um: p ? txt_(p[K_UM - 1]) : '',
+      pres: (p && normalizar_(p[K_PRES - 1]).substring(0, 4) === 'vari') ? PRES_VAR : PRES_EST,
+      ult: stock[normalizar_(clave)] ? stock[normalizar_(clave)].cant : ''
+    });
+  }
+  lista.sort(function (a, b) {
+    if (a.orden !== b.orden) { return a.orden - b.orden; }
+    return normalizar_(a.clave) < normalizar_(b.clave) ? -1 : 1;
+  });
+
+  if (lista.length > nfilas) {
+    avisoCaptura_(cap, '⚠ La zona tiene ' + lista.length + ' productos y la pantalla admite ' +
+      nfilas + '. Suba FILAS_CAPTURA en CONFIG y amplíe la hoja.', COLOR_ROJO);
+    lista = lista.slice(0, nfilas);
+  }
+
+  /* Visible: PRODUCTO · ÚLTIMO · CANTIDAD(vacía) · UNIDAD · PESO/VOL · SOBRANTE
+     Oculto:  _MIN · _UM · _CLAVE · _UNICAT · _PESOCAT · _PRES
+     En los ESTÁNDAR el peso llega del catálogo y no hay por qué tocarlo. En los
+     VARIABLE llega como referencia y hay que pesarlo: la pantalla lo pinta en
+     ámbar. Las ocultas guardan lo que decía el catálogo para poder ver la
+     diferencia al guardar. */
+  /* Dos bloques: primero lo que hubo la última vez, después el resto. En alacena
+     el 82% de los renglones se recorrían en vano, y en congelador el 67%: el
+     cansancio de deslizar sin escribir es lo que hace que a media lista se
+     empiece a ir rápido. El bloque de abajo nunca desaparece, se recorre de
+     corrido al final. Cuando el recorrido físico esté numerado en CAT_UBICACION,
+     poner CARGA_EN_DOS_BLOQUES = NO en CONFIG devuelve el orden del estante. */
+  if (normalizar_(cfg_(ss, 'CARGA_EN_DOS_BLOQUES')) !== 'no') {
+    var conStock = [], sinStock = [];
+    for (i = 0; i < lista.length; i++) {
+      if (num_(lista[i].ult) > 0) { conStock.push(lista[i]); } else { sinStock.push(lista[i]); }
+    }
+    lista = conStock.concat(sinStock);
+    nConStock = conStock.length;
+  }
+
+  var izq = [], der = [];
+  for (i = 0; i < lista.length; i++) {
+    izq.push([lista[i].clave, lista[i].uni, lista[i].ult, '', '',
+              lista[i].peso > 0 ? lista[i].peso : '']);
+    der.push([lista[i].min, lista[i].um, lista[i].clave, lista[i].uni,
+              lista[i].peso > 0 ? lista[i].peso : '', lista[i].pres]);
+  }
+  if (izq.length) {
+    cap.getRange(CAP_FILA_DATOS, C_PROD, izq.length, 6).setValues(izq);
+    cap.getRange(CAP_FILA_DATOS, C_MIN, der.length, 6).setValues(der);
+    reponerFormulas_(cap, izq.length);
+    marcarBloques_(cap, nConStock, izq.length);
+  }
+
+  /* sugerencia, no imposición: el ciclo real lo confirma quien cuenta */
+  cap.getRange(CAP_CICLO).setValue(txt_(z[Z_CICLO - 1]) === 'M' ? 'MENSUAL' : 'SEMANAL');
+  if (cap.getRange(CAP_FECHA).getValue() === '') {
+    cap.getRange(CAP_FECHA).setValue(new Date());
+  }
+  cap.getRange(CAP_FOLIO).setValue(folio_(cap.getRange(CAP_FECHA).getValue(),
+                                          txt_(z[Z_CICLO - 1]), txt_(z[Z_COD - 1])));
+  var nvar = 0;
+  for (i = 0; i < lista.length; i++) { if (lista[i].pres === PRES_VAR) { nvar++; } }
+  avisoCaptura_(cap, lista.length + ' productos cargados en el orden del recorrido. ' +
+    'Escriba CANTIDAD; si queda una unidad incompleta, sus gramos van en SOBRANTE. ' +
+    'Un renglón en blanco significa "no se contó": si no hay, escriba 0. ' +
+    (nvar ? nvar + ' producto(s) tienen el peso en ámbar: ese empaque cambia, hay que pesarlo.' : ''),
+    COLOR_AMBAR);
+  SpreadsheetApp.flush();
+}
+
+/* Pinta de gris el bloque de productos que no tenían existencia la última vez,
+   para que se vea de un golpe dónde termina lo probable y empieza el repaso. */
+function marcarBloques_(cap, nConStock, total) {
+  if (total <= 0) { return; }
+  var f0 = CAP_FILA_DATOS;
+  cap.getRange(f0, C_NUM, total, C_NOTA).setBackground(null);
+  if (nConStock > 0 && nConStock < total) {
+    cap.getRange(f0 + nConStock, C_PROD, total - nConStock, 2).setBackground(COLOR_GRISOSC);
+    try {
+      cap.getRange(f0 + nConStock, C_PROD).setNote(
+        'De aquí para abajo están los productos que NO tenían existencia en el conteo anterior. ' +
+        'Recórralos de corrido: si alguno apareció, cuéntelo igual.');
+    } catch (e) {}
+  }
+}
+
+/* Lo que calcula el motor no se digita: el número de fila, el peso total y la
+   alerta. Protegerlos con aviso evita que un dedo borre una fórmula sin darse
+   cuenta — en bodega se perdieron 22 renglones así — sin trancar al motor, que
+   sigue escribiendo con normalidad. */
+function protegerCalculadas_(sh, nfilas) {
+  var rangos = [
+    { r: CAP_FILA_DATOS, c: C_NUM, n: 1, t: 'Número de fila: lo calcula el motor.' },
+    { r: CAP_FILA_DATOS, c: C_ULT, n: 1, t: 'Lo que había en el conteo anterior. Es referencia, no se digita.' },
+    { r: CAP_FILA_DATOS, c: C_TOTAL, n: 2, t: 'Peso total y alerta: los calcula el motor.' }
+  ], i, pr;
+  for (i = 0; i < rangos.length; i++) {
+    try {
+      pr = sh.getRange(rangos[i].r, rangos[i].c, nfilas, rangos[i].n).protect();
+      pr.setDescription(rangos[i].t);
+      pr.setWarningOnly(true);
+    } catch (e) {}
+  }
+}
+
+/* Las fórmulas de # , PESO TOTAL y ALERTA viven en la rejilla solo para que quien
+   cuenta vea el total mientras cuenta. Un pegado encima las borra —en BODEGA se
+   perdieron 22 renglones así— y nadie lo nota, porque la celda queda en blanco en
+   vez de dar error. Se reponen en cada carga y en cada guardado. */
+function reponerFormulas_(cap, nfilas) {
+  if (nfilas <= 0) { return; }
+  var f0 = CAP_FILA_DATOS, i, r, num = [], tot = [], ale = [];
+  for (i = 0; i < nfilas; i++) {
+    r = f0 + i;
+    num.push([formulaNum_(r, f0)]);
+    tot.push([formulaTotal_(r)]);
+    ale.push([formulaAlerta_(r)]);
+  }
+  cap.getRange(f0, C_NUM, nfilas, 1).setFormulas(num);
+  cap.getRange(f0, C_TOTAL, nfilas, 1).setFormulas(tot);
+  cap.getRange(f0, C_ALERTA, nfilas, 1).setFormulas(ale);
+}
+
+/* Las tres fórmulas de la rejilla, en un solo lugar: si mañana se mueve una
+   columna, se cambian aquí y no en cinco sitios distintos. */
+function formulaNum_(r, f0) {
+  return '=IF($' + L_PROD + r + '="","",ROW()-' + ((f0 || CAP_FILA_DATOS) - 1) + ')';
+}
+
+function formulaTotal_(r) {
+  return '=IF($' + L_CANT + r + '="","",IF($' + L_UM + r + '="un",$' + L_CANT + r + ',' +
+         'IF(AND($' + L_PESO + r + '<>"",$' + L_PESO + r + '>0),' +
+         '$' + L_CANT + r + '*$' + L_PESO + r + '+IF($' + L_SOBRA + r + '="",0,$' + L_SOBRA + r + '),' +
+         'IF($' + L_SOBRA + r + '<>"",$' + L_SOBRA + r + ',"⚠ falta peso"))))';
+}
+
+function formulaAlerta_(r) {
+  return '=IF($' + L_CANT + r + '="","",IF(AND($' + L_CANT + r + '=0,$' + L_SOBRA + r + '=""),"AGOTADO",' +
+         'IF(AND($' + L_MIN + r + '>0,$' + L_CANT + r + '<=$' + L_MIN + r + '),"BAJO MIN","OK")))';
+}
+
+/* El folio se rearma cuando cambia la fecha o el ciclo, para que en pantalla se
+   vea siempre bajo qué serie va a quedar guardado el conteo. */
+function refrescarFolio_(ss, sh) {
+  var cap = sh || ss.getSheetByName(H.CAPTURA);
+  var zona = txt_(cap.getRange(CAP_ZONA).getValue());
+  if (zona === '') { return; }
+  var zonas = indiceZonas_(ss);
+  var z = zonas[normalizar_(zona)];
+  if (!z) { return; }
+  var c = normalizar_(cap.getRange(CAP_CICLO).getValue());
+  var ciclo = c.substring(0, 1) === 'm' ? 'M' : 'S';
+  cap.getRange(CAP_FOLIO).setValue(folio_(cap.getRange(CAP_FECHA).getValue(), ciclo, txt_(z[Z_COD - 1])));
+}
+
+function limpiarCaptura_(cap, nfilas) {
+  cap.getRange(CAP_FILA_DATOS, C_PROD, nfilas, 6).clearContent();
+  cap.getRange(CAP_FILA_DATOS, C_NOTA, nfilas, 1).clearContent();
+  cap.getRange(CAP_FILA_DATOS, C_MIN, nfilas, 6).clearContent();
+  try { cap.getRange(CAP_FILA_DATOS, C_PROD, nfilas, 2).setBackground(null); } catch (e) {}
+}
+
+/* ==========================================================================
+ * 3b · ABRIR UN CONTEO
+ * CAPTURA deja de ser donde se cuenta: es la pantalla de apertura. Se elige zona,
+ * ciclo, fecha y responsable, se marca ABRIR CONTEO y el motor copia la plantilla
+ * a una hoja propia con los productos de esa área ya cargados. Pueden quedar
+ * varias abiertas a la vez, una por persona o por zona: el 23 de septiembre
+ * Catalina contaba alacena mientras Daniel contaba bodega, y la única salida que
+ * tenían era copiar la pestaña a mano.
+ * ========================================================================== */
+
+function abrirConteo_(ss) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    throw new Error('Hay otra operación en curso. Espere unos segundos y vuelva a marcar la casilla.');
+  }
+  try {
+    verificarLayout_(ss);
+    var plant = ss.getSheetByName(H.CAPTURA);
+    var zona = txt_(plant.getRange(CAP_ZONA).getValue());
+    var resp = txt_(plant.getRange(CAP_RESP).getValue());
+    var fecha = plant.getRange(CAP_FECHA).getValue();
+    var cicloTxt = normalizar_(plant.getRange(CAP_CICLO).getValue());
+
+    if (zona === '') { throw new Error('Elija la ZONA que va a contar.'); }
+    var zonas = indiceZonas_(ss);
+    var z = zonas[normalizar_(zona)];
+    if (!z) { throw new Error('La zona "' + zona + '" no está en CAT_ZONAS.'); }
+    if (resp === '') {
+      throw new Error('Escriba el RESPONSABLE antes de abrir el conteo. Un conteo sin firma no sirve ' +
+        'como evidencia, y con varias hojas abiertas a la vez es lo único que dice quién contó cuál.');
+    }
+    if (!esFecha_(fecha)) { fecha = new Date(); plant.getRange(CAP_FECHA).setValue(fecha); }
+    if (cicloTxt === '') {
+      cicloTxt = txt_(z[Z_CICLO - 1]) === 'M' ? 'mensual' : 'semanal';
+      plant.getRange(CAP_CICLO).setValue(cicloTxt === 'mensual' ? 'MENSUAL' : 'SEMANAL');
+    }
+    var ciclo = cicloTxt.substring(0, 1) === 'm' ? 'M' : 'S';
+    var idConteo = folio_(fecha, ciclo, txt_(z[Z_COD - 1]));
+
+    if (cfgSi_(ss, 'BLOQUEO_DUPLICADO_DIA') && folioExiste_(ss, idConteo)) {
+      throw new Error('Ya hay un conteo VIGENTE con el folio ' + idConteo +
+        ' (misma zona, mismo día, mismo ciclo).\n\nSi de verdad hay que volver a contar, reverse ' +
+        'primero el conteo anterior desde el menú.');
+    }
+
+    var nombre = nombreHojaConteo_(ss, txt_(z[Z_COD - 1]), fecha);
+    var abiertas = hojasDeConteo_(ss), i;
+    for (i = 0; i < abiertas.length; i++) {
+      if (txt_(abiertas[i].getRange(CAP_FOLIO).getValue()) === idConteo) {
+        abiertas[i].activate();
+        throw new Error('Ese conteo ya está abierto en la hoja "' + abiertas[i].getName() +
+          '". Siga ahí: abrir otra sería contar la misma zona dos veces.');
+      }
+    }
+
+    /* Copiar la plantilla en vez de armar la hoja a mano: así la hoja de conteo
+       hereda formatos, listas desplegables, columnas ocultas y panel inmovilizado
+       exactamente iguales, sin una segunda definición que se desactualice. */
+    var hoja = plant.copyTo(ss).setName(nombre);
+    hoja.setTabColor('#B98C3B');
+    try { ss.setActiveSheet(hoja); ss.moveActiveSheet(3); } catch (e) {}
+
+    hoja.getRange(CAP_SELLO).setValue('SGI-' + VERSION + '|' + idConteo);
+    hoja.hideColumns(C_MIN, 6);
+    hoja.getRange(CAP_ZONA).setValue(zona);
+    hoja.getRange(CAP_RESP).setValue(resp);
+    hoja.getRange(CAP_FECHA).setValue(fecha);
+    hoja.getRange(CAP_CICLO).setValue(ciclo === 'M' ? 'MENSUAL' : 'SEMANAL');
+    hoja.getRange(CAP_FOLIO).setValue(idConteo);
+    hoja.getRange(CAP_CERRAR).insertCheckboxes().uncheck();
+    hoja.getRange(CAP_COMPLETO).insertCheckboxes().uncheck();
+    hoja.getRange('I1').setValue('DAR DE ALTA LO NUEVO')
+      .setFontWeight('bold').setFontColor('#24503F').setHorizontalAlignment('right');
+    hoja.getRange(CAP_ALTA).insertCheckboxes().uncheck();
+    hoja.getRange(CAP_ALTA).setNote(
+      'Chef o sous chef: marque esto para abrirle ficha a los productos que escribió y no estaban en ' +
+      'el catálogo. Quedan ubicados en esta misma zona, listos para el próximo conteo.');
+    /* la plantilla no abre conteos desde la copia */
+    try { hoja.getRange(CAP_ABRIR).clearContent().clearDataValidations(); } catch (e2) {}
+    hoja.getRange('G1').setValue('').clearNote();
+
+    cargarZona_(ss, hoja);
+    pasoSeguro_([], 'proteger lo calculado', function () {
+      protegerCalculadas_(hoja, filasCaptura_(ss)); return 'ok';
+    });
+    pasoSeguro_([], 'validaciones de la hoja nueva', function () {
+      return aplicarValidaciones_(ss);
+    });
+
+    plant.getRange(CAP_ABRIR).uncheck();
+    plant.getRange(CAP_ZONA).clearContent();
+    plant.getRange(CAP_CICLO).clearContent();
+    plant.getRange(CAP_FOLIO).clearContent();
+    bitacora_(ss, 'CONTEO ABIERTO', idConteo,
+      'hoja "' + nombre + '" · zona ' + zona + ' · responsable ' + resp + ' · abierto por ' + usuario_());
+    avisoCaptura_(plant, '✔ Se abrió la hoja "' + nombre + '" para ' + zona + ', a nombre de ' + resp +
+      '. Cuente ahí. Puede abrir otra zona ahora mismo sin cerrar esa: cada hoja guarda por su cuenta.',
+      COLOR_VERDE);
+    SpreadsheetApp.flush();
+    return { nombre: nombre, folio: idConteo };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* CONTEO BO1 0310. Si ya existe una con ese nombre —porque quedó abierta de un
+   intento anterior— se le agrega una letra en vez de reventar. */
+function nombreHojaConteo_(ss, cod, fecha) {
+  var base = PREFIJO_CONTEO + cod + ' ' +
+    Utilities.formatDate(esFecha_(fecha) ? fecha : new Date(), Session.getScriptTimeZone(), 'ddMM');
+  if (!ss.getSheetByName(base)) { return base; }
+  var letras = 'BCDEFGHIJKLMNOPQRSTUVWXYZ', i;
+  for (i = 0; i < letras.length; i++) {
+    if (!ss.getSheetByName(base + letras.charAt(i))) { return base + letras.charAt(i); }
+  }
+  return base + Math.floor(Math.random() * 1000);
+}
+
+/* Devuelve la zona de la hoja a la que dice su folio (INV-S-20261003-BO1). */
+function restituirZona_(ss, hoja) {
+  var folio = txt_(hoja.getRange(CAP_FOLIO).getValue());
+  var partes = folio.split('-');
+  if (partes.length < 4) { return; }
+  var cod = partes[3];
+  var t = leerTabla_(ss, H.ZONAS, ZON_NCOL), i;
+  for (i = 0; i < t.length; i++) {
+    if (normalizar_(t[i][Z_COD - 1]) === normalizar_(cod)) {
+      hoja.getRange(CAP_ZONA).setValue(txt_(t[i][Z_ZONA - 1]));
+      return;
+    }
+  }
+}
+
+/* ==========================================================================
+ * 3c · DAR DE ALTA DESDE LA HOJA DE CONTEO
+ * El auxiliar encuentra algo que no está en el catálogo, lo escribe igual y la
+ * línea se guarda como PENDIENTE_ALTA. Pero quien sabe si eso es un producto o un
+ * nombre mal escrito es la chef, y está ahí mismo. Con una casilla le abre la
+ * ficha a todo lo nuevo de la hoja y lo deja ubicado en la zona de esa hoja: la
+ * próxima semana ya aparece cargado.
+ * ========================================================================== */
+
+function altaNuevosDeHoja_(ss, hoja) {
+  exigirAutorizacion_(ss, 'crear');
+  var zona = txt_(hoja.getRange(CAP_ZONA).getValue());
+  var zonas = indiceZonas_(ss);
+  var z = zonas[normalizar_(zona)];
+  if (!z) { throw new Error('Esta hoja no tiene una zona válida.'); }
+
+  var nfilas = filasCaptura_(ss);
+  var bloque = hoja.getRange(CAP_FILA_DATOS, 1, nfilas, CAP_NCOL).getValues();
+  var cat = indiceCatalogo_(ss);
+  var unidades = indiceUnidades_(ss);
+  var nuevos = [], vistos = {}, i, nombre, k;
+  for (i = 0; i < bloque.length; i++) {
+    nombre = txt_(bloque[i][C_PROD - 1]);
+    if (nombre === '') { continue; }
+    k = normalizar_(nombre);
+    if (cat[k] || vistos[k]) { continue; }
+    vistos[k] = 1;
+    nuevos.push({
+      fila: CAP_FILA_DATOS + i,
+      nombre: nombre,
+      uni: txt_(bloque[i][C_UNI - 1]),
+      peso: num_(bloque[i][C_PESO - 1])
+    });
+  }
+  if (!nuevos.length) {
+    hoja.getRange(CAP_ALTA).uncheck();
+    avisoCaptura_(hoja, 'No hay nada nuevo en esta hoja: todos los productos escritos ya tienen ficha.',
+      COLOR_AMBAR);
+    return { creados: 0 };
+  }
+
+  /* Falta la unidad de conteo: sin ella el producto queda sin forma de contarse. */
+  var sinUni = [];
+  for (i = 0; i < nuevos.length; i++) {
+    if (nuevos[i].uni === '' || !unidades[normalizar_(nuevos[i].uni)]) {
+      sinUni.push('fila ' + nuevos[i].fila + ': ' + nuevos[i].nombre);
+    }
+  }
+  if (sinUni.length) {
+    throw new Error('Antes de darlos de alta, elija la UNIDAD con que se cuenta cada uno ' +
+      '(la columna que va junto al nombre del producto):\n' + sinUni.slice(0, 8).join('\n') +
+      (sinUni.length > 8 ? '\n…y ' + (sinUni.length - 8) + ' más.' : '') +
+      '\n\nSin unidad de conteo el producto queda en el catálogo sin forma de contarse.');
+  }
+
+  var creados = [], j;
+  for (i = 0; i < nuevos.length; i++) {
+    var um = umDesdeConteo_(nuevos[i].uni, nuevos[i].peso);
+    var r = crearProducto_(ss, {
+      base: nuevos[i].nombre, marca: '', categoria: '',
+      um: um, unidad: nuevos[i].uni, peso: nuevos[i].peso,
+      pres: PRES_VAR, zona: zona, minimo: 0, forzar: true
+    });
+    creados.push(r.clave);
+    /* la línea deja de ser PENDIENTE_ALTA en el mismo momento */
+    completarFila_(ss, nuevos[i].fila, 1, hoja);
+    for (j = 0; j < 1; j++) {
+      hoja.getRange(nuevos[i].fila, C_NOTA).setNote(
+        'Ficha creada desde este conteo por ' + usuario_() + '. Falta confirmar categoría, ' +
+        'UM base y precio en el CATÁLOGO.');
+    }
+  }
+
+  bitacora_(ss, 'ALTA DESDE CONTEO', txt_(hoja.getRange(CAP_FOLIO).getValue()),
+    creados.length + ' producto(s) creados y ubicados en ' + zona + ' por ' + usuario_() + ': ' +
+    creados.slice(0, 12).join(' | ') + (creados.length > 12 ? ' …' : '') +
+    ' · UM base propuesta por la unidad de conteo, falta validarla');
+  pasoSeguro_([], 'validaciones', function () { return aplicarValidaciones_(ss); });
+  hoja.getRange(CAP_ALTA).uncheck();
+  avisoCaptura_(hoja, '✔ ' + creados.length + ' producto(s) quedaron con ficha y ubicados en ' + zona +
+    ': ' + creados.slice(0, 5).join(', ') + (creados.length > 5 ? '…' : '') +
+    '. Ya cuentan como cualquier otro, y la próxima semana aparecen cargados. Falta confirmarles ' +
+    'categoría, UM base y precio en el CATÁLOGO.', COLOR_VERDE);
+  SpreadsheetApp.flush();
+  return { creados: creados.length, claves: creados };
+}
+
+/* La UM base no se adivina de la nada: se propone desde la unidad con que se
+   cuenta y se marca para validar. Un frasco o una botella se miden en volumen;
+   lo que se pesa, en gramos; lo que se cuenta por piezas, en unidades. */
+var UNI_VOLUMEN = '|botella|frasco|garrafa|bidon|';
+var UNI_PIEZA = '|unidad|pieza|rollo|atado|';
+
+function umDesdeConteo_(uni, peso) {
+  var k = '|' + normalizar_(uni) + '|';
+  if (UNI_VOLUMEN.indexOf(k) >= 0) { return 'ml'; }
+  if (UNI_PIEZA.indexOf(k) >= 0) { return peso > 0 ? 'g' : 'un'; }
+  return peso > 0 ? 'g' : 'un';
+}
+
+function abrirConteoMenu() {
+  var r = abrirConteo_(SpreadsheetApp.getActive());
+  mostrar_('Conteo abierto', 'Hoja "' + r.nombre + '" · folio ' + r.folio);
+}
+
+/* ==========================================================================
+ * 4 · GUARDAR EL CONTEO
+ * ========================================================================== */
+
+function guardarConteo_(sh) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    throw new Error('Hay otro guardado en curso. Espere unos segundos y vuelva a marcar la casilla.');
+  }
+  try {
+    var ss = SpreadsheetApp.getActive();
+    verificarLayout_(ss);
+    var cap = sh || ss.getSheetByName(H.CAPTURA);
+    var esConteo = esHojaConteo_(cap);
+    var nfilas = filasCaptura_(ss);
+
+    var zona = txt_(cap.getRange(CAP_ZONA).getValue());
+    var fecha = cap.getRange(CAP_FECHA).getValue();
+    var resp = txt_(cap.getRange(CAP_RESP).getValue());
+    var usuario = usuario_();
+
+    /* ---- compuerta: zona válida (siempre fatal) ---- */
+    if (zona === '') { throw new Error('Falta la ZONA.'); }
+    var zonas = indiceZonas_(ss);
+    var z = zonas[normalizar_(zona)];
+    if (!z) { throw new Error('La zona "' + zona + '" no está en CAT_ZONAS.'); }
+    var cicloTxt = normalizar_(cap.getRange(CAP_CICLO).getValue());
+    if (cicloTxt === '') {
+      throw new Error('Falta confirmar el CICLO del conteo: SEMANAL o MENSUAL.\n\n' +
+        'No lo deduzca el motor: en el inventario general de fin de mes las zonas semanales ' +
+        'también se cuentan, y si el ciclo queda mal el conteo entra en la serie equivocada.');
+    }
+    if (cicloTxt.substring(0, 1) !== 's' && cicloTxt.substring(0, 1) !== 'm') {
+      throw new Error('El CICLO debe decir SEMANAL o MENSUAL, no "' +
+        txt_(cap.getRange(CAP_CICLO).getValue()) + '".');
+    }
+    var ciclo = cicloTxt.substring(0, 1) === 'm' ? 'M' : 'S';
+
+    /* ---- compuerta: fecha y responsable ---- */
+    if (cfgSi_(ss, 'BLOQUEO_SIN_FECHA')) {
+      if (!esFecha_(fecha)) {
+        throw new Error('Falta la FECHA del conteo, o no es una fecha válida.');
+      }
+      if (resp === '') {
+        throw new Error('Falta el RESPONSABLE. Un conteo sin firma no sirve como evidencia.');
+      }
+    }
+    if (!esFecha_(fecha)) { fecha = new Date(); }
+
+    /* ---- leer la pantalla ---- */
+    var bloque = cap.getRange(CAP_FILA_DATOS, 1, nfilas, CAP_NCOL).getValues();
+    var lineas = [], sinContar = 0, saneadas = [], sumadas = [], desplazados = [], pendientes = [];
+    var porProducto = {}, sobreMax = num_(cfg_(ss, 'SOBRANTE_MAX_VS_UNIDAD')) || 1.5;
+    var i, f, cant, sc, ss2;
+    for (i = 0; i < bloque.length; i++) {
+      f = bloque[i];
+      if (txt_(f[C_PROD - 1]) === '') { continue; }
+      sc = saneaNumero_(f[C_CANT - 1]);
+      if (!sc.ok) {
+        throw new Error('Fila ' + (CAP_FILA_DATOS + i) + ' (' + txt_(f[C_PROD - 1]) +
+          '): la cantidad "' + f[C_CANT - 1] + '" no es un número y no se puede interpretar. ' +
+          'Para media unidad escriba 0.5 o 1/2, nunca un texto.');
+      }
+      cant = sc.valor;
+      if (cant === '') { sinContar++; continue; }
+      if (sc.aviso) { saneadas.push('fila ' + (CAP_FILA_DATOS + i) + ': cantidad ' + sc.aviso); }
+      if (cant < 0) {
+        throw new Error('Fila ' + (CAP_FILA_DATOS + i) + ' (' + txt_(f[C_PROD - 1]) +
+          '): la cantidad no puede ser negativa.');
+      }
+      ss2 = saneaNumero_(f[C_SOBRA - 1]);
+      if (!ss2.ok) {
+        throw new Error('Fila ' + (CAP_FILA_DATOS + i) + ' (' + txt_(f[C_PROD - 1]) +
+          '): el sobrante "' + f[C_SOBRA - 1] + '" no es un número. Escriba solo los gramos ' +
+          'o mililitros de la unidad incompleta.');
+      }
+      var sobra = ss2.valor === '' ? 0 : ss2.valor;
+      if (ss2.aviso) { saneadas.push('fila ' + (CAP_FILA_DATOS + i) + ': sobrante ' + ss2.aviso); }
+      if (sobra < 0) {
+        throw new Error('Fila ' + (CAP_FILA_DATOS + i) + ' (' + txt_(f[C_PROD - 1]) +
+          '): el sobrante no puede ser negativo.');
+      }
+      var uniCat = txt_(f[C_UNICAT - 1]);
+      var pesoCat = num_(f[C_PESOCAT - 1]);
+      var uniUsada = txt_(f[C_UNI - 1]);
+      var pesoUsado = num_(f[C_PESO - 1]);
+      var um = txt_(f[C_UM - 1]);
+      var esVar = normalizar_(f[C_PRES - 1]).substring(0, 4) === 'vari';
+      if (sobra > 0 && um === 'un') {
+        throw new Error('Fila ' + (CAP_FILA_DATOS + i) + ' (' + txt_(f[C_PROD - 1]) +
+          '): este producto se controla por unidades, no por peso. Un sobrante en gramos no ' +
+          'significa nada aquí: si hay media unidad, escriba 0.5 en CANTIDAD.');
+      }
+      if (sobra > 0 && pesoUsado <= 0) {
+        throw new Error('Fila ' + (CAP_FILA_DATOS + i) + ' (' + txt_(f[C_PROD - 1]) +
+          '): hay un sobrante pero no hay peso por unidad. Sin el peso de una unidad completa, ' +
+          'el sobrante no se puede sumar a nada.');
+      }
+      if (sobra > 0 && pesoUsado > 0 && sobra > pesoUsado * sobreMax) {
+        throw new Error('Fila ' + (CAP_FILA_DATOS + i) + ' (' + txt_(f[C_PROD - 1]) +
+          '): el sobrante (' + redondear_(sobra) + ') es más grande que una unidad entera (' +
+          redondear_(pesoUsado) + '). Si sobra más que una unidad, lo que hay es otra unidad: ' +
+          'súbala a CANTIDAD y deje en SOBRANTE solo lo que falta para completarla.');
+      }
+      /* La presentación solo "cambia" en los productos cuyo empaque se repite. En
+         los VARIABLE el peso es distinto cada vez por definición: marcarlo sería
+         llenar el libro mayor de avisos que no dicen nada. */
+      var cambio = '';
+      if (uniUsada !== '' && uniCat !== '' && normalizar_(uniUsada) !== normalizar_(uniCat)) {
+        cambio = 'presentación distinta al catálogo: se contó en "' + uniUsada +
+                 '" y el catálogo dice "' + uniCat + '"';
+      } else if (!esVar && pesoUsado > 0 && pesoCat > 0 && Math.abs(pesoUsado - pesoCat) > 0.001) {
+        cambio = 'peso por unidad distinto al catálogo: se usó ' + redondear_(pesoUsado) +
+                 ' y el catálogo dice ' + redondear_(pesoCat);
+      }
+      /* Lo que manda es lo que la persona ve en pantalla, no la columna oculta.
+         Hasta la v6.2 era al revés, y en el archivo de septiembre 513 de las 606
+         filas digitadas tenían el producto visible distinto del oculto: el equipo
+         había reescrito
+         la lista en el orden en que camina la zona, y la columna oculta se quedó
+         con los nombres viejos. Si aquellos conteos hubieran llegado a guardarse,
+         CADA cantidad habría quedado anotada al producto equivocado. */
+      var visible = txt_(f[C_PROD - 1]);
+      var oculta = txt_(f[C_CLAVE - 1]);
+      var clave = visible !== '' ? visible : oculta;
+      if (visible !== '' && oculta !== '' && normalizar_(visible) !== normalizar_(oculta)) {
+        desplazados.push({ fila: CAP_FILA_DATOS + i, salio: oculta, entro: visible });
+      }
+      var kk = normalizar_(clave);
+      /* El mismo producto dos veces en la pantalla es lo normal cuando se cuenta
+         lote por lote. Se suman, y queda escrito que se sumaron: el libro mayor no
+         puede tener dos líneas del mismo producto en el mismo folio. */
+      if (porProducto[kk]) {
+        var pp = porProducto[kk];
+        pp.cant += cant;
+        pp.sobra += sobra;
+        pp.filas.push(CAP_FILA_DATOS + i);
+        if (txt_(f[C_NOTA - 1]) !== '') {
+          pp.nota = pp.nota ? (pp.nota + ' | ' + txt_(f[C_NOTA - 1])) : txt_(f[C_NOTA - 1]);
+        }
+        sumadas.push(clave + ' (filas ' + pp.filas.join(', ') + ')');
+        continue;
+      }
+      porProducto[kk] = {
+        fila: CAP_FILA_DATOS + i,
+        filas: [CAP_FILA_DATOS + i],
+        prod: clave,
+        cant: cant,
+        sobra: sobra,
+        uni: uniUsada,
+        ult: num_(f[C_ULT - 1]),
+        peso: pesoUsado,
+        um: um,
+        esVar: esVar,
+        nota: txt_(f[C_NOTA - 1]),
+        cambio: cambio
+      };
+      lineas.push(porProducto[kk]);
+    }
+    if (!lineas.length) {
+      throw new Error('No hay ninguna cantidad escrita. Nada que guardar.');
+    }
+
+    /* ---- producto fuera de catálogo: ya no detiene el conteo ----
+       Un auxiliar a las once de la noche, con el congelador abierto, no puede dar
+       de alta un producto. Antes esto era fatal: el conteo no guardaba, y lo que
+       llevaba digitado se quedaba ahí. La línea se guarda igual, marcada
+       PENDIENTE_ALTA: no entra al stock, no vale, no toca ningún indicador, y
+       queda esperando a que administración le abra la ficha. Nada se pierde y
+       nadie se queda trancado. */
+    var cat = indiceCatalogo_(ss);
+    for (i = 0; i < lineas.length; i++) {
+      if (!cat[normalizar_(lineas[i].prod)]) {
+        lineas[i].pendiente = true;
+        pendientes.push('fila ' + lineas[i].fila + ': ' + lineas[i].prod);
+      }
+    }
+
+    /* ---- compuerta: unidad fuera de la lista ----
+       La lista de la celda es comodidad; esta es la que atrapa el pegado. */
+    var unidades = indiceUnidades_(ss);
+    var malUni = [];
+    for (i = 0; i < lineas.length; i++) {
+      if (lineas[i].uni === '') { continue; }
+      if (!unidades[normalizar_(lineas[i].uni)]) {
+        malUni.push('fila ' + lineas[i].fila + ': "' + lineas[i].uni + '"');
+      }
+    }
+    if (malUni.length) {
+      throw new Error('Hay ' + malUni.length + ' unidad(es) que no están en la lista:\n' +
+        malUni.slice(0, 8).join('\n') +
+        (malUni.length > 8 ? '\n…y ' + (malUni.length - 8) + ' más.' : '') +
+        '\n\nElíjala de la lista desplegable. Si es una unidad válida que usan a diario, ' +
+        'agréguela primero en la hoja LISTAS.');
+    }
+
+    /* ---- compuerta: folio duplicado ---- */
+    var idConteo = folio_(fecha, ciclo, txt_(z[Z_COD - 1]));
+    if (cfgSi_(ss, 'BLOQUEO_DUPLICADO_DIA')) {
+      if (folioExiste_(ss, idConteo)) {
+        throw new Error('Ya hay un conteo VIGENTE con el folio ' + idConteo +
+          ' (misma zona, mismo día, mismo ciclo).\n\nSi de verdad hay que volver a contar, ' +
+          'reverse primero el conteo anterior desde el menú.');
+      }
+    }
+
+    /* ---- compuerta: coherencia de peso y cantidad (bloquea, admite forzado) ---- */
+    var forzadas = {};
+    if (cfgSi_(ss, 'BLOQUEO_PESO_FUERA_BANDA')) {
+      var minMot = num_(cfg_(ss, 'MOTIVO_MIN_CARACTERES')) || 15;
+      var bandas = indiceBandas_(ss);
+      var topeCant = num_(cfg_(ss, 'CANTIDAD_MAX_RAZONABLE')) || 500;
+      var salto = num_(cfg_(ss, 'SALTO_MAX_VS_ULTIMO')) || 10;
+      var fuerabanda = [];
+      var chk;
+      for (i = 0; i < lineas.length; i++) {
+        chk = fueraDeBanda_(lineas[i], bandas, topeCant, salto);
+        if (chk === '') { continue; }
+        if (lineas[i].nota.length >= minMot) {
+          forzadas[lineas[i].fila] = chk + ' — forzado: ' + lineas[i].nota;
+          continue;
+        }
+        fuerabanda.push('fila ' + lineas[i].fila + ': ' + lineas[i].prod + ' → ' + chk);
+      }
+      if (fuerabanda.length) {
+        throw new Error('Hay ' + fuerabanda.length + ' valor(es) que no son coherentes:\n' +
+          fuerabanda.slice(0, 8).join('\n') +
+          (fuerabanda.length > 8 ? '\n…y ' + (fuerabanda.length - 8) + ' más.' : '') +
+          '\n\nCorrija el dato, o si es correcto escriba el motivo en la columna NOTA de esa fila ' +
+          '(mínimo ' + minMot + ' caracteres) y vuelva a marcar la casilla. El forzado queda firmado en la BITÁCORA.');
+      }
+    }
+
+    /* ---- qué productos de esta zona no aparecieron en la pantalla ----
+       No es lo mismo "lo conté y no hay" que "no alcancé a mirarlo". Si el equipo
+       reescribe la lista con lo que encuentra —que es como de verdad trabajan—,
+       los que no escribieron son justamente los que hay que repasar. */
+    var enPantalla = {};
+    for (i = 0; i < lineas.length; i++) { enPantalla[normalizar_(lineas[i].prod)] = 1; }
+    var ubicZona = leerTabla_(ss, H.UBIC, UBI_NCOL);
+    var noVistos = [];
+    for (i = 0; i < ubicZona.length; i++) {
+      if (txt_(ubicZona[i][U_PROD - 1]) === '') { continue; }
+      if (normalizar_(ubicZona[i][U_ZONA - 1]) !== normalizar_(zona)) { continue; }
+      if (normalizar_(ubicZona[i][U_ACTIVO - 1]) === 'no') { continue; }
+      if (enPantalla[normalizar_(ubicZona[i][U_PROD - 1])]) { continue; }
+      noVistos.push(txt_(ubicZona[i][U_PROD - 1]));
+    }
+
+    /* ---- recorrido completo: los que no se vieron se guardan en cero ----
+       En el último conteo de congelador hubo UN cero contra 182 renglones en
+       blanco. Pedirle a alguien que escriba 182 ceros no es una regla, es una
+       trampa. Una casilla los escribe por él, y queda firmado que el cero viene
+       del recorrido y no de un dedo. */
+    var completo = cap.getRange(CAP_COMPLETO).getValue() === true;
+    if (completo && noVistos.length) {
+      for (i = 0; i < noVistos.length; i++) {
+        p = cat[normalizar_(noVistos[i])];
+        lineas.push({
+          fila: 0, filas: [0], prod: noVistos[i], cant: 0, sobra: 0,
+          uni: p ? txt_(p[K_UNI - 1]) : '', ult: 0, peso: p ? num_(p[K_PESO - 1]) : 0,
+          um: p ? txt_(p[K_UM - 1]) : '', esVar: false, nota: '',
+          cambio: '', cero: true
+        });
+      }
+    }
+
+    /* ---- escribir al libro mayor ---- */
+    var bd = ss.getSheetByName(H.BD);
+    var ts = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+    var fechaTxt = Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    var filas = [], p, costo, total, valor, k, nCambios = 0;
+    for (i = 0; i < lineas.length; i++) {
+      k = lineas[i];
+      p = cat[normalizar_(k.prod)];
+      costo = p ? num_(p[K_COSTO - 1]) : 0;
+      if (k.um === 'un') {
+        total = k.cant;
+      } else if (k.peso > 0) {
+        total = k.cant * k.peso + k.sobra;
+      } else {
+        total = k.sobra > 0 ? k.sobra : '';
+      }
+      valor = (costo > 0 && total !== '') ? total * costo : '';
+      var marca = forzadas[k.fila] || '';
+      if (k.cambio) { marca = marca ? (marca + ' · ' + k.cambio) : k.cambio; }
+      if (k.filas.length > 1) {
+        marca = (marca ? marca + ' · ' : '') + 'producto contado en ' + k.filas.length +
+                ' renglones de la misma pantalla (filas ' + k.filas.join(', ') + '): cantidades sumadas';
+      }
+      if (k.cero) {
+        marca = (marca ? marca + ' · ' : '') +
+                'cero por RECORRIDO COMPLETO: no apareció en la pantalla y quien contó firmó que ' +
+                'recorrió la zona entera';
+      }
+      if (k.pendiente) {
+        marca = (marca ? marca + ' · ' : '') +
+                'PRODUCTO SIN FICHA: se contó algo que no está en el catálogo. La línea queda ' +
+                'guardada pero fuera del stock y de la valorización hasta que se le abra la ficha ' +
+                'en ALTA_PRODUCTO.';
+        costo = 0;
+        valor = '';
+      }
+      filas.push([
+        idConteo + '-' + pad3_(i + 1), idConteo, fechaTxt, ciclo, zona, k.prod, k.cant,
+        k.uni, k.peso > 0 ? k.peso : '', k.um, total, costo > 0 ? costo : '', valor,
+        resp, usuario, k.pendiente ? 'PENDIENTE_ALTA' : 'VIGENTE',
+        marca ? 'Sí' : '', marca, '', '', ts, k.sobra > 0 ? k.sobra : ''
+      ]);
+      if (k.cambio) { nCambios++; }
+    }
+    var destino = ultimaFila_(bd, B_IDLIN) + 1;
+    if (destino < FILA_DATOS) { destino = FILA_DATOS; }
+    bd.getRange(destino, 1, filas.length, BD_NCOL).setValues(filas);
+
+    /* ---- derivados ---- */
+    var nota = [];
+    pasoSeguro_(nota, 'stock', function () { reconstruirMaestro_(ss); return 'ok'; });
+    pasoSeguro_(nota, 'bandas', function () { reconstruirBandas_(ss); return 'ok'; });
+    pasoSeguro_(nota, 'ubicaciones', function () { refrescarUbicaciones_(ss); return 'ok'; });
+    pasoSeguro_(nota, 'zonas', function () { refrescarZonas_(ss); return 'ok'; });
+    pasoSeguro_(nota, 'tablero', function () { refrescarTablero_(ss); return 'ok'; });
+    pasoSeguro_(nota, 'historial de conteos', function () { refrescarHistorial_(ss); return 'ok'; });
+    pasoSeguro_(nota, 'diagnóstico', function () { refrescarDiagnostico_(ss); return 'ok'; });
+
+    var cuantasForzadas = 0;
+    for (k in forzadas) { if (forzadas.hasOwnProperty(k)) { cuantasForzadas++; } }
+    pasoSeguro_(nota, 'aviso por correo', function () {
+      return notificar_(ss, idConteo, zona, resp, lineas.length, sinContar, cuantasForzadas);
+    });
+    bitacora_(ss, 'CONTEO GUARDADO', idConteo,
+      lineas.length + ' líneas · responsable ' + resp + ' · sin contar ' + sinContar +
+      (cuantasForzadas ? ' · forzados ' + cuantasForzadas : '') +
+      (nCambios ? ' · presentación cambiada ' + nCambios : '') +
+      (sumadas.length ? ' · repetidos sumados: ' + sumadas.join(' ; ') : '') +
+      (saneadas.length ? ' · saneado al leer: ' + saneadas.join(' ; ') : '') +
+      (pendientes.length ? ' · sin ficha (PENDIENTE_ALTA): ' + pendientes.join(' ; ') : '') +
+      (desplazados.length ? ' · ' + desplazados.length + ' renglón(es) usados para otro producto' : '') +
+      (noVistos.length ? ' · ' + noVistos.length + ' producto(s) de la zona ' +
+        (completo ? 'guardados en cero por recorrido completo' : 'sin contar') : ''));
+
+    /* ---- cerrar la pantalla ----
+       Una hoja de conteo cumplió su trabajo en el momento en que el libro mayor
+       recibió sus líneas: se borra. Lo que vale está guardado, y dejarla abierta
+       es justamente lo que hace que alguien la copie la semana siguiente. */
+    if (esConteo) {
+      pasoSeguro_(nota, 'cerrar la hoja de conteo', function () {
+        ss.deleteSheet(cap);
+        return 'hoja "' + cap.getName() + '" cerrada';
+      });
+    } else {
+      limpiarCaptura_(cap, nfilas);
+      pasoSeguro_(nota, 'fórmulas de la pantalla', function () {
+        reponerFormulas_(cap, nfilas); return 'ok';
+      });
+      cap.getRange(CAP_ZONA).clearContent();
+      cap.getRange(CAP_CICLO).clearContent();
+      cap.getRange(CAP_FOLIO).clearContent();
+      cap.getRange(CAP_CERRAR).uncheck();
+      try { cap.getRange(CAP_COMPLETO).uncheck(); } catch (e3) {}
+    }
+
+    var msg = '✔ Guardado ' + idConteo + ': ' + lineas.length + ' líneas.';
+    if (sinContar > 0 && cfgSi_(ss, 'AVISO_SIN_CONTAR')) {
+      msg += '  ⚠ Quedaron ' + sinContar + ' renglones sin contar (no es lo mismo que cero).';
+    }
+    if (cuantasForzadas) { msg += '  ' + cuantasForzadas + ' valor(es) forzados, firmados en la bitácora.'; }
+    if (sumadas.length) {
+      msg += '  ' + sumadas.length + ' producto(s) venían repetidos en la pantalla y se sumaron: ' +
+             sumadas.slice(0, 3).join(' ; ') + (sumadas.length > 3 ? ' …' : '') + '.';
+    }
+    if (saneadas.length) {
+      msg += '  ' + saneadas.length + ' celda(s) venían como texto y se interpretaron; quedó escrito ' +
+             'en la bitácora.';
+    }
+    if (pendientes.length) {
+      msg += '  ⚠ ' + pendientes.length + ' producto(s) no están en el catálogo: la línea quedó ' +
+             'guardada como PENDIENTE_ALTA, fuera del stock, esperando que se les abra la ficha (' +
+             pendientes.slice(0, 3).join(' ; ') + (pendientes.length > 3 ? ' …' : '') + ').';
+    }
+    if (desplazados.length) {
+      var dtxt = [];
+      for (i = 0; i < desplazados.length && i < 4; i++) {
+        dtxt.push('fila ' + desplazados[i].fila + ': entró "' + desplazados[i].entro +
+                  '" donde estaba "' + desplazados[i].salio + '"');
+      }
+      msg += '  ' + desplazados.length + ' renglón(es) se usaron para un producto distinto al que ' +
+             'cargó el motor. Se guardó lo que estaba en pantalla, que es lo correcto (' +
+             dtxt.join(' ; ') + (desplazados.length > 4 ? ' …' : '') + ').';
+    }
+    if (noVistos.length && !completo) {
+      msg += '  ⚠ ' + noVistos.length + ' producto(s) de esta zona no aparecieron en la pantalla y ' +
+             'quedaron SIN CONTAR, que no es lo mismo que en cero. Si de verdad recorrió la zona ' +
+             'entera, marque RECORRIDO COMPLETO y vuelva a cerrar: el motor los guarda en cero.';
+    }
+    if (noVistos.length && completo) {
+      msg += '  ' + noVistos.length + ' producto(s) que no aparecieron quedaron guardados en cero ' +
+             'por RECORRIDO COMPLETO.';
+    }
+    if (nCambios) {
+      msg += '  ' + nCambios + ' línea(s) se contaron en una presentación distinta a la del ' +
+             'catálogo: quedaron registradas así y el control INT-15 recuerda actualizar el catálogo.';
+    }
+    if (esConteo) {
+      msg += '  La hoja de conteo se cerró: lo guardado vive en el libro mayor y en HISTORIAL_CONTEOS.';
+      avisoCaptura_(ss.getSheetByName(H.CAPTURA), msg, COLOR_VERDE);
+      try { mostrar_('Conteo guardado', msg); } catch (e4) {}
+    } else {
+      msg += '  Elija la siguiente zona.';
+      avisoCaptura_(cap, msg, COLOR_VERDE);
+    }
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function esFecha_(v) {
+  return !!v && typeof v.getTime === 'function' && !isNaN(v.getTime());
+}
+
+function folio_(fecha, ciclo, cod) {
+  var d = esFecha_(fecha) ? fecha : new Date();
+  return 'INV-' + (ciclo === 'M' ? 'M' : 'S') + '-' +
+    Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyyMMdd') + '-' + cod;
+}
+
+function folioExiste_(ss, idConteo) {
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var i;
+  for (i = 0; i < bd.length; i++) {
+    if (txt_(bd[i][B_IDCON - 1]) === idConteo && txt_(bd[i][B_ESTADO - 1]) !== 'REVERSADA') {
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ==========================================================================
+ * 5 · BANDAS DE COHERENCIA
+ * ========================================================================== */
+
+/* Tres capas, de la que funciona desde el primer conteo a la que necesita historia:
+   1) tope absoluto de cantidad y rango razonable de peso por unidad de conteo,
+   2) salto contra el último conteo del mismo producto,
+   3) desvío contra la mediana robusta del propio producto. */
+function fueraDeBanda_(linea, bandas, topeCant, salto) {
+  var b;
+  if (topeCant > 0 && linea.cant > topeCant) {
+    return 'cantidad ' + redondear_(linea.cant) + ' es demasiado alta para un conteo ' +
+      '(tope razonable ' + topeCant + '). ¿Sobra un dígito?';
+  }
+  if (salto > 0 && linea.ult > 0 && linea.cant > linea.ult * salto) {
+    return 'pasó de ' + redondear_(linea.ult) + ' a ' + redondear_(linea.cant) +
+      ' desde el último conteo (más de ' + salto + ' veces)';
+  }
+  if (linea.peso > 0) {
+    b = bandas.porProducto['P|' + normalizar_(linea.prod)];
+    if (b) {
+      if (linea.peso < b.lo || linea.peso > b.hi) {
+        return 'peso ' + redondear_(linea.peso) + ' fuera de lo habitual de este producto (' +
+          redondear_(b.lo) + ' a ' + redondear_(b.hi) + ')';
+      }
+    } else {
+      b = bandas.porUnidad[normalizar_(linea.uni)];
+      if (b && (linea.peso < b.lo || linea.peso > b.hi)) {
+        return 'una ' + linea.uni + ' de ' + redondear_(linea.peso) +
+          ' no es plausible (se espera entre ' + redondear_(b.lo) + ' y ' + redondear_(b.hi) + ')';
+      }
+    }
+  }
+  b = bandas.porProducto['C|' + normalizar_(linea.prod)];
+  if (b && (linea.cant < b.lo || linea.cant > b.hi)) {
+    return 'cantidad ' + redondear_(linea.cant) + ' muy lejos de lo habitual (' +
+      redondear_(b.lo) + ' a ' + redondear_(b.hi) + ')';
+  }
+  return '';
+}
+
+function indiceBandas_(ss) {
+  var t = leerTabla_(ss, H.BANDAS, BAN_NCOL);
+  var porUnidad = {}, porProducto = {};
+  var i, amb, clave;
+  for (i = 0; i < t.length; i++) {
+    clave = txt_(t[i][N_CLAVE - 1]);
+    if (clave === '') { continue; }
+    amb = txt_(t[i][N_AMBITO - 1]);
+    if (amb === 'capa 1') {
+      porUnidad[normalizar_(clave)] = { lo: num_(t[i][N_LO - 1]), hi: num_(t[i][N_HI - 1]) };
+    } else {
+      porProducto[clave] = { lo: num_(t[i][N_LO - 1]), hi: num_(t[i][N_HI - 1]) };
+    }
+  }
+  return { porUnidad: porUnidad, porProducto: porProducto };
+}
+
+function reconstruirBandas_(ss) {
+  var sh = ss.getSheetByName(H.BANDAS);
+  var t = leerTabla_(ss, H.BANDAS, BAN_NCOL);
+  /* se conservan las filas de capa 1 (editables a mano) y se reescribe la capa 2 */
+  var capa1 = [];
+  var i;
+  for (i = 0; i < t.length; i++) {
+    if (txt_(t[i][N_AMBITO - 1]) === 'capa 1' && txt_(t[i][N_CLAVE - 1]) !== '') {
+      capa1.push(t[i]);
+    }
+  }
+
+  var minObs = num_(cfg_(ss, 'BANDA_MIN_OBS')) || 3;
+  var factor = num_(cfg_(ss, 'BANDA_FACTOR')) || 3;
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var pesos = {}, cants = {}, prod;
+  for (i = 0; i < bd.length; i++) {
+    if (txt_(bd[i][B_ESTADO - 1]) === 'REVERSADA') { continue; }
+    prod = txt_(bd[i][B_PROD - 1]);
+    if (prod === '') { continue; }
+    if (num_(bd[i][B_PESO - 1]) > 0) {
+      if (!pesos[prod]) { pesos[prod] = []; }
+      pesos[prod].push(num_(bd[i][B_PESO - 1]));
+    }
+    if (!cants[prod]) { cants[prod] = []; }
+    cants[prod].push(num_(bd[i][B_CANT - 1]));
+  }
+
+  var filas = [], j;
+  for (j = 0; j < capa1.length; j++) { filas.push(capa1[j]); }
+  filas = filas.concat(bandasDe_(pesos, 'P|', 'peso por unidad', minObs, factor));
+  filas = filas.concat(bandasDe_(cants, 'C|', 'cantidad contada', minObs, factor));
+
+  var libres = sh.getMaxRows() - FILA_DATOS + 1;
+  if (libres < filas.length + 5) { sh.insertRowsAfter(sh.getMaxRows(), filas.length + 20 - libres); }
+  sh.getRange(FILA_DATOS, 1, sh.getMaxRows() - FILA_DATOS + 1, BAN_NCOL).clearContent();
+  if (filas.length) { sh.getRange(FILA_DATOS, 1, filas.length, BAN_NCOL).setValues(filas); }
+}
+
+function bandasDe_(mapa, prefijo, etiqueta, minObs, factor) {
+  var out = [], clave, v, med, d, m, lo, hi;
+  for (clave in mapa) {
+    if (!mapa.hasOwnProperty(clave)) { continue; }
+    v = mapa[clave];
+    if (v.length < minObs) { continue; }
+    med = mediana_(v);
+    d = [];
+    var i;
+    for (i = 0; i < v.length; i++) { d.push(Math.abs(v[i] - med)); }
+    m = mediana_(d) * 1.4826;
+    if (m <= 0) { m = med * 0.35; }          // sin dispersión: banda prudente del 35 %
+    lo = med - factor * m;
+    hi = med + factor * m;
+    if (lo < 0) { lo = 0; }
+    out.push(['capa 2', prefijo + normalizar_(clave), v.length, redondear_(med),
+              redondear_(lo), redondear_(hi), etiqueta + ' · mediana robusta de ' + v.length + ' conteos']);
+  }
+  return out;
+}
+
+/* ==========================================================================
+ * 6 · DERIVADOS
+ * ========================================================================== */
+
+/* Una línea PENDIENTE_ALTA está guardada pero no existe como producto: no puede
+   entrar al stock ni valorizarse hasta que alguien le abra la ficha. */
+function lineaCuenta_(fila) {
+  var e = txt_(fila[B_ESTADO - 1]);
+  return e !== 'REVERSADA' && e !== 'PENDIENTE_ALTA';
+}
+
+function reconstruirMaestro_(ss) {
+  var sh = ss.getSheetByName(H.MAESTRO);
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var cat = indiceCatalogo_(ss);
+  var hoy = new Date();
+
+  /* último conteo vigente por producto, y el anterior para calcular consumo */
+  var ult = {}, i, prod, f, reg;
+  for (i = 0; i < bd.length; i++) {
+    if (!lineaCuenta_(bd[i])) { continue; }
+    prod = txt_(bd[i][B_PROD - 1]);
+    if (prod === '') { continue; }
+    f = txt_(bd[i][B_FECHA - 1]);
+    if (!ult[prod]) { ult[prod] = { filas: [] }; }
+    ult[prod].filas.push({ fecha: f, zona: txt_(bd[i][B_ZONA - 1]),
+                           cant: num_(bd[i][B_CANT - 1]), total: num_(bd[i][B_TOTAL - 1]),
+                           conteo: txt_(bd[i][B_IDCON - 1]) });
+  }
+
+  var filas = [], clave, fx, fechas, ultimaF, previaF, cant, total, zonas, zs, costo, valor,
+      minG, alerta, consumo, dias, p, n;
+  for (clave in ult) {
+    if (!ult.hasOwnProperty(clave)) { continue; }
+    fx = ult[clave].filas;
+    fechas = [];
+    for (i = 0; i < fx.length; i++) {
+      if (indiceDe_(fechas, fx[i].fecha) < 0) { fechas.push(fx[i].fecha); }
+    }
+    fechas.sort();
+    ultimaF = fechas[fechas.length - 1];
+    previaF = fechas.length > 1 ? fechas[fechas.length - 2] : '';
+    cant = 0; total = 0; zonas = []; n = 0;
+    for (i = 0; i < fx.length; i++) {
+      if (fx[i].fecha !== ultimaF) { continue; }
+      cant += fx[i].cant;
+      total += fx[i].total;
+      if (indiceDe_(zonas, fx[i].zona) < 0) { zonas.push(fx[i].zona); }
+      n++;
+    }
+    consumo = '';
+    if (previaF !== '') {
+      var totalPrev = 0;
+      for (i = 0; i < fx.length; i++) {
+        if (fx[i].fecha === previaF) { totalPrev += fx[i].total; }
+      }
+      consumo = redondear_(totalPrev - total);
+    }
+    p = cat[normalizar_(clave)];
+    costo = p ? num_(p[K_COSTO - 1]) : 0;
+    valor = costo > 0 ? redondear_(total * costo) : '';
+    minG = p ? num_(p[K_MIN - 1]) : 0;
+    alerta = cant === 0 ? 'AGOTADO' : (minG > 0 && cant <= minG ? 'BAJO MIN' : 'OK');
+    dias = diasDesde_(ultimaF, hoy);
+    zs = zonas.join(' | ');
+    filas.push([clave, p ? txt_(p[K_UM - 1]) : '', zs, ultimaF, redondear_(cant),
+                redondear_(total), costo > 0 ? costo : '', valor, minG || '', alerta,
+                fechas.length, consumo, dias]);
+  }
+  filas.sort(function (a, b) { return normalizar_(a[0]) < normalizar_(b[0]) ? -1 : 1; });
+
+  var libres = sh.getMaxRows() - FILA_DATOS + 1;
+  if (libres < filas.length + 5) { sh.insertRowsAfter(sh.getMaxRows(), filas.length + 30 - libres); }
+  sh.getRange(FILA_DATOS, 1, sh.getMaxRows() - FILA_DATOS + 1, MAE_NCOL).clearContent();
+  if (filas.length) {
+    sh.getRange(FILA_DATOS, 1, filas.length, MAE_NCOL).setValues(filas);
+  }
+}
+
+function refrescarUbicaciones_(ss) {
+  var sh = ss.getSheetByName(H.UBIC);
+  var t = leerTabla_(ss, H.UBIC, UBI_NCOL);
+  if (!t.length) { return; }
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var conteos = {}, ultima = {}, i, k;
+  for (i = 0; i < bd.length; i++) {
+    if (!lineaCuenta_(bd[i])) { continue; }
+    k = normalizar_(bd[i][B_PROD - 1]) + '@' + normalizar_(bd[i][B_ZONA - 1]);
+    conteos[k] = (conteos[k] || 0) + 1;
+    ultima[k] = num_(bd[i][B_CANT - 1]);
+  }
+  var out = [];
+  for (i = 0; i < t.length; i++) {
+    k = normalizar_(t[i][U_PROD - 1]) + '@' + normalizar_(t[i][U_ZONA - 1]);
+    out.push([conteos[k] || 0, conteos[k] ? ultima[k] : '']);
+  }
+  sh.getRange(FILA_DATOS, U_CONTEOS, out.length, 2).setValues(out);
+}
+
+function refrescarZonas_(ss) {
+  var sh = ss.getSheetByName(H.ZONAS);
+  var t = leerTabla_(ss, H.ZONAS, ZON_NCOL);
+  if (!t.length) { return; }
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var ult = {}, cnt = {}, i, z, f;
+  for (i = 0; i < bd.length; i++) {
+    if (!lineaCuenta_(bd[i])) { continue; }
+    z = normalizar_(bd[i][B_ZONA - 1]);
+    f = txt_(bd[i][B_FECHA - 1]);
+    if (!ult[z] || f > ult[z]) { ult[z] = f; cnt[z] = 0; }
+    if (f === ult[z]) { cnt[z] = (cnt[z] || 0) + 1; }
+  }
+  var out = [];
+  for (i = 0; i < t.length; i++) {
+    z = normalizar_(t[i][Z_ZONA - 1]);
+    out.push([ult[z] ? fechaDeTexto_(ult[z]) : '', cnt[z] || '']);
+  }
+  sh.getRange(FILA_DATOS, Z_ULTFECHA, out.length, 2).setValues(out);
+  sh.getRange(FILA_DATOS, Z_ULTFECHA, out.length, 1).setNumberFormat('dd/MM/yyyy');
+}
+
+/* El libro mayor guarda la fecha como texto yyyy-MM-dd a propósito: así se puede
+   comparar y ordenar sin depender de la zona horaria. Para el TABLERO hay que
+   devolverla a ser una fecha de verdad; escribirla concatenada en texto es lo que
+   dejaba cuatro zonas diciendo "nunca se ha contado" con 633 líneas contadas. */
+function fechaDeTexto_(v) {
+  if (esFecha_(v)) { return v; }
+  var t = ('' + v).substring(0, 10).split('-');
+  if (t.length !== 3) { return ''; }
+  var d = new Date(parseInt(t[0], 10), parseInt(t[1], 10) - 1, parseInt(t[2], 10));
+  return isNaN(d.getTime()) ? '' : d;
+}
+
+function fechaATexto_(v) {
+  if (esFecha_(v)) {
+    return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return ('' + (v === null || v === undefined ? '' : v)).substring(0, 10);
+}
+
+function refrescarTablero_(ss) {
+  var sh = ss.getSheetByName(H.TABLERO);
+  var mae = leerTabla_(ss, H.MAESTRO, MAE_NCOL);
+  var cat = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var zon = leerTabla_(ss, H.ZONAS, ZON_NCOL);
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var diasAlerta = num_(cfg_(ss, 'DIAS_ALERTA_SIN_CONTEO')) || 10;
+
+  var i, valor = 0, agotados = 0, bajos = 0, contados = 0, sinPrecio = 0, valorizados = 0;
+  for (i = 0; i < mae.length; i++) {
+    if (txt_(mae[i][M_PROD - 1]) === '') { continue; }
+    contados++;
+    if (num_(mae[i][M_VALOR - 1]) > 0) { valor += num_(mae[i][M_VALOR - 1]); valorizados++; }
+    if (txt_(mae[i][M_ALERTA - 1]) === 'AGOTADO') { agotados++; }
+    if (txt_(mae[i][M_ALERTA - 1]) === 'BAJO MIN') { bajos++; }
+    if (num_(mae[i][M_COSTO - 1]) <= 0) { sinPrecio++; }
+  }
+  var skus = 0, conPrecio = 0;
+  for (i = 0; i < cat.length; i++) {
+    if (txt_(cat[i][K_PROD - 1]) === '') { continue; }
+    skus++;
+    if (num_(cat[i][K_PRECIO - 1]) > 0) { conPrecio++; }
+  }
+  var conteosDistintos = {}, nconteos = 0;
+  for (i = 0; i < bd.length; i++) {
+    if (txt_(bd[i][B_IDCON - 1]) === '' || txt_(bd[i][B_ESTADO - 1]) === 'REVERSADA') { continue; }
+    if (!conteosDistintos[txt_(bd[i][B_IDCON - 1])]) {
+      conteosDistintos[txt_(bd[i][B_IDCON - 1])] = 1; nconteos++;
+    }
+  }
+
+  sh.getRange(4, 1, sh.getMaxRows() - 3, 7).clearContent();
+  var out = [];
+  out.push(['', 'INDICADOR', 'VALOR', '', '', '', 'LECTURA']);
+  out.push(['', 'Valor del inventario', valor, '', '', '',
+            valorizados + ' de ' + contados + ' productos contados tienen precio cargado']);
+  out.push(['', 'Productos contados', contados, '', '', '', 'sobre ' + skus + ' del catálogo']);
+  out.push(['', 'AGOTADO', agotados, '', '', '', 'contados en cero en el último conteo']);
+  out.push(['', 'BAJO MÍNIMO', bajos, '', '', '', 'disparan pedido']);
+  out.push(['', 'Sin precio', sinPrecio, '', '', '', 'tapón para valorizar — ver hoja CATALOGO']);
+  out.push(['', 'Conteos en el libro mayor', nconteos, '', '', '', 'cada uno con folio, fecha y responsable']);
+  out.push(['', '', '', '', '', '', '']);
+  out.push(['', 'ZONA', 'CICLO', 'ÚLTIMO CONTEO', 'LÍNEAS', 'DÍAS', 'ESTADO']);
+  var hoy = new Date(), d, fTxt;
+  var nIndicadores = out.length;
+  for (i = 0; i < zon.length; i++) {
+    if (txt_(zon[i][Z_ZONA - 1]) === '') { continue; }
+    fTxt = fechaATexto_(zon[i][Z_ULTFECHA - 1]);
+    d = fTxt === '' ? '' : diasDesde_(fTxt, hoy);
+    out.push(['', txt_(zon[i][Z_ZONA - 1]),
+              txt_(zon[i][Z_CICLO - 1]) === 'M' ? 'mensual' : 'semanal',
+              fTxt === '' ? '— nunca —' : fechaDeTexto_(fTxt),
+              zon[i][Z_LINEAS - 1] || '',
+              d === '' ? '' : d,
+              d === '' ? '⚠ nunca se ha contado'
+                       : (d > diasAlerta ? '⚠ lleva ' + d + ' días sin contarse' : 'al día')]);
+  }
+  sh.getRange(4, 1, out.length, 7).setValues(out);
+  sh.getRange(4, 2, 1, 6).setFontWeight('bold').setBackground('#24503F').setFontColor('#FFFFFF');
+  sh.getRange(12, 2, 1, 6).setFontWeight('bold').setBackground('#24503F').setFontColor('#FFFFFF');
+  sh.getRange(5, 3, 1, 1).setNumberFormat('"$"#,##0');
+  if (out.length > nIndicadores) {
+    sh.getRange(4 + nIndicadores, 4, out.length - nIndicadores, 1).setNumberFormat('dd/MM/yyyy');
+  }
+}
+
+/* Productos cuyo último conteo vigente se hizo en una presentación distinta a la
+   que dice el catálogo. Es un aviso vivo: desaparece solo cuando el catálogo se
+   actualiza o cuando el producto se vuelve a contar en su presentación normal. */
+function desfasePresentacion_(ss) {
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var cat = indiceCatalogo_(ss);
+  /* En un producto de presentación VARIABLE el peso cambia en cada producción: no
+     hay nada que poner al día. Perseguir ese valor es lo que llevó al motor a
+     reescribir el catálogo 21 veces en dos minutos el 13 de septiembre. */
+  var ult = {}, i, p, f;
+  for (i = 0; i < bd.length; i++) {
+    if (!lineaCuenta_(bd[i])) { continue; }
+    p = txt_(bd[i][B_PROD - 1]);
+    if (p === '') { continue; }
+    f = txt_(bd[i][B_FECHA - 1]) + '|' + txt_(bd[i][B_TS - 1]);
+    if (!ult[p] || f > ult[p].orden) {
+      ult[p] = { orden: f, uni: txt_(bd[i][B_UNI - 1]), peso: num_(bd[i][B_PESO - 1]) };
+    }
+  }
+  var unidades = indiceUnidades_(ss);
+  var out = [], c, uniCat, pesoCat;
+  for (p in ult) {
+    if (!ult.hasOwnProperty(p)) { continue; }
+    c = cat[normalizar_(p)];
+    if (!c) { continue; }
+    /* una unidad heredada que ya no es válida no cuenta como desfase: eso lo
+       reporta INT-04, no este control */
+    if (ult[p].uni !== '' && !unidades[normalizar_(ult[p].uni)]) { continue; }
+    uniCat = txt_(c[K_UNI - 1]);
+    pesoCat = num_(c[K_PESO - 1]);
+    var esVar = normalizar_(c[K_PRES - 1]).substring(0, 4) === 'vari';
+    if (ult[p].uni !== '' && uniCat !== '' && normalizar_(ult[p].uni) !== normalizar_(uniCat)) {
+      out.push({ prod: p, uni: ult[p].uni, peso: ult[p].peso, uniCat: uniCat, pesoCat: pesoCat });
+      continue;
+    }
+    if (esVar) { continue; }
+    if (ult[p].peso > 0 && pesoCat > 0 && Math.abs(ult[p].peso - pesoCat) > 0.001) {
+      out.push({ prod: p, uni: ult[p].uni, peso: ult[p].peso, uniCat: uniCat, pesoCat: pesoCat });
+    }
+  }
+  return out;
+}
+
+function actualizarPresentacionesMenu() {
+  var ss = SpreadsheetApp.getActive();
+  var ui = SpreadsheetApp.getUi();
+  var lista = desfasePresentacion_(ss);
+  if (!lista.length) {
+    ui.alert('El catálogo ya está al día: ninguna presentación contada se aparta de la registrada.');
+    return;
+  }
+  var det = [], i;
+  for (i = 0; i < lista.length && i < 12; i++) {
+    det.push('· ' + lista[i].prod + ':  ' + lista[i].uniCat + ' de ' + redondear_(lista[i].pesoCat) +
+             '  →  ' + lista[i].uni + ' de ' + redondear_(lista[i].peso));
+  }
+  var conf = ui.alert('Actualizar presentaciones (' + lista.length + ')',
+    'Se cambiará en el CATÁLOGO la unidad y el peso por unidad de estos productos, dejando lo que ' +
+    'se contó de verdad la última vez:\n\n' + det.join('\n') +
+    (lista.length > 12 ? '\n…y ' + (lista.length - 12) + ' más.' : '') +
+    '\n\nNo se toca ninguna línea del libro mayor. ¿Continuar?', ui.ButtonSet.YES_NO);
+  if (conf !== ui.Button.YES) { return; }
+  var n = actualizarPresentaciones_(ss, lista);
+  recalcularTodo();
+  ui.alert('Catálogo actualizado: ' + n + ' productos.');
+}
+
+function actualizarPresentaciones_(ss, lista) {
+  var sh = ss.getSheetByName(H.CATALOGO);
+  var t = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var unidades = indiceUnidades_(ss);
+  var i, j, n = 0, clave = {};
+  for (i = 0; i < lista.length; i++) { clave[normalizar_(lista[i].prod)] = lista[i]; }
+  for (j = 0; j < t.length; j++) {
+    var k = normalizar_(t[j][K_PROD - 1]);
+    if (!clave[k]) { continue; }
+    var d = clave[k];
+    /* nunca se copia al catálogo una unidad que no esté en la lista: el histórico
+       migrado trae grafías viejas y una de ellas volvería a ensuciar el maestro */
+    if (d.uni !== '' && unidades[normalizar_(d.uni)]) {
+      sh.getRange(FILA_DATOS + j, K_UNI).setValue(unidades[normalizar_(d.uni)]);
+    }
+    if (d.peso > 0) { sh.getRange(FILA_DATOS + j, K_PESO).setValue(d.peso); }
+    bitacora_(ss, 'PRESENTACIÓN ACTUALIZADA', t[j][K_PROD - 1],
+      d.uniCat + ' de ' + redondear_(d.pesoCat) + ' → ' + d.uni + ' de ' + redondear_(d.peso));
+    n++;
+  }
+  return n;
+}
+
+/* Cuenta las filas de DUPLICADOS que todavía no tienen decisión escrita. */
+function pendientesDup_(ss) {
+  var sh = ss.getSheetByName(H.DUP);
+  if (!sh) { return 0; }
+  var ultima = sh.getLastRow();
+  if (ultima < 2) { return 0; }
+  var v = sh.getRange(1, 1, ultima, 4).getValues();
+  var i, n = 0, enBloque = false;
+  for (i = 0; i < v.length; i++) {
+    if (txt_(v[i][0]).indexOf('PENDIENTES') === 0) { enBloque = true; continue; }
+    if (!enBloque) { continue; }
+    if (txt_(v[i][0]) === '' || txt_(v[i][0]) === 'PRODUCTO A') { continue; }
+    if (txt_(v[i][1]) === '') { continue; }
+    if (txt_(v[i][3]) === '') { n++; }
+  }
+  return n;
+}
+
+function refrescarDiagnostico_(ss) {
+  var sh = ss.getSheetByName(H.DIAG);
+  var cat = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var ubi = leerTabla_(ss, H.UBIC, UBI_NCOL);
+  var mae = leerTabla_(ss, H.MAESTRO, MAE_NCOL);
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var zon = leerTabla_(ss, H.ZONAS, ZON_NCOL);
+
+  var claves = {}, i, p, n;
+  var dupCat = 0, sinUM = 0, sinPeso = 0, sinCateg = 0, sinPrecio = 0, altas = 0, skus = 0;
+  for (i = 0; i < cat.length; i++) {
+    p = txt_(cat[i][K_PROD - 1]);
+    if (p === '') { continue; }
+    skus++;
+    n = normalizar_(p);
+    if (claves[n]) { dupCat++; } else { claves[n] = 1; }
+    if (txt_(cat[i][K_UM - 1]) === '') { sinUM++; }
+    if (txt_(cat[i][K_CATEG - 1]) === '') { sinCateg++; }
+    if (num_(cat[i][K_PESO - 1]) <= 0 && txt_(cat[i][K_UM - 1]) !== 'un') { sinPeso++; }
+    if (num_(cat[i][K_PRECIO - 1]) <= 0) { sinPrecio++; }
+    if (txt_(cat[i][K_NOTAS - 1]).substring(0, 4) === 'ALTA') { altas++; }
+  }
+  var ubiFuera = 0, ubiActivas = 0, enZona = {};
+  for (i = 0; i < ubi.length; i++) {
+    if (txt_(ubi[i][U_PROD - 1]) === '') { continue; }
+    /* Una ubicación desactivada no entra a ningún conteo: es una línea archivada,
+       no un defecto. Los controles miran lo que de verdad opera. */
+    if (normalizar_(ubi[i][U_ACTIVO - 1]) !== 'no' &&
+        !claves[normalizar_(ubi[i][U_PROD - 1])]) { ubiFuera++; }
+    if (normalizar_(ubi[i][U_ACTIVO - 1]) !== 'no') {
+      ubiActivas++;
+      enZona[normalizar_(ubi[i][U_PROD - 1])] = 1;
+    }
+  }
+  var sinZona = 0;
+  for (i = 0; i < cat.length; i++) {
+    p = txt_(cat[i][K_PROD - 1]);
+    if (p === '') { continue; }
+    if (!enZona[normalizar_(p)] && normalizar_(cat[i][K_ACTIVO - 1]) !== 'no') { sinZona++; }
+  }
+  var bdFuera = 0, forzados = 0, reversadas = 0, estimadas = 0;
+  for (i = 0; i < bd.length; i++) {
+    if (txt_(bd[i][B_PROD - 1]) === '') { continue; }
+    if (txt_(bd[i][B_ESTADO - 1]) === 'REVERSADA') { reversadas++; continue; }
+    if (!claves[normalizar_(bd[i][B_PROD - 1])]) { bdFuera++; }
+    if (txt_(bd[i][B_OVER - 1]) !== '') { forzados++; }
+    /* "NO" escrito es una respuesta, no una marca: solo cuenta lo afirmativo. */
+    if (normalizar_(bd[i][B_FESTIM - 1]).substring(0, 1) === 's') { estimadas++; }
+  }
+  var zonasSinContar = 0;
+  for (i = 0; i < zon.length; i++) {
+    if (txt_(zon[i][Z_ZONA - 1]) === '') { continue; }
+    if (txt_(zon[i][Z_ULTFECHA - 1]) === '') { zonasSinContar++; }
+  }
+  var contadosSinPrecio = 0;
+  for (i = 0; i < mae.length; i++) {
+    if (txt_(mae[i][M_PROD - 1]) === '') { continue; }
+    if (num_(mae[i][M_COSTO - 1]) <= 0) { contadosSinPrecio++; }
+  }
+
+  var catIncompleto = 0, b2, m2, c2;
+  for (i = 0; i < cat.length; i++) {
+    b2 = txt_(cat[i][K_BASE - 1]);
+    m2 = txt_(cat[i][K_MARCA - 1]);
+    c2 = txt_(cat[i][K_PROD - 1]);
+    if (b2 === '' && c2 === '') { continue; }
+    if (c2 === '' || (b2 !== '' && c2 !== txt_(m2 === '' ? b2 : b2 + ' ' + m2))) { catIncompleto++; continue; }
+    if (txt_(cat[i][K_ACTIVO - 1]) === '') { catIncompleto++; }
+  }
+
+  var zonasOk = {}, ubiZonaMala = 0;
+  for (i = 0; i < zon.length; i++) {
+    if (txt_(zon[i][Z_ZONA - 1]) !== '') { zonasOk[normalizar_(zon[i][Z_ZONA - 1])] = 1; }
+  }
+  for (i = 0; i < ubi.length; i++) {
+    if (txt_(ubi[i][U_ZONA - 1]) === '') { continue; }
+    if (normalizar_(ubi[i][U_ACTIVO - 1]) === 'no') { continue; }
+    if (!zonasOk[normalizar_(ubi[i][U_ZONA - 1])]) { ubiZonaMala++; }
+  }
+
+  var copiasCaptura = 0;
+  var hojas = ss.getSheets();
+  for (i = 0; i < hojas.length; i++) {
+    var nh = normalizar_(hojas[i].getName());
+    if (nh !== normalizar_(H.CAPTURA) && nh.indexOf('captura') >= 0) { copiasCaptura++; }
+  }
+
+  var porCompletar = 0;
+  var shPC = ss.getSheetByName(H.PORCOMP);
+  if (shPC) {
+    var ultPC = ultimaFila_(shPC, P_PROD);
+    if (ultPC >= FILA_DATOS) {
+      var tpc = shPC.getRange(FILA_DATOS, 1, ultPC - FILA_DATOS + 1, PORC_NCOL).getValues();
+      for (i = 0; i < tpc.length; i++) {
+        if (txt_(tpc[i][P_PROD - 1]) === '') { continue; }
+        if (txt_(tpc[i][P_FALTA - 1]).indexOf('✔') === 0) { continue; }
+        porCompletar++;
+      }
+    }
+  }
+
+  var conteosAbiertos = 0, detalleAbiertos = [];
+  try {
+    var ha = hojasDeConteo_(ss);
+    conteosAbiertos = ha.length;
+    for (i = 0; i < ha.length; i++) { detalleAbiertos.push(ha[i].getName()); }
+  } catch (eA) {}
+
+  var presPropuesta = 0, sinPres = 0, conSobrante = 0;
+  for (i = 0; i < cat.length; i++) {
+    if (txt_(cat[i][K_PROD - 1]) === '') { continue; }
+    if (normalizar_(cat[i][K_ACTIVO - 1]) === 'no') { continue; }
+    if (txt_(cat[i][K_PRES - 1]) === '') { sinPres++; }
+    if (txt_(cat[i][K_NOTAS - 1]).indexOf(MARCA_PROPUESTA) >= 0) { presPropuesta++; }
+  }
+  for (i = 0; i < bd.length; i++) {
+    if (txt_(bd[i][B_ESTADO - 1]) === 'REVERSADA') { continue; }
+    if (num_(bd[i][B_SOBRA - 1]) > 0) { conSobrante++; }
+  }
+
+  var C = [
+    ['INT-01', 'Líneas del libro mayor cuyo producto ya no existe en el CATÁLOGO.', bdFuera,
+     'Restituya el producto en el catálogo o reverse esas líneas. Nunca borre del libro mayor.'],
+    ['INT-02', 'Productos repetidos en el CATÁLOGO (misma clave).', dupCat,
+     'Fusione las dos filas: conserve la que tiene CÓDIGO POS.'],
+    ['INT-03', 'Ubicaciones que apuntan a un producto inexistente.', ubiFuera,
+     'Corrija el nombre en CAT_UBICACION con la lista desplegable.'],
+    ['INT-04', 'Productos sin UM BASE (g, ml o un).', sinUM,
+     'Sin UM base no hay costo por gramo ni valorización.'],
+    ['INT-05', 'Productos que se controlan por peso y no tienen PESO/VOL C/U.', sinPeso,
+     'Pese una unidad y escríbalo en el catálogo, o cambie la UM base a "un".'],
+    ['INT-06', 'Productos contados que no tienen precio cargado.', contadosSinPrecio,
+     'Es el tapón para valorizar. CATALOGO → PRECIO COMPRA y CANT. COMPRA.'],
+    ['INT-07', 'Productos sin CATEGORÍA.', sinCateg,
+     'Sin categoría el motor no sabe si se costea por factura o por receta.'],
+    ['INT-08', 'Altas creadas desde el conteo que nadie ha validado.', altas,
+     'Revíselas en SANEAMIENTO: confirme nombre, código POS y categoría.'],
+    ['INT-09', 'Zonas que nunca se han contado.', zonasSinContar,
+     'Programe el primer conteo o marque la zona ACTIVO = No en CAT_ZONAS.'],
+    ['INT-10', 'Productos activos que no están ubicados en ninguna zona.', sinZona,
+     'Ubíquelos en CAT_UBICACION o márquelos inactivos: un catálogo con productos muertos alarga cada conteo.'],
+    ['INT-11', 'Líneas guardadas con el control de coherencia forzado.', forzados,
+     'Revise el motivo en la columna MOTIVO del libro mayor. No es un error: es una decisión firmada.'],
+    ['INT-12', 'Líneas con fecha estimada (histórico migrado sin fecha propia).', estimadas,
+     'Control informativo: no puede llegar a cero, corresponde a los conteos de agosto que se guardaban sin fechar.'],
+    ['INT-13', 'Líneas reversadas.', reversadas,
+     'Informativo. Cada reversa tiene su motivo en la BITÁCORA.'],
+    ['INT-14', 'Nombres parecidos esperando decisión en la hoja DUPLICADOS.', pendientesDup_(ss),
+     'Decida en cada fila si son el mismo producto. Si lo son, use el menú → Fusionar dos productos.'],
+    ['INT-15', 'Productos que se contaron en una presentación distinta a la del catálogo.',
+     desfasePresentacion_(ss).length,
+     'El conteo quedó bien guardado con lo que de verdad había. Lo que falta es poner el catálogo ' +
+     'al día: menú → Actualizar el catálogo con la última presentación contada.'],
+    ['INT-16', 'Filas del catálogo incompletas: sin clave armada o sin ACTIVO.', catIncompleto,
+     'Pasa cuando se escribe un producto a mano en la hoja. Use la hoja ALTA_PRODUCTO, o corra ' +
+     'menú → Aplicar parche 02 para completarlas.'],
+    ['INT-17', 'Ubicaciones que apuntan a una zona que no existe en CAT_ZONAS.', ubiZonaMala,
+     'Esa línea no aparece en ningún conteo. Corrija la zona con la lista, o cree la zona.'],
+    ['INT-18', 'Copias sueltas de la hoja de conteo (pestañas tipo "Copia de CAPTURA").', copiasCaptura,
+     'El motor solo lee CAPTURA. Contar en una copia es trabajo que no entra al libro mayor: ' +
+     'bórrela cuando ya no la necesite.'],
+    ['INT-19', 'Presentaciones que el motor propuso y nadie ha validado.', presPropuesta,
+     'En CATALOGO, columna PRESENTACIÓN: confirme ESTÁNDAR si el empaque se repite siempre igual, ' +
+     'VARIABLE si cambia y hay que pesarlo. Tocar la celda ya cuenta como validarla.'],
+    ['INT-20', 'Productos activos sin PRESENTACIÓN definida.', sinPres,
+     'Sin eso el conteo no sabe si el peso llega precargado o hay que pesarlo en el momento.'],
+    ['INT-21', 'Líneas guardadas con sobrante (unidad incompleta).', conSobrante,
+     'Informativo: es el peso que antes se perdía escrito a mano en la columna NOTA.'],
+    ['INT-23', 'Conteos abiertos sin cerrar.' +
+     (detalleAbiertos.length ? ' Hojas: ' + detalleAbiertos.join(', ') + '.' : ''), conteosAbiertos,
+     'No es un error: una hoja abierta es un conteo en curso. Pero una que lleva días abierta es ' +
+     'trabajo digitado que todavía no está en el libro mayor. Ciérrela o reviérsela.'],
+    ['INT-22', 'Productos esperando en POR_COMPLETAR que cocina diga dónde viven o cómo se cuentan.',
+     porCompletar,
+     'Son los que el motor no puede resolver con evidencia. Escriba zona, unidad y peso en esa hoja ' +
+     'y use menú → Aplicar lo escrito en POR_COMPLETAR. Mientras falte la zona, el producto no ' +
+     'aparece en ningún conteo.']
+  ];
+  sh.getRange(FILA_DATOS, 1, sh.getMaxRows() - FILA_DATOS + 1, 5).clearContent();
+  var out = [];
+  for (i = 0; i < C.length; i++) {
+    out.push([C[i][0], C[i][1], C[i][2],
+              ((i >= 10 && i <= 12) || C[i][0] === 'INT-21' || C[i][0] === 'INT-23' ? '—' : 0),
+              C[i][3]]);
+  }
+  sh.getRange(FILA_DATOS, 1, out.length, 5).setValues(out);
+  var rng = sh.getRange(FILA_DATOS, 3, out.length, 1);
+  var fondos = [], j;
+  for (j = 0; j < out.length; j++) {
+    if (out[j][3] === '—') { fondos.push([COLOR_GRIS]); }
+    else { fondos.push([out[j][2] > 0 ? COLOR_ROJO : COLOR_VERDE]); }
+  }
+  rng.setBackgrounds(fondos);
+}
+
+
+/* ==========================================================================
+ * 6b · HISTORIAL DE CONTEOS Y HOJA "POR COMPLETAR"
+ * ========================================================================== */
+
+/* Índice del libro mayor: un renglón por conteo cerrado. Sin esto, saber qué se
+   contó y cuándo obliga a filtrar dos mil líneas, que es justo lo que nadie hace. */
+function refrescarHistorial_(ss) {
+  var sh = ss.getSheetByName(H.HIST);
+  if (!sh) { return 0; }
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var mapa = {}, orden = [], i, f, d, um, tot;
+  for (i = 0; i < bd.length; i++) {
+    f = txt_(bd[i][B_IDCON - 1]);
+    if (f === '') { continue; }
+    if (txt_(bd[i][B_ESTADO - 1]) === 'REVERSADA') { continue; }
+    if (!mapa[f]) {
+      mapa[f] = { folio: f, fecha: fechaATexto_(bd[i][B_FECHA - 1]), ciclo: txt_(bd[i][B_CICLO - 1]),
+                  zona: txt_(bd[i][B_ZONA - 1]), resp: txt_(bd[i][B_RESP - 1]),
+                  lin: 0, g: 0, ml: 0, un: 0, sobra: 0, valor: 0, val: 0,
+                  origen: txt_(bd[i][B_MOTIVO - 1]) };
+      orden.push(f);
+    }
+    d = mapa[f];
+    d.lin++;
+    um = txt_(bd[i][B_UM - 1]);
+    tot = num_(bd[i][B_TOTAL - 1]);
+    if (um === 'g') { d.g += tot; } else if (um === 'ml') { d.ml += tot; } else { d.un += tot; }
+    d.sobra += num_(bd[i][B_SOBRA - 1]);
+    if (num_(bd[i][B_VALOR - 1]) > 0) { d.valor += num_(bd[i][B_VALOR - 1]); d.val++; }
+  }
+  orden.sort(function (a, b) {
+    if (mapa[a].fecha !== mapa[b].fecha) { return mapa[a].fecha < mapa[b].fecha ? -1 : 1; }
+    return mapa[a].zona < mapa[b].zona ? -1 : 1;
+  });
+  var libres = sh.getMaxRows() - FILA_DATOS + 1;
+  if (libres > 0) { sh.getRange(FILA_DATOS, 1, libres, HIST_NCOL).clearContent(); }
+  var out = [];
+  for (i = 0; i < orden.length; i++) {
+    d = mapa[orden[i]];
+    out.push([d.folio, fechaDeTexto_(d.fecha), d.ciclo === 'M' ? 'mensual' : 'semanal',
+              d.zona, d.resp, d.lin, redondear_(d.g), redondear_(d.ml), redondear_(d.un),
+              d.sobra > 0 ? redondear_(d.sobra) : '', d.valor > 0 ? Math.round(d.valor) : '',
+              (d.origen.indexOf('Rescate') === 0 ? 'rescatado del archivo anterior'
+                                                 : 'conteo cerrado desde la pantalla') +
+              (d.val ? ' · valorizadas ' + d.val + ' de ' + d.lin : ' · sin precios todavía')]);
+  }
+  if (out.length) {
+    sh.getRange(FILA_DATOS, 1, out.length, HIST_NCOL).setValues(out);
+    sh.getRange(FILA_DATOS, T_FECHA, out.length, 1).setNumberFormat('dd/MM/yyyy');
+    sh.getRange(FILA_DATOS, T_VALOR, out.length, 1).setNumberFormat('"$"#,##0');
+  }
+  return out.length;
+}
+
+/* Lleva al catálogo lo que cocina escribió en POR_COMPLETAR. El motor no rellena
+   nada por su cuenta: solo recoge lo que una persona decidió, y únicamente de los
+   renglones donde ya hay algo escrito. Los que siguen vacíos se quedan. */
+function aplicarPorCompletar_(ss) {
+  var sh = ss.getSheetByName(H.PORCOMP);
+  if (!sh) { return { productos: 0, datos: 0, ubicados: 0 }; }
+  var ultima = ultimaFila_(sh, P_PROD);
+  if (ultima < FILA_DATOS) { return { productos: 0, datos: 0, ubicados: 0 }; }
+  var t = sh.getRange(FILA_DATOS, 1, ultima - FILA_DATOS + 1, PORC_NCOL).getValues();
+  var cat = ss.getSheetByName(H.CATALOGO);
+  var tc = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var filaDe = {}, i;
+  for (i = 0; i < tc.length; i++) {
+    if (txt_(tc[i][K_PROD - 1]) !== '') { filaDe[normalizar_(tc[i][K_PROD - 1])] = FILA_DATOS + i; }
+  }
+  var zonas = indiceZonas_(ss);
+  var unidades = indiceUnidades_(ss);
+  var ubi = ss.getSheetByName(H.UBIC);
+  var tu = leerTabla_(ss, H.UBIC, UBI_NCOL);
+  var yaUbicado = {}, ordenMax = {}, z;
+  for (i = 0; i < tu.length; i++) {
+    if (txt_(tu[i][U_PROD - 1]) === '') { continue; }
+    if (normalizar_(tu[i][U_ACTIVO - 1]) !== 'no') {
+      yaUbicado[normalizar_(tu[i][U_PROD - 1])] = 1;
+    }
+    z = normalizar_(tu[i][U_ZONA - 1]);
+    if (num_(tu[i][U_ORDEN - 1]) > (ordenMax[z] || 0)) { ordenMax[z] = num_(tu[i][U_ORDEN - 1]); }
+  }
+  var nProd = 0, nDatos = 0, nUbic = 0, tocados = [], k, fila, clave, cambio;
+  for (i = 0; i < t.length; i++) {
+    clave = txt_(t[i][P_PROD - 1]);
+    if (clave === '') { continue; }
+    k = normalizar_(clave);
+    fila = filaDe[k];
+    if (!fila) { continue; }
+    cambio = [];
+    var um = normalizar_(t[i][P_UM - 1]);
+    if ((um === 'g' || um === 'ml' || um === 'un') && txt_(cat.getRange(fila, K_UM).getValue()) !== um) {
+      cat.getRange(fila, K_UM).setValue(um);
+      cambio.push('UM base ' + um);
+    }
+    var uni = txt_(t[i][P_UNI - 1]);
+    if (uni !== '' && unidades[normalizar_(uni)] &&
+        normalizar_(cat.getRange(fila, K_UNI).getValue()) !== normalizar_(uni)) {
+      cat.getRange(fila, K_UNI).setValue(unidades[normalizar_(uni)]);
+      cambio.push('unidad ' + unidades[normalizar_(uni)]);
+    }
+    var peso = num_(t[i][P_PESO - 1]);
+    if (peso > 0 && num_(cat.getRange(fila, K_PESO).getValue()) !== peso) {
+      cat.getRange(fila, K_PESO).setValue(peso);
+      cambio.push('peso ' + redondear_(peso));
+    }
+    var minimo = num_(t[i][P_MIN - 1]);
+    if (minimo > 0 && num_(cat.getRange(fila, K_MIN).getValue()) !== minimo) {
+      cat.getRange(fila, K_MIN).setValue(minimo);
+      cambio.push('mínimo ' + redondear_(minimo));
+    }
+    var zona = txt_(t[i][P_ZONA - 1]);
+    if (zona !== '' && zonas[normalizar_(zona)] && !yaUbicado[k]) {
+      var zz = normalizar_(zona);
+      var fu = ultimaFila_(ubi, U_PROD) + 1;
+      if (fu < FILA_DATOS) { fu = FILA_DATOS; }
+      ubi.getRange(fu, U_PROD, 1, 5).setValues([[
+        clave, txt_(zonas[zz][Z_ZONA - 1]), (ordenMax[zz] || 0) + 10,
+        minimo > 0 ? minimo : '', 'Sí']]);
+      ordenMax[zz] = (ordenMax[zz] || 0) + 10;
+      yaUbicado[k] = 1;
+      cambio.push('ubicado en ' + txt_(zonas[zz][Z_ZONA - 1]));
+      nUbic++;
+    }
+    if (cambio.length) {
+      nProd++;
+      nDatos += cambio.length;
+      tocados.push(clave + ': ' + cambio.join(', '));
+      sh.getRange(FILA_DATOS + i, P_FALTA).setValue('✔ aplicado ' +
+        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'));
+    }
+  }
+  if (nProd) {
+    bitacora_(ss, 'POR COMPLETAR APLICADO', nProd + ' producto(s)',
+      nDatos + ' dato(s) llevados al catálogo · ' + nUbic + ' ubicación(es) nueva(s) · ' +
+      tocados.slice(0, 12).join(' | ') + (tocados.length > 12 ? ' …' : ''));
+    pasoSeguro_([], 'validaciones', function () { return aplicarValidaciones_(ss); });
+  }
+  return { productos: nProd, datos: nDatos, ubicados: nUbic };
+}
+
+function aplicarPorCompletarMenu() {
+  var ss = SpreadsheetApp.getActive();
+  var r = aplicarPorCompletar_(ss);
+  if (!r.productos) {
+    mostrar_('Nada que aplicar',
+      'No hay ningún renglón nuevo con dato escrito en POR_COMPLETAR.\n\n' +
+      'Escriba la zona, la unidad de conteo o el peso en esa hoja y vuelva a ejecutarlo.');
+    return;
+  }
+  recalcularTodo();
+  mostrar_('Catálogo completado',
+    r.datos + ' dato(s) llevados al catálogo en ' + r.productos + ' producto(s).\n' +
+    r.ubicados + ' producto(s) quedaron ubicados y ya entran en el conteo de su zona.');
+}
+
+/* ==========================================================================
+ * 7 · ACCIONES DE MENÚ (solo computador)
+ * ========================================================================== */
+
+function reversarConteoMenu() {
+  var ss = SpreadsheetApp.getActive();
+  var ui = SpreadsheetApp.getUi();
+  var r1 = ui.prompt('Reversar un conteo',
+    'Escriba el folio completo a reversar (ejemplo INV-S-20260904-ALA).\n' +
+    'La línea original NO se borra: queda marcada REVERSADA.', ui.ButtonSet.OK_CANCEL);
+  if (r1.getSelectedButton() !== ui.Button.OK) { return; }
+  var folio = txt_(r1.getResponseText());
+  if (folio === '') { return; }
+  var minMot = num_(cfg_(ss, 'MOTIVO_MIN_CARACTERES')) || 15;
+  var r2 = ui.prompt('Motivo de la reversa',
+    'Explique por qué se reversa (mínimo ' + minMot + ' caracteres).', ui.ButtonSet.OK_CANCEL);
+  if (r2.getSelectedButton() !== ui.Button.OK) { return; }
+  var motivo = txt_(r2.getResponseText());
+  if (motivo.length < minMot) {
+    ui.alert('El motivo es obligatorio y debe tener al menos ' + minMot + ' caracteres.');
+    return;
+  }
+  var n = reversar_(ss, folio, motivo);
+  if (n === 0) {
+    ui.alert('No se encontró ninguna línea vigente con el folio ' + folio + '.');
+    return;
+  }
+  recalcularTodo();
+  ui.alert('Reversadas ' + n + ' líneas del conteo ' + folio + '. Ya puede volver a contar esa zona.');
+}
+
+function reversar_(ss, folio, motivo) {
+  var sh = ss.getSheetByName(H.BD);
+  var t = leerTabla_(ss, H.BD, BD_NCOL);
+  var ts = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  var i, n = 0, fila;
+  for (i = 0; i < t.length; i++) {
+    if (txt_(t[i][B_IDCON - 1]) !== folio) { continue; }
+    if (txt_(t[i][B_ESTADO - 1]) === 'REVERSADA') { continue; }
+    fila = FILA_DATOS + i;
+    sh.getRange(fila, B_ESTADO).setValue('REVERSADA');
+    sh.getRange(fila, B_MOTIVO).setValue(motivo);
+    sh.getRange(fila, B_REFREV).setValue(usuario_() + ' ' + ts);
+    n++;
+  }
+  if (n) { bitacora_(ss, 'REVERSA', folio, n + ' líneas · ' + motivo); }
+  return n;
+}
+
+/* ==========================================================================
+ * 7c \u00b7 ALTA DE PRODUCTOS
+ * ========================================================================== */
+
+function abrirAltaProducto() {
+  var ss = SpreadsheetApp.getActive();
+  construirAltaProducto_(ss);
+  ss.getSheetByName(H.ALTA).activate();
+}
+
+function construirAltaProducto_(ss) {
+  var sh = ss.getSheetByName(H.ALTA);
+  var nueva = false;
+  if (!sh) { sh = ss.insertSheet(H.ALTA); nueva = true; }
+
+  sh.getRange('A1').setValue('ALTA Y BAJA DE PRODUCTO')
+    .setFontSize(15).setFontWeight('bold').setFontColor('#15332F');
+  if (txt_(sh.getRange(ALTA_AVISO).getValue()) === '') {
+    sh.getRange(ALTA_AVISO).setValue('Llene los campos y marque EJECUTAR. Toda alta y toda baja '
+      + 'queda firmada en la BIT\u00c1CORA con el correo de quien la hizo. Un producto con l\u00edneas en el '
+      + 'libro mayor no se borra: se da de baja, y los conteos viejos se siguen leyendo.')
+      .setBackground(COLOR_AMBAR);
+  }
+  var etiquetas = [
+    ['A4', 'MODO'], ['A5', 'PRODUCTO BASE'], ['A6', 'MARCA / PRESENTACI\u00d3N'],
+    ['A7', 'CATEGOR\u00cdA'], ['A8', 'UM BASE (g / ml / un)'], ['A9', 'UNIDAD DE CONTEO'],
+    ['A10', 'PESO C/U'], ['A11', 'PRESENTACI\u00d3N'], ['A12', 'ZONA DONDE SE GUARDA'],
+    ['A13', 'M\u00cdNIMO'], ['A14', 'PRODUCTO A DAR DE BAJA'], ['A15', 'MOTIVO'],
+    ['A17', 'EJECUTAR'], ['A18', 'CREAR AUNQUE SE PAREZCA A OTRO']
+  ];
+  var i;
+  for (i = 0; i < etiquetas.length; i++) {
+    sh.getRange(etiquetas[i][0]).setValue(etiquetas[i][1])
+      .setFontWeight('bold').setFontColor('#24503F').setHorizontalAlignment('right');
+  }
+  var campos = [ALTA_MODO, ALTA_BASE, ALTA_MARCA, ALTA_CATEG, ALTA_UM, ALTA_UNIDAD, ALTA_PESO,
+                ALTA_PRES, ALTA_ZONA, ALTA_MIN, ALTA_BAJA, ALTA_MOTIVO];
+  for (i = 0; i < campos.length; i++) {
+    sh.getRange(campos[i]).setBackground(COLOR_BLANCO).setFontColor('#0B3C8C').setFontWeight('bold');
+  }
+  sh.getRange(ALTA_CREAR).insertCheckboxes().uncheck();
+  sh.getRange(ALTA_FORZAR).insertCheckboxes().uncheck();
+  if (txt_(sh.getRange(ALTA_MODO).getValue()) === '') {
+    sh.getRange(ALTA_MODO).setValue('CREAR PRODUCTO');
+  }
+  sh.getRange(ALTA_MODO).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['CREAR PRODUCTO', 'DAR DE BAJA'], true)
+      .setAllowInvalid(false).build());
+  sh.getRange(ALTA_PRES).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList([PRES_EST, PRES_VAR], true)
+      .setAllowInvalid(false)
+      .setHelpText('ESTÁNDAR si el empaque se repite siempre igual y el peso puede vivir en el ' +
+                   'catálogo; VARIABLE si cambia en cada compra o producción y hay que pesarlo.')
+      .build());
+  sh.getRange('C15').setValue('Obligatorio para la baja. Mínimo 15 caracteres.')
+    .setFontStyle('italic').setFontColor('#6B6862');
+  sh.getRange('A20').setValue('\u00daLTIMAS ALTAS Y BAJAS').setFontWeight('bold').setFontColor('#15332F');
+  sh.getRange(ALTA_HIST, 1, 1, 4)
+    .setValues([['FECHA', 'ACCI\u00d3N', 'PRODUCTO', 'QUI\u00c9N']])
+    .setFontWeight('bold').setFontColor('#FFFFFF').setBackground('#24503F');
+  try {
+    sh.setColumnWidth(1, 210); sh.setColumnWidth(2, 300);
+    sh.setColumnWidth(3, 200); sh.setColumnWidth(4, 200);
+    sh.setHiddenGridlines(true);
+    sh.setFrozenRows(2);
+  } catch (e) {}
+  if (nueva) { bitacora_(ss, 'HOJA CREADA', H.ALTA, 'alta de productos desde iPad'); }
+  return nueva ? 'creada' : 'refrescada';
+}
+
+/* Quién puede crear o dar de baja un producto. Vacío en CONFIG significa que
+   cualquiera puede —y de todos modos queda el registro, que es lo que se pidió—.
+   Con correos escritos, solo esos. El correo de cocina va ahí. */
+function autorizadoParaAlta_(ss) {
+  var lista = txt_(cfg_(ss, 'CORREOS_ALTA'));
+  if (lista === '') { return true; }
+  var yo = normalizar_(usuario_());
+  var partes = lista.split(','), i;
+  for (i = 0; i < partes.length; i++) {
+    if (normalizar_(partes[i]) === yo && yo !== '') { return true; }
+  }
+  return false;
+}
+
+function exigirAutorizacion_(ss, accion) {
+  if (autorizadoParaAlta_(ss)) { return; }
+  throw new Error('Este correo (' + usuario_() + ') no está autorizado para ' + accion +
+    ' un producto.\n\nLos correos autorizados se escriben en CONFIG → CORREOS_ALTA. ' +
+    'Pídale al administrador que agregue el suyo, o haga la novedad desde el correo de cocina.');
+}
+
+function altaDesdeHoja_(ss) {
+  var sh = ss.getSheetByName(H.ALTA);
+  var modo = normalizar_(sh.getRange(ALTA_MODO).getValue());
+  if (modo.indexOf('baja') >= 0) { return bajaDesdeHoja_(ss, sh); }
+
+  exigirAutorizacion_(ss, 'crear');
+  var d = {
+    base: txt_(sh.getRange(ALTA_BASE).getValue()),
+    marca: txt_(sh.getRange(ALTA_MARCA).getValue()),
+    categoria: txt_(sh.getRange(ALTA_CATEG).getValue()),
+    um: normalizar_(sh.getRange(ALTA_UM).getValue()),
+    unidad: txt_(sh.getRange(ALTA_UNIDAD).getValue()),
+    peso: num_(sh.getRange(ALTA_PESO).getValue()),
+    pres: txt_(sh.getRange(ALTA_PRES).getValue()),
+    zona: txt_(sh.getRange(ALTA_ZONA).getValue()),
+    minimo: num_(sh.getRange(ALTA_MIN).getValue()),
+    forzar: sh.getRange(ALTA_FORZAR).getValue() === true
+  };
+  var r = crearProducto_(ss, d);
+
+  sh.getRange(ALTA_BASE).clearContent();
+  sh.getRange(ALTA_MARCA).clearContent();
+  sh.getRange(ALTA_PESO).clearContent();
+  sh.getRange(ALTA_MIN).clearContent();
+  sh.getRange(ALTA_CREAR).uncheck();
+  sh.getRange(ALTA_FORZAR).uncheck();
+
+  historialAlta_(sh, 'ALTA', r.clave + (r.zona === '' ? ' — sin ubicar' : ' — ' + r.zona));
+  sh.getRange(ALTA_AVISO)
+    .setValue('\u2714 Creado "' + r.clave + '"' +
+      (r.zona === '' ? '. Falta ubicarlo en una zona para que aparezca en el conteo.'
+                     : ' y ubicado en ' + r.zona + '. Ya aparece en la lista del conteo.') +
+      ' Quedó firmado en la BITÁCORA con su correo.')
+    .setBackground(COLOR_VERDE);
+  SpreadsheetApp.flush();
+  return r;
+}
+
+/* Un producto con líneas en el libro mayor no se borra: se da de baja. Borrarlo
+   dejaría los conteos viejos apuntando a un nombre que ya no existe, y el control
+   INT-01 pasaría de cero a tantas líneas como ese producto tuviera. */
+function bajaDesdeHoja_(ss, sh) {
+  exigirAutorizacion_(ss, 'dar de baja');
+  var clave = txt_(sh.getRange(ALTA_BAJA).getValue());
+  var motivo = txt_(sh.getRange(ALTA_MOTIVO).getValue());
+  var minMot = num_(cfg_(ss, 'MOTIVO_MIN_CARACTERES')) || 15;
+  if (clave === '') {
+    throw new Error('Elija en PRODUCTO A DAR DE BAJA cuál se da de baja.');
+  }
+  if (motivo.length < minMot) {
+    throw new Error('Escriba el MOTIVO de la baja (mínimo ' + minMot + ' caracteres). ' +
+      'Una baja sin motivo no se puede defender ante Gerencia dentro de tres meses.');
+  }
+  var cat = ss.getSheetByName(H.CATALOGO);
+  var t = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var i, fila = 0;
+  for (i = 0; i < t.length; i++) {
+    if (normalizar_(t[i][K_PROD - 1]) === normalizar_(clave)) { fila = FILA_DATOS + i; break; }
+  }
+  if (!fila) { throw new Error('"' + clave + '" no está en el CATÁLOGO.'); }
+  if (normalizar_(cat.getRange(fila, K_ACTIVO).getValue()) === 'no') {
+    throw new Error('"' + clave + '" ya estaba dado de baja.');
+  }
+
+  var bd = leerTabla_(ss, H.BD, BD_NCOL), nlineas = 0;
+  for (i = 0; i < bd.length; i++) {
+    if (normalizar_(bd[i][B_PROD - 1]) === normalizar_(clave)) { nlineas++; }
+  }
+
+  cat.getRange(fila, K_ACTIVO).setValue('No');
+  cat.getRange(fila, K_NOTAS).setValue(
+    txt_(cat.getRange(fila, K_NOTAS).getValue()) +
+    (txt_(cat.getRange(fila, K_NOTAS).getValue()) === '' ? '' : ' · ') +
+    'BAJA ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd') +
+    ' por ' + usuario_() + ': ' + motivo);
+
+  /* también sale de las zonas: si no, sigue apareciendo en cada conteo */
+  var ubi = ss.getSheetByName(H.UBIC);
+  var tu = leerTabla_(ss, H.UBIC, UBI_NCOL), nz = 0;
+  for (i = 0; i < tu.length; i++) {
+    if (normalizar_(tu[i][U_PROD - 1]) !== normalizar_(clave)) { continue; }
+    ubi.getRange(FILA_DATOS + i, U_ACTIVO).setValue('No');
+    nz++;
+  }
+
+  bitacora_(ss, 'BAJA PRODUCTO', clave,
+    'ACTIVO = No · ' + nz + ' ubicación(es) desactivada(s) · ' + nlineas +
+    ' línea(s) del libro mayor se conservan intactas · motivo: ' + motivo);
+  pasoSeguro_([], 'validaciones', function () { return aplicarValidaciones_(ss); });
+
+  sh.getRange(ALTA_BAJA).clearContent();
+  sh.getRange(ALTA_MOTIVO).clearContent();
+  sh.getRange(ALTA_CREAR).uncheck();
+  historialAlta_(sh, 'BAJA', clave + ' — ' + motivo);
+  sh.getRange(ALTA_AVISO).setValue('\u2714 "' + clave + '" quedó dado de baja. Sale de los conteos, ' +
+    'pero sus ' + nlineas + ' línea(s) en el libro mayor siguen ahí: los inventarios viejos se leen ' +
+    'igual. Firmado en la BITÁCORA con su correo.').setBackground(COLOR_VERDE);
+  SpreadsheetApp.flush();
+  return { clave: clave, lineas: nlineas };
+}
+
+function historialAlta_(sh, accion, detalle) {
+  try {
+    sh.insertRowsAfter(ALTA_HIST, 1);
+    sh.getRange(ALTA_HIST + 1, 1, 1, 4).setValues([[
+      Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm'),
+      accion, detalle, usuario_()]]);
+  } catch (e) {}
+}
+
+function crearProducto_(ss, d) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) { throw new Error('Hay otra operaci\u00f3n en curso. Intente de nuevo.'); }
+  try {
+    if (d.base === '') { throw new Error('Falta el PRODUCTO BASE.'); }
+    if (d.um !== 'g' && d.um !== 'ml' && d.um !== 'un') {
+      throw new Error('La UM BASE debe ser g, ml o un. Eli\u0301jala de la lista.');
+    }
+    var unidades = indiceUnidades_(ss);
+    if (d.unidad !== '' && !unidades[normalizar_(d.unidad)]) {
+      throw new Error('La UNIDAD DE CONTEO "' + d.unidad + '" no est\u00e1 en la lista. ' +
+        'Eli\u0301jala de la desplegable, o agr\u00e9guela primero en la hoja LISTAS.');
+    }
+    if (d.unidad !== '') { d.unidad = unidades[normalizar_(d.unidad)]; }
+    if (d.um !== 'un' && d.peso <= 0) {
+      throw new Error('Un producto que se controla por ' + d.um + ' necesita el PESO C/U. ' +
+        'Si de verdad se cuenta por piezas, ponga UM BASE = un.');
+    }
+    var zonas = indiceZonas_(ss);
+    if (d.zona !== '' && !zonas[normalizar_(d.zona)]) {
+      throw new Error('La zona "' + d.zona + '" no est\u00e1 en CAT_ZONAS. ' +
+        'Eli\u0301jala de la lista, o cree la zona primero.');
+    }
+
+    var clave = d.marca === '' ? d.base : d.base + ' ' + d.marca;
+    clave = txt_(clave);
+    var cat = indiceCatalogo_(ss);
+    if (cat[normalizar_(clave)]) {
+      throw new Error('"' + clave + '" ya est\u00e1 en el cat\u00e1logo. ' +
+        'Si lo que quiere es otra presentaci\u00f3n, cambie la MARCA.');
+    }
+    if (!d.forzar) {
+      var par = parecidosA_(ss, d.base);
+      if (par.length) {
+        throw new Error('Ya hay productos parecidos:\n' + par.join('\n') +
+          '\n\nSi de verdad es uno nuevo, marque tambi\u00e9n la casilla ' +
+          '"CREAR AUNQUE SE PAREZCA A OTRO" y vuelva a marcar CREAR PRODUCTO.');
+      }
+    }
+
+    var sh = ss.getSheetByName(H.CATALOGO);
+    var fila = ultimaFila_(sh, K_PROD) + 1;
+    if (fila < FILA_DATOS) { fila = FILA_DATOS; }
+    sh.getRange(fila, K_BASE).setValue(d.base);
+    sh.getRange(fila, K_MARCA).setValue(d.marca);
+    sh.getRange(fila, K_PROD).setValue(clave);
+    sh.getRange(fila, K_CATEG).setValue(d.categoria);
+    sh.getRange(fila, K_UM).setValue(d.um);
+    sh.getRange(fila, K_UNI).setValue(d.unidad);
+    if (d.peso > 0) { sh.getRange(fila, K_PESO).setValue(d.peso); }
+    sh.getRange(fila, K_PRES).setValue(
+      normalizar_(d.pres).substring(0, 4) === 'esta' ? PRES_EST : PRES_VAR);
+    if (d.minimo > 0) { sh.getRange(fila, K_MIN).setValue(d.minimo); }
+    sh.getRange(fila, K_ACTIVO).setValue('S\u00ed');
+    sh.getRange(fila, K_NOTAS).setValue('Alta ' +
+      Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd') +
+      ' por ' + usuario_() + (d.categoria === '' ? ' \u2014 falta categor\u00eda' : ''));
+
+    var zonaPuesta = '';
+    if (d.zona !== '') {
+      var ubi = ss.getSheetByName(H.UBIC);
+      var t = leerTabla_(ss, H.UBIC, UBI_NCOL);
+      var i, orden = 0;
+      for (i = 0; i < t.length; i++) {
+        if (normalizar_(t[i][U_ZONA - 1]) === normalizar_(d.zona)) {
+          if (num_(t[i][U_ORDEN - 1]) > orden) { orden = num_(t[i][U_ORDEN - 1]); }
+        }
+      }
+      var fu = ultimaFila_(ubi, U_PROD) + 1;
+      if (fu < FILA_DATOS) { fu = FILA_DATOS; }
+      ubi.getRange(fu, U_PROD, 1, 5).setValues([[
+        clave, zonas[normalizar_(d.zona)][Z_ZONA - 1], orden + 10,
+        d.minimo > 0 ? d.minimo : '', 'S\u00ed']]);
+      zonaPuesta = txt_(zonas[normalizar_(d.zona)][Z_ZONA - 1]);
+    }
+
+    pasoSeguro_([], 'validaciones', function () { return aplicarValidaciones_(ss); });
+    bitacora_(ss, 'ALTA PRODUCTO', clave,
+      'UM ' + d.um + (d.unidad ? ' \u00b7 ' + d.unidad : '') +
+      (d.peso > 0 ? ' de ' + d.peso : '') +
+      ' \u00b7 presentaci\u00f3n ' + (normalizar_(d.pres).substring(0, 4) === 'esta' ? PRES_EST : PRES_VAR) +
+      (zonaPuesta ? ' \u00b7 zona ' + zonaPuesta : ' \u00b7 sin ubicar') +
+      ' \u00b7 creado por ' + usuario_());
+    return { clave: clave, fila: fila, zona: zonaPuesta };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function altaProductoMenu() {
+  var ss = SpreadsheetApp.getActive();
+  var ui = SpreadsheetApp.getUi();
+  var r1 = ui.prompt('Alta de producto', 'Nombre del producto (sin la marca).', ui.ButtonSet.OK_CANCEL);
+  if (r1.getSelectedButton() !== ui.Button.OK) { return; }
+  var base = txt_(r1.getResponseText());
+  if (base === '') { return; }
+
+  var parecidos = parecidosA_(ss, base);
+  if (parecidos.length) {
+    var r0 = ui.alert('¿Ya existe?',
+      'Encontré productos parecidos:\n\n' + parecidos.join('\n') +
+      '\n\n¿Quiere crearlo de todas formas?', ui.ButtonSet.YES_NO);
+    if (r0 !== ui.Button.YES) { return; }
+  }
+  var r2 = ui.prompt('Marca', 'Marca o presentación (deje vacío si no aplica).', ui.ButtonSet.OK_CANCEL);
+  if (r2.getSelectedButton() !== ui.Button.OK) { return; }
+  var marca = txt_(r2.getResponseText());
+  var r3 = ui.prompt('UM base', 'Escriba g, ml o un.', ui.ButtonSet.OK_CANCEL);
+  if (r3.getSelectedButton() !== ui.Button.OK) { return; }
+  var um = normalizar_(r3.getResponseText());
+
+  var r4 = ui.prompt('Zona', 'Zona donde se guarda (deje vacío para ubicarlo después).',
+                     ui.ButtonSet.OK_CANCEL);
+  var zona = r4.getSelectedButton() === ui.Button.OK ? txt_(r4.getResponseText()) : '';
+  var res;
+  try {
+    res = crearProducto_(ss, { base: base, marca: marca, categoria: '', um: um,
+                               unidad: '', peso: 0, zona: zona, minimo: 0, forzar: true });
+  } catch (err) {
+    ui.alert('No se creó', err.message, ui.ButtonSet.OK);
+    return;
+  }
+  ui.alert('Creado: ' + res.clave +
+    (res.zona ? '\n\nUbicado en ' + res.zona + ': ya aparece en la lista del conteo.'
+              : '\n\nFalta ubicarlo en CAT_UBICACION para que aparezca en el conteo.') +
+    '\n\nComplete categoría, unidad de conteo, peso por unidad y precio en el CATÁLOGO.');
+}
+
+function parecidosA_(ss, nombre) {
+  var cat = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var n = normalizar_(nombre), out = [], i, c;
+  for (i = 0; i < cat.length; i++) {
+    c = txt_(cat[i][K_PROD - 1]);
+    if (c === '') { continue; }
+    if (normalizar_(c).indexOf(n) >= 0 || n.indexOf(normalizar_(c)) >= 0) {
+      out.push('· ' + c);
+      if (out.length >= 8) { return out; }
+    }
+  }
+  return out;
+}
+
+function depurarZonaMenu() {
+  var ss = SpreadsheetApp.getActive();
+  var ui = SpreadsheetApp.getUi();
+  var r1 = ui.prompt('Depurar la lista de una zona',
+    'Escriba el nombre exacto de la zona.\n\nMarco ACTIVO = No los productos que llevan 3 o más ' +
+    'conteos seguidos en cero. No se borra nada: dejan de aparecer en el conteo y su historia queda intacta.',
+    ui.ButtonSet.OK_CANCEL);
+  if (r1.getSelectedButton() !== ui.Button.OK) { return; }
+  var zona = txt_(r1.getResponseText());
+  if (zona === '') { return; }
+
+  var sh = ss.getSheetByName(H.UBIC);
+  var ubi = leerTabla_(ss, H.UBIC, UBI_NCOL);
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var ceros = {}, i, k;
+  for (i = 0; i < bd.length; i++) {
+    if (txt_(bd[i][B_ESTADO - 1]) === 'REVERSADA') { continue; }
+    if (normalizar_(bd[i][B_ZONA - 1]) !== normalizar_(zona)) { continue; }
+    k = normalizar_(bd[i][B_PROD - 1]);
+    if (!ceros[k]) { ceros[k] = { cero: 0, total: 0 }; }
+    ceros[k].total++;
+    if (num_(bd[i][B_CANT - 1]) === 0) { ceros[k].cero++; }
+  }
+  var n = 0, c;
+  for (i = 0; i < ubi.length; i++) {
+    if (normalizar_(ubi[i][U_ZONA - 1]) !== normalizar_(zona)) { continue; }
+    if (normalizar_(ubi[i][U_ACTIVO - 1]) === 'no') { continue; }
+    c = ceros[normalizar_(ubi[i][U_PROD - 1])];
+    if (c && c.total >= 3 && c.cero === c.total) {
+      sh.getRange(FILA_DATOS + i, U_ACTIVO).setValue('No');
+      n++;
+    }
+  }
+  bitacora_(ss, 'DEPURACIÓN DE ZONA', zona, n + ' productos desactivados por 3+ conteos en cero');
+  ui.alert(n + ' productos salieron de la lista de ' + zona +
+    '.\n\nLa próxima vez que cargue esa zona el conteo será más corto. Para devolver alguno, ' +
+    'cambie ACTIVO a Sí en CAT_UBICACION.');
+}
+
+function recalcularTodo() {
+  var ss = SpreadsheetApp.getActive();
+  var pasos = [];
+  pasoSeguro_(pasos, 'stock', function () { reconstruirMaestro_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'bandas', function () { reconstruirBandas_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'ubicaciones', function () { refrescarUbicaciones_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'zonas', function () { refrescarZonas_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'tablero', function () { refrescarTablero_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'historial de conteos', function () {
+    return refrescarHistorial_(ss) + ' conteo(s)';
+  });
+  pasoSeguro_(pasos, 'diagnóstico', function () { refrescarDiagnostico_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'consulta', function () {
+    var r = consultarInventario_(ss);
+    return r.lineas + ' líneas · $' + formatoMiles_(Math.round(r.valor));
+  });
+  mostrar_('Recálculo', pasos.join('\n'));
+}
+
+/* ==========================================================================
+ * 7b · CONSULTAR UN INVENTARIO
+ * Responde a "cuál era el inventario y cuánto valía". Sin fecha muestra lo
+ * vigente; con fecha de corte reconstruye lo que había ese día tomando, por cada
+ * producto y zona, el último conteo vigente hasta esa fecha.
+ * ========================================================================== */
+
+function consultarInventarioMenu() {
+  var ss = SpreadsheetApp.getActive();
+  ss.getSheetByName(H.CONSULTA).activate();
+  consultarInventario_(ss);
+}
+
+function consultarInventario_(ss) {
+  var sh = ss.getSheetByName(H.CONSULTA);
+  if (!sh) { throw new Error('Falta la hoja CONSULTA.'); }
+
+  var corte = sh.getRange(CONS_FECHA).getValue();
+  var corteTxt = '';
+  if (esFecha_(corte)) {
+    corteTxt = Utilities.formatDate(corte, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  } else if (txt_(corte) !== '') {
+    throw new Error('La FECHA DE CORTE no es una fecha válida. Déjela vacía para ver el inventario vigente.');
+  }
+  var zona = txt_(sh.getRange(CONS_ZONA).getValue());
+  if (normalizar_(zona) === 'todas') { zona = ''; }
+  var cicloTxt = normalizar_(sh.getRange(CONS_CICLO).getValue());
+  var ciclo = '';
+  if (cicloTxt.substring(0, 1) === 's') { ciclo = 'S'; }
+  if (cicloTxt.substring(0, 1) === 'm') { ciclo = 'M'; }
+
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var cat = indiceCatalogo_(ss);
+
+  /* último conteo vigente por producto+zona dentro del filtro */
+  var ult = {}, i, k, f, prod, zn;
+  for (i = 0; i < bd.length; i++) {
+    if (!lineaCuenta_(bd[i])) { continue; }
+    prod = txt_(bd[i][B_PROD - 1]);
+    if (prod === '') { continue; }
+    zn = txt_(bd[i][B_ZONA - 1]);
+    if (zona !== '' && normalizar_(zn) !== normalizar_(zona)) { continue; }
+    if (ciclo !== '' && txt_(bd[i][B_CICLO - 1]) !== ciclo) { continue; }
+    f = txt_(bd[i][B_FECHA - 1]);
+    if (corteTxt !== '' && f > corteTxt) { continue; }
+    k = normalizar_(prod) + '@' + normalizar_(zn);
+    if (!ult[k] || f > ult[k].fecha) {
+      ult[k] = { prod: prod, zona: zn, fecha: f, cant: num_(bd[i][B_CANT - 1]),
+                 uni: txt_(bd[i][B_UNI - 1]), peso: num_(bd[i][B_PESO - 1]),
+                 um: txt_(bd[i][B_UM - 1]), total: num_(bd[i][B_TOTAL - 1]),
+                 costo: num_(bd[i][B_COSTO - 1]) };
+    }
+  }
+
+  var lineas = [];
+  for (k in ult) {
+    if (ult.hasOwnProperty(k)) { lineas.push(ult[k]); }
+  }
+  lineas.sort(function (a, b) {
+    if (normalizar_(a.prod) !== normalizar_(b.prod)) {
+      return normalizar_(a.prod) < normalizar_(b.prod) ? -1 : 1;
+    }
+    return normalizar_(a.zona) < normalizar_(b.zona) ? -1 : 1;
+  });
+
+  var filas = [], valorTotal = 0, valorizadas = 0, totG = 0, totMl = 0, c, costo, origen, valor;
+  for (i = 0; i < lineas.length && i < CONS_MAX; i++) {
+    c = cat[normalizar_(lineas[i].prod)];
+    costo = lineas[i].costo;
+    origen = 'el conteo';
+    if (costo <= 0) {
+      costo = c ? num_(c[K_COSTO - 1]) : 0;
+      origen = costo > 0 ? 'el catálogo de hoy' : '— sin precio —';
+    }
+    valor = (costo > 0 && lineas[i].total > 0) ? lineas[i].total * costo : '';
+    if (valor !== '') { valorTotal += valor; valorizadas++; }
+    if (lineas[i].um === 'g') { totG += lineas[i].total; }
+    if (lineas[i].um === 'ml') { totMl += lineas[i].total; }
+    filas.push([i + 1, lineas[i].prod, lineas[i].zona, lineas[i].fecha, lineas[i].cant,
+                lineas[i].uni, lineas[i].peso > 0 ? lineas[i].peso : '',
+                lineas[i].total > 0 ? lineas[i].total : '', lineas[i].um,
+                costo > 0 ? costo : '', valor, origen]);
+  }
+
+  sh.getRange(CONS_FILA_DATOS, 1, CONS_MAX, CONS_NCOL).clearContent();
+  if (filas.length) {
+    sh.getRange(CONS_FILA_DATOS, 1, filas.length, CONS_NCOL).setValues(filas);
+  }
+
+  var enc = corteTxt === '' ? 'Inventario vigente' : 'Inventario al ' + corteTxt;
+  if (zona !== '') { enc += ' · ' + zona; }
+  if (ciclo !== '') { enc += ' · ciclo ' + (ciclo === 'M' ? 'mensual' : 'semanal'); }
+  var msg = enc + ':  ' + filas.length + ' líneas contadas' +
+    '  ·  VALOR $' + formatoMiles_(Math.round(valorTotal)) +
+    '  ·  valorizadas ' + valorizadas + ' de ' + filas.length +
+    '  ·  total ' + formatoMiles_(Math.round(totG)) + ' g y ' +
+    formatoMiles_(Math.round(totMl)) + ' ml';
+  if (valorizadas < filas.length) {
+    msg += '.  ⚠ El valor está incompleto: faltan precios de ' +
+           (filas.length - valorizadas) + ' líneas (hoja CATALOGO).';
+  }
+  if (lineas.length > CONS_MAX) {
+    msg += '  ⚠ Se mostraron las primeras ' + CONS_MAX + ' de ' + lineas.length + ' líneas.';
+  }
+  sh.getRange(CONS_AVISO).setValue(msg)
+    .setBackground(valorizadas < filas.length ? COLOR_AMBAR : COLOR_VERDE);
+  sh.getRange(CONS_BUSCAR).uncheck();
+  SpreadsheetApp.flush();
+  return { lineas: filas.length, valor: valorTotal, valorizadas: valorizadas };
+}
+
+function formatoMiles_(n) {
+  var s = '' + Math.abs(Math.round(n));
+  var out = '', i, c = 0;
+  for (i = s.length - 1; i >= 0; i--) {
+    out = s.charAt(i) + out;
+    c++;
+    if (c % 3 === 0 && i > 0) { out = '.' + out; }
+  }
+  return (n < 0 ? '-' : '') + out;
+}
+
+/* ==========================================================================
+ * 8 · AUTODIAGNÓSTICO
+ * ========================================================================== */
+
+function reporteEstado() {
+  var ss = SpreadsheetApp.getActive();
+  var L = [];
+  L.push('MOTOR INV-COC-001 v' + VERSION);
+  L.push('Archivo: ' + ss.getName());
+  L.push('Zona horaria: ' + Session.getScriptTimeZone());
+  L.push('Usuario: ' + usuario_());
+  L.push('');
+  L.push('HOJAS');
+  var nombres = [H.TABLERO, H.CAPTURA, H.ZONAS, H.CATALOGO, H.UBIC, H.BD, H.MAESTRO,
+                 H.BANDAS, H.CONFIG, H.DIAG, H.BITACORA];
+  var i, sh;
+  for (i = 0; i < nombres.length; i++) {
+    sh = ss.getSheetByName(nombres[i]);
+    L.push('  ' + nombres[i] + ': ' + (sh ? (ultimaFila_(sh, 1) - FILA_DATOS + 1) + ' filas' : 'FALTA'));
+  }
+  L.push('');
+  L.push('DISPARADORES');
+  var tri = ScriptApp.getProjectTriggers();
+  if (!tri.length) { L.push('  ninguno — ejecute instalar()'); }
+  for (i = 0; i < tri.length; i++) {
+    L.push('  ' + tri[i].getHandlerFunction() + ' · ' + tri[i].getEventType());
+  }
+  L.push('');
+  L.push('DATOS');
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var conteos = {}, nc = 0, vig = 0, rev = 0;
+  for (i = 0; i < bd.length; i++) {
+    if (txt_(bd[i][B_IDCON - 1]) === '') { continue; }
+    if (!conteos[txt_(bd[i][B_IDCON - 1])]) { conteos[txt_(bd[i][B_IDCON - 1])] = 1; nc++; }
+    if (txt_(bd[i][B_ESTADO - 1]) === 'REVERSADA') { rev++; } else { vig++; }
+  }
+  L.push('  conteos: ' + nc + ' · líneas vigentes: ' + vig + ' · reversadas: ' + rev);
+  L.push('  catálogo: ' + (ultimaFila_(ss.getSheetByName(H.CATALOGO), K_PROD) - FILA_DATOS + 1) + ' SKUs');
+  L.push('  ubicaciones: ' + (ultimaFila_(ss.getSheetByName(H.UBIC), U_PROD) - FILA_DATOS + 1));
+  mostrar_('Reporte de estado', L.join('\n'));
+}
+
+function autodiagnostico() {
+  var ss = SpreadsheetApp.getActive();
+  var pasos = [];
+  pasoSeguro_(pasos, 'leer CONFIG', function () {
+    var v = cfg_(ss, 'VERSION_MOTOR');
+    return v === '' ? 'CONFIG sin VERSION_MOTOR' : 'VERSION_MOTOR=' + v;
+  });
+  pasoSeguro_(pasos, 'leer catálogo', function () {
+    return indiceCatalogoCuenta_(ss) + ' productos indexados';
+  });
+  pasoSeguro_(pasos, 'leer zonas', function () {
+    var z = indiceZonas_(ss), n = 0, k;
+    for (k in z) { if (z.hasOwnProperty(k)) { n++; } }
+    return n + ' zonas';
+  });
+  pasoSeguro_(pasos, 'leer bandas', function () {
+    var b = indiceBandas_(ss), n = 0, k;
+    for (k in b.porUnidad) { if (b.porUnidad.hasOwnProperty(k)) { n++; } }
+    return n + ' bandas de capa 1';
+  });
+  pasoSeguro_(pasos, 'reconstruir stock', function () { reconstruirMaestro_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'reconstruir bandas', function () { reconstruirBandas_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'refrescar tablero', function () { refrescarTablero_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'refrescar diagnóstico', function () { refrescarDiagnostico_(ss); return 'ok'; });
+  pasoSeguro_(pasos, 'cuenta personal (canDomainEdit)', function () {
+    var p = ss.getSheetByName(H.BD).protect();
+    try { p.canDomainEdit(); return 'cuenta con dominio'; }
+    catch (e) { return 'cuenta personal (esperado)'; }
+  });
+  mostrar_('Autodiagnóstico', pasos.join('\n') +
+    '\n\nRecuerde: este debe ser el ÚNICO archivo .gs del proyecto.');
+}
+
+/* ==========================================================================
+ * 9 · PARCHES
+ * ========================================================================== */
+
+/* Filas que alguien escribi\u00f3 a mano en el cat\u00e1logo y quedaron a medias: sin la
+   clave armada, sin ACTIVO. Se arreglan solo cuando la fila NO tiene movimientos
+   en el libro mayor; si los tiene, se reporta y no se toca. */
+function sanearCatalogo_(ss) {
+  var sh = ss.getSheetByName(H.CATALOGO);
+  var t = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var bd = leerTabla_(ss, H.BD, BD_NCOL);
+  var conMovimiento = {}, i;
+  for (i = 0; i < bd.length; i++) {
+    if (txt_(bd[i][B_PROD - 1]) !== '') { conMovimiento[normalizar_(bd[i][B_PROD - 1])] = 1; }
+  }
+  var arregladas = 0, avisos = [];
+  for (i = 0; i < t.length; i++) {
+    var base = txt_(t[i][K_BASE - 1]);
+    var marca = txt_(t[i][K_MARCA - 1]);
+    var clave = txt_(t[i][K_PROD - 1]);
+    if (base === '' && clave === '') { continue; }
+    var fila = FILA_DATOS + i;
+    var esperada = txt_(marca === '' ? base : base + ' ' + marca);
+    var toco = false;
+    if (base !== '' && esperada !== '' && clave !== esperada) {
+      if (conMovimiento[normalizar_(clave)]) {
+        avisos.push('fila ' + fila + ': "' + clave + '" ya tiene movimientos; ' +
+          'us\u00e9 el men\u00fa \u2192 Fusionar dos productos si quiere renombrarla');
+      } else {
+        sh.getRange(fila, K_PROD).setValue(esperada);
+        toco = true;
+      }
+    }
+    if (clave !== '' && txt_(t[i][K_ACTIVO - 1]) === '') {
+      sh.getRange(fila, K_ACTIVO).setValue('S\u00ed');
+      toco = true;
+    }
+    /* Sin PRESENTACIÓN, el conteo no sabe si el peso llega precargado o hay que
+       pesarlo. Se asume VARIABLE, que es lo prudente: obliga a pesar. */
+    if (clave !== '' && txt_(t[i][K_PRES - 1]) === '') {
+      sh.getRange(fila, K_PRES).setValue(PRES_VAR);
+      sh.getRange(fila, K_NOTAS).setValue(
+        txt_(t[i][K_NOTAS - 1]) + (txt_(t[i][K_NOTAS - 1]) === '' ? '' : ' \u00b7 ') +
+        MARCA_PROPUESTA + ': fila completada por el motor, sin evidencia todav\u00eda');
+      toco = true;
+    }
+    if (toco) { arregladas++; }
+  }
+  return { arregladas: arregladas, avisos: avisos };
+}
+
+function aplicarParche02() {
+  var ss = SpreadsheetApp.getActive();
+  var pasos = [];
+  pasoSeguro_(pasos, 'hoja de alta de productos', function () {
+    return construirAltaProducto_(ss);
+  });
+  pasoSeguro_(pasos, 'sanear filas escritas a mano en el cat\u00e1logo', function () {
+    var r = sanearCatalogo_(ss);
+    return r.arregladas + ' fila(s) completadas' +
+      (r.avisos.length ? ' \u00b7 sin tocar: ' + r.avisos.join(' | ') : '');
+  });
+  pasoSeguro_(pasos, 'reconstruir las listas desplegables', function () {
+    return aplicarValidaciones_(ss);
+  });
+  pasoSeguro_(pasos, 'recalcular derivados', function () {
+    reconstruirMaestro_(ss); reconstruirBandas_(ss); refrescarUbicaciones_(ss);
+    refrescarZonas_(ss); refrescarTablero_(ss); refrescarDiagnostico_(ss);
+    return 'ok';
+  });
+  bitacora_(ss, 'PARCHE', '02', pasos.join(' | '));
+  mostrar_('Parche 02 \u00b7 alta de productos y listas din\u00e1micas', pasos.join('\n'));
+}
+
+function aplicarParche01() {
+  /* Plantilla para actualizar un archivo que YA tiene datos.
+     Crea lo que falte, agrega a CONFIG solo los parámetros nuevos y recalcula.
+     Nunca reinstala encima de los datos. */
+  var ss = SpreadsheetApp.getActive();
+  var pasos = [];
+  pasoSeguro_(pasos, 'parámetros nuevos en CONFIG', function () {
+    var nuevos = [];   // [['PARAMETRO','valor','qué controla'], …]
+    var sh = ss.getSheetByName(H.CONFIG);
+    var i, n = 0, fila;
+    for (i = 0; i < nuevos.length; i++) {
+      if (cfg_(ss, nuevos[i][0]) !== '') { continue; }
+      fila = ultimaFila_(sh, 1) + 1;
+      sh.getRange(fila, 1, 1, 3).setValues([nuevos[i]]);
+      n++;
+    }
+    return n + ' agregados';
+  });
+  pasoSeguro_(pasos, 'recalcular', function () { recalcularTodo(); return 'ok'; });
+  bitacora_(ss, 'PARCHE', '01', pasos.join(' | '));
+  mostrar_('Parche 01', pasos.join('\n'));
+}
+
+/* ==========================================================================
+ * 10 · ESTÉTICA (no borra datos)
+ * ========================================================================== */
+
+function refrescarVistaCaptura_(ss) {
+  var cap = ss.getSheetByName(H.CAPTURA);
+  var n = filasCaptura_(ss);
+  cap.setHiddenGridlines(true);
+  /* Una celda combinada que cruza la columna donde se va a congelar hace fallar la
+     congelación entera. Es lo que pasó el 12/09: el paso quedó en rojo en la
+     bitácora, nadie lo vio, y la pantalla se quedó sin inmovilizar — que en iPad
+     significa digitar con el nombre del producto fuera de la vista. */
+  separarCombinadasCabecera_(cap);
+  cap.setFrozenRows(6);
+  /* tres columnas congeladas: el número, el producto y su unidad. En iPad eso es
+     lo que impide digitar a ciegas al desplazarse a la derecha. */
+  cap.setFrozenColumns(3);
+  cap.setRowHeights(CAP_FILA_DATOS, n, 30);
+  cap.getRange(CAP_FILA_DATOS, 1, n, CAP_NCOL).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+  cap.getRange(CAP_FILA_DATOS, C_CANT, n, 3).setBackground(COLOR_BLANCO);
+  cap.getRange(CAP_FILA_DATOS, C_NOTA, n, 1).setBackground(COLOR_BLANCO);
+  protegerCalculadas_(cap, n);
+  cap.hideColumns(C_MIN, 6);
+  reponerFormulas_(cap, n);
+  pasoSeguro_([], 'validaciones', function () { return aplicarValidaciones_(ss); });
+}
+
+function separarCombinadasCabecera_(cap) {
+  var rangos = cap.getRange(1, 1, 6, CAP_NCOL).getMergedRanges(), i;
+  for (i = 0; i < rangos.length; i++) {
+    try { rangos[i].breakApart(); } catch (e) {}
+  }
+}
+
+/* ==========================================================================
+ * 10b · LISTAS CERRADAS
+ * La validación de celda es comodidad, no control: un pegado se la salta. Por eso
+ * cada lista cerrada tiene su compuerta gemela en el guardado, que es la que de
+ * verdad atrapa el caso. Esta función se puede correr las veces que haga falta.
+ * ========================================================================== */
+
+function aplicarValidaciones_(ss) {
+  var hechas = [];
+  var cap = ss.getSheetByName(H.CAPTURA);
+  /* Las hojas de conteo abiertas heredaron las listas al copiarse, pero el catálogo
+     crece mientras se cuenta: si no se les refresca, el producto que la chef acaba
+     de crear existe y no se puede elegir en la hoja donde está contando. */
+  var abiertas = hojasDeConteo_(ss), ia;
+  var cat = ss.getSheetByName(H.CATALOGO);
+  var zon = ss.getSheetByName(H.ZONAS);
+  var lis = ss.getSheetByName(H.LISTAS);
+  var n = filasCaptura_(ss);
+
+  var finCat = ultimaFila_(cat, K_PROD);
+  if (finCat >= FILA_DATOS) {
+    var rangoProductos = cat.getRange(FILA_DATOS, K_PROD, finCat - FILA_DATOS + 1, 1);
+    var reglaProd = SpreadsheetApp.newDataValidation()
+      .requireValueInRange(rangoProductos, true)
+      .setAllowInvalid(true)
+      .setHelpText('Elija el producto de la lista. Si encontró algo que no está, escríbalo igual: ' +
+                   'la línea se guarda y la chef le abre la ficha con la casilla DAR DE ALTA LO NUEVO.')
+      .build();
+    cap.getRange(CAP_FILA_DATOS, C_PROD, n, 1).setDataValidation(reglaProd);
+    for (ia = 0; ia < abiertas.length; ia++) {
+      abiertas[ia].getRange(CAP_FILA_DATOS, C_PROD, n, 1).setDataValidation(reglaProd);
+    }
+    hechas.push('productos (' + (finCat - FILA_DATOS + 1) + ' de la lista) en la plantilla' +
+                (abiertas.length ? ' y en ' + abiertas.length + ' conteo(s) abierto(s)' : ''));
+  }
+
+  var finZon = ultimaFila_(zon, Z_ZONA);
+  if (finZon >= FILA_DATOS) {
+    cap.getRange(CAP_ZONA).setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInRange(zon.getRange(FILA_DATOS, Z_ZONA, finZon - FILA_DATOS + 1, 1), true)
+        .setAllowInvalid(false)
+        .setHelpText('Elija una zona del catálogo de zonas.')
+        .build());
+    hechas.push('zonas');
+  }
+
+  var lisFin = ultimaFila_(lis, 1);
+  if (lisFin >= FILA_DATOS) {
+    var reglaUni = SpreadsheetApp.newDataValidation()
+      .requireValueInRange(lis.getRange(FILA_DATOS, 1, lisFin - FILA_DATOS + 1, 1), true)
+      .setAllowInvalid(false)
+      .setHelpText('Viene del catálogo. Cámbiela solo si el producto llegó en otra ' +
+                   'presentación, y eligiéndola de la lista: nunca escribiéndola.')
+      .build();
+    cap.getRange(CAP_FILA_DATOS, C_UNI, n, 1).setDataValidation(reglaUni);
+    for (ia = 0; ia < abiertas.length; ia++) {
+      abiertas[ia].getRange(CAP_FILA_DATOS, C_UNI, n, 1).setDataValidation(reglaUni);
+    }
+    hechas.push('unidades de conteo en la pantalla');
+  }
+
+  /* La celda ya no acepta texto. Hasta ahora el saneo ocurría al guardar: el
+     21/09 un apóstrofo delante de un uno dejó el total de un congelador en cero y
+     nadie lo vio hasta la auditoría. Rechazarlo en el teclado es más barato que
+     arreglarlo después, y es exactamente "integridad del dato antes de
+     automatizar". Se deja pasar la fracción escrita a mano porque el motor sí
+     sabe leerla, pero el texto suelto no entra. */
+  var reglaNum = SpreadsheetApp.newDataValidation()
+    .requireNumberGreaterThanOrEqualTo(0)
+    .setAllowInvalid(false)
+    .setHelpText('Solo números, y nunca negativos. Para media unidad escriba 0.5. ' +
+                 'Si el teclado le mete un apóstrofo delante, bórrelo: eso no es un número.')
+    .build();
+  cap.getRange(CAP_FILA_DATOS, C_CANT, n, 3).setDataValidation(reglaNum);
+  for (ia = 0; ia < abiertas.length; ia++) {
+    abiertas[ia].getRange(CAP_FILA_DATOS, C_CANT, n, 3).setDataValidation(reglaNum);
+  }
+  hechas.push('cantidad, sobrante y peso solo numéricos');
+
+  cap.getRange(CAP_CICLO).setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['SEMANAL', 'MENSUAL'], true)
+      .setAllowInvalid(false)
+      .setHelpText('SEMANAL para el conteo de cada semana, MENSUAL para el inventario general. ' +
+                   'El ciclo forma parte del folio y separa las dos series.')
+      .build());
+  hechas.push('ciclo');
+
+  if (finCat >= FILA_DATOS) {
+    if (lisFin >= FILA_DATOS) {
+      cat.getRange(FILA_DATOS, K_UNI, finCat - FILA_DATOS + 1, 1).setDataValidation(
+        SpreadsheetApp.newDataValidation()
+          .requireValueInRange(lis.getRange(FILA_DATOS, 1, lisFin - FILA_DATOS + 1, 1), true)
+          .setAllowInvalid(false)
+          .setHelpText('Unidad con la que se cuenta el producto. Las unidades de peso ' +
+                       '(g, kg, ml) no son unidades de conteo: el peso va en PESO/VOL C/U.')
+          .build());
+      hechas.push('unidades de conteo');
+    }
+    cat.getRange(FILA_DATOS, K_UM, finCat - FILA_DATOS + 1, 1).setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList(['g', 'ml', 'un'], true)
+        .setAllowInvalid(false)
+        .setHelpText('Unidad de medida base del producto.')
+        .build());
+    cat.getRange(FILA_DATOS, K_PRES, finCat - FILA_DATOS + 1, 1).setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList([PRES_EST, PRES_VAR], true)
+        .setAllowInvalid(false)
+        .setHelpText('ESTÁNDAR: el empaque se repite y el peso vive en el catálogo. ' +
+                     'VARIABLE: el empaque cambia y el peso se toma en cada conteo.')
+        .build());
+    hechas.push('presentación en CATALOGO');
+    hechas.push('UM base');
+  }
+
+  var cons = ss.getSheetByName(H.CONSULTA);
+  if (cons && finZon >= FILA_DATOS) {
+    cons.getRange(CONS_ZONA).setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList(['TODAS'].concat(columnaComoLista_(zon, Z_ZONA, finZon)), true)
+        .setAllowInvalid(false)
+        .setHelpText('Zona a consultar, o TODAS.')
+        .build());
+    cons.getRange(CONS_CICLO).setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList(['TODOS', 'SEMANAL', 'MENSUAL'], true)
+        .setAllowInvalid(false)
+        .build());
+    hechas.push('filtros de CONSULTA');
+  }
+
+  var alta = ss.getSheetByName(H.ALTA);
+  if (alta && finCat >= FILA_DATOS) {
+    alta.getRange(ALTA_CATEG).setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList(categoriasDelCatalogo_(ss), true)
+        .setAllowInvalid(true)
+        .setHelpText('Categor\u00eda del POS. Si es una nueva, escr\u00edbala y luego revise el cat\u00e1logo.')
+        .build());
+    alta.getRange(ALTA_UM).setDataValidation(
+      SpreadsheetApp.newDataValidation().requireValueInList(['g', 'ml', 'un'], true)
+        .setAllowInvalid(false).build());
+    if (lisFin >= FILA_DATOS) {
+      alta.getRange(ALTA_UNIDAD).setDataValidation(
+        SpreadsheetApp.newDataValidation()
+          .requireValueInRange(lis.getRange(FILA_DATOS, 1, lisFin - FILA_DATOS + 1, 1), true)
+          .setAllowInvalid(false).build());
+    }
+    if (finZon >= FILA_DATOS) {
+      alta.getRange(ALTA_ZONA).setDataValidation(
+        SpreadsheetApp.newDataValidation()
+          .requireValueInList(columnaComoLista_(zon, Z_ZONA, finZon), true)
+          .setAllowInvalid(false)
+          .setHelpText('Zona donde se guarda. Sin zona, el producto no aparece en ning\u00fan conteo.')
+          .build());
+    }
+    hechas.push('campos de ALTA_PRODUCTO');
+  }
+
+  var ubi = ss.getSheetByName(H.UBIC);
+  var finUbi = ultimaFila_(ubi, U_PROD);
+  if (finUbi >= FILA_DATOS && finCat >= FILA_DATOS) {
+    ubi.getRange(FILA_DATOS, U_PROD, finUbi - FILA_DATOS + 1, 1).setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInRange(cat.getRange(FILA_DATOS, K_PROD, finCat - FILA_DATOS + 1, 1), true)
+        .setAllowInvalid(false)
+        .setHelpText('Dé de alta el producto en el CATÁLOGO antes de ubicarlo en una zona.')
+        .build());
+    hechas.push('productos en CAT_UBICACION');
+  }
+  return hechas.join(' · ');
+}
+
+/* ==========================================================================
+ * 10c · FUSIÓN DE PRODUCTOS
+ * Excepción acotada al libro mayor inmutable: el NOMBRE de un producto es un
+ * atributo de identidad, no un dato de la operación. Unificarlo no altera
+ * cantidades, precios ni fechas, así que sí se reescribe esa columna, firmado en
+ * la bitácora. Cantidades, pesos y fechas no se tocan jamás: esos van por reversa.
+ * ========================================================================== */
+
+function fusionarProductosMenu() {
+  var ss = SpreadsheetApp.getActive();
+  var ui = SpreadsheetApp.getUi();
+  var r1 = ui.prompt('Fusionar productos (1 de 2)',
+    'Nombre del producto que DESAPARECE (tal como está en el catálogo).', ui.ButtonSet.OK_CANCEL);
+  if (r1.getSelectedButton() !== ui.Button.OK) { return; }
+  var sale = txt_(r1.getResponseText());
+  var r2 = ui.prompt('Fusionar productos (2 de 2)',
+    'Nombre del producto que QUEDA.', ui.ButtonSet.OK_CANCEL);
+  if (r2.getSelectedButton() !== ui.Button.OK) { return; }
+  var queda = txt_(r2.getResponseText());
+  if (sale === '' || queda === '' || normalizar_(sale) === normalizar_(queda)) {
+    ui.alert('Los dos nombres deben ser distintos y no vacíos.');
+    return;
+  }
+  var cat = indiceCatalogo_(ss);
+  if (!cat[normalizar_(sale)]) { ui.alert('"' + sale + '" no está en el catálogo.'); return; }
+  if (!cat[normalizar_(queda)]) { ui.alert('"' + queda + '" no está en el catálogo.'); return; }
+  var conf = ui.alert('Confirmar fusión',
+    'Todo el histórico de "' + sale + '" pasará a "' + queda + '".\n\n' +
+    'Las cantidades, pesos y fechas NO se tocan: solo se reescribe el nombre, y queda ' +
+    'firmado en la bitácora. ¿Continuar?', ui.ButtonSet.YES_NO);
+  if (conf !== ui.Button.YES) { return; }
+  var res = fusionarProductos_(ss, sale, queda);
+  recalcularTodo();
+  ui.alert('Fusión hecha.\n\nLíneas del libro mayor reescritas: ' + res.bd +
+    '\nUbicaciones actualizadas: ' + res.ubi +
+    '\nFila del catálogo desactivada: ' + (res.cat ? 'sí' : 'no'));
+}
+
+function fusionarProductos_(ss, sale, queda) {
+  var bd = ss.getSheetByName(H.BD);
+  var t = leerTabla_(ss, H.BD, BD_NCOL);
+  var i, nbd = 0;
+  for (i = 0; i < t.length; i++) {
+    if (normalizar_(t[i][B_PROD - 1]) === normalizar_(sale)) {
+      bd.getRange(FILA_DATOS + i, B_PROD).setValue(queda);
+      nbd++;
+    }
+  }
+  var ubi = ss.getSheetByName(H.UBIC);
+  var u = leerTabla_(ss, H.UBIC, UBI_NCOL);
+  var nubi = 0, yaEsta = {};
+  for (i = 0; i < u.length; i++) {
+    if (normalizar_(u[i][U_PROD - 1]) === normalizar_(queda)) {
+      yaEsta[normalizar_(u[i][U_ZONA - 1])] = 1;
+    }
+  }
+  for (i = 0; i < u.length; i++) {
+    if (normalizar_(u[i][U_PROD - 1]) !== normalizar_(sale)) { continue; }
+    if (yaEsta[normalizar_(u[i][U_ZONA - 1])]) {
+      ubi.getRange(FILA_DATOS + i, U_ACTIVO).setValue('No');   // evita duplicar la zona
+    } else {
+      ubi.getRange(FILA_DATOS + i, U_PROD).setValue(queda);
+      nubi++;
+    }
+  }
+  var cat = ss.getSheetByName(H.CATALOGO);
+  var c = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var ncat = 0;
+  for (i = 0; i < c.length; i++) {
+    if (normalizar_(c[i][K_PROD - 1]) === normalizar_(sale)) {
+      cat.getRange(FILA_DATOS + i, K_ACTIVO).setValue('No');
+      cat.getRange(FILA_DATOS + i, K_NOTAS).setValue('FUSIONADO en "' + queda + '" el ' +
+        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'));
+      ncat++;
+    }
+  }
+  bitacora_(ss, 'FUSIÓN DE PRODUCTOS', sale + ' → ' + queda,
+    nbd + ' líneas del libro mayor, ' + nubi + ' ubicaciones');
+  return { bd: nbd, ubi: nubi, cat: ncat };
+}
+
+/* ==========================================================================
+ * 11 · UTILIDADES
+ * ========================================================================== */
+
+function pasoSeguro_(lista, nombre, fn) {
+  try {
+    var r = fn();
+    lista.push('✔ ' + nombre + (r ? ': ' + r : ''));
+    return true;
+  } catch (e) {
+    lista.push('✖ ' + nombre + ': ' + e.message);
+    return false;
+  }
+}
+
+function protegerHoja_(ss, nombre, descripcion) {
+  var sh = ss.getSheetByName(nombre);
+  if (!sh) { return nombre + ' no existe'; }
+  var ps = sh.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+  var i;
+  for (i = 0; i < ps.length; i++) { ps[i].remove(); }
+  var p = sh.protect().setDescription(descripcion);
+  try { p.setWarningOnly(true); } catch (e) {}
+  return nombre + ' protegida';
+}
+
+/* Aviso por correo. Solo sale si CONFIG dice ENVIAR_CORREO = SI: mientras los
+   conteos se estabilizan conviene dejarlo en NO, un aviso que nadie lee enseña
+   a ignorar todos. Nunca puede tumbar un guardado: corre dentro de pasoSeguro_. */
+function notificar_(ss, idConteo, zona, resp, nlineas, sinContar, forzados) {
+  if (!cfgSi_(ss, 'ENVIAR_CORREO')) { return 'desactivado en CONFIG'; }
+  var para = cfg_(ss, 'CORREO_ALERTAS');
+  if (para === '') { return 'sin CORREO_ALERTAS'; }
+  if (sinContar === 0 && forzados === 0) { return 'sin hallazgos, no se envía'; }
+  var cuerpo = 'Conteo ' + idConteo + '\n' +
+    'Zona: ' + zona + '\n' +
+    'Responsable: ' + resp + '\n' +
+    'Líneas guardadas: ' + nlineas + '\n' +
+    'Renglones sin contar: ' + sinContar + '\n' +
+    'Valores forzados: ' + forzados + '\n\n' +
+    'Revise la hoja DIAGNOSTICO y la BITACORA del archivo de inventario.';
+  MailApp.sendEmail(para, 'Inventario cocina — ' + idConteo, cuerpo);
+  return 'enviado a ' + para;
+}
+
+function bitacora_(ss, accion, referencia, detalle) {
+  try {
+    var sh = ss.getSheetByName(H.BITACORA);
+    if (!sh) { return; }
+    var fila = ultimaFila_(sh, 1) + 1;
+    if (fila < FILA_DATOS) { fila = FILA_DATOS; }
+    sh.getRange(fila, 1, 1, 5).setValues([[
+      Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'),
+      usuario_(), accion, referencia, detalle
+    ]]);
+  } catch (e) {}
+}
+
+function cfg_(ss, nombre) {
+  var t = leerTabla_(ss, H.CONFIG, 3);
+  var i;
+  for (i = 0; i < t.length; i++) {
+    if (normalizar_(t[i][0]) === normalizar_(nombre)) { return txt_(t[i][1]); }
+  }
+  return '';
+}
+
+function cfgSi_(ss, nombre) {
+  var v = normalizar_(cfg_(ss, nombre));
+  return v === 'si' || v === 'sí' || v === 'true' || v === '1';
+}
+
+function filasCaptura_(ss) {
+  var n = num_(cfg_(ss, 'FILAS_CAPTURA'));
+  if (n < 10) { n = 340; }
+  var cap = ss.getSheetByName(H.CAPTURA);
+  var max = cap.getMaxRows() - CAP_FILA_DATOS + 1;
+  return n > max ? max : n;
+}
+
+function leerTabla_(ss, nombre, ncol) {
+  var sh = ss.getSheetByName(nombre);
+  if (!sh) { return []; }
+  var ultima = sh.getLastRow();
+  if (ultima < FILA_DATOS) { return []; }
+  return sh.getRange(FILA_DATOS, 1, ultima - FILA_DATOS + 1, ncol).getValues();
+}
+
+function ultimaFila_(sh, col) {
+  var ultima = sh.getLastRow();
+  if (ultima < FILA_DATOS) { return FILA_DATOS - 1; }
+  var v = sh.getRange(FILA_DATOS, col, ultima - FILA_DATOS + 1, 1).getValues();
+  var i;
+  for (i = v.length - 1; i >= 0; i--) {
+    if (txt_(v[i][0]) !== '') { return FILA_DATOS + i; }
+  }
+  return FILA_DATOS - 1;
+}
+
+function indiceCatalogo_(ss) {
+  var t = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var m = {}, i, p;
+  for (i = 0; i < t.length; i++) {
+    p = txt_(t[i][K_PROD - 1]);
+    if (p === '') { continue; }
+    if (!m[normalizar_(p)]) { m[normalizar_(p)] = t[i]; }
+  }
+  return m;
+}
+
+function indiceCatalogoCuenta_(ss) {
+  var m = indiceCatalogo_(ss), n = 0, k;
+  for (k in m) { if (m.hasOwnProperty(k)) { n++; } }
+  return n;
+}
+
+function categoriasDelCatalogo_(ss) {
+  var t = leerTabla_(ss, H.CATALOGO, CAT_NCOL);
+  var vistas = {}, out = [], i, c;
+  for (i = 0; i < t.length; i++) {
+    c = txt_(t[i][K_CATEG - 1]);
+    if (c === '' || vistas[normalizar_(c)]) { continue; }
+    vistas[normalizar_(c)] = 1;
+    out.push(c);
+  }
+  out.sort();
+  return out;
+}
+
+function columnaComoLista_(sh, col, hasta) {
+  var v = sh.getRange(FILA_DATOS, col, hasta - FILA_DATOS + 1, 1).getValues();
+  var out = [], i, t;
+  for (i = 0; i < v.length; i++) {
+    t = txt_(v[i][0]);
+    if (t !== '' && normalizar_(t) !== 'todas') { out.push(t); }
+  }
+  return out;
+}
+
+function indiceUnidades_(ss) {
+  var sh = ss.getSheetByName(H.LISTAS);
+  var m = {};
+  if (!sh) { return m; }
+  var ultima = ultimaFila_(sh, 1);
+  if (ultima < FILA_DATOS) { return m; }
+  var v = sh.getRange(FILA_DATOS, 1, ultima - FILA_DATOS + 1, 1).getValues();
+  var i, u;
+  for (i = 0; i < v.length; i++) {
+    u = txt_(v[i][0]);
+    if (u !== '') { m[normalizar_(u)] = u; }
+  }
+  return m;
+}
+
+function indiceZonas_(ss) {
+  var t = leerTabla_(ss, H.ZONAS, ZON_NCOL);
+  var m = {}, i, z;
+  for (i = 0; i < t.length; i++) {
+    z = txt_(t[i][Z_ZONA - 1]);
+    if (z === '') { continue; }
+    if (normalizar_(t[i][Z_ACTIVO - 1]) === 'no') { continue; }
+    m[normalizar_(z)] = t[i];
+  }
+  return m;
+}
+
+function indiceStock_(ss) {
+  var t = leerTabla_(ss, H.MAESTRO, MAE_NCOL);
+  var m = {}, i, p;
+  for (i = 0; i < t.length; i++) {
+    p = txt_(t[i][M_PROD - 1]);
+    if (p === '') { continue; }
+    m[normalizar_(p)] = { cant: num_(t[i][M_CANT - 1]), fecha: txt_(t[i][M_FECHA - 1]) };
+  }
+  return m;
+}
+
+function avisoCaptura_(cap, texto, color) {
+  cap.getRange(CAP_AVISO).setValue(texto).setBackground(color);
+}
+
+function mostrar_(titulo, texto) {
+  try { SpreadsheetApp.getUi().alert(titulo, texto, SpreadsheetApp.getUi().ButtonSet.OK); }
+  catch (e) {
+    try { SpreadsheetApp.getActive().toast(texto.substring(0, 240), titulo, 12); } catch (e2) {}
+  }
+}
+
+function usuario_() {
+  var u = '';
+  try { u = Session.getActiveUser().getEmail(); } catch (e) { u = ''; }
+  return u === '' ? 'sin identificar' : u;
+}
+
+function txt_(v) {
+  if (v === null || v === undefined) { return ''; }
+  return ('' + v).replace(/ /g, ' ').replace(/^\s+|\s+$/g, '');
+}
+
+/* Convierte texto a número con criterio colombiano, pero sin tragarse el punto
+   decimal. Borrar todos los puntos a ciegas convertía "1.5" en 15: el parámetro
+   SOBRANTE_MAX_VS_UNIDAD valía quince veces lo que decía y la compuerta nunca
+   saltaba. Regla: con coma presente, la coma es el decimal y el punto agrupa;
+   con solo puntos, el punto agrupa únicamente si todos los grupos son de tres
+   cifras ("1.234.500"), que es la forma en que se escribe un miliar aquí. */
+function num_(v) {
+  if (typeof v === 'number') { return isNaN(v) ? 0 : v; }
+  var s = txt_(v).replace(/\s/g, '');
+  if (s === '') { return 0; }
+  var neg = s.charAt(0) === '-';
+  if (neg) { s = s.substring(1); }
+  if (s.indexOf(',') >= 0) {
+    s = s.replace(/\./g, '').replace(/,/g, '.');
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+    s = s.replace(/\./g, '');
+  }
+  var n = parseFloat(s);
+  if (isNaN(n)) { return 0; }
+  return neg ? -n : n;
+}
+
+/* Sin String.normalize: tabla de caracteres propia. */
+var ACENTOS = 'áàäâãÁÀÄÂÃéèëêÉÈËÊíìïîÍÌÏÎóòöôõÓÒÖÔÕúùüûÚÙÜÛñÑçÇ';
+var LLANOS  = 'aaaaaAAAAAeeeeEEEEiiiiIIIIoooooOOOOOuuuuUUUUnNcC';
+
+function sinTildes_(s) {
+  var out = '', i, p;
+  for (i = 0; i < s.length; i++) {
+    p = ACENTOS.indexOf(s.charAt(i));
+    out += (p >= 0) ? LLANOS.charAt(p) : s.charAt(i);
+  }
+  return out;
+}
+
+function normalizar_(v) {
+  return sinTildes_(txt_(v)).toLowerCase().replace(/\s+/g, ' ');
+}
+
+function indiceDe_(arr, v) {
+  var i;
+  for (i = 0; i < arr.length; i++) { if (arr[i] === v) { return i; } }
+  return -1;
+}
+
+function mediana_(v) {
+  if (!v.length) { return 0; }
+  var a = v.slice(0);
+  a.sort(function (x, y) { return x - y; });
+  var m = Math.floor(a.length / 2);
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+
+function redondear_(n) {
+  if (typeof n !== 'number' || isNaN(n)) { return ''; }
+  return Math.round(n * 100) / 100;
+}
+
+function pad3_(n) {
+  if (n < 10) { return '00' + n; }
+  if (n < 100) { return '0' + n; }
+  return '' + n;
+}
+
+function diasDesde_(fechaTxt, hoy) {
+  if (!fechaTxt) { return ''; }
+  var p = ('' + fechaTxt).substring(0, 10).split('-');
+  if (p.length !== 3) { return ''; }
+  var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+  return Math.round((hoy.getTime() - d.getTime()) / 86400000);
+}

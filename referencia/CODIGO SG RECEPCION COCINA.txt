@@ -1,0 +1,2762 @@
+/**
+ * ============================================================================
+ *  SGI DI ÉGIDA BISTRÓ — MOTOR DE RECEPCIÓN DE COCINA v3.4.1
+ *  FMT-REC-COC-003  |  Google Apps Script  |  03/10/2026
+ * ----------------------------------------------------------------------------
+ *  Qué hace: elimina por completo el pega-y-borra. Una casilla de verificación
+ *  en la hoja RECEPCION dispara un guardado atómico que valida 11 compuertas,
+ *  escribe en el libro mayor, recalcula todos los derivados, deja firma en
+ *  bitácora y limpia el formulario. Funciona desde iPad porque las casillas
+ *  de verificación sí responden en la app móvil de Google Sheets.
+ *
+ *  NOVEDADES v3.4
+ *   · Hoja PRODUCTOS: el chef y el sous chef crean, dan de baja y reactivan
+ *     productos desde el iPad, con una casilla. Antes de crear, el motor busca
+ *     nombres iguales o parecidos y no deja duplicar sin una nota explícita.
+ *   · CATÁLOGO con columna VIGENCIA (ACTIVO / INACTIVO). La lista de RECEPCIÓN
+ *     solo muestra los activos. Una baja nunca borra historia: si el producto
+ *     tiene compras queda inactivo; si nunca tuvo, se elimina.
+ *   · Hoja DUPLICADOS: los pares sospechosos del catálogo, con una columna de
+ *     decisión que se aplica con una casilla.
+ *   · Corregido el «rechazo fantasma»: una segunda marca de la casilla después
+ *     de un guardado exitoso ya no registra un RECHAZADO ni tapa el mensaje
+ *     de éxito.
+ *   · Corregido el fallo de «índice de nombres» (celda combinada del TABLERO)
+ *     que tenía los avisos vivos detenidos desde el 09/09/2026.
+ *   · Eliminadas tres funciones definidas dos veces (ajustarEstetica,
+ *     configurarImpresion_, exportarRecepcionPDF): ganaba la versión sin blindaje.
+ *   · Retirada la depuración de la v3.1 (mapa fijo, ya ejecutada): volver a
+ *     correrla hoy reconstruiría el CATÁLOGO y borraría los productos nuevos.
+ *
+ *  v3.4.1 (03/10/2026): el parche ya no intenta combinar el título del CATÁLOGO
+ *  (cruzaba la columna inmovilizada y hacía fallar el paso de CONFIG), y cambiar
+ *  RESPONSABLES_CATALOGO en CONFIG actualiza las listas al instante.
+ *
+ *  ACTUALIZAR DESDE LA v3.3.2 (una sola vez, desde un computador):
+ *    1. Extensiones → Apps Script. Borrar TODO el contenido de TODOS los .gs.
+ *    2. Pegar este archivo completo como único .gs y guardar.
+ *    3. Ejecutar la función  aplicarParche34  y autorizar si lo pide.
+ *  No ejecute «instalar» encima de un archivo con datos: use el parche.
+ * ============================================================================
+ */
+
+// ===========================================================================
+// 00 · CONSTANTES DE ESTRUCTURA
+// ===========================================================================
+var VERSION = 'v3.4.1';
+
+var H = {
+  TAB:'TABLERO', REC:'RECEPCION', BD:'BD_RECEPCIONES', CAT:'CATALOGO',
+  MAE:'MAESTRO_PRECIOS', PRV:'PROVEEDORES', LEG:'LEGALIZACION',
+  BIT:'BITACORA', DIAG:'DIAGNOSTICO', CFG:'CONFIG', BAN:'BANDAS', INS:'INSTRUCCIONES',
+  PRD:'PRODUCTOS', DUP:'DUPLICADOS', LIS:'LISTAS'
+};
+
+var REC = {
+  F_INI:11, F_FIN:45, N_COL:22,
+  FECHA:'C5', SOPORTE:'I5', HORA:'O5',
+  PROVEEDOR:'C6', DOCUMENTO:'I6', ID_PREVIO:'O6',
+  RECIBE:'C7', TRANSPORTE:'I7', PRECINTO:'O7',
+  GUARDAR:'C59', FORZAR:'C60', MOTIVO:'C61', MENSAJE:'A62'
+};
+
+// Columnas de la hoja RECEPCION (1-indexadas)
+var R = { NUM:1, PRODUCTO:2, BASE:3, PRESENT:4, CANT_P:5, CONT_P:6, CANT_FACT:7,
+          CANT_PED:8, CANT_REAL:9, DIF:10, VALOR:11, PU:12, ULTIMO:13, VAR:14,
+          MERMA:15, COND:16, CONS:17, TEMP:18, TEMP_OK:19, VENC:20, LOTE:21, OBS:22 };
+
+// Columnas del libro mayor BD_RECEPCIONES (1-indexadas)
+var B = { ID_LINEA:1, ID_REC:2, FECHA:3, PROV:4, TIPO:5, DOC:6, RECIBE:7,
+          PRODUCTO:8, BASE:9, PRESENT:10, CANT_P:11, CONT_P:12, CANT_FACT:13,
+          CANT_PED:14, CANT_REAL:15, DIF:16, VALOR:17, PU:18, MERMA:19,
+          COND:20, CONS:21, TEMP:22, TEMP_OK:23, VENC:24, LOTE:25, OBS:26,
+          ORIGEN:27, REVISION:28, USUARIO:29, TS:30, OVERRIDE:31, MOTIVO:32,
+          ESTADO:33, REF_REV:34, N:34 };
+
+// Columnas del CATALOGO (1-indexadas). VIGENCIA y MOVIMIENTO nacen en la v3.4.
+var C = { NUM:1, NOMBRE:2, BASE:3, CAT:4, CONS:5, TMAX:6, COMPRAS:7, ESTADO:8,
+          VIG:9, MOV:10, N:10 };
+
+var CAT_F_INI = 6;   // primera fila de datos del CATALOGO
+var BD_F_INI  = 6;   // primera fila de datos del libro mayor
+var LIS_F_INI = 2;   // primera fila de datos de LISTAS
+var DUP_F_INI = 5;   // primera fila de datos de DUPLICADOS
+
+var CATEGORIAS = ['ABARROTES Y SECOS','AVES Y HUEVOS','CÁRNICOS','FRUVER','LÁCTEOS',
+                  'PESCA Y MARISCOS','ASEO Y DESECHABLES'];
+var BASES = ['g','ml','und'];
+var CONSERVACION = ['Ambiente','Refrigerado','Congelado'];
+var ACTIVO = 'ACTIVO', INACTIVO = 'INACTIVO';
+
+// Hoja PRODUCTOS — celdas que llena cocina
+var P = {
+  A_RESP:'C5', A_NOMBRE:'C6', A_BASE:'C7', A_CAT:'C8', A_CONS:'C9', A_TMAX:'C10',
+  A_NOTA:'C11', A_CHECK:'C12', A_MSG:'B13',
+  B_RESP:'C16', B_PROD:'C17', B_ACCION:'C18', B_MOTIVO:'C19', B_CHECK:'C20', B_MSG:'B21',
+  HIST_INI:25, HIST_N:20
+};
+var ACCION_BAJA = 'Dar de baja', ACCION_REACT = 'Reactivar';
+
+// Hoja DUPLICADOS — controles
+var DUPC = { RESP:'C3', CHECK:'H3', AVISO:'A2' };
+var DEC_DISTINTOS = 'Son distintos';
+var DEC_QUEDA_A   = 'Mismo producto: queda A, baja B';
+var DEC_QUEDA_B   = 'Mismo producto: queda B, baja A';
+
+// ===========================================================================
+// 01 · UTILIDADES BASE
+// ===========================================================================
+function ss_(){ return SpreadsheetApp.getActive(); }
+function hoja_(n){
+  var s = ss_().getSheetByName(n);
+  if(!s) throw new Error('No existe la hoja "'+n+'". Revise que el archivo sea el FMT-REC-COC-003 y que se haya ejecutado aplicarParche34.');
+  return s;
+}
+function num_(v){
+  if(v===''||v===null||v===undefined) return null;
+  if(typeof v==='number') return isNaN(v)?null:v;
+  var s=String(v).replace(/\s|\$/g,'').replace(/\.(?=\d{3}\b)/g,'').replace(',','.');
+  var f=parseFloat(s);
+  return isNaN(f)?null:f;
+}
+function txt_(v){ return (v===null||v===undefined)?'':String(v).trim(); }
+function esFecha_(v){ return !!(v && typeof v.getTime==='function' && !isNaN(v.getTime())); }
+function hoy_(){ var d=new Date(); return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+function dias_(a,b){ return Math.round((b-a)/86400000); }
+function fmt_(d, patron){ return Utilities.formatDate(d, Session.getScriptTimeZone(), patron||'dd/MM/yyyy HH:mm'); }
+function mediana_(a){
+  if(!a.length) return null;
+  var v=a.slice().sort(function(x,y){return x-y;}), m=Math.floor(v.length/2);
+  return v.length%2 ? v[m] : (v[m-1]+v[m])/2;
+}
+function usuario_(){
+  var e='';
+  try{ e = Session.getActiveUser().getEmail()||''; }catch(x){}
+  if(!e){ try{ e = Session.getEffectiveUser().getEmail()||''; }catch(x){} }
+  return e || 'no-identificado';
+}
+function enLista_(v, lista){
+  for(var i=0;i<lista.length;i++) if(lista[i]===v) return true;
+  return false;
+}
+
+/** Lee la hoja CONFIG como objeto {PARAMETRO: valor}. */
+function config_(){
+  var v = hoja_(H.CFG).getDataRange().getValues(), c={};
+  for(var i=0;i<v.length;i++){
+    var k=txt_(v[i][0]);
+    if(k && k.indexOf(' ')<0 && k===k.toUpperCase()) c[k]=v[i][1];
+  }
+  var resp=[], crudo=txt_(c.RESPONSABLES_CATALOGO).split(',');
+  for(var j=0;j<crudo.length;j++){ var r=txt_(crudo[j]); if(r) resp.push(r); }
+  if(!resp.length) resp=['Chef','Sous chef','Administración'];
+  return {
+    correoAdmin:      txt_(c.CORREO_ADMIN),
+    correoChef:       txt_(c.CORREO_CHEF),
+    umbralAlerta:     num_(c.UMBRAL_VARIACION_ALERTA) || 0.15,
+    umbralBloqueo:    num_(c.UMBRAL_VARIACION_BLOQUEO) || 0.60,
+    factorBanda:      num_(c.FACTOR_BANDA_PRECIO) || 20,
+    factorProducto:   num_(c.FACTOR_BANDA_PRODUCTO) || 3,
+    diasLegalizacion: num_(c.DIAS_LEGALIZACION) || 2,
+    diasEscalamiento: num_(c.DIAS_ESCALAMIENTO) || 5,
+    minMotivo:        num_(c.MIN_CARACTERES_MOTIVO) || 15,
+    exigirVenc:       txt_(c.EXIGIR_VENCIMIENTO_REFRIG).toUpperCase()!=='NO',
+    exigirTemp:       txt_(c.EXIGIR_TEMP_REFRIG).toUpperCase()!=='NO',
+    responsables:     resp
+  };
+}
+
+/** Lee el bloque de datos del CATALOGO con las columnas que existan (antes del parche son 8). */
+function leerCatalogoCrudo_(){
+  var s=hoja_(H.CAT), n=s.getLastRow()-CAT_F_INI+1;
+  if(n<1) return [];
+  var nc=Math.min(C.N, s.getMaxColumns());
+  var v=s.getRange(CAT_F_INI,1,n,nc).getValues();
+  for(var i=0;i<v.length;i++) while(v[i].length<C.N) v[i].push('');
+  return v;
+}
+
+/** Catálogo indexado por nombre de producto (activos e inactivos). */
+function catalogo_(){
+  var v=leerCatalogoCrudo_(), m={};
+  for(var i=0;i<v.length;i++){
+    var nom=txt_(v[i][C.NOMBRE-1]);
+    if(!nom) continue;
+    var vig=txt_(v[i][C.VIG-1]).toUpperCase()===INACTIVO ? INACTIVO : ACTIVO;
+    m[nom]={nombre:nom, base:txt_(v[i][C.BASE-1]), cat:txt_(v[i][C.CAT-1]),
+            cons:txt_(v[i][C.CONS-1]), tmax:num_(v[i][C.TMAX-1]),
+            vig:vig, mov:txt_(v[i][C.MOV-1]), fila:CAT_F_INI+i};
+  }
+  return m;
+}
+function activos_(cat){
+  var out={}, k=Object.keys(cat);
+  for(var i=0;i<k.length;i++) if(cat[k[i]].vig===ACTIVO) out[k[i]]=cat[k[i]];
+  return out;
+}
+
+/** Libro mayor completo como matriz. */
+function leerBD_(){
+  var s=hoja_(H.BD), n=s.getLastRow()-BD_F_INI+1;
+  if(n<1) return [];
+  return s.getRange(BD_F_INI,1,n,B.N).getValues().filter(function(f){ return txt_(f[B.ID_LINEA-1])!==''; });
+}
+
+/** Bandas de plausibilidad: {cat|base: {inf,sup}} con respaldo (GLOBAL). */
+function bandas_(){
+  var s=ss_().getSheetByName(H.BAN); if(!s) return {};
+  var n=s.getLastRow()-5; if(n<1) return {};
+  var v=s.getRange(6,1,n,7).getValues(), m={};
+  for(var i=0;i<v.length;i++){
+    var c=txt_(v[i][0]), b=txt_(v[i][1]);
+    if(!c||!b) continue;
+    m[c+'|'+b]={inf:num_(v[i][4]), sup:num_(v[i][5])};
+  }
+  return m;
+}
+function bandaDe_(bn, cat, base){
+  return bn[cat+'|'+base] || bn['(GLOBAL)|'+base] || null;
+}
+
+/** Un N° de documento tiene que identificar algo: ni relleno ni cadena vacía disfrazada. */
+function documentoValido_(doc){
+  var d=txt_(doc).replace(/\s/g,'');
+  if(d.length<4) return false;
+  if(/^[0\-\.\_\/]+$/.test(d)) return false;
+  if(['na','n/a','no','sin','ninguno','nose','xxxx','1234','0000'].indexOf(d.toLowerCase())>=0) return false;
+  if(!/[0-9]/.test(d)) return false;
+  return true;
+}
+
+/** Escribe una línea en BITACORA (append-only). */
+function bitacora_(accion, resultado, idRec, nLineas, motivo, detalle){
+  try{
+    hoja_(H.BIT).appendRow([new Date(), usuario_(), accion, resultado,
+      idRec||'', nLineas||0, motivo||'', String(detalle||'').substring(0,1000)]);
+  }catch(x){}
+}
+
+/** Mensaje de sistema en la hoja RECEPCION. */
+function mensaje_(texto, tipo){
+  var s=hoja_(H.REC), c=s.getRange(REC.MENSAJE);
+  c.setValue(texto);
+  var col = tipo==='ok' ? '#1A6B5C' : (tipo==='warn' ? '#9C6500' : '#CC0000');
+  var fon = tipo==='ok' ? '#E2EFDA' : (tipo==='warn' ? '#FFF2CC' : '#F4CCCC');
+  s.getRange(REC.MENSAJE+':V62').setBackground(fon).setFontColor(col).setFontWeight('bold');
+  try{ ss_().toast(String(texto).substring(0,240), tipo==='ok'?'Guardado':'Revisar', tipo==='ok'?6:12); }catch(x){}
+}
+
+// ===========================================================================
+// 02 · DISPARADOR — la casilla de verificación es el botón que sí funciona en iPad
+// ===========================================================================
+function alEditar(e){
+  var nombreHoja='', a1='';
+  try{
+    if(!e || !e.range) return;
+    var h = e.range.getSheet();
+    nombreHoja = h.getName();
+    a1 = e.range.getA1Notation();
+    if(nombreHoja===H.REC){
+      if(a1===REC.GUARDAR && e.range.getValue()===true) guardarRecepcion();
+      return;
+    }
+    if(nombreHoja===H.PRD){
+      if(a1===P.A_CHECK && e.range.getValue()===true) crearProductoHoja();
+      else if(a1===P.B_CHECK && e.range.getValue()===true) bajaProductoHoja();
+      return;
+    }
+    if(nombreHoja===H.CFG){
+      // al cambiar la lista de responsables, las listas desplegables se actualizan solas
+      var fila=e.range.getRow(), k=txt_(h.getRange(fila,1).getValue());
+      if(k==='RESPONSABLES_CATALOGO') actualizarResponsables_();
+      return;
+    }
+    if(nombreHoja===H.DUP){
+      if(a1===DUPC.CHECK && e.range.getValue()===true) aplicarDecisionesDuplicados();
+      return;
+    }
+  }catch(err){
+    bitacora_(nombreHoja===H.REC?'GUARDAR':'CATÁLOGO','ERROR TÉCNICO','',0,'',err.message);
+    try{
+      if(nombreHoja===H.REC){
+        mensaje_('⛔ Error inesperado: '+err.message, 'err');
+        hoja_(H.REC).getRange(REC.GUARDAR).setValue(false);
+      } else if(nombreHoja===H.PRD){
+        var msg = (a1===P.B_CHECK) ? P.B_MSG : P.A_MSG;
+        msgProductos_(msg, '⛔ Error inesperado: '+err.message, 'err');
+        hoja_(H.PRD).getRange(a1).setValue(false);
+      } else if(nombreHoja===H.DUP){
+        hoja_(H.DUP).getRange(DUPC.AVISO).setValue('⛔ Error inesperado: '+err.message);
+        hoja_(H.DUP).getRange(DUPC.CHECK).setValue(false);
+      }
+    }catch(x){}
+  }
+}
+
+// ===========================================================================
+// 03 · NÚCLEO — guardado atómico
+// ===========================================================================
+function guardarRecepcion(){
+  var lock = LockService.getDocumentLock();
+  if(!lock.tryLock(25000)){
+    mensaje_('⏳ Otro guardado está en curso. Espere unos segundos y vuelva a marcar la casilla.','warn');
+    hoja_(H.REC).getRange(REC.GUARDAR).setValue(false);
+    return;
+  }
+  try{
+    var s   = hoja_(H.REC);
+
+    // --- lectura del encabezado y de las líneas ---
+    var enc = {
+      fecha:     s.getRange(REC.FECHA).getValue(),
+      soporte:   txt_(s.getRange(REC.SOPORTE).getValue()),
+      proveedor: txt_(s.getRange(REC.PROVEEDOR).getValue()),
+      documento: txt_(s.getRange(REC.DOCUMENTO).getValue()),
+      recibe:    txt_(s.getRange(REC.RECIBE).getValue()),
+      transporte:txt_(s.getRange(REC.TRANSPORTE).getValue()),
+      precinto:  txt_(s.getRange(REC.PRECINTO).getValue())
+    };
+    var bruto = s.getRange(REC.F_INI,1,REC.F_FIN-REC.F_INI+1,REC.N_COL).getValues();
+    var lineas = [];
+    for(var i=0;i<bruto.length;i++){
+      if(txt_(bruto[i][R.PRODUCTO-1])!=='') lineas.push({fila:REC.F_INI+i, v:bruto[i]});
+    }
+
+    // --- formulario vacío: casi siempre es la casilla marcada otra vez justo
+    //     después de un guardado exitoso (el iPad tarda en mostrar que se limpió).
+    //     No es un rechazo: no se registra y no se tapa el mensaje de éxito.
+    if(!txt_(enc.fecha) && !enc.proveedor && !enc.soporte && !enc.recibe && !lineas.length){
+      var ult=ultimoGuardado_();
+      if(ult && (new Date().getTime()-ult.t) < 5*60000){
+        try{ ss_().toast('La recepción '+ult.id+' ya quedó guardada. No hace falta volver a marcar.','Ya está guardada',8); }catch(x){}
+      } else {
+        mensaje_('⬜ El formulario está vacío: no hay nada que guardar.','warn');
+      }
+      return;
+    }
+
+    var cfg = config_();
+    var cat = catalogo_();
+    var bn  = bandas_();
+    var bd  = leerBD_();
+
+    var forzar = s.getRange(REC.FORZAR).getValue()===true;
+    var motivo = txt_(s.getRange(REC.MOTIVO).getValue());
+
+    // --- compuertas de validación ---
+    var val = validar_(enc, lineas, cat, bn, bd, cfg);
+
+    // Errores que NO admiten forzado nunca: se informan primero
+    if(val.fatales.length){
+      mensaje_('⛔ NO SE GUARDÓ y no admite forzado:\n• '+val.fatales.join('\n• '),'err');
+      bitacora_('GUARDAR','RECHAZADO: ERROR FATAL','',lineas.length,motivo,val.fatales.join(' | '));
+      return;
+    }
+    if(val.bloqueos.length && !forzar){
+      var m = '⛔ NO SE GUARDÓ. '+val.bloqueos.length+' condición(es) lo impiden:\n• '+
+              val.bloqueos.join('\n• ')+
+              '\n\nCorrija y vuelva a marcar la casilla. Si el pedido debe quedar registrado igual, '+
+              'escriba el motivo en la celda '+REC.MOTIVO+', marque «Forzar guardado» y guarde de nuevo.';
+      mensaje_(m,'err');
+      bitacora_('GUARDAR','RECHAZADO','',lineas.length,'',val.bloqueos.join(' | '));
+      return;
+    }
+    if(val.bloqueos.length && forzar && motivo.length < cfg.minMotivo){
+      mensaje_('⛔ El forzado exige un motivo escrito de al menos '+cfg.minMotivo+
+               ' caracteres en la celda '+REC.MOTIVO+'. Quedará firmado con su nombre en la BITÁCORA.','err');
+      bitacora_('GUARDAR','RECHAZADO: MOTIVO INSUFICIENTE','',lineas.length,motivo,val.bloqueos.join(' | '));
+      return;
+    }
+
+    // --- asignación de identidad (consecutivo real, a prueba de colisiones) ---
+    var f = new Date(enc.fecha);
+    var yyyymmdd = fmt_(f, 'yyyyMMdd');
+    var usados = {};
+    for(var k=0;k<bd.length;k++) usados[txt_(bd[k][B.ID_REC-1])]=true;
+    var nn=1, idRec;
+    do { idRec = 'REC-COC-'+yyyymmdd+'-'+('0'+nn).slice(-2); nn++; } while(usados[idRec] && nn<100);
+
+    // --- construcción de las filas del libro mayor ---
+    var ts = new Date(), usr = usuario_(), ovr = (val.bloqueos.length && forzar) ? 'SÍ' : 'NO';
+    var filas = [];
+    for(var j=0;j<lineas.length;j++){
+      var v = lineas[j].v, c = cat[txt_(v[R.PRODUCTO-1])] || {};
+      var fila = new Array(B.N);
+      fila[B.ID_LINEA-1]  = idRec+'-'+('00'+(j+1)).slice(-3);
+      fila[B.ID_REC-1]    = idRec;
+      fila[B.FECHA-1]     = f;
+      fila[B.PROV-1]      = enc.proveedor;
+      fila[B.TIPO-1]      = enc.soporte;
+      fila[B.DOC-1]       = enc.documento;
+      fila[B.RECIBE-1]    = enc.recibe;
+      fila[B.PRODUCTO-1]  = txt_(v[R.PRODUCTO-1]);
+      fila[B.BASE-1]      = txt_(v[R.BASE-1]) || c.base || '';
+      fila[B.PRESENT-1]   = txt_(v[R.PRESENT-1]);
+      fila[B.CANT_P-1]    = num_(v[R.CANT_P-1]);
+      fila[B.CONT_P-1]    = num_(v[R.CONT_P-1]);
+      fila[B.CANT_FACT-1] = num_(v[R.CANT_FACT-1]);
+      fila[B.CANT_PED-1]  = num_(v[R.CANT_PED-1]);
+      fila[B.CANT_REAL-1] = num_(v[R.CANT_REAL-1]);
+      fila[B.DIF-1]       = num_(v[R.DIF-1]);
+      fila[B.VALOR-1]     = num_(v[R.VALOR-1]);
+      fila[B.PU-1]        = num_(v[R.PU-1]);
+      fila[B.MERMA-1]     = num_(v[R.MERMA-1]);
+      fila[B.COND-1]      = txt_(v[R.COND-1]);
+      fila[B.CONS-1]      = txt_(v[R.CONS-1]) || c.cons || '';
+      fila[B.TEMP-1]      = v[R.TEMP-1];
+      fila[B.TEMP_OK-1]   = txt_(v[R.TEMP_OK-1]);
+      fila[B.VENC-1]      = v[R.VENC-1];
+      fila[B.LOTE-1]      = txt_(v[R.LOTE-1]);
+      fila[B.OBS-1]       = txt_(v[R.OBS-1]);
+      fila[B.ORIGEN-1]    = VERSION;
+      fila[B.REVISION-1]  = val.revision[lineas[j].fila] || '';
+      fila[B.USUARIO-1]   = usr;
+      fila[B.TS-1]        = ts;
+      fila[B.OVERRIDE-1]  = ovr;
+      fila[B.MOTIVO-1]    = ovr==='SÍ' ? motivo : '';
+      fila[B.ESTADO-1]    = 'ACTIVA';
+      fila[B.REF_REV-1]   = '';
+      filas.push(fila);
+    }
+
+    // --- escritura en bloque, siempre al final (append-only) ---
+    var hb = hoja_(H.BD);
+    var destino = Math.max(hb.getLastRow()+1, BD_F_INI);
+    if(destino + filas.length > hb.getMaxRows()) hb.insertRowsAfter(hb.getMaxRows(), filas.length+200);
+    hb.getRange(destino,1,filas.length,B.N).setValues(filas);
+    hb.getRange(destino,B.FECHA,filas.length,1).setNumberFormat('dd/mm/yyyy');
+    hb.getRange(destino,B.TS,filas.length,1).setNumberFormat('dd/mm/yyyy hh:mm');
+    SpreadsheetApp.flush();
+    marcarUltimoGuardado_(idRec);
+
+    // --- limpieza del formulario ANTES del recálculo: si el recálculo tarda,
+    //     el formulario ya se ve limpio y nadie vuelve a marcar la casilla.
+    limpiarFormulario_();
+    var aviso = val.avisos.length ? '\n⚠ Quedó registrado con '+val.avisos.length+' aviso(s): '+val.avisos.join(' | ') : '';
+    var txtOvr = ovr==='SÍ' ? '\n🔴 GUARDADO FORZADO. Motivo firmado en BITÁCORA.' : '';
+    mensaje_('✅ Recepción guardada como '+idRec+' — '+filas.length+' línea(s). No hace falta volver a marcar la casilla.'+
+             txtOvr+aviso, ovr==='SÍ'?'warn':'ok');
+    bitacora_('GUARDAR', ovr==='SÍ'?'GUARDADO CON OVERRIDE':'GUARDADO', idRec, filas.length, ovr==='SÍ'?motivo:'',
+              val.avisos.join(' | '));
+
+    // --- derivados: se recalculan en el único momento en que pueden cambiar ---
+    try{ recalcularTodo(); }
+    catch(eR){ bitacora_('RECÁLCULO','ERROR',idRec,0,'',eR.message+' — la recepción sí quedó guardada.'); }
+
+  } finally {
+    try{ hoja_(H.REC).getRange(REC.GUARDAR).setValue(false); }catch(x){}
+    lock.releaseLock();
+  }
+}
+
+function marcarUltimoGuardado_(id){
+  try{ PropertiesService.getDocumentProperties().setProperty('ultimo_guardado',
+       JSON.stringify({id:id, t:new Date().getTime()})); }catch(x){}
+}
+function ultimoGuardado_(){
+  try{
+    var s=PropertiesService.getDocumentProperties().getProperty('ultimo_guardado');
+    return s ? JSON.parse(s) : null;
+  }catch(x){ return null; }
+}
+
+/** Borra solo las celdas de captura. Nunca toca fórmulas. */
+function limpiarFormulario_(){
+  var s=hoja_(H.REC);
+  var enc=[REC.FECHA,REC.SOPORTE,REC.PROVEEDOR,REC.DOCUMENTO,REC.RECIBE,REC.TRANSPORTE,REC.PRECINTO,REC.HORA];
+  for(var i=0;i<enc.length;i++) s.getRange(enc[i]).clearContent();
+  var manual=[R.PRODUCTO,R.PRESENT,R.CANT_P,R.CONT_P,R.CANT_PED,R.CANT_REAL,R.VALOR,
+              R.COND,R.TEMP,R.VENC,R.LOTE,R.OBS];
+  var n=REC.F_FIN-REC.F_INI+1;
+  for(var j=0;j<manual.length;j++) s.getRange(REC.F_INI,manual[j],n,1).clearContent();
+  s.getRange(REC.FORZAR).setValue(false);
+  s.getRange(REC.MOTIVO).clearContent();
+}
+
+// ===========================================================================
+// 04 · LAS 11 COMPUERTAS DE VALIDACIÓN
+// ===========================================================================
+function validar_(enc, lineas, cat, bn, bd, cfg){
+  var bloqueos=[], avisos=[], fatales=[], revision={};
+
+  // G1 — encabezado completo
+  if(!esFecha_(enc.fecha)) fatales.push('G1 · La fecha de recepción está vacía o no es una fecha válida.');
+  if(!enc.proveedor) fatales.push('G1 · Falta el proveedor.');
+  if(!enc.soporte)   fatales.push('G1 · Falta el tipo de soporte.');
+  if(!enc.recibe)    fatales.push('G1 · Falta el nombre de quien recibe.');
+
+  // G2 — fecha no futura
+  if(esFecha_(enc.fecha)){
+    var d=new Date(enc.fecha.getFullYear(),enc.fecha.getMonth(),enc.fecha.getDate());
+    if(dias_(hoy_(),d) > 0) fatales.push('G2 · La fecha de recepción es futura ('+fmt_(d,'dd/MM/yyyy')+').');
+    if(dias_(d,hoy_()) > 60) avisos.push('G2 · La recepción tiene más de 60 días de antigüedad.');
+  }
+
+  // G3 — al menos una línea
+  if(!lineas.length) fatales.push('G3 · No hay ningún producto registrado.');
+  if(fatales.length) return {bloqueos:bloqueos, avisos:avisos, fatales:fatales, revision:revision};
+
+  // G4 — soporte documental
+  if(enc.soporte==='Sin soporte'){
+    bloqueos.push('G4 · La recepción no tiene factura ni remisión.');
+  } else if(!enc.documento){
+    bloqueos.push('G4 · Falta el N° de documento del soporte.');
+  } else if(!documentoValido_(enc.documento)){
+    bloqueos.push('G4 · «'+enc.documento+'» no es un número de documento válido. '+
+                  'Debe ser el identificador real de la factura o remisión, con al menos 4 caracteres.');
+  }
+
+  // G10 — idempotencia
+  if(enc.documento){
+    for(var k=0;k<bd.length;k++){
+      if(txt_(bd[k][B.DOC-1])===enc.documento && txt_(bd[k][B.PROV-1])===enc.proveedor
+         && txt_(bd[k][B.ESTADO-1])==='ACTIVA'){
+        fatales.push('G10 · El documento '+enc.documento+' de '+enc.proveedor+
+                     ' ya está registrado en el libro mayor ('+txt_(bd[k][B.ID_REC-1])+'). '+
+                     'Si es una corrección, use la función reversarRecepcion en lugar de volver a guardar.');
+        break;
+      }
+    }
+  }
+
+  // Histórico por producto, LIMPIO (sin precios fuera de banda)
+  var hist={};
+  for(var i=0;i<bd.length;i++){
+    if(txt_(bd[i][B.ESTADO-1])!=='ACTIVA') continue;
+    var p=txt_(bd[i][B.PRODUCTO-1]), pu=num_(bd[i][B.PU-1]);
+    if(!p || !pu || pu<=0) continue;
+    var cc=cat[p]; if(!cc) continue;
+    var bb=bandaDe_(bn, cc.cat, cc.base);
+    if(bb && bb.inf && bb.sup && (pu<bb.inf || pu>bb.sup)) continue;
+    (hist[p]=hist[p]||[]).push(pu);
+  }
+
+  var vistos={};
+  for(var j=0;j<lineas.length;j++){
+    var L=lineas[j], v=L.v, f=L.fila, pre='Fila '+f+' ';
+    var prod=txt_(v[R.PRODUCTO-1]);
+    var c=cat[prod];
+
+    // G5 — integridad referencial (se revalida aquí porque un pegado puede saltarse la lista)
+    if(!c){ fatales.push('G5 · '+pre+'— «'+prod+'» no existe en el CATÁLOGO. Créelo en la hoja PRODUCTOS (bloque 1) y vuelva a marcar.'); continue; }
+    if(c.vig===INACTIVO){
+      fatales.push('G5 · '+pre+'— «'+prod+'» está dado de baja'+(c.mov?(' ('+c.mov+')'):'')+
+                   '. Si se volvió a comprar, reactívelo en la hoja PRODUCTOS (bloque 2) y vuelva a marcar.');
+      continue;
+    }
+
+    // G6 — producto repetido en la misma recepción
+    if(vistos[prod]) avisos.push('G6 · '+prod+' aparece más de una vez en esta recepción (filas '+vistos[prod]+' y '+f+').');
+    else vistos[prod]=f;
+
+    // G7 — cantidades numéricas y coherentes
+    var cp=num_(v[R.CANT_P-1]), cont=num_(v[R.CONT_P-1]), cr=num_(v[R.CANT_REAL-1]);
+    if(cp===null||cp<=0)   bloqueos.push('G7 · '+pre+'— falta la cantidad de presentaciones.');
+    if(cont===null||cont<=0) bloqueos.push('G7 · '+pre+'— falta el contenido por presentación en '+(c.base||'unidad base')+'.');
+    if(cr===null||cr<0)   bloqueos.push('G7 · '+pre+'— falta la cantidad REAL recibida (hay que pesarla o contarla).');
+
+    // G8 — valor de la factura
+    var val=num_(v[R.VALOR-1]), pu2=num_(v[R.PU-1]);
+    if(val===null||val<=0){
+      bloqueos.push('G8 · '+pre+'— falta el valor de la línea en la factura. Sin eso no hay costo.');
+      revision[f]='SIN PRECIO — cargar desde factura';
+    }
+
+    // G9 — doble banda de control de precio
+    if(pu2 && pu2>0){
+      var b=bandaDe_(bn, c.cat, c.base);
+      if(b && b.inf && b.sup && (pu2 < b.inf || pu2 > b.sup)){
+        bloqueos.push('G9 · '+pre+'— '+prod+' a '+pu2.toFixed(2)+' por '+c.base+
+          ' está fuera de la banda razonable de '+c.cat+' ('+b.inf.toFixed(2)+' a '+b.sup.toFixed(2)+
+          '). Casi siempre es el precio del paquete puesto como precio por '+c.base+
+          ': revise el contenido por presentación.');
+        revision[f]='PRECIO FUERA DE BANDA — verificar presentación';
+      } else if(hist[prod] && hist[prod].length>=1){
+        var med=mediana_(hist[prod]);
+        if(med>0){
+          var q=pu2/med;
+          if(q>cfg.factorProducto || q<1/cfg.factorProducto){
+            bloqueos.push('G9 · '+pre+'— '+prod+' a '+pu2.toFixed(2)+' se sale '+
+              (q>1?(q.toFixed(1)+' veces por encima'):((1/q).toFixed(1)+' veces por debajo'))+
+              ' de su precio habitual ('+med.toFixed(2)+').');
+            revision[f]='PRECIO ATÍPICO FRENTE AL HISTÓRICO';
+          } else if(Math.abs(q-1) > cfg.umbralBloqueo){
+            bloqueos.push('G9 · '+pre+'— '+prod+' varió '+((q-1)*100).toFixed(0)+'% frente a su precio habitual.');
+          } else if(Math.abs(q-1) > cfg.umbralAlerta){
+            avisos.push('G9 · '+prod+' varió '+((q-1)*100).toFixed(0)+'% frente a su precio habitual.');
+          }
+        }
+      }
+    }
+
+    // G11 — cadena de frío y trazabilidad del perecedero
+    var cons=txt_(v[R.CONS-1]) || c.cons;
+    if(cons && cons!=='Ambiente'){
+      var t=num_(v[R.TEMP-1]);
+      if(cfg.exigirTemp && t===null){
+        bloqueos.push('G11 · '+pre+'— '+prod+' es '+cons.toLowerCase()+' y no tiene temperatura de llegada medida.');
+      } else if(t!==null && c.tmax!==null && t>c.tmax){
+        bloqueos.push('G11 · '+pre+'— '+prod+' llegó a '+t+' °C y el máximo es '+c.tmax+
+          ' °C. Debe rechazarse o retenerse, y notificar a Chef y Administración.');
+        revision[f]='TEMPERATURA FUERA DE RANGO';
+      }
+      if(cfg.exigirVenc && !v[R.VENC-1]){
+        bloqueos.push('G11 · '+pre+'— '+prod+' es '+cons.toLowerCase()+' y no tiene fecha de vencimiento.');
+      }
+    }
+    if(esFecha_(v[R.VENC-1])){
+      var dv=dias_(hoy_(), new Date(v[R.VENC-1]));
+      if(dv<0)      bloqueos.push('G11 · '+pre+'— '+prod+' llegó vencido.');
+      else if(dv<=3) avisos.push('G11 · '+prod+' vence en '+dv+' día(s).');
+    }
+    var dif=num_(v[R.DIF-1]);
+    if(dif!==null && dif<0){
+      var mer=num_(v[R.MERMA-1]);
+      avisos.push('G7 · '+prod+': llegaron '+Math.abs(dif)+' '+c.base+' menos de lo facturado'+
+                  (mer?(' ('+mer.toFixed(0)+' pesos)'):'')+'. Descontar en la factura.');
+    }
+  }
+  return {bloqueos:bloqueos, avisos:avisos, fatales:fatales, revision:revision};
+}
+
+// ===========================================================================
+// 05 · RECÁLCULO DE DERIVADOS (el iPad no carga ni una fórmula de agregación)
+// ===========================================================================
+function recalcularTodo(){
+  var cfg=config_(), cat=catalogo_(), bd=leerBD_();
+  var act=bd.filter(function(f){ return txt_(f[B.ESTADO-1])==='ACTIVA'; });
+  var mae=recalcularMaestro_(cat, act);
+  var leg=recalcularLegalizacion_(act, cfg);
+  recalcularProveedores_(act, leg);
+  recalcularBandas_(cat, act, cfg);
+  var pares=[];
+  try{ pares=refrescarDuplicados_(cat, act); }catch(e){ bitacora_('DUPLICADOS','ERROR','',0,'',e.message); }
+  var diag=recalcularDiagnostico_(cat, bd, act, mae, leg, cfg, pares);
+  try{ recalcularTablero_(cat, act, mae, leg, diag); }catch(e){ bitacora_('TABLERO','ERROR','',0,'',e.message); }
+  SpreadsheetApp.flush();   // cualquier error de escritura pendiente sale aquí, no en el siguiente bloque
+  refrescarAvisos_(cat, act, mae, leg, diag, pares);
+  try{ refrescarListas_(cat); }catch(e){ bitacora_('LISTAS','ERROR','',0,'',e.message); }
+  SpreadsheetApp.flush();
+  return {mae:mae, leg:leg, diag:diag};
+}
+
+function recalcularMaestro_(cat, act){
+  var porProd={};
+  for(var i=0;i<act.length;i++){
+    var p=txt_(act[i][B.PRODUCTO-1]), pu=num_(act[i][B.PU-1]);
+    if(!p||!pu||pu<=0) continue;
+    (porProd[p]=porProd[p]||[]).push({pu:pu, f:act[i][B.FECHA-1], prov:txt_(act[i][B.PROV-1])});
+  }
+  var nombres=Object.keys(cat).sort(function(a,b){ return a.toLowerCase()<b.toLowerCase()?-1:1; });
+  var out=[], res=[];
+  for(var k=0;k<nombres.length;k++){
+    var nom=nombres[k], c=cat[nom], h=(porProd[nom]||[]).slice();
+    h.sort(function(x,y){ return (x.f||0)-(y.f||0); });
+    if(!h.length){
+      out.push([k+1,nom,c.base,c.cat,0,'','','','','','','','',
+                c.vig===INACTIVO?'⏸ Dado de baja · sin precio':'⬜ Sin precio registrado','']);
+      res.push({nombre:nom,n:0,med:null,var:null,estado:'⬜',vig:c.vig}); continue;
+    }
+    var ps=h.map(function(x){return x.pu;});
+    var mn=Math.min.apply(null,ps), mx=Math.max.apply(null,ps);
+    var prom=ps.reduce(function(a,b){return a+b;},0)/ps.length, med=mediana_(ps);
+    var u=h[h.length-1], vr = mn>0 ? (mx-mn)/mn : '';
+    var est = ps.length===1 ? '🔵 Un solo dato — sin validar'
+            : (vr>0.4 ? '🔴 Variación crítica >40%'
+            : (vr>0.15 ? '🟠 Variación alta 15–40%' : '🟢 Precio estable'));
+    if(c.vig===INACTIVO) est='⏸ Dado de baja · '+est;
+    out.push([k+1,nom,c.base,c.cat,ps.length,u.pu,u.f,u.prov,mn,mx,prom,med,vr,est,
+              c.base==='und'?'':u.pu*1000]);
+    res.push({nombre:nom,n:ps.length,med:med,var:vr,estado:c.vig===INACTIVO?'⏸':est.substring(0,2),vig:c.vig});
+  }
+  escribirBloque_(H.MAE, 6, 15, out);
+  return res;
+}
+
+function recalcularLegalizacion_(act, cfg){
+  var ord=[], m={};
+  for(var i=0;i<act.length;i++){
+    var id=txt_(act[i][B.ID_REC-1]);
+    if(!m[id]){ m[id]={id:id,fecha:act[i][B.FECHA-1],prov:txt_(act[i][B.PROV-1]),
+      tipo:txt_(act[i][B.TIPO-1]),doc:txt_(act[i][B.DOC-1]),n:0,val:0,sinp:0,ovr:0}; ord.push(m[id]); }
+    var r=m[id]; r.n++; r.val += num_(act[i][B.VALOR-1])||0;
+    if(!num_(act[i][B.PU-1])) r.sinp++;
+    if(txt_(act[i][B.OVERRIDE-1])==='SÍ') r.ovr++;
+  }
+  ord.sort(function(a,b){ return (a.fecha||0)-(b.fecha||0); });
+  var out=[], res=[];
+  for(var j=0;j<ord.length;j++){
+    var r2=ord[j], dias = r2.fecha ? dias_(new Date(r2.fecha), hoy_()) : '';
+    var est;
+    if(r2.tipo==='Sin soporte') est = (dias!=='' && dias>cfg.diasEscalamiento) ? '🔴 VENCIDA — escalar a Gerencia' : '🟠 Pendiente de factura';
+    else if(!r2.doc)  est='🟠 Falta N° de documento';
+    else if(r2.sinp)  est='🟠 Hay líneas sin precio';
+    else              est='🟢 Legalizada';
+    out.push([j+1,r2.id,r2.fecha,r2.prov,r2.tipo,r2.doc,r2.n,r2.val,r2.sinp,r2.ovr,dias,est]);
+    res.push({id:r2.id,prov:r2.prov,tipo:r2.tipo,dias:dias,estado:est,val:r2.val,sinp:r2.sinp});
+  }
+  escribirBloque_(H.LEG, 6, 12, out);
+  return res;
+}
+
+function recalcularProveedores_(act, leg){
+  var s=hoja_(H.PRV), n=s.getLastRow()-6+1;
+  if(n<1) return;
+  var nom=s.getRange(6,2,n,1).getValues();
+  var out=[];
+  for(var i=0;i<n;i++){
+    var p=txt_(nom[i][0]);
+    if(!p){ out.push(['','','','','','']); continue; }
+    var li=0, val=0, mer=0, sins=0;
+    for(var j=0;j<act.length;j++){
+      if(txt_(act[j][B.PROV-1])!==p) continue;
+      li++; val += num_(act[j][B.VALOR-1])||0; mer += num_(act[j][B.MERMA-1])||0;
+      if(txt_(act[j][B.TIPO-1])==='Sin soporte') sins++;
+    }
+    var nrec=0;
+    for(var q=0;q<leg.length;q++) if(leg[q].prov===p) nrec++;
+    var est = !li ? '⬜ Sin movimientos'
+            : (sins/li>0.5 ? '🔴 Más de la mitad sin soporte'
+            : (sins>0 ? '🟠 Tiene líneas sin soporte'
+            : (mer>0 ? '🟠 Registra merma facturada' : '🟢 Al día')));
+    out.push([nrec, li, val, mer, sins, est]);
+  }
+  s.getRange(6,5,n,6).setValues(out);
+}
+
+function recalcularBandas_(cat, act, cfg){
+  var F=cfg.factorBanda, g={}, gl={};
+  for(var i=0;i<act.length;i++){
+    var p=txt_(act[i][B.PRODUCTO-1]), pu=num_(act[i][B.PU-1]), c=cat[p];
+    if(!c||!pu||pu<=0) continue;
+    (g[c.cat+'|'+c.base]=g[c.cat+'|'+c.base]||[]).push(pu);
+    (gl[c.base]=gl[c.base]||[]).push(pu);
+  }
+  function rob(v){
+    if(!v.length) return null;
+    var m0=mediana_(v), k=v.filter(function(x){ return x>=m0/F && x<=m0*F; });
+    return mediana_(k.length?k:v);
+  }
+  var out=[], gm={};
+  for(var b=0;b<BASES.length;b++){
+    var m=rob(gl[BASES[b]]||[]);
+    gm[BASES[b]]=m;
+    if(m) out.push(['(GLOBAL)',BASES[b],(gl[BASES[b]]||[]).length,m,m/F,m*F,'Global por unidad base']);
+  }
+  var claves=Object.keys(g).sort();
+  for(var k=0;k<claves.length;k++){
+    var p2=claves[k].split('|'), v=g[claves[k]], m2=rob(v);
+    if(m2 && v.length>=5){
+      out.push([p2[0],p2[1],v.length,m2,m2/F,m2*F,'Histórico propio de la categoría']);
+    } else if(gm[p2[1]]){
+      var FH=F*3;
+      out.push([p2[0],p2[1],v.length,gm[p2[1]],gm[p2[1]]/FH,gm[p2[1]]*FH,
+        'Heredada y ensanchada ×3 — solo '+v.length+' dato'+(v.length===1?'':'s')+' propios']);
+    }
+  }
+  escribirBloque_(H.BAN, 6, 7, out);
+}
+
+function recalcularDiagnostico_(cat, bd, act, mae, leg, cfg, pares){
+  var D=[];
+  function add(cod,sev,tit,n,det){ D.push([cod,sev,tit,n,det]); }
+  var ids={}, dup=0;
+  act.forEach(function(f){ var i=txt_(f[B.ID_LINEA-1]); if(ids[i]) dup++; ids[i]=1; });
+  add('INT-01','CRÍTICO','Claves primarias duplicadas en el libro mayor',dup,
+    dup?'Hay un guardado doble. Use reversarRecepcion sobre la copia.':'Sin duplicados: la idempotencia está funcionando.');
+  var hu={}, nhu=0;
+  act.forEach(function(f){ var p=txt_(f[B.PRODUCTO-1]); if(p && !cat[p] && !hu[p]){hu[p]=1;nhu++;} });
+  add('INT-02','CRÍTICO','Productos del libro mayor que no existen en el catálogo',nhu,
+    nhu?Object.keys(hu).join(', ').substring(0,200):'Integridad referencial correcta.');
+  var sinPrecio=act.filter(function(f){ return !num_(f[B.PU-1]); });
+  var cerradas=sinPrecio.filter(function(f){ return txt_(f[B.REVISION-1])===MARCA_CERRADA; }).length;
+  var recuperables=sinPrecio.length-cerradas;
+  add('INT-03','ALTO','Líneas sin precio que aún se pueden recuperar',recuperables,
+    recuperables?'Pedir la factura al proveedor y cargar el valor.':'Nada pendiente de recuperar.');
+  var bn=bandas_(), fuera={}, nf=0;
+  act.forEach(function(f){
+    var p=txt_(f[B.PRODUCTO-1]), pu=num_(f[B.PU-1]), c=cat[p];
+    if(!c||!pu) return;
+    var b=bandaDe_(bn,c.cat,c.base);
+    if(b && (pu<b.inf||pu>b.sup) && !fuera[p]){ fuera[p]=1; nf++; }
+  });
+  add('INT-04','ALTO','Productos con precio fuera de la banda de control',nf,
+    nf?Object.keys(fuera).join(', ').substring(0,200):'Todos los precios dentro de la banda.');
+  var nb=act.filter(function(f){ var b=txt_(f[B.BASE-1]); return b!=='g'&&b!=='ml'&&b!=='und'; }).length;
+  add('INT-05','ALTO','Líneas con unidad base no normalizada',nb, nb?'Solo se admite g, ml o und.':'Unidades normalizadas.');
+  var sd=leg.filter(function(l){ return l.tipo==='Sin soporte'; });
+  add('INT-06','ALTO','Recepciones sin soporte documental',sd.length,
+    sd.length?sd.map(function(l){return l.id;}).join(', ').substring(0,200):'Todas con soporte.');
+  var vz=leg.filter(function(l){ return l.estado.indexOf('🔴')===0; });
+  add('INT-07','CRÍTICO','Recepciones vencidas para escalar a Gerencia',vz.length,
+    vz.length?vz.map(function(l){return l.id;}).join(', ').substring(0,200):'Ninguna vencida.');
+  var ov=act.filter(function(f){ return txt_(f[B.OVERRIDE-1])==='SÍ'; }).length;
+  add('INT-08','MEDIO','Líneas guardadas con override',ov, ov?'Revisar el motivo en BITACORA.':'Ningún guardado forzado.');
+  var rv=bd.filter(function(f){ return txt_(f[B.ESTADO-1])==='REVERSADA'; }).length;
+  add('INT-09','MEDIO','Líneas reversadas',rv, rv?'Correcciones registradas; el histórico se conserva íntegro.':'Sin reversas.');
+  var su=act.filter(function(f){ var u=txt_(f[B.USUARIO-1]); return !u||u==='no-identificado'||u==='migracion@sistema'; }).length;
+  add('INT-10','MEDIO','Líneas sin usuario responsable identificado',su,
+    su?'Corresponden a la migración del formato v1.0.':'Toda línea tiene responsable.');
+  var un=mae.filter(function(m){ return m.n===1; }).length;
+  add('INT-11','BAJO','Productos con un solo dato de precio',un,
+    un?'El precio no está validado contra una segunda compra.':'Todos validados.');
+
+  add('INT-14','CERRADO','Líneas históricas sin precio, cerradas como no recuperables',cerradas,
+    cerradas?('Recepciones de la v1.0 cuya factura no apareció. Reposan junto al resto en el mismo libro mayor; '+
+              'no son un pendiente sino un hueco reconocido del histórico.')
+            :'Sin huecos históricos.');
+
+  var hp=ss_().getSheetByName(H.PRV), vistos={}, dups=0;
+  if(hp && hp.getLastRow()>=6){
+    hp.getRange(6,2,hp.getLastRow()-5,1).getValues().forEach(function(f){
+      var n2=txt_(f[0]); if(!n2) return;
+      if(vistos[n2]) dups++; else vistos[n2]=1;
+    });
+  }
+  var dupc=0, seen={}, crudo=leerCatalogoCrudo_();
+  for(var r=0;r<crudo.length;r++){
+    var n3=txt_(crudo[r][C.NOMBRE-1]); if(!n3) continue;
+    if(seen[n3]) dupc++; else seen[n3]=1;
+  }
+  add('INT-12','CRÍTICO','Filas duplicadas en PROVEEDORES o CATÁLOGO',dups+dupc,
+    (dups+dupc) ? ('PROVEEDORES: '+dups+' · CATÁLOGO: '+dupc+'. Cada duplicado parte el agregado en dos. Usar ⚙ Di Égida → Reparar todo.')
+                : 'Sin filas repetidas en las hojas maestras.');
+
+  var orf={}, nOrf=0, lineasOrf=0;
+  act.forEach(function(f){
+    var p=txt_(f[B.PROV-1]);
+    if(p && !vistos[p]){ if(!orf[p]){ orf[p]=0; nOrf++; } orf[p]++; lineasOrf++; }
+  });
+  add('INT-13','CRÍTICO','Proveedores del libro mayor sin fila en PROVEEDORES',nOrf,
+    nOrf ? (lineasOrf+' líneas no suman en ningún agregado: '+Object.keys(orf).join(', ').substring(0,150)+
+            '. Pasa al renombrar en la hoja maestra sin renombrar el histórico. Usar ⚙ Di Égida → Reparar todo.')
+         : 'Todo el histórico está enlazado a un proveedor vigente.');
+
+  // INT-15 y INT-16 nacen con la v3.4: el catálogo ahora lo alimenta cocina.
+  var np=(pares||[]).length;
+  add('INT-15','MEDIO','Pares de posible producto duplicado sin decidir',np,
+    np ? 'Hoja DUPLICADOS: elegir en la columna DECISIÓN y marcar la casilla «Aplicar».'
+       : 'Sin pares pendientes: el catálogo no tiene nombres que se pisen.');
+  var inact=0, kc=Object.keys(cat);
+  for(var q=0;q<kc.length;q++) if(cat[kc[q]].vig===INACTIVO) inact++;
+  add('INT-16','INFO','Productos dados de baja (conservan su historial)',inact,
+    inact ? 'No aparecen en RECEPCIÓN. Se reactivan desde la hoja PRODUCTOS.' : 'Ninguno.');
+
+  var out=D.map(function(d){ return d.concat([new Date()]); });
+  escribirBloque_(H.DIAG, 6, 6, out);
+  return D;
+}
+
+function recalcularTablero_(cat, act, mae, leg, diag){
+  var s=hoja_(H.TAB);
+  var nCat=0, conP=0;
+  for(var i=0;i<mae.length;i++){
+    if(mae[i].vig===INACTIVO) continue;
+    nCat++; if(mae[i].n>0) conP++;
+  }
+  var sinP=nCat-conP;
+  var lineas=act.length;
+  var lineasSinP=act.filter(function(f){ return !num_(f[B.PU-1]); }).length;
+  var crit=mae.filter(function(m){return m.estado==='🔴';}).length;
+  var alta=mae.filter(function(m){return m.estado==='🟠';}).length;
+  var unico=mae.filter(function(m){return m.estado==='🔵';}).length;
+  var pend=leg.filter(function(l){return l.estado.indexOf('🟠')===0;}).length;
+  var venc=leg.filter(function(l){return l.estado.indexOf('🔴')===0;}).length;
+  var merma=0; act.forEach(function(f){ merma += num_(f[B.MERMA-1])||0; });
+  s.getRange(5,3,6,1).setValues([[nCat],[conP],[sinP],[nCat?conP/nCat:0],[lineas],[lineasSinP]]);
+  s.getRange(5,7,6,1).setValues([[crit],[alta],[unico],[pend],[venc],[merma]]);
+  // A2 es el ancla de la celda combinada A2:G2. Escribir en C2 (como hacía la v3.3) no se veía.
+  s.getRange('A2').setValue('FMT-REC-COC-003 '+VERSION+'  |  Actualizado automáticamente: '+fmt_(new Date()));
+
+  // Bloque de hallazgos. Causa del fallo «índice de nombres» desde el 09/09: la v3.3
+  // combinaba B21:F21 DENTRO de la combinación A21:G21 que ya existía. Sheets acumula
+  // esa escritura y la hace estallar en la siguiente lectura, en otro bloque.
+  var fila=21;
+  try{ s.getRange(fila,1,8,7).breakApart(); }catch(e){}
+  s.getRange(fila,1,8,7).clearContent();
+  s.getRange(fila,2,1,6).merge();
+  var t=s.getRange(fila,2);
+  var vivos=diag.filter(function(d){ return (d[1]==='CRÍTICO'||d[1]==='ALTO') && d[3]>0; });
+  if(!vivos.length){
+    t.setValue('✅  Integridad de datos: sin hallazgos críticos ni altos.')
+     .setFontColor('#1A6B5C').setBackground('#E2EFDA');
+  } else {
+    t.setValue('⚠  Integridad de datos — '+vivos.length+' hallazgo(s) que requieren acción:')
+     .setFontColor('#CC0000').setBackground('#F4CCCC');
+    for(var q=0;q<Math.min(vivos.length,6);q++){
+      s.getRange(fila+1+q,2).setValue(vivos[q][0]+' · '+vivos[q][2]).setFontSize(9);
+      s.getRange(fila+1+q,3).setValue(vivos[q][3]).setFontWeight('bold')
+       .setHorizontalAlignment('center').setFontColor('#CC0000');
+    }
+  }
+  t.setFontWeight('bold').setFontSize(10);
+}
+
+/** Escribe una matriz en una hoja limpiando primero el sobrante. */
+function escribirBloque_(nombre, fila, nCols, datos){
+  var s=hoja_(nombre);
+  var libres = s.getMaxRows()-fila+1;
+  if(datos.length > libres) s.insertRowsAfter(s.getMaxRows(), datos.length-libres+100);
+  var usado = Math.max(0, s.getLastRow()-fila+1);
+  if(usado>0) s.getRange(fila,1,usado,nCols).clearContent();
+  if(datos.length) s.getRange(fila,1,datos.length,nCols).setValues(datos);
+}
+
+// ===========================================================================
+// 06 · CORRECCIONES — libro mayor inmutable: nunca se borra, se reversa
+// ===========================================================================
+function reversarRecepcion(){
+  var ui;
+  try{ ui = SpreadsheetApp.getUi(); }catch(x){
+    throw new Error('reversarRecepcion debe ejecutarse desde un computador, no desde el iPad.');
+  }
+  var r = ui.prompt('Reversar recepción','Escriba el ID de la recepción a reversar (por ejemplo REC-COC-20260909-01):',ui.ButtonSet.OK_CANCEL);
+  if(r.getSelectedButton()!==ui.Button.OK) return;
+  var id = txt_(r.getResponse());
+  if(!id) return;
+  var m = ui.prompt('Motivo de la reversa','Explique por qué se reversa. Queda firmado en la BITÁCORA:',ui.ButtonSet.OK_CANCEL);
+  if(m.getSelectedButton()!==ui.Button.OK) return;
+  var motivo = txt_(m.getResponse());
+  if(motivo.length < config_().minMotivo){ ui.alert('El motivo es obligatorio y debe ser explícito.'); return; }
+
+  var lock=LockService.getDocumentLock(); lock.tryLock(25000);
+  try{
+    var s=hoja_(H.BD), n=s.getLastRow()-BD_F_INI+1;
+    if(n<1){ ui.alert('El libro mayor está vacío.'); return; }
+    var rng=s.getRange(BD_F_INI,1,n,B.N), v=rng.getValues(), c=0;
+    for(var i=0;i<v.length;i++){
+      if(txt_(v[i][B.ID_REC-1])===id && txt_(v[i][B.ESTADO-1])==='ACTIVA'){
+        v[i][B.ESTADO-1]='REVERSADA';
+        v[i][B.REF_REV-1]='Reversada '+fmt_(new Date())+' por '+usuario_()+' — '+motivo;
+        c++;
+      }
+    }
+    if(!c){ ui.alert('No se encontró ninguna línea activa con el ID '+id+'.'); return; }
+    rng.setValues(v);
+    SpreadsheetApp.flush();
+    recalcularTodo();
+    bitacora_('REVERSAR','REVERSADA',id,c,motivo,'Se reversaron '+c+' línea(s).');
+    ui.alert('Listo. Se reversaron '+c+' línea(s) de '+id+'. El histórico se conserva: las líneas quedan marcadas, no borradas.');
+  } finally { lock.releaseLock(); }
+}
+
+/** Desde el menú: lleva a la hoja PRODUCTOS (crear y dar de baja ya no usan diálogos). */
+function nuevoProducto(){
+  var h=hoja_(H.PRD);
+  ss_().setActiveSheet(h);
+  h.setActiveRange(h.getRange(P.A_RESP));
+  try{ SpreadsheetApp.getUi().alert('Crear o dar de baja productos',
+    'Use la hoja PRODUCTOS: bloque 1 para crear, bloque 2 para dar de baja o reactivar. '+
+    'Funciona igual desde el iPad, con la casilla.', SpreadsheetApp.getUi().ButtonSet.OK); }catch(x){}
+}
+
+function ordenarCatalogo_(){
+  var s=hoja_(H.CAT), n=s.getLastRow()-CAT_F_INI+1;
+  if(n<2) return;
+  s.getRange(CAT_F_INI,1,n,C.N).sort({column:C.NOMBRE, ascending:true});
+  var idx=[]; for(var i=0;i<n;i++) idx.push([i+1]);
+  s.getRange(CAT_F_INI,1,n,1).setValues(idx);
+}
+
+// ===========================================================================
+// 06b · PRODUCTOS — alta, baja y reactivación desde el iPad
+// ---------------------------------------------------------------------------
+//  Reglas:
+//   · El nombre se elige con cuidado porque es la clave: el motor compara con
+//     TODO el catálogo (activos e inactivos) antes de crear.
+//   · Igual al de uno existente (salvo tildes, mayúsculas o conectores) → no se
+//     crea nunca. Si el existente está de baja, se ofrece reactivarlo.
+//   · Parecido (es el mismo nombre más una marca, o difiere en una letra) → no
+//     se crea hasta que alguien escriba en la NOTA por qué es otro producto.
+//   · Una baja con compras deja el producto INACTIVO: sale de la lista de
+//     RECEPCIÓN y conserva su historial de precios. Sin compras, se borra.
+//   · Todo movimiento queda en la BITÁCORA con el responsable que se eligió.
+// ===========================================================================
+function msgProductos_(a1, texto, tipo){
+  var h=hoja_(H.PRD), c=h.getRange(a1);
+  c.setValue(texto);
+  var col = tipo==='ok' ? '#1A6B5C' : (tipo==='warn' ? '#9C6500' : '#CC0000');
+  var fon = tipo==='ok' ? '#E2EFDA' : (tipo==='warn' ? '#FFF2CC' : '#F4CCCC');
+  c.setBackground(fon).setFontColor(col).setFontWeight('bold');
+  try{ ss_().toast(String(texto).substring(0,240), tipo==='ok'?'Listo':'Revisar', tipo==='ok'?6:12); }catch(x){}
+}
+
+/** Nombre limpio: sin espacios dobles y con la primera letra en mayúscula. */
+function nombreLimpio_(s){
+  var t=txt_(s).replace(/\s+/g,' ');
+  return t ? t.charAt(0).toUpperCase()+t.substring(1) : '';
+}
+
+/** Temperatura máxima por defecto cuando cocina no la escribe. */
+function tmaxDefecto_(cons, cat){
+  if(cons==='Congelado') return -12;
+  if(cons!=='Refrigerado') return '';
+  if(cat==='PESCA Y MARISCOS') return 2;
+  if(cat==='LÁCTEOS') return 6;
+  return 4;
+}
+
+/** Detalle de bitácora con estructura fija, para poder mostrarlo en el historial. */
+function detalleCat_(resp, prod, resto){
+  return 'Responsable: '+resp+' | Producto: '+prod+(resto?(' | '+resto):'');
+}
+
+function crearProductoHoja(){
+  var lock=LockService.getDocumentLock();
+  if(!lock.tryLock(20000)){ msgProductos_(P.A_MSG,'⏳ Hay otra operación en curso. Espere unos segundos y vuelva a marcar.','warn');
+    hoja_(H.PRD).getRange(P.A_CHECK).setValue(false); return; }
+  try{ return crearProducto_(); }
+  finally{
+    try{ hoja_(H.PRD).getRange(P.A_CHECK).setValue(false); }catch(x){}
+    lock.releaseLock();
+  }
+}
+
+function crearProducto_(){
+  var h=hoja_(H.PRD), cfg=config_();
+  var resp=txt_(h.getRange(P.A_RESP).getValue());
+  var nom =nombreLimpio_(h.getRange(P.A_NOMBRE).getValue());
+  var base=txt_(h.getRange(P.A_BASE).getValue());
+  var cat =txt_(h.getRange(P.A_CAT).getValue()).toUpperCase();
+  var cons=txt_(h.getRange(P.A_CONS).getValue());
+  var tmx =h.getRange(P.A_TMAX).getValue();
+  var nota=txt_(h.getRange(P.A_NOTA).getValue());
+
+  // --- datos completos (una validación de celda no detiene un pegado) ---
+  var faltan=[];
+  if(!enLista_(resp, cfg.responsables)) faltan.push('Responsable: elija quién crea el producto ('+cfg.responsables.join(', ')+').');
+  if(nom.length<3) faltan.push('Nombre: escriba el nombre del producto (mínimo 3 letras).');
+  if(!enLista_(base, BASES)) faltan.push('Unidad base: elija g (se pesa), ml (líquido) o und (se cuenta).');
+  if(!enLista_(cat, CATEGORIAS)) faltan.push('Categoría: elija una de la lista.');
+  if(!enLista_(cons, CONSERVACION)) faltan.push('Conservación: elija Ambiente, Refrigerado o Congelado.');
+  var tmax='';
+  if(cons && cons!=='Ambiente'){
+    if(txt_(tmx)===''){ tmax=tmaxDefecto_(cons, cat); }
+    else {
+      tmax=num_(tmx);
+      if(tmax===null || tmax<-30 || tmax>20) faltan.push('Temp. máx.: debe ser un número entre -30 y 20 °C, o dejarse vacía.');
+    }
+  }
+  if(faltan.length){
+    msgProductos_(P.A_MSG,'⛔ NO SE CREÓ. Falta:\n• '+faltan.join('\n• '),'err');
+    return {ok:false, motivo:'datos'};
+  }
+
+  // --- identidad: ¿ya existe o se parece a algo? ---
+  var catal=catalogo_(), nombres=Object.keys(catal), parecidos=[];
+  for(var i=0;i<nombres.length;i++){
+    var ex=catal[nombres[i]], r=esDuplicado_(nom, ex.nombre);
+    if(!r) continue;
+    if(r.tipo==='IGUAL'){
+      var txtI = ex.vig===INACTIVO
+        ? ('⛔ NO SE CREÓ: ya existe «'+ex.nombre+'» y está DADO DE BAJA. Si se volvió a comprar, '+
+           'reactívelo en el bloque 2 (Acción: Reactivar). Así conserva su historial de precios.')
+        : ('⛔ NO SE CREÓ: ya existe «'+ex.nombre+'» ('+ex.cat+' · '+ex.base+'). Úselo en RECEPCIÓN tal como está.');
+      msgProductos_(P.A_MSG, txtI, 'err');
+      bitacora_('CATÁLOGO','ALTA RECHAZADA: YA EXISTE','',0,'',detalleCat_(resp, nom, 'Existe como «'+ex.nombre+'»'));
+      return {ok:false, motivo:'igual', existente:ex.nombre};
+    }
+    parecidos.push({ex:ex, r:r});
+  }
+  if(parecidos.length && nota.length<cfg.minMotivo){
+    parecidos.sort(function(a,b){ return b.r.pct-a.r.pct; });
+    var lis=[];
+    for(var k=0;k<Math.min(5,parecidos.length);k++){
+      var e2=parecidos[k].ex;
+      lis.push('«'+e2.nombre+'» — '+e2.cat+' · '+e2.base+(e2.vig===INACTIVO?' · DADO DE BAJA':'')+
+               ' ('+parecidos[k].r.porque+')');
+    }
+    msgProductos_(P.A_MSG,
+      '⚠ NO SE CREÓ TODAVÍA. Ya hay '+parecidos.length+' producto(s) parecido(s):\n• '+lis.join('\n• ')+
+      (parecidos.length>5?('\n• …y '+(parecidos.length-5)+' más'):'')+
+      '\n\nSi es el mismo producto, NO lo cree: use el existente en RECEPCIÓN.'+
+      '\nSi es OTRO producto (otra marca con precio propio, otra presentación), escriba en NOTA por qué es distinto '+
+      '(mínimo '+cfg.minMotivo+' caracteres) y vuelva a marcar la casilla.','warn');
+    return {ok:false, motivo:'parecido', parecidos:parecidos.length};
+  }
+
+  // --- alta ---
+  var s=hoja_(H.CAT), f=Math.max(s.getLastRow()+1, CAT_F_INI);
+  if(f>s.getMaxRows()) s.insertRowsAfter(s.getMaxRows(), 50);
+  var mov='Alta '+fmt_(new Date(),'dd/MM/yyyy')+' · '+resp+(nota?(' · '+nota):'');
+  s.getRange(f,1,1,C.N).setValues([[f-CAT_F_INI+1, nom, base, cat, cons, tmax, 0, '', ACTIVO, mov]]);
+  ordenarCatalogo_();
+  // Si se creó a pesar de los parecidos, esos pares quedan declarados distintos:
+  // no tienen por qué volver a aparecer en DUPLICADOS.
+  for(var p=0;p<parecidos.length;p++) declararDistintos_(nom, parecidos[p].ex.nombre);
+  SpreadsheetApp.flush();
+  var cat2=catalogo_();
+  refrescarListas_(cat2);
+  try{ refrescarDuplicados_(cat2, null); }catch(eD){}
+  bitacora_('CATÁLOGO','PRODUCTO CREADO','',1, nota,
+    detalleCat_(resp, nom, base+' · '+cat+' · '+cons+(tmax!==''?(' · máx '+tmax+' °C'):'')+
+      (parecidos.length?(' · creado pese a '+parecidos.length+' parecido(s)'):'')));
+  refrescarHistorialProductos_();
+
+  // limpiar el bloque, conservando el responsable para el siguiente
+  var limpiar=[P.A_NOMBRE,P.A_BASE,P.A_CAT,P.A_CONS,P.A_TMAX,P.A_NOTA];
+  for(var j=0;j<limpiar.length;j++) h.getRange(limpiar[j]).clearContent();
+  msgProductos_(P.A_MSG,'✅ «'+nom+'» creado ('+cat+' · '+base+' · '+cons+
+    (tmax!==''?(' · máx '+tmax+' °C'+(txt_(tmx)===''?' por defecto':'')):'')+
+    '). Ya aparece en la lista de productos de RECEPCIÓN.','ok');
+  return {ok:true, nombre:nom};
+}
+
+function bajaProductoHoja(){
+  var lock=LockService.getDocumentLock();
+  if(!lock.tryLock(20000)){ msgProductos_(P.B_MSG,'⏳ Hay otra operación en curso. Espere unos segundos y vuelva a marcar.','warn');
+    hoja_(H.PRD).getRange(P.B_CHECK).setValue(false); return; }
+  try{
+    var h=hoja_(H.PRD), cfg=config_();
+    var resp=txt_(h.getRange(P.B_RESP).getValue());
+    var prod=txt_(h.getRange(P.B_PROD).getValue());
+    var acc =txt_(h.getRange(P.B_ACCION).getValue());
+    var mot =txt_(h.getRange(P.B_MOTIVO).getValue());
+    var faltan=[];
+    if(!enLista_(resp, cfg.responsables)) faltan.push('Responsable: elija quién hace el cambio.');
+    if(!prod) faltan.push('Producto: elíjalo de la lista.');
+    if(acc!==ACCION_BAJA && acc!==ACCION_REACT) faltan.push('Acción: elija «'+ACCION_BAJA+'» o «'+ACCION_REACT+'».');
+    if(acc===ACCION_BAJA && mot.length<cfg.minMotivo) faltan.push('Motivo: explique por qué se da de baja (mínimo '+cfg.minMotivo+' caracteres).');
+    if(faltan.length){ msgProductos_(P.B_MSG,'⛔ NO SE HIZO NINGÚN CAMBIO. Falta:\n• '+faltan.join('\n• '),'err'); return {ok:false}; }
+
+    var r = (acc===ACCION_BAJA) ? darDeBaja_(prod, resp, mot) : reactivar_(prod, resp, mot);
+    msgProductos_(P.B_MSG, r.msg, r.ok?'ok':(r.tipo||'err'));
+    if(r.ok){
+      h.getRange(P.B_PROD).clearContent(); h.getRange(P.B_MOTIVO).clearContent();
+      refrescarHistorialProductos_();
+    }
+    return r;
+  } finally {
+    try{ hoja_(H.PRD).getRange(P.B_CHECK).setValue(false); }catch(x){}
+    lock.releaseLock();
+  }
+}
+
+/** Cuántas líneas del libro mayor (de cualquier estado) usan ese producto. */
+function comprasDe_(prod, bd){
+  var n=0; bd=bd||leerBD_();
+  for(var i=0;i<bd.length;i++) if(txt_(bd[i][B.PRODUCTO-1])===prod) n++;
+  return n;
+}
+
+/** Núcleo de la baja. Lo usan la hoja PRODUCTOS y la hoja DUPLICADOS. */
+function darDeBaja_(prod, resp, motivo, bd){
+  var cat=catalogo_(), c=cat[prod];
+  if(!c) return {ok:false, msg:'⛔ «'+prod+'» no está en el CATÁLOGO.'};
+  if(c.vig===INACTIVO) return {ok:false, tipo:'warn', msg:'⚠ «'+prod+'» ya estaba dado de baja ('+c.mov+'). No se cambió nada.'};
+  var s=hoja_(H.CAT), n=comprasDe_(prod, bd), hoyTxt=fmt_(new Date(),'dd/MM/yyyy');
+  var enCurso=filasEnRecepcion_(prod);
+  var msg;
+  if(n===0){
+    s.deleteRow(c.fila);
+    ordenarCatalogo_();
+    msg='✅ «'+prod+'» eliminado del catálogo: nunca tuvo compras, así que no había historia que conservar.';
+    bitacora_('CATÁLOGO','PRODUCTO ELIMINADO','',0,motivo, detalleCat_(resp, prod, 'sin compras registradas'));
+  } else {
+    s.getRange(c.fila, C.VIG, 1, 2).setValues([[INACTIVO, 'Baja '+hoyTxt+' · '+resp+' · '+motivo]]);
+    msg='✅ «'+prod+'» dado de baja. Ya no aparece en RECEPCIÓN y conserva sus '+n+' compra(s) en el historial. '+
+        'Se puede reactivar desde este mismo bloque.';
+    bitacora_('CATÁLOGO','PRODUCTO DADO DE BAJA','',n,motivo, detalleCat_(resp, prod, n+' compra(s) conservadas'));
+  }
+  if(enCurso.length) msg+='\n⚠ Está escrito en la recepción en curso (fila '+enCurso.join(', ')+'): cámbielo antes de guardar.';
+  SpreadsheetApp.flush();
+  var cat2=catalogo_();
+  refrescarListas_(cat2);
+  try{ refrescarDuplicados_(cat2, null); }catch(e){}
+  return {ok:true, msg:msg, eliminado:n===0};
+}
+
+function reactivar_(prod, resp, motivo){
+  var cat=catalogo_(), c=cat[prod];
+  if(!c) return {ok:false, msg:'⛔ «'+prod+'» no está en el CATÁLOGO.'};
+  if(c.vig===ACTIVO) return {ok:false, tipo:'warn', msg:'⚠ «'+prod+'» ya está activo. No se cambió nada.'};
+  hoja_(H.CAT).getRange(c.fila, C.VIG, 1, 2).setValues([[ACTIVO,
+    'Reactivado '+fmt_(new Date(),'dd/MM/yyyy')+' · '+resp+(motivo?(' · '+motivo):'')]]);
+  SpreadsheetApp.flush();
+  var cat2=catalogo_();
+  refrescarListas_(cat2);
+  try{ refrescarDuplicados_(cat2, null); }catch(e){}
+  bitacora_('CATÁLOGO','PRODUCTO REACTIVADO','',0,motivo, detalleCat_(resp, prod, ''));
+  return {ok:true, msg:'✅ «'+prod+'» reactivado. Ya vuelve a aparecer en la lista de RECEPCIÓN.'};
+}
+
+function filasEnRecepcion_(prod){
+  var out=[];
+  try{
+    var v=hoja_(H.REC).getRange(REC.F_INI,R.PRODUCTO,REC.F_FIN-REC.F_INI+1,1).getValues();
+    for(var i=0;i<v.length;i++) if(txt_(v[i][0])===prod) out.push(REC.F_INI+i);
+  }catch(e){}
+  return out;
+}
+
+/**
+ * LISTAS (oculta): A = productos activos (lista de RECEPCIÓN), B = todos (lista de
+ * baja/reactivación), C = pares declarados distintos. La escribe solo el motor.
+ */
+function refrescarListas_(cat){
+  var h=ss_().getSheetByName(H.LIS); if(!h) return;
+  cat=cat||catalogo_();
+  var k=Object.keys(cat).sort(function(a,b){ var x=clave_(a), y=clave_(b); return x<y?-1:(x>y?1:0); });
+  var act=[], tod=[];
+  for(var i=0;i<k.length;i++){
+    tod.push([cat[k[i]].vig===INACTIVO ? k[i] : k[i]]);
+    if(cat[k[i]].vig===ACTIVO) act.push([k[i]]);
+  }
+  var maxN=Math.max(act.length, tod.length)+LIS_F_INI;
+  if(maxN>h.getMaxRows()) h.insertRowsAfter(h.getMaxRows(), maxN-h.getMaxRows()+100);
+  var usado=Math.max(0, h.getLastRow()-LIS_F_INI+1);
+  if(usado>0) h.getRange(LIS_F_INI,1,usado,2).clearContent();
+  if(act.length) h.getRange(LIS_F_INI,1,act.length,1).setValues(act);
+  if(tod.length) h.getRange(LIS_F_INI,2,tod.length,1).setValues(tod);
+}
+
+function paresDistintos_(){
+  var h=ss_().getSheetByName(H.LIS), m={};
+  if(!h || h.getLastRow()<LIS_F_INI) return m;
+  var v=h.getRange(LIS_F_INI,3,h.getLastRow()-LIS_F_INI+1,1).getValues();
+  for(var i=0;i<v.length;i++){ var k=txt_(v[i][0]); if(k) m[k]=true; }
+  return m;
+}
+function clavePar_(a,b){ var x=clave_(a), y=clave_(b); return x<y ? (x+' || '+y) : (y+' || '+x); }
+function declararDistintos_(a,b){
+  var h=ss_().getSheetByName(H.LIS); if(!h) return;
+  var k=clavePar_(a,b), ya=paresDistintos_();
+  if(ya[k]) return;
+  var col=h.getRange(1,3,Math.max(1,h.getLastRow()),1).getValues(), ult=0;
+  for(var i=0;i<col.length;i++) if(txt_(col[i][0])) ult=i+1;
+  var f=Math.max(ult+1, LIS_F_INI);
+  if(f>h.getMaxRows()) h.insertRowsAfter(h.getMaxRows(), 100);
+  h.getRange(f,3).setValue(k);
+}
+
+/** Historial visible en la hoja PRODUCTOS: los últimos movimientos del catálogo. */
+function refrescarHistorialProductos_(){
+  var h=ss_().getSheetByName(H.PRD); if(!h) return;
+  var b=hoja_(H.BIT), n=b.getLastRow()-5;
+  var out=[];
+  if(n>0){
+    var v=b.getRange(6,1,n,8).getValues();
+    for(var i=v.length-1;i>=0 && out.length<P.HIST_N;i--){
+      if(txt_(v[i][2])!=='CATÁLOGO') continue;
+      var det=txt_(v[i][7]), partes=det.split(' | '), resp='', prod='', resto=[];
+      for(var j=0;j<partes.length;j++){
+        if(partes[j].indexOf('Responsable: ')===0) resp=partes[j].substring(13);
+        else if(partes[j].indexOf('Producto: ')===0) prod=partes[j].substring(10);
+        else resto.push(partes[j]);
+      }
+      if(!resp && !prod){ prod=partes[0]; resto=partes.slice(1); }
+      var mot=txt_(v[i][6]);
+      if(mot) resto.push('Motivo/nota: '+mot);
+      out.push([esFecha_(v[i][0])?fmt_(v[i][0]):txt_(v[i][0]), txt_(v[i][3]), resp, prod, resto.join(' · ')]);
+    }
+  }
+  while(out.length<P.HIST_N) out.push(['','','','','']);
+  h.getRange(P.HIST_INI,2,P.HIST_N,5).setValues(out);
+}
+
+// ===========================================================================
+// 06c · DETECCIÓN DE DUPLICADOS — que de tres avisos, tres sean reales
+// ---------------------------------------------------------------------------
+//  El porcentaje solo no decide: «Frambuesa / Frambuesa Berrygood» y
+//  «Pimentón / Pimentón rojo» se parecen igual, y solo el primero es el mismo
+//  producto con la marca pegada. Lo que los separa es la FORMA del nombre:
+//   · Si una palabra exclusiva es una VARIANTE (fresco, seco, rojo, entero…)
+//     o lleva números (15x16, 41/50), son productos distintos. Caso cerrado.
+//   · Si un nombre es el otro más un detalle → candidato (marca pegada).
+//   · Si difieren en una sola palabra mal escrita → candidato (Tomete/Tomate).
+//   · Si comparten casi todas las palabras → candidato.
+// ===========================================================================
+var VARIANTES_ = {};
+(function(){
+  var l=['fresco','fresca','seco','seca','molido','molida','entero','entera','verde','rojo','roja',
+    'blanco','blanca','negro','negra','amarillo','amarilla','morado','morada','cocido','cocida','crudo','cruda',
+    'con','sin','relleno','rellena','baby','mix','deshidratado','deshidratada','rallado','rallada',
+    'ahumado','ahumada','congelado','congelada','picado','picada','liquido','liquida','polvo','integral',
+    'dulce','salado','salada','light','organico','organica','tinto','rosado','rosada','liso','lisa',
+    'crespo','crespa','hidroponico','hidroponica','premium','nacional','importado','importada',
+    'grande','pequeno','pequena','mini','extra','deslactosado','deslactosada','descremado','descremada',
+    'tajado','tajada','rebanado','rebanada','cuna','bloque','pechuga','pierna','muslo','filete','lomo',
+    'costilla','hueso','molienda','vino','harina','aceite','vinagre','leche','crema','salsa','pasta','jugo',
+    'pulpa','esencia','extracto','semilla','hoja','hojas','rama','flor','flores','enlatado','lata'];
+  for(var i=0;i<l.length;i++) VARIANTES_[l[i]]=true;
+})();
+var STOP_DUP_ = {'de':1,'del':1,'la':1,'el':1,'los':1,'las':1,'y':1,'en':1,'x':1,'a':1,'al':1,
+                 'para':1,'por':1,'tipo':1,'brand':1,'sas':1};
+
+/** Palabras comparables: sin tildes, sin conectores y en singular. */
+function fichasDup_(s){
+  var t=clave_(s).split(' '), out=[], vis={};
+  for(var i=0;i<t.length;i++){
+    var w=t[i];
+    if(!w || STOP_DUP_[w]) continue;
+    if(!/[0-9]/.test(w) && w.length>3){
+      if(/[lnrdz]es$/.test(w) && w.length>4) w=w.substring(0,w.length-2);
+      else if(/s$/.test(w)) w=w.substring(0,w.length-1);
+    }
+    if(!vis[w]){ vis[w]=1; out.push(w); }
+  }
+  return out;
+}
+function trigramas_(s){
+  var t='  '+s+' ', m={}, n=0;
+  for(var i=0;i<t.length-2;i++){ var g=t.substring(i,i+3); m[g]=(m[g]||0)+1; n++; }
+  return {m:m, n:n};
+}
+/** Similitud de Dice por trigramas: 1 = idénticas. Atrapa errores de escritura. */
+function dice_(a,b){
+  if(a===b) return 1;
+  var A=trigramas_(a), Bt=trigramas_(b), comun=0, k=Object.keys(A.m);
+  for(var i=0;i<k.length;i++) if(Bt.m[k[i]]) comun+=Math.min(A.m[k[i]], Bt.m[k[i]]);
+  return (2*comun)/(A.n+Bt.n);
+}
+function esDiscriminante_(w){ return !!VARIANTES_[w] || /[0-9]/.test(w); }
+
+/**
+ * ¿Son el mismo producto escrito distinto? Devuelve null si no, o
+ * {tipo:'IGUAL'|'CONTENIDO'|'ESCRITURA'|'PARECIDO', pct, porque}.
+ */
+function esDuplicado_(a, b, fa, fb, ka, kb){
+  if((ka||clave_(a))===(kb||clave_(b))) return {tipo:'IGUAL', pct:1, porque:'mismo nombre'};
+  fa=fa||fichasDup_(a); fb=fb||fichasDup_(b);
+  if(!fa.length || !fb.length) return null;
+  var sa={}, sb={}, i;
+  for(i=0;i<fa.length;i++) sa[fa[i]]=1;
+  for(i=0;i<fb.length;i++) sb[fb[i]]=1;
+  var exA=[], exB=[], inter=0;
+  for(i=0;i<fa.length;i++){ if(sb[fa[i]]) inter++; else exA.push(fa[i]); }
+  for(i=0;i<fb.length;i++){ if(!sa[fb[i]]) exB.push(fb[i]); }
+  if(!exA.length && !exB.length) return {tipo:'IGUAL', pct:1, porque:'mismas palabras'};
+  var union=inter+exA.length+exB.length, jac=inter/union;
+
+  // una sola palabra distinta a cada lado y casi igual escrita → error de digitación
+  if(exA.length===1 && exB.length===1 && !/[0-9]/.test(exA[0]+exB[0]) &&
+     !(esDiscriminante_(exA[0]) && esDiscriminante_(exB[0]))){
+    var d=dice_(exA[0], exB[0]);
+    if(d>=0.6 && Math.min(exA[0].length, exB[0].length)>=4)
+      return {tipo:'ESCRITURA', pct:d, porque:'«'+exA[0]+'» y «'+exB[0]+'» parecen la misma palabra mal escrita'};
+  }
+  if(!inter) return null;
+  // una variante o un número exclusivo cierra el caso: son productos distintos
+  var ex=exA.concat(exB);
+  for(i=0;i<ex.length;i++) if(esDiscriminante_(ex[i])) return null;
+
+  if((!exA.length || !exB.length) && jac>=0.5){
+    var extra=(exA.length?exA:exB).join(' ');
+    return {tipo:'CONTENIDO', pct:jac, porque:'uno es el otro más «'+extra+'»: ¿marca o presentación del mismo producto?'};
+  }
+  if(jac>=0.8) return {tipo:'PARECIDO', pct:jac, porque:'comparten '+Math.round(jac*100)+'% de las palabras'};
+  return null;
+}
+
+/**
+ * Pares sospechosos entre productos ACTIVOS, sin los que ya se declararon
+ * distintos. Reescribe la hoja DUPLICADOS conservando las decisiones a medio
+ * marcar. Devuelve la lista de pares pendientes.
+ */
+function refrescarDuplicados_(cat, act){
+  cat=cat||catalogo_();
+  var usos={}, bd=act||leerBD_();
+  for(var u=0;u<bd.length;u++){ var p0=txt_(bd[u][B.PRODUCTO-1]); if(p0) usos[p0]=(usos[p0]||0)+1; }
+  var activos=[], k=Object.keys(cat);
+  for(var i=0;i<k.length;i++) if(cat[k[i]].vig===ACTIVO) activos.push(cat[k[i]]);
+  activos.sort(function(a,b){ var x=clave_(a.nombre), y=clave_(b.nombre); return x<y?-1:(x>y?1:0); });
+  var fich=[], claves=[];
+  for(i=0;i<activos.length;i++){ fich.push(fichasDup_(activos[i].nombre)); claves.push(clave_(activos[i].nombre)); }
+  var distintos=paresDistintos_(), pares=[];
+  for(i=0;i<activos.length;i++){
+    for(var j=i+1;j<activos.length;j++){
+      var r=esDuplicado_(activos[i].nombre, activos[j].nombre, fich[i], fich[j], claves[i], claves[j]);
+      if(!r) continue;
+      if(distintos[clavePar_(activos[i].nombre, activos[j].nombre)]) continue;
+      pares.push({a:activos[i], b:activos[j], r:r});
+    }
+  }
+  var h=ss_().getSheetByName(H.DUP);
+  if(!h) return pares;
+
+  // decisiones ya escritas y no aplicadas: se conservan por par
+  var prev={}, nPrev=h.getLastRow()-DUP_F_INI+1;
+  if(nPrev>0){
+    var pv=h.getRange(DUP_F_INI,1,nPrev,8).getValues();
+    for(var q=0;q<pv.length;q++){
+      var dec=txt_(pv[q][7]);
+      if(dec && txt_(pv[q][1]) && txt_(pv[q][3])) prev[clavePar_(txt_(pv[q][1]), txt_(pv[q][3]))]=dec;
+    }
+  }
+  var out=[];
+  for(var m=0;m<pares.length;m++){
+    var pa=pares[m];
+    out.push([m+1, pa.a.nombre, usos[pa.a.nombre]||0, pa.b.nombre, usos[pa.b.nombre]||0,
+      pa.a.base+' / '+pa.b.base+(pa.a.base!==pa.b.base?'  ⚠ unidad distinta':'')+'  ·  '+pa.a.cat+(pa.a.cat!==pa.b.cat?(' / '+pa.b.cat):''),
+      pa.r.porque, prev[clavePar_(pa.a.nombre, pa.b.nombre)]||'']);
+  }
+  var libres=h.getMaxRows()-DUP_F_INI+1;
+  if(out.length>libres) h.insertRowsAfter(h.getMaxRows(), out.length-libres+50);
+  if(nPrev>0) h.getRange(DUP_F_INI,1,nPrev,8).clearContent();
+  if(out.length) h.getRange(DUP_F_INI,1,out.length,8).setValues(out);
+  try{ validacionDecisiones_(h, Math.max(out.length, 1)); }catch(e){}
+  avisoDuplicados_(h, pares.length, '');
+  return pares;
+}
+
+function avisoDuplicados_(h, n, prefijo){
+  var t = (prefijo?prefijo+'  ':'') + (n
+    ? ('⚠ '+n+' par(es) por decidir. Lea la columna «Por qué se marcó», elija la DECISIÓN, el responsable arriba, y marque la casilla «Aplicar».')
+    : '✅ Sin pares pendientes: ningún nombre activo del catálogo pisa a otro.');
+  var c=h.getRange(DUPC.AVISO);
+  c.setValue(t).setFontWeight('bold').setWrap(true)
+   .setBackground(n?'#FFF2CC':'#E2EFDA').setFontColor(n?'#9C6500':'#1A6B5C');
+}
+
+function validacionDecisiones_(h, n){
+  h.getRange(DUP_F_INI,8,Math.max(n,1),1).setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInList([DEC_DISTINTOS, DEC_QUEDA_A, DEC_QUEDA_B], true)
+      .setAllowInvalid(false).build());
+}
+
+/** Casilla «Aplicar» de la hoja DUPLICADOS. */
+function aplicarDecisionesDuplicados(){
+  var lock=LockService.getDocumentLock();
+  var h=hoja_(H.DUP);
+  if(!lock.tryLock(20000)){ h.getRange(DUPC.CHECK).setValue(false); return; }
+  try{
+    var cfg=config_(), resp=txt_(h.getRange(DUPC.RESP).getValue());
+    if(!enLista_(resp, cfg.responsables)){
+      avisoDuplicados_(h, Math.max(0,h.getLastRow()-DUP_F_INI+1), '⛔ No se aplicó nada: elija el responsable en '+DUPC.RESP+'.');
+      return {ok:false};
+    }
+    var n=h.getLastRow()-DUP_F_INI+1;
+    if(n<1){ avisoDuplicados_(h,0,''); return {ok:true, hechas:0}; }
+    var v=h.getRange(DUP_F_INI,1,n,8).getValues(), bd=leerBD_();
+    var hechas=0, bajas=0, distintos=0, saltadas=[], yaDeBaja={};
+    for(var i=0;i<v.length;i++){
+      var a=txt_(v[i][1]), b=txt_(v[i][3]), dec=txt_(v[i][7]);
+      if(!dec || !a || !b) continue;
+      if(dec===DEC_DISTINTOS){
+        declararDistintos_(a,b);
+        bitacora_('CATÁLOGO','PAR DECLARADO DISTINTO','',0,'', detalleCat_(resp, a+' ≠ '+b, 'hoja DUPLICADOS'));
+        distintos++; hechas++; continue;
+      }
+      var queda = dec===DEC_QUEDA_A ? a : b, sale = dec===DEC_QUEDA_A ? b : a;
+      if(yaDeBaja[queda]){ saltadas.push('«'+queda+'» ya se dio de baja en otra fila'); continue; }
+      if(yaDeBaja[sale]){ hechas++; continue; }
+      var r=darDeBaja_(sale, resp, 'Duplicado de «'+queda+'» (hoja DUPLICADOS)', bd);
+      if(r.ok){ yaDeBaja[sale]=true; bajas++; hechas++; }
+      else saltadas.push(r.msg);
+    }
+    SpreadsheetApp.flush();
+    var cat=catalogo_();
+    var pares=refrescarDuplicados_(cat, bd);
+    refrescarListas_(cat);
+    refrescarHistorialProductos_();
+    avisoDuplicados_(h, pares.length, '✅ Aplicadas '+hechas+' decisión(es): '+bajas+' baja(s), '+distintos+' par(es) declarados distintos.'+
+      (saltadas.length?(' ⚠ Sin aplicar: '+saltadas.join(' · ')):''));
+    return {ok:true, hechas:hechas, bajas:bajas, distintos:distintos, pendientes:pares.length};
+  } finally {
+    try{ h.getRange(DUPC.CHECK).setValue(false); }catch(x){}
+    lock.releaseLock();
+  }
+}
+
+// ===========================================================================
+// 07 · RUTINA DIARIA — alertas por correo, solo cuando hay algo que reportar
+// ===========================================================================
+function movimientosCatalogo_(horas){
+  var b=hoja_(H.BIT), n=b.getLastRow()-5, out=[], lim=new Date().getTime()-horas*3600000;
+  if(n<1) return out;
+  var v=b.getRange(6,1,n,8).getValues();
+  for(var i=0;i<v.length;i++){
+    if(txt_(v[i][2])!=='CATÁLOGO' || !esFecha_(v[i][0])) continue;
+    if(v[i][0].getTime()<lim) continue;
+    var r=txt_(v[i][3]);
+    if(r.indexOf('RECHAZADA')>=0) continue;
+    out.push({t:v[i][0], res:r, det:txt_(v[i][7]), mot:txt_(v[i][6])});
+  }
+  return out;
+}
+
+function rutinaDiaria(){
+  var cfg=config_();
+  var res=recalcularTodo();
+  var leg=res.leg, diag=res.diag, mae=res.mae;
+
+  var vencidas = leg.filter(function(l){ return l.estado.indexOf('🔴')===0; });
+  var pendientes = leg.filter(function(l){ return l.estado.indexOf('🟠')===0 &&
+                                                  l.dias!=='' && l.dias>=cfg.diasLegalizacion; });
+  var criticos = diag.filter(function(d){ return d[1]==='CRÍTICO' && d[3]>0; });
+  var altos    = diag.filter(function(d){ return d[1]==='ALTO' && d[3]>0; });
+  var preciosC = mae.filter(function(m){ return m.estado==='🔴'; });
+  var movs     = movimientosCatalogo_(24);
+
+  if(!vencidas.length && !pendientes.length && !criticos.length && !preciosC.length && !movs.length){
+    bitacora_('RUTINA DIARIA','SIN NOVEDADES','',0,'','Nada que reportar.');
+    return;
+  }
+  var cop=function(n){ return '$'+Math.round(n).toLocaleString('es-CO'); };
+  var b=[];
+  b.push('<div style="font-family:Arial,sans-serif;max-width:760px;color:#222">');
+  b.push('<div style="background:#1A6B5C;color:#fff;padding:14px 18px;font-size:16px;font-weight:bold">'+
+         'SGI DI ÉGIDA BISTRÓ — Alerta diaria de recepción de cocina</div>');
+  b.push('<div style="background:#B08D2E;color:#fff;padding:7px 18px;font-size:12px">FMT-REC-COC-003 '+VERSION+' &nbsp;|&nbsp; '+
+         fmt_(new Date(),'EEEE d \'de\' MMMM \'de\' yyyy, HH:mm')+'</div>');
+
+  if(movs.length){
+    b.push(seccion_('0 · MOVIMIENTOS DEL CATÁLOGO EN LAS ÚLTIMAS 24 HORAS','#EAF1F8','#1F3A5F'));
+    b.push('<table style="width:100%;border-collapse:collapse;font-size:12px">');
+    for(var m=0;m<movs.length;m++){
+      b.push('<tr><td style="padding:5px;border-bottom:1px solid #ddd;width:110px">'+fmt_(movs[m].t)+'</td>'+
+             '<td style="padding:5px;border-bottom:1px solid #ddd;font-weight:bold">'+movs[m].res+'</td>'+
+             '<td style="padding:5px;border-bottom:1px solid #ddd">'+movs[m].det.replace(/</g,'&lt;')+
+             (movs[m].mot?(' · <i>'+movs[m].mot.replace(/</g,'&lt;')+'</i>'):'')+'</td></tr>');
+    }
+    b.push('</table>');
+  }
+  if(vencidas.length){
+    b.push(seccion_('1 · RECEPCIONES VENCIDAS — escalar a Gerencia hoy','#F4CCCC','#CC0000'));
+    b.push('<table style="width:100%;border-collapse:collapse;font-size:12px">');
+    b.push('<tr style="background:#1A6B5C;color:#fff"><th style="padding:6px;text-align:left">ID</th><th style="padding:6px;text-align:left">Proveedor</th><th style="padding:6px">Días</th><th style="padding:6px;text-align:right">Valor</th></tr>');
+    vencidas.forEach(function(l){
+      b.push('<tr><td style="padding:5px;border-bottom:1px solid #ddd">'+l.id+'</td><td style="padding:5px;border-bottom:1px solid #ddd">'+
+             (l.prov||'—')+'</td><td style="padding:5px;border-bottom:1px solid #ddd;text-align:center;color:#CC0000;font-weight:bold">'+
+             l.dias+'</td><td style="padding:5px;border-bottom:1px solid #ddd;text-align:right">'+cop(l.val)+'</td></tr>');
+    });
+    b.push('</table>');
+  }
+  if(pendientes.length){
+    b.push(seccion_('2 · PENDIENTES DE LEGALIZAR — exigir factura','#FFF2CC','#9C6500'));
+    b.push('<ul style="font-size:12px;margin:6px 0 0 18px">');
+    pendientes.forEach(function(l){ b.push('<li><b>'+l.id+'</b> — '+(l.prov||'sin proveedor')+', '+l.dias+' día(s)'+
+      (l.sinp?(', '+l.sinp+' línea(s) sin precio'):'')+'</li>'); });
+    b.push('</ul>');
+  }
+  if(preciosC.length){
+    b.push(seccion_('3 · PRODUCTOS CON VARIACIÓN CRÍTICA DE PRECIO (>40%)','#FFF2CC','#9C6500'));
+    b.push('<p style="font-size:12px;margin:6px 0">'+preciosC.slice(0,25).map(function(m){return m.nombre;}).join(' · ')+
+           (preciosC.length>25?(' … y '+(preciosC.length-25)+' más'):'')+'</p>');
+    b.push('<p style="font-size:11px;color:#666;margin:0">Verificar en la factura si es alza real de mercado, cambio de presentación o error de digitación.</p>');
+  }
+  if(criticos.length || altos.length){
+    b.push(seccion_('4 · INTEGRIDAD DE DATOS','#EAF1F8','#1F3A5F'));
+    b.push('<table style="width:100%;border-collapse:collapse;font-size:12px">');
+    criticos.concat(altos).forEach(function(d){
+      var col = d[1]==='CRÍTICO' ? '#CC0000' : '#9C6500';
+      b.push('<tr><td style="padding:5px;border-bottom:1px solid #ddd;color:'+col+';font-weight:bold;width:70px">'+d[0]+
+             '</td><td style="padding:5px;border-bottom:1px solid #ddd">'+d[2]+'</td>'+
+             '<td style="padding:5px;border-bottom:1px solid #ddd;text-align:center;font-weight:bold">'+d[3]+'</td></tr>');
+    });
+    b.push('</table>');
+  }
+  b.push('<p style="font-size:11px;color:#888;margin-top:18px;border-top:1px solid #ddd;padding-top:10px">'+
+    'Generado automáticamente por el motor de recepción. El detalle completo está en las hojas LEGALIZACIÓN, DIAGNÓSTICO y BITÁCORA del archivo: '+
+    '<a href="'+ss_().getUrl()+'">abrir el archivo</a>.</p></div>');
+
+  var destinos=[cfg.correoAdmin, cfg.correoChef].filter(function(x){ return x && x.indexOf('@')>0; });
+  if(!destinos.length){
+    bitacora_('RUTINA DIARIA','SIN DESTINATARIOS','',0,'','Llenar CORREO_ADMIN y CORREO_CHEF en la hoja CONFIG.');
+    return;
+  }
+  var partes=[];
+  if(vencidas.length) partes.push(vencidas.length+' vencida(s)');
+  if(pendientes.length) partes.push(pendientes.length+' por legalizar');
+  if(criticos.length) partes.push(criticos.length+' alerta(s) de integridad');
+  if(movs.length) partes.push(movs.length+' movimiento(s) de catálogo');
+  var asunto='Di Égida · Recepción cocina — '+partes.join(', ');
+  MailApp.sendEmail({to:destinos.join(','), subject:asunto, htmlBody:b.join('')});
+  bitacora_('RUTINA DIARIA','CORREO ENVIADO','',0,'', asunto+' → '+destinos.join(', '));
+}
+
+function seccion_(t,fondo,color){
+  return '<div style="background:'+fondo+';color:'+color+';padding:8px 18px;margin-top:16px;font-weight:bold;font-size:13px">'+t+'</div>';
+}
+
+// ===========================================================================
+// 08 · INSTALACIÓN Y PARCHE
+// ===========================================================================
+function instalarDisparadores_(){
+  var ss=ss_(), quitar={alEditar:1, rutinaDiaria:1, alAbrir:1};
+  var t=ScriptApp.getProjectTriggers();
+  for(var i=0;i<t.length;i++){
+    if(quitar[t[i].getHandlerFunction()]){ try{ ScriptApp.deleteTrigger(t[i]); }catch(e){} }
+  }
+  ScriptApp.newTrigger('alEditar').forSpreadsheet(ss).onEdit().create();
+  ScriptApp.newTrigger('rutinaDiaria').timeBased().atHour(7).everyDays(1).create();
+  ScriptApp.newTrigger('alAbrir').forSpreadsheet(ss).onOpen().create();
+}
+
+/** Validaciones de RECEPCIÓN. La lista de productos sale de LISTAS (solo activos). */
+function validacionesRecepcion_(){
+  var r=hoja_(H.REC), nf=REC.F_FIN-REC.F_INI+1;
+  var lis=ss_().getSheetByName(H.LIS);
+  var rangoProd = lis ? lis.getRange(LIS_F_INI,1,Math.max(lis.getMaxRows()-LIS_F_INI+1,1),1)
+                      : hoja_(H.CAT).getRange(CAT_F_INI,2,hoja_(H.CAT).getMaxRows()-CAT_F_INI+1,1);
+  r.getRange(REC.F_INI,R.PRODUCTO,nf,1).setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInRange(rangoProd,true).setAllowInvalid(false)
+      .setHelpText('Solo productos ACTIVOS del catálogo. Si falta, créelo en la hoja PRODUCTOS.').build());
+  r.getRange(REC.PROVEEDOR).setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInRange(
+      hoja_(H.PRV).getRange(6,2,hoja_(H.PRV).getMaxRows()-6+1,1),true).setAllowInvalid(false)
+      .setHelpText('Solo proveedores de la hoja PROVEEDORES.').build());
+  r.getRange(REC.SOPORTE).setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInList(['Factura','Remisión','Sin soporte'],true)
+      .setAllowInvalid(false).build());
+}
+
+/**
+ * Las fórmulas de RECEPCIÓN buscaban el producto solo hasta la fila 355 del
+ * CATÁLOGO: con 350 productos la unidad y la conservación dejaban de llegar.
+ */
+function formulasRecepcion_(){
+  var r=hoja_(H.REC), out=[];
+  for(var f=REC.F_INI; f<=REC.F_FIN; f++){
+    var m='MATCH($B'+f+',CATALOGO!$B$6:$B$2000,0)';
+    out.push({f:f,
+      c:'=IFERROR(INDEX(CATALOGO!$C$6:$C$2000,'+m+'),"")',
+      q:'=IFERROR(INDEX(CATALOGO!$E$6:$E$2000,'+m+'),"")',
+      s:'=IF($B'+f+'="","",IF($Q'+f+'="Ambiente","N/A",IF($R'+f+'="","⚠ FALTA",IF(NOT(ISNUMBER($R'+f+')),"⚠ REVISAR",IF($R'+f+'<=IFERROR(INDEX(CATALOGO!$F$6:$F$2000,'+m+'),99),"✓ OK","✕ RECHAZAR")))))'});
+  }
+  var cC=[], cQ=[], cS=[];
+  for(var i=0;i<out.length;i++){ cC.push([out[i].c]); cQ.push([out[i].q]); cS.push([out[i].s]); }
+  var n=REC.F_FIN-REC.F_INI+1;
+  r.getRange(REC.F_INI,R.BASE,n,1).setFormulas(cC);
+  r.getRange(REC.F_INI,R.CONS,n,1).setFormulas(cQ);
+  r.getRange(REC.F_INI,R.TEMP_OK,n,1).setFormulas(cS);
+}
+
+/** CATÁLOGO: columnas VIGENCIA y ÚLTIMO MOVIMIENTO. No toca ningún dato existente. */
+function asegurarColumnasCatalogo_(){
+  var s=hoja_(H.CAT);
+  if(s.getMaxColumns()<C.N) s.insertColumnsAfter(s.getMaxColumns(), C.N-s.getMaxColumns());
+  s.getRange(5,C.VIG,1,2).setValues([['Vigencia','Último movimiento\n(alta · baja · reactivación)']])
+   .setFontWeight('bold').setFontColor('#FFFFFF').setBackground('#1A6B5C').setWrap(true)
+   .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  var n=s.getLastRow()-CAT_F_INI+1, puestos=0;
+  if(n>0){
+    var v=s.getRange(CAT_F_INI,1,n,C.N).getValues(), vig=[];
+    for(var i=0;i<n;i++){
+      var actual=txt_(v[i][C.VIG-1]).toUpperCase();
+      if(txt_(v[i][C.NOMBRE-1]) && actual!==ACTIVO && actual!==INACTIVO){ vig.push([ACTIVO]); puestos++; }
+      else vig.push([txt_(v[i][C.NOMBRE-1]) ? (actual===INACTIVO?INACTIVO:ACTIVO) : '']);
+    }
+    s.getRange(CAT_F_INI,C.VIG,n,1).setValues(vig);
+  }
+  var nMax=s.getMaxRows()-CAT_F_INI+1;
+  s.getRange(CAT_F_INI,C.VIG,nMax,1).setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInList([ACTIVO,INACTIVO],true).setAllowInvalid(false).build());
+  try{ s.setColumnWidth(C.VIG, 90); s.setColumnWidth(C.MOV, 320); }catch(e){}
+  // Sin combinar celdas: la columna A del CATÁLOGO está inmovilizada y Sheets no deja
+  // combinar a través de ese borde. En la v3.4.0 este intento hacía fallar el paso de CONFIG.
+  SpreadsheetApp.flush();
+  return puestos;
+}
+
+function asegurarConfig34_(){
+  var h=hoja_(H.CFG), v=h.getDataRange().getValues();
+  for(var i=0;i<v.length;i++) if(txt_(v[i][0])==='RESPONSABLES_CATALOGO') return false;
+  var f=h.getLastRow()+1;
+  h.getRange(f,1,1,4).setValues([['RESPONSABLES_CATALOGO','Chef,Sous chef,Administración','lista',
+    'Quiénes pueden crear y dar de baja productos. Separados por coma: cámbielos por los nombres reales.']]);
+  try{ h.getRange(f,2).setBackground('#FFF2CC'); }catch(e){}
+  return true;
+}
+
+/** Hoja oculta LISTAS: la escribe solo el motor. */
+function asegurarListas_(){
+  var ss=ss_(), h=ss.getSheetByName(H.LIS);
+  if(!h){
+    h=ss.insertSheet(H.LIS);
+    h.getRange(1,1,1,3).setValues([['Productos activos (lista de RECEPCIÓN)','Todos los productos (lista de baja)','Pares declarados distintos']])
+     .setFontWeight('bold');
+  }
+  return h;
+}
+
+function estiloEntrada_(rg){
+  rg.setBackground('#FFFFFF').setFontColor('#1F3A5F').setFontSize(11)
+    .setBorder(true,true,true,true,false,false,'#C9C9C9',SpreadsheetApp.BorderStyle.SOLID)
+    .setVerticalAlignment('middle');
+}
+function estiloRotulo_(rg){
+  rg.setFontWeight('bold').setFontColor('#333333').setFontSize(10).setVerticalAlignment('middle').setWrap(true);
+}
+function estiloSeccion_(rg, texto){
+  rg.merge().setValue(texto).setBackground('#B08D2E').setFontColor('#FFFFFF')
+    .setFontWeight('bold').setFontSize(11).setVerticalAlignment('middle');
+}
+
+/** Construye PRODUCTOS desde cero. Solo cuando la hoja no existe: nunca encima de datos. */
+function construirHojaProductos_(){
+  var ss=ss_(), h=ss.getSheetByName(H.PRD);
+  if(h) return h;
+  h=ss.insertSheet(H.PRD);
+  if(h.getMaxColumns()>6) h.deleteColumns(7, h.getMaxColumns()-6);
+  if(h.getMaxRows()<P.HIST_INI+P.HIST_N+2) h.insertRowsAfter(h.getMaxRows(), P.HIST_INI+P.HIST_N+2-h.getMaxRows());
+  var anchos={1:14, 2:230, 3:150, 4:130, 5:170, 6:300};
+  var k=Object.keys(anchos);
+  for(var i=0;i<k.length;i++) h.setColumnWidth(Number(k[i]), anchos[k[i]]);
+
+  h.getRange('A1:F1').merge().setValue('SGI DI ÉGIDA BISTRÓ  —  PRODUCTOS DE COCINA: CREAR, DAR DE BAJA, REACTIVAR')
+   .setBackground('#1A6B5C').setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13).setVerticalAlignment('middle');
+  h.getRange('A2:F2').merge().setValue('Para el chef y el sous chef. Se llena el bloque y se marca la casilla. '+
+    'Antes de crear, el sistema busca si ya existe algo igual o parecido. Todo queda firmado en la BITÁCORA.')
+   .setFontStyle('italic').setFontColor('#555555').setWrap(true);
+
+  estiloSeccion_(h.getRange('A4:F4'), '  1 · CREAR UN PRODUCTO NUEVO');
+  var rot1=[['Responsable'],['Nombre del producto'],['Unidad base'],['Categoría'],['Conservación'],
+            ['Temp. máx. de llegada (°C)'],['Nota  (solo si el sistema la pide)'],['Crear  ▸  marque la casilla']];
+  h.getRange(5,2,8,1).setValues(rot1); estiloRotulo_(h.getRange(5,2,8,1));
+  for(var f=5; f<=11; f++){ h.getRange(f,3,1,4).merge(); estiloEntrada_(h.getRange(f,3,1,4)); }
+  h.getRange('D12:F12').merge().setValue('Si hay uno igual o parecido, no se crea y el sistema dice cuál existe.')
+   .setFontColor('#777777').setFontSize(9).setWrap(true);
+  h.getRange('B13:F13').merge().setWrap(true).setVerticalAlignment('top');
+
+  estiloSeccion_(h.getRange('A15:F15'), '  2 · DAR DE BAJA O REACTIVAR UN PRODUCTO');
+  var rot2=[['Responsable'],['Producto'],['Acción'],['Motivo  (obligatorio para dar de baja)'],['Ejecutar  ▸  marque la casilla']];
+  h.getRange(16,2,5,1).setValues(rot2); estiloRotulo_(h.getRange(16,2,5,1));
+  for(var g=16; g<=19; g++){ h.getRange(g,3,1,4).merge(); estiloEntrada_(h.getRange(g,3,1,4)); }
+  h.getRange('D20:F20').merge().setValue('Con compras: queda INACTIVO y conserva su historial. Sin compras: se borra del catálogo.')
+   .setFontColor('#777777').setFontSize(9).setWrap(true);
+  h.getRange('B21:F21').merge().setWrap(true).setVerticalAlignment('top');
+
+  estiloSeccion_(h.getRange('A23:F23'), '  3 · ÚLTIMOS '+P.HIST_N+' MOVIMIENTOS DEL CATÁLOGO');
+  h.getRange(24,2,1,5).setValues([['Fecha y hora','Acción','Responsable','Producto','Detalle']])
+   .setFontWeight('bold').setBackground('#EFEFEF').setFontColor('#333333');
+  h.getRange(P.HIST_INI,2,P.HIST_N,5).setFontColor('#555555').setFontSize(9).setBackground('#F7F7F7')
+   .setWrap(true).setVerticalAlignment('top');
+
+  h.getRange(P.A_CHECK).insertCheckboxes().setValue(false);
+  h.getRange(P.B_CHECK).insertCheckboxes().setValue(false);
+  h.setRowHeights(5, 8, 30); h.setRowHeight(13, 70);
+  h.setRowHeights(16, 5, 30); h.setRowHeight(21, 60);
+  try{ h.setHiddenGridlines(true); }catch(e){}
+  h.setFrozenRows(2);
+  try{ h.setTabColor('#1A6B5C'); }catch(e){}
+  return h;
+}
+
+function actualizarResponsables_(){
+  var L={ok:[],mal:[]};
+  pasoSeguro_(L,'PRODUCTOS', function(){ validacionesProductos_(); });
+  pasoSeguro_(L,'DUPLICADOS', function(){ validacionesDuplicados_(); });
+  pasoSeguro_(L,'CONFIG', function(){ avisosConfig_(); });
+  var r=config_().responsables.join(', ');
+  bitacora_('CONFIG','RESPONSABLES ACTUALIZADOS','',0,'',r+(L.mal.length?(' || FALLOS: '+L.mal.join(' || ')):''));
+  try{ ss_().toast('Listas de responsables actualizadas: '+r,'Listo',6); }catch(x){}
+  return L;
+}
+
+function validacionesProductos_(){
+  var h=hoja_(H.PRD), cfg=config_(), lis=asegurarListas_();
+  function lista(a1, valores, ayuda){
+    h.getRange(a1).setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(valores,true).setAllowInvalid(false).setHelpText(ayuda).build());
+  }
+  lista(P.A_RESP, cfg.responsables, 'Quién crea el producto. La lista se cambia en CONFIG (RESPONSABLES_CATALOGO).');
+  lista(P.B_RESP, cfg.responsables, 'Quién hace el cambio.');
+  lista(P.A_BASE, BASES, 'g: todo lo que se pesa · ml: líquidos · und: lo que se cuenta (huevo, bolsa, frasco).');
+  lista(P.A_CAT, CATEGORIAS, 'Categoría de compra del producto.');
+  lista(P.A_CONS, CONSERVACION, 'Cómo llega y se guarda.');
+  lista(P.B_ACCION, [ACCION_BAJA, ACCION_REACT], 'Dar de baja lo saca de RECEPCIÓN. Reactivar lo devuelve.');
+  h.getRange(P.A_TMAX).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireNumberBetween(-30,20).setAllowInvalid(true)
+    .setHelpText('Solo refrigerados y congelados. Vacía = 4 °C (2 °C pescado, 6 °C lácteos, -12 °C congelado).').build());
+  h.getRange(P.B_PROD).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInRange(lis.getRange(LIS_F_INI,2,Math.max(lis.getMaxRows()-LIS_F_INI+1,1),1),true)
+    .setAllowInvalid(false).setHelpText('Todos los productos, activos y de baja.').build());
+}
+
+/** Construye DUPLICADOS desde cero si no existe. */
+function construirHojaDuplicados_(){
+  var ss=ss_(), h=ss.getSheetByName(H.DUP);
+  if(h) return h;
+  h=ss.insertSheet(H.DUP);
+  if(h.getMaxColumns()>8) h.deleteColumns(9, h.getMaxColumns()-8);
+  var anchos={1:36, 2:230, 3:70, 4:230, 5:70, 6:230, 7:300, 8:250};
+  var k=Object.keys(anchos);
+  for(var i=0;i<k.length;i++) h.setColumnWidth(Number(k[i]), anchos[k[i]]);
+  h.getRange('A1:H1').merge().setValue('SGI DI ÉGIDA BISTRÓ  —  POSIBLES PRODUCTOS DUPLICADOS EN EL CATÁLOGO')
+   .setBackground('#1A6B5C').setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13);
+  h.getRange('A2:H2').merge();
+  h.getRange('A3:B3').merge().setValue('Responsable de las decisiones ▸').setFontWeight('bold').setHorizontalAlignment('right');
+  estiloEntrada_(h.getRange(DUPC.RESP));
+  h.getRange('D3:G3').merge().setValue('Aplicar las decisiones escritas en la columna DECISIÓN  ▸')
+   .setFontWeight('bold').setHorizontalAlignment('right');
+  h.getRange(DUPC.CHECK).insertCheckboxes().setValue(false);
+  h.getRange(4,1,1,8).setValues([['#','Producto A','Compras A','Producto B','Compras B','Unidad · categoría',
+    'Por qué se marcó','DECISIÓN']]).setFontWeight('bold').setBackground('#1A6B5C').setFontColor('#FFFFFF').setWrap(true);
+  h.setRowHeight(2, 42); h.setRowHeights(3, 2, 30);
+  h.setFrozenRows(4);
+  try{ h.setHiddenGridlines(true); }catch(e){}
+  try{ h.setTabColor('#B08D2E'); }catch(e){}
+  return h;
+}
+
+function validacionesDuplicados_(){
+  var h=hoja_(H.DUP), cfg=config_();
+  h.getRange(DUPC.RESP).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList(cfg.responsables,true).setAllowInvalid(false).build());
+}
+
+/** Protege PRODUCTOS y DUPLICADOS dejando libres solo las celdas que se llenan. */
+function protegerHojasCocina_(){
+  var ss=ss_(), h=ss.getSheetByName(H.PRD), d=ss.getSheetByName(H.DUP);
+  if(h){
+    try{ desproteger_(h); }catch(e){}
+    try{
+      var p=protegerSeguro_(h,'PRODUCTOS — solo las celdas blancas se llenan');
+      p.setUnprotectedRanges([h.getRange('C5:F11'), h.getRange(P.A_CHECK), h.getRange('C16:F19'), h.getRange(P.B_CHECK)]);
+    }catch(e){}
+  }
+  if(d){
+    try{ desproteger_(d); }catch(e){}
+    try{
+      var q=protegerSeguro_(d,'DUPLICADOS — solo responsable, casilla y columna DECISIÓN');
+      q.setUnprotectedRanges([d.getRange(DUPC.RESP), d.getRange(DUPC.CHECK), d.getRange(DUP_F_INI,8,Math.max(d.getMaxRows()-DUP_F_INI+1,1),1)]);
+    }catch(e){}
+  }
+}
+
+/** Todo lo estructural de la v3.4. Idempotente: se puede correr dos veces sin daño. */
+function asegurarEstructura34_(L){
+  pasoSeguro_(L,'CATÁLOGO: columnas Vigencia y Último movimiento', function(){ asegurarColumnasCatalogo_(); });
+  pasoSeguro_(L,'CONFIG: parámetro RESPONSABLES_CATALOGO', function(){ asegurarConfig34_(); });
+  pasoSeguro_(L,'Hoja LISTAS (oculta)', function(){ asegurarListas_(); refrescarListas_(catalogo_()); });
+  pasoSeguro_(L,'Hoja PRODUCTOS', function(){ construirHojaProductos_(); validacionesProductos_(); refrescarHistorialProductos_(); });
+  pasoSeguro_(L,'Hoja DUPLICADOS', function(){ construirHojaDuplicados_(); validacionesDuplicados_(); });
+  pasoSeguro_(L,'RECEPCIÓN: fórmulas hasta 2.000 productos', function(){ formulasRecepcion_(); });
+  pasoSeguro_(L,'RECEPCIÓN: lista de productos solo con activos', function(){ validacionesRecepcion_(); });
+  pasoSeguro_(L,'TABLERO: celda combinada que detenía los avisos', function(){
+    hoja_(H.TAB).getRange(21,1,8,7).breakApart();
+  });
+}
+
+function instalar(){
+  var ss=ss_(), L={ok:[],mal:[]};
+  pasoSeguro_(L,'Disparadores', function(){ instalarDisparadores_(); });
+  pasoSeguro_(L,'Casillas de RECEPCIÓN', function(){
+    var r=hoja_(H.REC);
+    r.getRange(REC.GUARDAR).insertCheckboxes().setValue(false);
+    r.getRange(REC.FORZAR).insertCheckboxes().setValue(false);
+  });
+  asegurarEstructura34_(L);
+  pasoSeguro_(L,'Protección de hojas', function(){ reproteger_(); });
+  pasoSeguro_(L,'Recálculo completo', function(){ recalcularTodo(); });
+  pasoSeguro_(L,'Ocultar LISTAS', function(){ activarHojaSegura_(); var l=ss.getSheetByName(H.LIS); if(l && !l.isSheetHidden()) l.hideSheet(); });
+  alAbrir();
+  informar_('Instalación '+VERSION, L);
+}
+
+/**
+ * Actualiza un archivo que YA tiene datos de la v3.3.x a la v3.4.
+ * No borra nada: agrega columnas, hojas y parámetros que falten, rehace las
+ * validaciones y recalcula. Se puede ejecutar más de una vez.
+ */
+function aplicarParche34(){
+  var ss=ss_(), L={ok:[],mal:[]};
+  var lock=LockService.getDocumentLock(); lock.tryLock(30000);
+  try{
+    pasoSeguro_(L,'Disparadores (sin duplicar)', function(){ instalarDisparadores_(); });
+    asegurarEstructura34_(L);
+    pasoSeguro_(L,'Protección de hojas', function(){ reproteger_(); });
+    pasoSeguro_(L,'Recálculo completo y avisos', function(){ recalcularTodo(); });
+    pasoSeguro_(L,'Ocultar LISTAS', function(){ activarHojaSegura_(); var l=ss.getSheetByName(H.LIS); if(l && !l.isSheetHidden()) l.hideSheet(); });
+    pasoSeguro_(L,'Menú', function(){ alAbrir(); });
+  } finally { lock.releaseLock(); }
+  informar_('Parche '+VERSION+' — productos desde cocina', L);
+  return L;
+}
+
+function alAbrir(){
+  try{
+    SpreadsheetApp.getUi().createMenu('⚙ Di Égida')
+      .addItem('Guardar la recepción actual','guardarRecepcion')
+      .addSeparator()
+      .addItem('Ir a PRODUCTOS (crear / dar de baja)','nuevoProducto')
+      .addItem('Revisar posibles duplicados','irADuplicados')
+      .addSeparator()
+      .addItem('Recalcular todo ahora','recalcularTodo')
+      .addItem('Enviar la alerta diaria ahora','rutinaDiaria')
+      .addItem('Reversar una recepción','reversarRecepcion')
+      .addSeparator()
+      .addItem('★  Reparar todo  ★','repararTodo')
+      .addItem('Generar reporte para asesoría','reporteParaAsesor')
+      .addItem('Probar los avisos','probarAvisos')
+      .addItem('Diagnóstico técnico','diagnosticoTecnico')
+      .addSeparator()
+      .addItem('Corregir datos del histórico (una sola vez)','corregirDatos')
+      .addSeparator()
+      .addItem('Mejorar la vista para el iPad','mejorarVista')
+      .addItem('Ajustar estética y márgenes','ajustarEstetica')
+      .addItem('Exportar la recepción a PDF para firmar','exportarRecepcionPDF')
+      .addSeparator()
+      .addItem('Aplicar parche v3.4','aplicarParche34')
+      .addItem('Reinstalar el sistema','instalar')
+      .addToUi();
+  }catch(x){}
+}
+
+function irADuplicados(){
+  var h=hoja_(H.DUP); ss_().setActiveSheet(h);
+  try{ refrescarDuplicados_(null, null); }catch(e){}
+}
+
+/** Prueba de humo: confirma que la estructura está completa antes de operar. */
+function verificarInstalacion(){
+  var faltan=[], ss=ss_(), k=Object.keys(H);
+  for(var i=0;i<k.length;i++) if(!ss.getSheetByName(H[k[i]])) faltan.push(H[k[i]]);
+  var cfg=config_(), obs=[];
+  if(!cfg.correoAdmin) obs.push('CORREO_ADMIN vacío en CONFIG.');
+  if(!cfg.correoChef)  obs.push('CORREO_CHEF vacío en CONFIG.');
+  var disp=ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); });
+  ['alEditar','rutinaDiaria'].forEach(function(f){ if(disp.indexOf(f)<0) obs.push('Falta el disparador '+f+'. Ejecute aplicarParche34.'); });
+  var cuenta={}; disp.forEach(function(f){ cuenta[f]=(cuenta[f]||0)+1; });
+  Object.keys(cuenta).forEach(function(f){ if(cuenta[f]>1) obs.push('El disparador '+f+' está '+cuenta[f]+' veces: cada casilla se procesaría '+cuenta[f]+' veces. Ejecute aplicarParche34.'); });
+  var txt = (faltan.length? '❌ Faltan hojas: '+faltan.join(', ')+'\n\n' : '✅ Las '+k.length+' hojas están presentes.\n\n')+
+            (obs.length? '⚠ Pendientes:\n• '+obs.join('\n• ') : '✅ Disparadores, casillas y configuración completos.')+
+            '\n\nLíneas activas en el libro mayor: '+leerBD_().filter(function(f){return txt_(f[B.ESTADO-1])==='ACTIVA';}).length;
+  try{ SpreadsheetApp.getUi().alert('Verificación de instalación',txt,SpreadsheetApp.getUi().ButtonSet.OK); }catch(x){ Logger.log(txt); }
+  return txt;
+}
+
+function desproteger_(h){
+  h.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(function(p){
+    try{ p.remove(); }catch(x){}
+  });
+}
+function reproteger_(){
+  var ss=ss_();
+  [H.BD,H.MAE,H.LEG,H.DIAG,H.BAN,H.BIT,H.TAB,H.CAT,H.LIS].forEach(function(n){
+    var h=ss.getSheetByName(n); if(!h) return;
+    try{ desproteger_(h); }catch(e){}
+    try{ protegerSeguro_(h, n===H.CAT?'CATÁLOGO — se modifica desde la hoja PRODUCTOS':'Generada por el sistema'); }catch(e){}
+  });
+  protegerHojasCocina_();
+}
+
+// ===========================================================================
+// 10 · VISTA Y ESTÉTICA — cada paso va aislado y se reporta por su nombre
+// ---------------------------------------------------------------------------
+//  v3.4: en la v3.3.2 ajustarEstetica, configurarImpresion_ y exportarRecepcionPDF
+//  estaban definidas DOS veces. Apps Script se queda con la última, que era la
+//  versión vieja sin blindaje. Aquí queda una sola: la blindada.
+// ===========================================================================
+
+/** Corre un paso con nombre, sin dejar que tumbe a los demás. */
+function pasoSeguro_(lista, nombre, fn){
+  // flush dentro del paso: Sheets acumula escrituras y un error de un paso salía
+  // en el siguiente, con el nombre equivocado.
+  try{ fn(); SpreadsheetApp.flush(); lista.ok.push(nombre); }
+  catch(e){ lista.mal.push(nombre+' → '+e.message); }
+}
+
+/** Protege una hoja o un rango. canDomainEdit lanza excepción en cuentas Gmail personales. */
+function protegerSeguro_(objetoProtegible, descripcion){
+  var p=objetoProtegible.protect().setDescription(descripcion);
+  try{ p.removeEditors(p.getEditors()); }catch(e){}
+  try{ p.addEditor(Session.getEffectiveUser()); }catch(e){}
+  try{ if(p.canDomainEdit()) p.setDomainEdit(false); }catch(e){}
+  return p;
+}
+
+/** Deja activa una hoja que NO se va a ocultar (Sheets no oculta la hoja activa). */
+function activarHojaSegura_(){
+  var ss=ss_();
+  var destino=ss.getSheetByName(H.REC) || ss.getSheetByName(H.TAB);
+  if(destino && destino.isSheetHidden()) destino.showSheet();
+  if(destino) ss.setActiveSheet(destino);
+  return destino;
+}
+
+function mejorarVista(){
+  var ss=ss_(), L={ok:[],mal:[]};
+  pasoSeguro_(L,'Poner RECEPCIÓN al frente', function(){ activarHojaSegura_(); });
+  pasoSeguro_(L,'Ocultar las hojas técnicas', function(){
+    var activa=ss.getActiveSheet().getName();
+    [H.BD,H.BAN,H.BIT,H.CFG,H.DIAG,H.LIS].forEach(function(n){
+      if(n===activa) return;
+      var h=ss.getSheetByName(n);
+      if(h && !h.isSheetHidden()) h.hideSheet();
+    });
+  });
+  pasoSeguro_(L,'Colorear las pestañas', function(){
+    var col={}; col[H.REC]='#1A6B5C'; col[H.PRD]='#1A6B5C'; col[H.TAB]='#1F3A5F';
+    col[H.MAE]='#B08D2E'; col[H.LEG]='#B08D2E'; col[H.PRV]='#B08D2E'; col[H.DUP]='#B08D2E';
+    col[H.CAT]='#9E9E9E'; col[H.DIAG]='#9E9E9E'; col[H.INS]='#9E9E9E';
+    Object.keys(col).forEach(function(n){
+      var h=ss.getSheetByName(n);
+      if(h){ try{ h.setTabColor(col[n]); }catch(e){} }
+    });
+  });
+  pasoSeguro_(L,'Subir la altura de las filas de captura', function(){
+    var r=hoja_(H.REC), n=REC.F_FIN-REC.F_INI+1;
+    if(REC.F_FIN>r.getMaxRows()) r.insertRowsAfter(r.getMaxRows(), REC.F_FIN-r.getMaxRows()+5);
+    r.setRowHeights(REC.F_INI, n, 26);
+  });
+  pasoSeguro_(L,'Bloquear las columnas automáticas', function(){
+    var r=hoja_(H.REC), n=REC.F_FIN-REC.F_INI+1;
+    try{
+      r.getProtections(SpreadsheetApp.ProtectionType.RANGE).forEach(function(p){
+        try{ p.remove(); }catch(e){}
+      });
+    }catch(e){}
+    [R.NUM,R.BASE,R.CANT_FACT,R.DIF,R.PU,R.ULTIMO,R.VAR,R.MERMA,R.CONS,R.TEMP_OK]
+      .forEach(function(c){
+        try{ protegerSeguro_(r.getRange(REC.F_INI,c,n,1),'Columna automática — no se escribe'); }catch(e){}
+      });
+    ['A47:V47','A50:V56','A62:V62','A8:V8'].forEach(function(a1){
+      try{ protegerSeguro_(r.getRange(a1),'Calculada por el sistema'); }catch(e){}
+    });
+  });
+  pasoSeguro_(L,'Congelar encabezado y columna Producto', function(){
+    // A2:V2 está combinada de punta a punta: congelar 2 columnas la parte. Solo filas.
+    var r=hoja_(H.REC);
+    r.setFrozenRows(10);
+  });
+  pasoSeguro_(L,'Filas alternas para seguir la línea', function(){
+    var r=hoja_(H.REC);
+    try{ r.getBandings().forEach(function(b){ b.remove(); }); }catch(e){}
+    r.getRange(REC.F_INI,1,REC.F_FIN-REC.F_INI+1,REC.N_COL)
+     .applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, false, false);
+  });
+  pasoSeguro_(L,'Ordenar las pestañas', function(){
+    var r=hoja_(H.REC);
+    ss.setActiveSheet(r); ss.moveActiveSheet(1);
+    var p=ss.getSheetByName(H.PRD);
+    if(p){ ss.setActiveSheet(p); ss.moveActiveSheet(2); }
+    var t=ss.getSheetByName(H.TAB);
+    if(t && !t.isSheetHidden()){ ss.setActiveSheet(t); ss.moveActiveSheet(3); }
+    ss.setActiveSheet(r);
+  });
+  informar_('Vista para el iPad', L);
+}
+
+function ajustarEstetica(){
+  var ss=ss_(), L={ok:[],mal:[]};
+  pasoSeguro_(L,'Anchos de columna de RECEPCIÓN', function(){
+    var r=hoja_(H.REC);
+    var a={1:5, 2:32, 3:8, 4:14, 5:10, 6:13, 7:14, 8:12, 9:14, 10:11, 11:15,
+           12:13, 13:13, 14:12, 15:13, 16:16, 17:14, 18:10, 19:10, 20:14, 21:14, 22:34};
+    Object.keys(a).forEach(function(c){
+      try{ r.setColumnWidth(Number(c), Math.round(a[c]*7.2)); }catch(e){}
+    });
+    r.setRowHeight(10, 46);
+    r.getRange(1,1,Math.min(68,r.getMaxRows()),REC.N_COL).setVerticalAlignment('middle');
+  });
+  pasoSeguro_(L,'Anchos de columna de las demás hojas', function(){
+    var med={};
+    med[H.CAT]={2:38, 4:22, 8:52};
+    med[H.MAE]={2:36, 4:20, 8:30};
+    med[H.LEG]={2:23, 4:30, 12:36};
+    med[H.PRV]={2:34, 3:22, 4:24, 10:30, 11:44};
+    med[H.BD] ={4:30, 8:34, 24:15, 26:34, 28:40, 29:26};
+    med[H.TAB]={2:46, 4:22, 6:46};
+    med[H.BIT]={4:30, 7:38, 8:60};
+    med[H.CFG]={1:32, 4:78};
+    Object.keys(med).forEach(function(nom){
+      var h=ss.getSheetByName(nom); if(!h) return;
+      Object.keys(med[nom]).forEach(function(c){
+        if(Number(c)>h.getMaxColumns()) return;
+        try{ h.setColumnWidth(Number(c), Math.round(med[nom][c]*7.2)); }catch(e){}
+      });
+    });
+  });
+  pasoSeguro_(L,'Ajuste de texto en la BITÁCORA', function(){
+    var hb=ss.getSheetByName(H.BIT); if(!hb) return;
+    var n=hb.getMaxRows()-5; if(n<1) return;
+    hb.getRange(6,7,n,2).setWrap(true).setVerticalAlignment('top');
+  });
+  pasoSeguro_(L,'Congelar encabezados donde faltaba', function(){
+    [[H.TAB,4],[H.BAN,5],[H.DIAG,5],[H.CFG,5],[H.INS,3]].forEach(function(x){
+      var h=ss.getSheetByName(x[0]); if(!h) return;
+      try{ if(h.getMaxRows()>x[1]) h.setFrozenRows(x[1]); }catch(e){}
+    });
+  });
+  pasoSeguro_(L,'Guardar la configuración de impresión', function(){
+    configurarImpresion_(H.REC,'A1:V68',10);
+    configurarImpresion_(H.TAB,'A1:G27',4);
+    [H.LEG,H.MAE,H.PRV,H.CAT].forEach(function(n){ configurarImpresion_(n,null,5); });
+  });
+  informar_('Estética y márgenes', L);
+}
+
+/** Resumen único al final: qué salió y qué no, con el motivo. */
+function informar_(titulo, L){
+  var t=titulo.toUpperCase()+'\n\n';
+  if(L.ok.length) t+='✅ Aplicado ('+L.ok.length+'):\n· '+L.ok.join('\n· ')+'\n\n';
+  if(L.mal.length) t+='⛔ No se pudo ('+L.mal.length+'):\n· '+L.mal.join('\n· ')+
+    '\n\nLo demás sí quedó aplicado. Puede volver a ejecutar esta opción cuando resuelva lo anterior.';
+  else t+='Sin errores.';
+  var acc = titulo.indexOf('Vista')>=0 ? 'VISTA' : (titulo.indexOf('Estética')>=0 ? 'ESTÉTICA' :
+            (titulo.indexOf('Parche')>=0 ? 'PARCHE' : 'INSTALACIÓN'));
+  bitacora_(acc, L.mal.length?'PARCIAL':'APLICADA','',L.ok.length,'',
+            (L.mal.length?('FALLOS: '+L.mal.join(' || ')+' || '):'')+'OK: '+L.ok.join(' || '));
+  try{ SpreadsheetApp.getUi().alert(titulo, t, SpreadsheetApp.getUi().ButtonSet.OK); }
+  catch(x){ Logger.log(t); }
+}
+
+function configurarImpresion_(nombre, areaA1, filaEncabezado){
+  var h=ss_().getSheetByName(nombre); if(!h) return;
+  try{ if(h.getMaxRows()>filaEncabezado) h.setFrozenRows(filaEncabezado); }catch(e){}
+  try{
+    PropertiesService.getDocumentProperties()
+      .setProperty('impr_'+nombre, JSON.stringify({area:areaA1, enc:filaEncabezado}));
+  }catch(e){}
+}
+
+/** Exporta RECEPCIÓN a PDF horizontal, a una página de ancho, márgenes de 1 cm. */
+function exportarRecepcionPDF(){
+  var ss=ss_(), h=hoja_(H.REC);
+  var url='https://docs.google.com/spreadsheets/d/'+ss.getId()+'/export?'+
+    'format=pdf&gid='+h.getSheetId()+
+    '&portrait=false&size=letter&scale=2'+
+    '&top_margin=0.39&bottom_margin=0.39&left_margin=0.39&right_margin=0.39'+
+    '&sheetnames=false&printtitle=false&pagenum=CENTER&gridlines=false&fzr=true'+
+    '&range=A1:V68';
+  try{
+    var resp=UrlFetchApp.fetch(url,{headers:{Authorization:'Bearer '+ScriptApp.getOAuthToken()}});
+    var idrec=txt_(h.getRange(REC.ID_PREVIO).getValue()) || 'sin-id';
+    var nombre='Recepcion_'+idrec.replace(/[^A-Za-z0-9\-]/g,'_')+'.pdf';
+    var carpeta;
+    try{
+      var padres=DriveApp.getFileById(ss.getId()).getParents();
+      carpeta = padres.hasNext() ? padres.next() : DriveApp.getRootFolder();
+    }catch(e){ carpeta=DriveApp.getRootFolder(); }
+    var f=carpeta.createFile(resp.getBlob().setName(nombre));
+    bitacora_('PDF','GENERADO',idrec,0,'',nombre+' → '+f.getUrl());
+    try{
+      SpreadsheetApp.getUi().alert('PDF listo para imprimir y firmar\n\n'+nombre+
+        '\n\nQuedó guardado en la misma carpeta del archivo:\n'+f.getUrl());
+    }catch(x){ Logger.log(f.getUrl()); }
+    return f.getUrl();
+  }catch(e){
+    bitacora_('PDF','ERROR','',0,'',e.message);
+    try{ SpreadsheetApp.getUi().alert('No se pudo generar el PDF: '+e.message+
+      '\n\nComo alternativa: Archivo → Descargar → PDF, con orientación horizontal y «Ajustar al ancho».'); }
+    catch(x){ Logger.log(e.message); }
+  }
+}
+
+// ===========================================================================
+// 10b · DIAGNÓSTICO TÉCNICO — revisa el entorno antes de que falle algo
+// ===========================================================================
+function diagnosticoTecnico(){
+  var ss=ss_(), L=[];
+  L.push('DIAGNÓSTICO TÉCNICO '+VERSION+' — '+fmt_(new Date()));
+  L.push('');
+  var motor='antiguo (Rhino)';
+  try{ if(typeof ''.normalize==='function') motor='moderno (V8)'; }catch(e){}
+  L.push('Motor de Apps Script: '+motor);
+  var dominio='cuenta personal (Gmail)';
+  try{
+    var pr=ss.getSheets()[0].protect();
+    try{ pr.canDomainEdit(); dominio='cuenta de Workspace'; }catch(e){}
+    pr.remove();
+  }catch(e){}
+  L.push('Tipo de cuenta: '+dominio);
+  L.push('');
+  var faltan=[], ocultas=[], k=Object.keys(H);
+  for(var i=0;i<k.length;i++){
+    var h=ss.getSheetByName(H[k[i]]);
+    if(!h) faltan.push(H[k[i]]);
+    else if(h.isSheetHidden()) ocultas.push(H[k[i]]);
+  }
+  L.push('Hojas: '+(faltan.length? ('⛔ faltan '+faltan.join(', ')+' — ejecute aplicarParche34') : '✓ las '+k.length+' presentes'));
+  L.push('Ocultas: '+(ocultas.length? ocultas.join(', ') : 'ninguna'));
+  var disp=[];
+  try{ disp=ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); }); }catch(e){}
+  L.push('Disparadores: '+(disp.length? disp.join(', ') : '⛔ ninguno — ejecute aplicarParche34'));
+  var casilla='?';
+  try{ casilla = (typeof hoja_(H.REC).getRange(REC.GUARDAR).getValue()==='boolean') ? '✓ creada' : '⛔ falta — ejecute instalar'; }catch(e){ casilla='⛔ '+e.message; }
+  L.push('Casilla de guardado: '+casilla);
+  try{
+    var act=leerBD_().filter(function(f){ return txt_(f[B.ESTADO-1])==='ACTIVA'; });
+    var cat=catalogo_(), na=Object.keys(activos_(cat)).length;
+    L.push('Libro mayor: '+act.length+' líneas activas');
+    L.push('Catálogo: '+Object.keys(cat).length+' productos ('+na+' activos, '+(Object.keys(cat).length-na)+' de baja)');
+  }catch(e){ L.push('⛔ Error leyendo datos: '+e.message); }
+  try{
+    var c=config_();
+    L.push('Correos: admin '+(c.correoAdmin||'SIN DEFINIR')+' · chef '+(c.correoChef||'SIN DEFINIR'));
+    L.push('Responsables de catálogo: '+c.responsables.join(', '));
+  }catch(e){ L.push('⛔ Error leyendo CONFIG: '+e.message); }
+  L.push('');
+  try{
+    var cfg=config_(), cat2=catalogo_(), bd=leerBD_();
+    var a2=bd.filter(function(f){ return txt_(f[B.ESTADO-1])==='ACTIVA'; });
+    var mae=recalcularMaestro_(cat2,a2), leg=recalcularLegalizacion_(a2,cfg);
+    var pares=refrescarDuplicados_(cat2,a2);
+    var diag=recalcularDiagnostico_(cat2,bd,a2,mae,leg,cfg,pares);
+    SpreadsheetApp.flush();
+    var fallos=refrescarAvisos_(cat2,a2,mae,leg,diag,pares);
+    L.push('Avisos: '+(fallos.length? ('⛔ '+fallos.join(' | ')) : '✓ todos los bloques sin error'));
+    L.push('Pares de posible duplicado: '+pares.length);
+  }catch(e){ L.push('Avisos: ⛔ '+e.message); }
+  var txt=L.join('\n');
+  try{ SpreadsheetApp.getUi().alert('Diagnóstico técnico', txt, SpreadsheetApp.getUi().ButtonSet.OK); }
+  catch(x){ Logger.log(txt); }
+  return txt;
+}
+
+// ===========================================================================
+// 11 · CORRECCIÓN DE DATOS v3.2 — saneamiento del libro mayor (ya ejecutada;
+//      es idempotente: volver a correrla deja los mismos valores)
+// ===========================================================================
+var CORRECCIONES = [
+ ['REC-COC-20260805-02-005', null, 53.40,
+  'La v1.0 anotó 4.000 gr y "53400" de precio unitario. Leído como $/g daba una factura de $213.600.000. El precio venía por KILO: 4 kg de conejo a $53.400/kg = $213.600, cifra posible y dentro de la banda de cárnicos.'],
+ ['REC-COC-20260805-02-006', null, 15.48,
+  'Misma escala: 10.000 gr a $15.480 el kilo = $154.800. Leído por gramo daba $154.800.000.'],
+ ['REC-COC-20260801-02-002', null, 23.90,
+  '1.500 gr a $23.900 el kilo = $35.850. Queda en línea con los demás quesos del catálogo, que van de $19 a $91 por gramo.'],
+ ['REC-COC-20260728-02-017', 3000, 6.90,
+  'La v1.0 marcó unidad "Kg" con cantidad 3.000, lo que daba 3 toneladas de tomate. Las otras cuatro recepciones de tomate chonto están en gramos (2.000 a 15.160). Son 3.000 g a $6,90/g = $20.700, coherente con los $5,86/g de la recepción del 22/08.'],
+ ['REC-COC-20260728-02-018', 1245, 13.00,
+  'Mismo caso: "Kg" con 1.245 daba 1,2 toneladas de manzana. Son 1.245 g a $13/g = $16.185, coherente con Manzana Royal y Gala a $9,44/g.'],
+ ['REC-COC-20260808-01-001', null, 4.34,
+  'La migración dividió por mil un precio que ya venía por gramo: dejaba la factura en $10,85. La línea gemela de la misma recepción registra $4,50/g, así que $4,34/g es la lectura correcta y la factura queda en $10.850.']
+];
+
+var MARCA_CERRADA = 'SIN PRECIO — NO RECUPERABLE (factura no hallada, cierre 10/09/2026)';
+
+function corregirDatos(){
+  var ui; try{ ui=SpreadsheetApp.getUi(); }catch(x){
+    throw new Error('corregirDatos debe ejecutarse desde un computador.');
+  }
+  var r=ui.alert('Corrección del histórico v3.2',
+    'Va a hacer dos cosas sobre el libro mayor:\n\n'+
+    '1. Corregir 6 líneas cuyo precio quedó en la escala equivocada al migrar de la v1.0. '+
+    'Cada corrección queda documentada con su evidencia en la columna de revisión.\n\n'+
+    '2. Cerrar como NO RECUPERABLES las líneas sin precio, para que dejen de contar como '+
+    'error pendiente. Siguen en su sitio, junto al resto de recepciones; solo dejan de '+
+    'aparecer como algo por hacer.\n\n¿Continuar?', ui.ButtonSet.YES_NO);
+  if(r!==ui.Button.YES) return;
+
+  var lock=LockService.getDocumentLock(); lock.tryLock(30000);
+  try{
+    var hb=hoja_(H.BD), n=hb.getLastRow()-BD_F_INI+1;
+    if(n<1){ ui.alert('El libro mayor está vacío.'); return; }
+    desproteger_(hb);
+    var rg=hb.getRange(BD_F_INI,1,n,B.N), v=rg.getValues();
+    var idx={};
+    for(var i=0;i<v.length;i++) idx[txt_(v[i][B.ID_LINEA-1])]=i;
+    var corr=0, faltan=[];
+    for(var k=0;k<CORRECCIONES.length;k++){
+      var c=CORRECCIONES[k], p=idx[c[0]];
+      if(p===undefined){ faltan.push(c[0]); continue; }
+      if(c[1]!==null){
+        v[p][B.CANT_FACT-1]=c[1];
+        v[p][B.CANT_REAL-1]=c[1];
+        v[p][B.DIF-1]=0;
+        if(num_(v[p][B.CONT_P-1])) v[p][B.CONT_P-1]=c[1];
+      }
+      var cant=num_(v[p][B.CANT_REAL-1])||num_(v[p][B.CANT_FACT-1])||0;
+      v[p][B.PU-1]=c[2];
+      v[p][B.VALOR-1]=Math.round(cant*c[2]*100)/100;
+      v[p][B.REVISION-1]='CORREGIDA 10/09/2026 · '+c[3];
+      corr++;
+    }
+    var cerradas=0;
+    for(var j=0;j<v.length;j++){
+      if(!txt_(v[j][B.ID_LINEA-1])) continue;
+      if(txt_(v[j][B.ESTADO-1])!=='ACTIVA') continue;
+      var pu=num_(v[j][B.PU-1]);
+      if(pu && pu>0) continue;
+      if(txt_(v[j][B.ORIGEN-1])!=='MIGRADO v1.0') continue;
+      if(txt_(v[j][B.REVISION-1])===MARCA_CERRADA) continue;
+      v[j][B.REVISION-1]=MARCA_CERRADA;
+      cerradas++;
+    }
+    rg.setValues(v);
+    SpreadsheetApp.flush();
+    recalcularTodo();
+    reproteger_();
+    bitacora_('CORRECCIÓN','COMPLETADA','',corr+cerradas,'',
+      corr+' líneas corregidas con evidencia, '+cerradas+' cerradas como no recuperables.');
+    ui.alert('CORRECCIÓN COMPLETADA\n\n'+
+      '· '+corr+' líneas corregidas, cada una con su evidencia escrita en la columna de revisión del libro mayor.\n'+
+      '· '+cerradas+' líneas sin precio cerradas como no recuperables.\n'+
+      (faltan.length ? '\n⚠ No se encontraron: '+faltan.join(', ') : ''));
+  } finally { lock.releaseLock(); }
+}
+
+// ===========================================================================
+// 13 · AVISOS VIVOS — ningún cuadro informativo vuelve a quedarse desactualizado
+// ===========================================================================
+function refrescarAvisos_(cat, act, mae, leg, diag, pares){
+  var fallos=[];
+  function paso(nombre, fn){
+    try{ fn(); SpreadsheetApp.flush(); }catch(e){ fallos.push(nombre+': '+e.message); }
+  }
+  var idx=null;
+  paso('índice de nombres', function(){ idx=indiceNombres_(cat, act, pares); });
+  if(idx){
+    paso('avisos de catálogo',    function(){ avisosCatalogo_(cat, act, idx); });
+    paso('avisos de proveedores', function(){ avisosProveedores_(act, leg); });
+    paso('bandas superiores',     function(){ avisosBandas_(act, leg, mae, diag, idx, cat); });
+    paso('pendientes',            function(){ avisosPendientes_(cat, act, mae, leg, idx); });
+  }
+  paso('estado de CONFIG', function(){ avisosConfig_(); });
+  paso('historial de PRODUCTOS', function(){ refrescarHistorialProductos_(); });
+  if(fallos.length){
+    bitacora_('AVISOS','FALLO PARCIAL','',fallos.length,'',fallos.join(' || '));
+  }
+  return fallos;
+}
+
+function probarAvisos(){
+  var cfg=config_(), cat=catalogo_(), bd=leerBD_();
+  var act=bd.filter(function(f){ return txt_(f[B.ESTADO-1])==='ACTIVA'; });
+  var mae=recalcularMaestro_(cat, act);
+  var leg=recalcularLegalizacion_(act, cfg);
+  var pares=refrescarDuplicados_(cat, act);
+  var diag=recalcularDiagnostico_(cat, bd, act, mae, leg, cfg, pares);
+  recalcularTablero_(cat, act, mae, leg, diag);
+  SpreadsheetApp.flush();
+  var fallos=refrescarAvisos_(cat, act, mae, leg, diag, pares);
+  var txt = fallos.length
+    ? ('⛔ Fallaron '+fallos.length+' bloque(s):\n\n· '+fallos.join('\n· '))
+    : ('✅ Todos los bloques de avisos corrieron sin error.\n\n'+
+       'Catálogo: '+Object.keys(cat).length+' productos · Libro mayor: '+act.length+' líneas activas · '+
+       pares.length+' pares de posible duplicado.');
+  try{ SpreadsheetApp.getUi().alert('Prueba de avisos', txt, SpreadsheetApp.getUi().ButtonSet.OK); }
+  catch(x){ Logger.log(txt); }
+  return txt;
+}
+
+function indiceNombres_(cat, act, pares){
+  var porClave={}, usos={}, sinPrecio={}, fueraBanda={}, basesEnBD={}, parDe={};
+  var bn=bandas_();
+  act.forEach(function(f){
+    var p=txt_(f[B.PRODUCTO-1]); if(!p) return;
+    usos[p]=(usos[p]||0)+1;
+    var pu=num_(f[B.PU-1]);
+    if(!pu) sinPrecio[p]=(sinPrecio[p]||0)+1;
+    var b=txt_(f[B.BASE-1]); if(b){ (basesEnBD[p]=basesEnBD[p]||{})[b]=1; }
+    var c=cat[p];
+    if(c && pu){
+      var bb=bandaDe_(bn, c.cat, c.base);
+      if(bb && (pu<bb.inf||pu>bb.sup)) fueraBanda[p]=(fueraBanda[p]||0)+1;
+    }
+  });
+  Object.keys(cat).forEach(function(n){
+    var k=clave_(n);
+    (porClave[k]=porClave[k]||[]).push(n);
+  });
+  (pares||[]).forEach(function(p){
+    (parDe[p.a.nombre]=parDe[p.a.nombre]||[]).push(p.b.nombre);
+    (parDe[p.b.nombre]=parDe[p.b.nombre]||[]).push(p.a.nombre);
+  });
+  return {porClave:porClave, usos:usos, sinPrecio:sinPrecio,
+          fueraBanda:fueraBanda, basesEnBD:basesEnBD, parDe:parDe};
+}
+
+/** Sin String.normalize: no existe en el motor antiguo de Apps Script. */
+var ACENTOS_ = {'á':'a','à':'a','ä':'a','â':'a','ã':'a','å':'a','Á':'a','À':'a','Ä':'a','Â':'a','Ã':'a',
+ 'é':'e','è':'e','ë':'e','ê':'e','É':'e','È':'e','Ë':'e','Ê':'e',
+ 'í':'i','ì':'i','ï':'i','î':'i','Í':'i','Ì':'i','Ï':'i','Î':'i',
+ 'ó':'o','ò':'o','ö':'o','ô':'o','õ':'o','Ó':'o','Ò':'o','Ö':'o','Ô':'o','Õ':'o',
+ 'ú':'u','ù':'u','ü':'u','û':'u','Ú':'u','Ù':'u','Ü':'u','Û':'u',
+ 'ñ':'n','Ñ':'n','ç':'c','Ç':'c','º':' ','ª':' ','’':' ',"'":' '};
+function sinTildes_(s){
+  var t=String(s==null?'':s), r='';
+  for(var i=0;i<t.length;i++){
+    var c=t.charAt(i);
+    r += (ACENTOS_[c]!==undefined) ? ACENTOS_[c] : c;
+  }
+  return r;
+}
+function clave_(s){
+  return sinTildes_(s).toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').replace(/^ +| +$/g,'');
+}
+function fichas_(s){
+  var stop={'de':1,'del':1,'la':1,'el':1,'los':1,'las':1,'y':1,'en':1,'con':1,'sas':1,'brand':1};
+  return clave_(s).split(' ').filter(function(t){
+    if(stop[t]) return false;
+    return t.length>2 || /^[0-9]+$/.test(t);
+  });
+}
+function parecido_(a,b){
+  var ta=fichas_(a), tb=fichas_(b);
+  if(!ta.length||!tb.length) return 0;
+  var set={}, union={};
+  ta.forEach(function(t){ set[t]=1; union[t]=1; });
+  var comunes=0;
+  tb.forEach(function(t){ if(set[t]) comunes++; union[t]=1; });
+  return comunes/Object.keys(union).length;
+}
+
+/** CATÁLOGO, columna «Estado»: se reescribe entera en cada recálculo. */
+function avisosCatalogo_(cat, act, idx){
+  var h=ss_().getSheetByName(H.CAT); if(!h) return;
+  var n=h.getLastRow()-CAT_F_INI+1; if(n<1) return;
+  var nombres=h.getRange(CAT_F_INI,2,n,1).getValues();
+  var bases  =h.getRange(CAT_F_INI,3,n,1).getValues();
+  var lista=[];
+  for(var i=0;i<n;i++){ var v=txt_(nombres[i][0]); if(v) lista.push({nom:v, base:txt_(bases[i][0]), i:i}); }
+  var salida=[];
+  for(var j=0;j<n;j++) salida.push(['']);
+  lista.forEach(function(it){
+    var a=[], c=cat[it.nom];
+    if(c && c.vig===INACTIVO) a.push('⏸ Dado de baja — no aparece en RECEPCIÓN');
+    var iguales=idx.porClave[clave_(it.nom)]||[];
+    if(iguales.length>1) a.push('⛔ Duplicado de «'+iguales.filter(function(x){return x!==it.nom;}).join(', ')+'»');
+    var pd=idx.parDe[it.nom];
+    if(pd && pd.length) a.push('⚠ Posible duplicado de «'+pd.slice(0,3).join('», «')+'»'+(pd.length>3?' y otros':'')+' — decidir en la hoja DUPLICADOS');
+    var bb=idx.basesEnBD[it.nom];
+    if(bb){
+      var otras=Object.keys(bb).filter(function(x){ return x!==it.base; });
+      if(otras.length) a.push('⚠ En el libro mayor hay líneas con unidad '+otras.join('/')+' y aquí dice '+it.base);
+    }
+    if(idx.fueraBanda[it.nom]) a.push('⛔ '+idx.fueraBanda[it.nom]+' línea(s) con precio fuera de la banda de control');
+    if(!idx.usos[it.nom]) a.push('· Sin compras registradas');
+    else if(idx.sinPrecio[it.nom]===idx.usos[it.nom]) a.push('· Todas sus compras están sin precio');
+    if(['g','ml','und'].indexOf(it.base)<0) a.push('⛔ Unidad base inválida: solo g, ml o und');
+    if(c && !enLista_(c.cat, CATEGORIAS)) a.push('⚠ Sin categoría válida');
+    var vistos={}, lim=[];
+    a.forEach(function(t){ if(!vistos[t]){ vistos[t]=1; lim.push(t); } });
+    salida[it.i]=[lim.join('  ·  ')];
+  });
+  h.getRange(CAT_F_INI,8,n,1).setValues(salida);
+}
+
+function avisosProveedores_(act, leg){
+  var h=ss_().getSheetByName(H.PRV); if(!h) return;
+  var n=h.getLastRow()-6+1; if(n<1) return;
+  var v=h.getRange(6,2,n,3).getValues();
+  var lista=[];
+  for(var i=0;i<n;i++){ var nom=txt_(v[i][0]); if(nom) lista.push({nom:nom, cat:txt_(v[i][1]), tel:txt_(v[i][2]), i:i}); }
+  var vivos={}; lista.forEach(function(x){ vivos[x.nom]=1; });
+  var enBD={};
+  act.forEach(function(f){ var p=txt_(f[B.PROV-1]); if(p) enBD[p]=(enBD[p]||0)+1; });
+  var salida=[]; for(var j=0;j<n;j++) salida.push(['']);
+  lista.forEach(function(it){
+    var a=[];
+    var iguales=lista.filter(function(o){ return o.nom!==it.nom && clave_(o.nom)===clave_(it.nom); });
+    if(iguales.length) a.push('⛔ Fila duplicada de «'+it.nom+'»');
+    lista.forEach(function(ot){
+      if(ot.nom===it.nom) return;
+      if(parecido_(it.nom,ot.nom)>=0.50) a.push('⚠ ¿Es el mismo que «'+ot.nom+'»?');
+    });
+    if(!it.cat) a.push('· Falta la categoría principal');
+    if(!it.tel) a.push('· Falta el contacto');
+    if(!enBD[it.nom]) a.push('· Sin líneas en el libro mayor');
+    var vistos={}, lim=[];
+    a.forEach(function(t){ if(!vistos[t]){ vistos[t]=1; lim.push(t); } });
+    salida[it.i]=[lim.join('  ·  ')];
+  });
+  h.getRange(6,11,n,1).setValues(salida);
+  var orf=Object.keys(enBD).filter(function(p){ return !vivos[p]; });
+  var fila=6+n+1;
+  if(fila+1>h.getMaxRows()) h.insertRowsAfter(h.getMaxRows(), 5);
+  try{ h.getRange(fila,1,2,11).breakApart(); }catch(e){}
+  h.getRange(fila,1,2,11).clearContent();
+  if(orf.length){
+    // sin combinar: PROVEEDORES tiene 2 columnas inmovilizadas y Sheets no combina a través de ellas
+    h.getRange(fila,1).setValue('⛔ '+orf.length+' proveedor(es) del libro mayor sin fila aquí, con líneas que no suman en ningún total: '+
+      orf.map(function(p){ return p+' ('+enBD[p]+')'; }).join(' · ')+'.  Corregir con ⚙ Di Égida → Reparar todo.')
+      .setFontColor('#CC0000').setBackground('#F4CCCC').setFontWeight('bold').setFontSize(9).setWrap(true);
+  }
+}
+
+function avisosConfig_(){
+  var h=ss_().getSheetByName(H.CFG); if(!h) return;
+  var n=h.getLastRow()-6+1; if(n<1) return;
+  var v=h.getRange(6,1,n,2).getValues(), out=[];
+  var textos={
+    CORREO_ADMIN:'Destinatario principal de la alerta diaria.',
+    CORREO_CHEF:'Segundo destinatario de la alerta diaria.',
+    UMBRAL_VARIACION_ALERTA:'Variación de precio que genera aviso pero deja guardar.',
+    UMBRAL_VARIACION_BLOQUEO:'Variación de precio que bloquea el guardado y exige motivo.',
+    FACTOR_BANDA_PRECIO:'Ancho de la banda de plausibilidad por categoría y unidad base.',
+    FACTOR_BANDA_PRODUCTO:'Desvío máximo frente a la mediana histórica del propio producto.',
+    DIAS_LEGALIZACION:'Plazo para que llegue la factura antes de entrar a pendientes.',
+    DIAS_ESCALAMIENTO:'Días sin soporte tras los cuales se marca VENCIDA.',
+    MIN_CARACTERES_MOTIVO:'Longitud mínima del motivo para forzar un guardado, dar de baja o crear un parecido.',
+    EXIGIR_VENCIMIENTO_REFRIG:'Si dice SI, un refrigerado sin vencimiento no se guarda.',
+    EXIGIR_TEMP_REFRIG:'Si dice SI, un refrigerado sin temperatura no se guarda.',
+    RESPONSABLES_CATALOGO:'Quiénes crean y dan de baja productos (separados por coma). Cámbielos por los nombres reales.'};
+  for(var i=0;i<n;i++){
+    var k=txt_(v[i][0]), val=v[i][1];
+    if(!k){ out.push(['']); continue; }
+    var base=textos[k]||'';
+    var falta = (k.indexOf('CORREO')===0) ? (txt_(val).indexOf('@')<0) : (txt_(val)==='');
+    out.push([ (falta?'⚠ PENDIENTE — ':'✓ ') + base ]);
+  }
+  h.getRange(6,4,n,1).setValues(out);
+}
+
+function avisosBandas_(act, leg, mae, diag, idx, cat){
+  var ss=ss_(), hoy=fmt_(new Date());
+  var nRec={}; act.forEach(function(f){ nRec[txt_(f[B.ID_REC-1])]=1; });
+  var sinPrecio=act.filter(function(f){ return !num_(f[B.PU-1]); }).length;
+  var cerradas=act.filter(function(f){ return txt_(f[B.REVISION-1])===MARCA_CERRADA; }).length;
+  var conPrecio=mae.filter(function(m){ return m.n>0; }).length;
+  var venc=leg.filter(function(l){ return l.estado.indexOf('🔴')===0; }).length;
+  var pend=leg.filter(function(l){ return l.estado.indexOf('🟠')===0; }).length;
+  var crit=diag.filter(function(d){ return d[1]==='CRÍTICO' && d[3]>0; }).length;
+  var nTot=Object.keys(cat).length, nAct=Object.keys(activos_(cat)).length;
+  var T={};
+  T[H.BD]='  Libro mayor: '+act.length+' líneas activas en '+Object.keys(nRec).length+' recepciones. '+
+          sinPrecio+' sin precio ('+cerradas+' cerradas como no recuperables). '+
+          'Append-only y protegida: solo el sistema escribe aquí. Actualizado '+hoy+'.';
+  T[H.CAT]='  '+nTot+' productos: '+nAct+' activos y '+(nTot-nAct)+' dados de baja; '+Object.keys(idx.usos).length+
+          ' con compras registradas. Se crean y se dan de baja desde la hoja PRODUCTOS. '+
+          'La columna «Estado» se recalcula sola. Actualizado '+hoy+'.';
+  T[H.MAE]='  '+conPrecio+' de '+mae.length+' productos con precio vigente ('+
+          Math.round(conPrecio/Math.max(1,mae.length)*100)+'% de cobertura). Todo por unidad base, listo para fichas técnicas. Actualizado '+hoy+'.';
+  T[H.LEG]='  '+Object.keys(nRec).length+' recepciones · '+venc+' vencidas · '+pend+' pendientes de legalizar. '+
+          (venc?'Las vencidas se reportan por correo todos los días a las 7:00. ':'')+'Actualizado '+hoy+'.';
+  T[H.PRV]='  Columnas E a J calculadas por el sistema. Categoría y contacto se llenan a mano. '+
+          'La última columna avisa duplicados y huérfanos, y se limpia sola al corregirlos. Actualizado '+hoy+'.';
+  T[H.DIAG]='  '+(crit? ('⛔ '+crit+' hallazgo(s) crítico(s) sin resolver.') : '✅ Sin hallazgos críticos.')+
+          ' Se recalcula con cada guardado y se reporta por correo a diario. Actualizado '+hoy+'.';
+  T[H.BAN]='  Recalculadas con estadística robusta sobre el histórico limpio. Una banda heredada de otra categoría '+
+          'se ensancha ×3 porque hay menos datos que la respalden. Actualizado '+hoy+'.';
+  T[H.BIT]='  Append-only. Cada guardado, rechazo, forzado, reversa, alta y baja de producto queda firmado. No se edita. Actualizado '+hoy+'.';
+  T[H.CFG]='  La columna «Estado» se calcula: dice PENDIENTE solo mientras el parámetro esté vacío. Actualizado '+hoy+'.';
+  Object.keys(T).forEach(function(nom){
+    var h=ss.getSheetByName(nom); if(!h) return;
+    try{ h.getRange(4,1).setValue(T[nom]); }catch(e){}
+  });
+}
+
+function avisosPendientes_(cat, act, mae, leg, idx){
+  var h=ss_().getSheetByName(H.INS); if(!h) return;
+  var cfg=config_();
+  var p=[];
+  if(!cfg.correoChef) p.push(['Correo del chef','Hoja CONFIG, parámetro CORREO_CHEF. Sin eso solo Administración recibe la alerta diaria.']);
+  var recup=act.filter(function(f){ return !num_(f[B.PU-1]) && txt_(f[B.REVISION-1])!==MARCA_CERRADA; }).length;
+  if(recup) p.push([recup+' líneas sin precio recuperables','Pedir la factura al proveedor y cargar el valor.']);
+  var nPares=0; Object.keys(idx.parDe||{}).forEach(function(k){ nPares+=idx.parDe[k].length; });
+  nPares=nPares/2;
+  if(nPares) p.push([nPares+' pares de posible duplicado','Hoja DUPLICADOS: elegir la decisión de cada par y marcar «Aplicar».']);
+  var marcados=0;
+  var hc=ss_().getSheetByName(H.CAT);
+  if(hc && hc.getLastRow()>=CAT_F_INI){
+    hc.getRange(CAT_F_INI,8,hc.getLastRow()-CAT_F_INI+1,1).getValues().forEach(function(f){
+      if(txt_(f[0]).indexOf('⛔')>=0) marcados++;
+    });
+  }
+  if(marcados) p.push([marcados+' productos marcados con ⛔ en CATÁLOGO','Abrir la hoja y filtrar la columna Estado por ⛔. Cada aviso dice qué le pasa a ese producto.']);
+  var sinContacto=0;
+  var hp=ss_().getSheetByName(H.PRV);
+  if(hp && hp.getLastRow()>=6){
+    hp.getRange(6,2,hp.getLastRow()-5,3).getValues().forEach(function(f){
+      if(txt_(f[0]) && (!txt_(f[1])||!txt_(f[2]))) sinContacto++;
+    });
+  }
+  if(sinContacto) p.push([sinContacto+' proveedores sin categoría o contacto','Columnas C y D de PROVEEDORES. Ese dato no está en ningún archivo.']);
+  var venc=leg.filter(function(l){ return l.estado.indexOf('🔴')===0; }).length;
+  if(venc) p.push([venc+' recepciones vencidas','Escalar a Gerencia con el detalle de la hoja LEGALIZACIÓN.']);
+  if(!p.length) p.push(['Nada pendiente','El archivo no tiene nada que dependa de usted en este momento.']);
+
+  var fin=Math.min(h.getLastRow(), 200);
+  if(fin<1) return;
+  var col=h.getRange(1,1,fin,1).getValues();
+  var ini=-1;
+  for(var i=0;i<col.length;i++){
+    if(txt_(col[i][0]).indexOf('PENDIENTE DE ANTHONY')>=0){ ini=i+1; break; }
+  }
+  if(ini<0) return;
+  var filas=Math.max(fin-ini, p.length+1);
+  if(ini+filas>h.getMaxRows()) h.insertRowsAfter(h.getMaxRows(), ini+filas-h.getMaxRows()+2);
+  try{ h.getRange(ini+1,2,filas,3).breakApart(); }catch(e){}
+  h.getRange(ini+1,1,filas,4).clearContent();
+  for(var k=0;k<p.length;k++){
+    h.getRange(ini+1+k,2).setValue(p[k][0]).setFontWeight('bold').setFontColor('#9C6500').setFontSize(9);
+    h.getRange(ini+1+k,3,1,2).merge();
+    h.getRange(ini+1+k,3).setValue(p[k][1]).setFontSize(9).setWrap(true);
+  }
+}
+
+// ===========================================================================
+// 14 · NORMALIZACIÓN POR REGLAS — sin mapa fijo, sirve para siempre
+// ===========================================================================
+function normalizarNombres_(){
+  var act=leerBD_(), cambios={prod:0, prov:0, lineas:0};
+  function canonizar(col){
+    var frec={};
+    act.forEach(function(f){
+      var v=txt_(f[col-1]); if(!v) return;
+      var k=clave_(v);
+      (frec[k]=frec[k]||{})[v]=(frec[k][v]||0)+1;
+    });
+    var mapa={};
+    Object.keys(frec).forEach(function(k){
+      var opciones=Object.keys(frec[k]);
+      if(opciones.length<2) return;
+      opciones.sort(function(a,b){
+        if(frec[k][b]!==frec[k][a]) return frec[k][b]-frec[k][a];
+        return a.length-b.length;
+      });
+      var bueno=opciones[0];
+      opciones.slice(1).forEach(function(o){ mapa[o]=bueno; });
+    });
+    return mapa;
+  }
+  var mp=canonizar(B.PRODUCTO), mv=canonizar(B.PROV);
+  var hb=hoja_(H.BD), n=hb.getLastRow()-BD_F_INI+1;
+  if(n>0 && (Object.keys(mp).length || Object.keys(mv).length)){
+    desproteger_(hb);
+    var rg=hb.getRange(BD_F_INI,1,n,B.N), v=rg.getValues();
+    for(var i=0;i<v.length;i++){
+      if(!txt_(v[i][B.ID_LINEA-1])) continue;
+      var t=false;
+      var p=txt_(v[i][B.PRODUCTO-1]); if(mp[p]){ v[i][B.PRODUCTO-1]=mp[p]; cambios.prod++; t=true; }
+      var q=txt_(v[i][B.PROV-1]);     if(mv[q]){ v[i][B.PROV-1]=mv[q];   cambios.prov++; t=true; }
+      if(t) cambios.lineas++;
+    }
+    rg.setValues(v);
+  }
+  return cambios;
+}
+
+/** Reconstruye CATÁLOGO y PROVEEDORES desde el libro mayor, sin duplicados.
+ *  v3.4: conserva VIGENCIA y ÚLTIMO MOVIMIENTO (antes se habrían descuadrado al reordenar). */
+function reconstruirMaestras_(){
+  var act=leerBD_().filter(function(f){ return txt_(f[B.ESTADO-1])==='ACTIVA'; });
+
+  var hc=hoja_(H.CAT); desproteger_(hc);
+  var crudo=leerCatalogoCrudo_(), meta={};
+  for(var r=0;r<crudo.length;r++){
+    var nom0=txt_(crudo[r][C.NOMBRE-1]); if(!nom0 || meta[nom0]) continue;
+    meta[nom0]={base:txt_(crudo[r][C.BASE-1]), cat:txt_(crudo[r][C.CAT-1]), cons:txt_(crudo[r][C.CONS-1]),
+                tmax:crudo[r][C.TMAX-1], vig:txt_(crudo[r][C.VIG-1]).toUpperCase()===INACTIVO?INACTIVO:ACTIVO,
+                mov:txt_(crudo[r][C.MOV-1])};
+  }
+  var usos={}, baseBD={};
+  act.forEach(function(f){
+    var p=txt_(f[B.PRODUCTO-1]); if(!p) return;
+    usos[p]=(usos[p]||0)+1;
+    var b=txt_(f[B.BASE-1]); if(b) (baseBD[p]=baseBD[p]||{})[b]=(baseBD[p][b]||0)+1;
+  });
+  var todos={}; Object.keys(meta).forEach(function(k){ todos[k]=1; }); Object.keys(usos).forEach(function(k){ todos[k]=1; });
+  var nombres=Object.keys(todos).sort(function(a,b){ return clave_(a)<clave_(b)?-1:(clave_(a)>clave_(b)?1:0); });
+  var filas=nombres.map(function(nom,i){
+    var m=meta[nom]||{base:'',cat:'POR CLASIFICAR',cons:'Ambiente',tmax:'',vig:ACTIVO,mov:'Recuperado del libro mayor'};
+    var base=m.base;
+    if(!base && baseBD[nom]){
+      base=Object.keys(baseBD[nom]).sort(function(a,b){ return baseBD[nom][b]-baseBD[nom][a]; })[0];
+    }
+    return [i+1, nom, base||'g', m.cat||'POR CLASIFICAR', m.cons||'Ambiente', m.tmax===undefined?'':m.tmax,
+            usos[nom]||0, '', m.vig, m.mov];
+  });
+  if(hc.getMaxColumns()<C.N) hc.insertColumnsAfter(hc.getMaxColumns(), C.N-hc.getMaxColumns());
+  var libres=hc.getMaxRows()-CAT_F_INI+1;
+  if(filas.length>libres) hc.insertRowsAfter(hc.getMaxRows(), filas.length-libres+50);
+  if(crudo.length>0) hc.getRange(CAT_F_INI,1,crudo.length,C.N).clearContent();
+  if(filas.length) hc.getRange(CAT_F_INI,1,filas.length,C.N).setValues(filas);
+
+  var hp=hoja_(H.PRV); desproteger_(hp);
+  var nP=Math.max(0, hp.getLastRow()-6+1), cont={};
+  if(nP>0){
+    hp.getRange(6,2,nP,3).getValues().forEach(function(f){
+      var nom=txt_(f[0]); if(!nom) return;
+      if(!cont[nom]) cont[nom]=[txt_(f[1]),txt_(f[2])];
+      else { if(!cont[nom][0]) cont[nom][0]=txt_(f[1]); if(!cont[nom][1]) cont[nom][1]=txt_(f[2]); }
+    });
+  }
+  var provs={}; Object.keys(cont).forEach(function(k){ provs[k]=1; });
+  act.forEach(function(f){ var p=txt_(f[B.PROV-1]); if(p) provs[p]=1; });
+  var lp=Object.keys(provs).sort(function(a,b){ return clave_(a)<clave_(b)?-1:(clave_(a)>clave_(b)?1:0); });
+  var fp=lp.map(function(nom,i){
+    var c=cont[nom]||['',''];
+    return [i+1, nom, c[0], c[1], '', '', '', '', '', '', ''];
+  });
+  var libresP=hp.getMaxRows()-6+1;
+  if(fp.length+2>libresP) hp.insertRowsAfter(hp.getMaxRows(), fp.length-libresP+50);
+  if(nP>0){ try{ hp.getRange(6,1,nP+2,11).breakApart(); }catch(e){} hp.getRange(6,1,nP+2,11).clearContent(); }
+  if(fp.length) hp.getRange(6,1,fp.length,11).setValues(fp);
+  return {productos:filas.length, proveedores:fp.length};
+}
+
+// ===========================================================================
+// 15 · REPARAR TODO — el botón único para el mantenimiento de rutina
+// ===========================================================================
+function repararTodo(){
+  var ui; try{ ui=SpreadsheetApp.getUi(); }catch(x){
+    throw new Error('repararTodo debe ejecutarse desde un computador.');
+  }
+  var r=ui.alert('Reparar todo',
+    'Esto va a:\n\n'+
+    '1. Unificar los nombres que solo difieren en tildes, mayúsculas, espacios o puntuación, '+
+    'tanto en el libro mayor como en las hojas maestras.\n'+
+    '2. Reconstruir CATÁLOGO y PROVEEDORES sin filas repetidas, conservando categorías, contactos, '+
+    'vigencia y movimientos.\n'+
+    '3. Recalcular todos los derivados y avisos.\n\n'+
+    'Lo que difiere en algo más que la forma no se toca: queda en la hoja DUPLICADOS para que se decida.\n\n¿Continuar?',
+    ui.ButtonSet.YES_NO);
+  if(r!==ui.Button.YES) return;
+  var lock=LockService.getDocumentLock(); lock.tryLock(30000);
+  try{
+    var c=normalizarNombres_();
+    var m=reconstruirMaestras_();
+    SpreadsheetApp.flush();
+    recalcularTodo();
+    reproteger_();
+    bitacora_('REPARAR','COMPLETADA','',c.lineas,'',
+      c.lineas+' líneas normalizadas · catálogo '+m.productos+' · proveedores '+m.proveedores);
+    ui.alert('REPARACIÓN COMPLETADA\n\n'+
+      '· '+c.lineas+' líneas del libro mayor con el nombre unificado\n'+
+      '· CATÁLOGO: '+m.productos+' productos, sin filas repetidas\n'+
+      '· PROVEEDORES: '+m.proveedores+' proveedores, sin filas repetidas\n'+
+      '· Todos los avisos del archivo recalculados');
+  } finally { lock.releaseLock(); }
+}
+
+// ===========================================================================
+// 16 · REPORTE PARA ASESORÍA
+// ===========================================================================
+function reporteParaAsesor(){
+  var act=leerBD_().filter(function(f){ return txt_(f[B.ESTADO-1])==='ACTIVA'; });
+  var res=recalcularTodo();
+  var cfg=config_(), cat=catalogo_();
+  var L=[];
+  L.push('ESTADO DEL SISTEMA DE RECEPCIÓN '+VERSION+' — Di Égida');
+  L.push('Generado: '+fmt_(new Date()));
+  L.push('');
+  var nRec={}; act.forEach(function(f){ nRec[txt_(f[B.ID_REC-1])]=1; });
+  var conP=res.mae.filter(function(m){ return m.n>0; }).length;
+  var valor=0; act.forEach(function(f){ valor += num_(f[B.VALOR-1])||0; });
+  L.push('CIFRAS');
+  L.push('  Líneas activas: '+act.length+' en '+Object.keys(nRec).length+' recepciones');
+  L.push('  Productos: '+res.mae.length+' ('+Object.keys(activos_(cat)).length+' activos) · con precio: '+conP+' ('+Math.round(conP/Math.max(1,res.mae.length)*100)+'%)');
+  L.push('  Valor total del libro mayor: $'+Math.round(valor).toLocaleString('es-CO'));
+  L.push('');
+  L.push('DIAGNÓSTICO (solo lo que está en rojo)');
+  var vivos=res.diag.filter(function(d){ return d[3]>0 && d[1]!=='CERRADO' && d[1]!=='INFO'; });
+  if(!vivos.length) L.push('  Sin hallazgos.');
+  vivos.forEach(function(d){ L.push('  '+d[0]+' ['+d[1]+'] '+d[2]+': '+d[3]+' — '+String(d[4]).substring(0,140)); });
+  L.push('');
+  L.push('MOVIMIENTOS DE CATÁLOGO (7 días)');
+  var mv=movimientosCatalogo_(24*7);
+  L.push(mv.length ? mv.map(function(x){ return '  '+fmt_(x.t)+' · '+x.res+' · '+x.det; }).join('\n') : '  Ninguno.');
+  L.push('');
+  L.push('MARCAS EN CATÁLOGO');
+  var hc=ss_().getSheetByName(H.CAT), marcas=[];
+  if(hc && hc.getLastRow()>=CAT_F_INI){
+    var vv=hc.getRange(CAT_F_INI,2,hc.getLastRow()-CAT_F_INI+1,7).getValues();
+    vv.forEach(function(f){
+      var e=txt_(f[6]);
+      if(e.indexOf('⛔')>=0 || e.indexOf('⚠')>=0) marcas.push('  '+txt_(f[0])+' ['+txt_(f[1])+'] → '+e);
+    });
+  }
+  L.push(marcas.length ? marcas.slice(0,40).join('\n') : '  Ninguna.');
+  if(marcas.length>40) L.push('  … y '+(marcas.length-40)+' más.');
+  L.push('');
+  L.push('CONFIGURACIÓN');
+  L.push('  Correo admin: '+(cfg.correoAdmin||'SIN DEFINIR')+' · Correo chef: '+(cfg.correoChef||'SIN DEFINIR'));
+  L.push('  Responsables de catálogo: '+cfg.responsables.join(', '));
+  L.push('  Umbrales: aviso '+(cfg.umbralAlerta*100)+'% · bloqueo '+(cfg.umbralBloqueo*100)+
+         '% · banda categoría ×'+cfg.factorBanda+' · banda producto ×'+cfg.factorProducto);
+  var txt=L.join('\n');
+  try{
+    var ui=SpreadsheetApp.getUi();
+    var html=HtmlService.createHtmlOutput(
+      '<p style="font:13px Arial">Copie este texto y péguelo en el chat. Reemplaza mandar el archivo completo.</p>'+
+      '<textarea style="width:100%;height:340px;font:11px monospace" onclick="this.select()">'+
+      txt.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea>')
+      .setWidth(700).setHeight(430);
+    ui.showModalDialog(html,'Reporte para asesoría');
+  }catch(x){ Logger.log(txt); }
+  return txt;
+}
