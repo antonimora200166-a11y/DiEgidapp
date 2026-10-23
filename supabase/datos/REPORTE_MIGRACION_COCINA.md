@@ -1,0 +1,512 @@
+# Migración del histórico de cocina
+
+Generado por `scripts/migracion/extraer_cocina.mjs` · corte de costos **2026-10-22** · fuente: `INV-COC-001` y `REG_REC_COC_003`.
+
+## Qué entra
+
+| Qué | Cantidad |
+|---|---|
+| Genéricos | 566 (MPe 360, MPI 206) |
+| Productos | 684 (178 con contenido variable, 2 inactivos) |
+| Zonas (ubicaciones COC_*) | 15 |
+| Producto ↔ zona | 724 |
+| Alias | 739 |
+| Proveedores | 20 |
+| Costos de referencia | 30 productos de 24 genéricos |
+| Productos de recepción enlazados | 45 por nombre idéntico · 0 por decisión · **203 pendientes** |
+
+**Fichas de MPi de cocina:** no se migraron. El archivo no está en `referencia/`.
+**No entra al kardex:** ni las compras ni los conteos de agosto a octubre. El saldo nace con el conteo inicial.
+
+## Cruces pendientes (203): decidir en scripts/migracion/cruces_cocina.csv
+
+- «Aceite de ajonjolí» (3 compra(s)) → ¿Ajonjolí negro? (0.53)
+- «Aceite de freir» (1 compra(s)) → ¿Aceite Fritura? (0.56)
+- «Aceite de oliva» (2 compra(s)) → ¿Aceite De Oliva Blend? (0.90)
+- «Aceite de oliva esencial» (1 compra(s)) → ¿Aceite De Oliva Blend? (0.64)
+- «Aceite de sésamo Kaduya» (1 compra(s)) → ¿Aceite De Soya? (0.51)
+- «Aceitunas negras deshuesadas» (1 compra(s)) → ¿Aceitunas Negras? (0.87)
+- «Adobo soya tipo miso» (1 compra(s)) → ¿Adobo de Soya Tipo Miso? (1.00)
+- «Agar agar» (1 compra(s)) → ¿Agave azul? (0.13)
+- «Agente desengrasante» (1 compra(s)) → ¿Tomate Deshidratado? (0.11)
+- «Ají jalapeño» (1 compra(s)) → ¿Ajinomoto? (0.60)
+- «Ají rocotto» (1 compra(s)) → ¿Aji rocoto? (0.68)
+- «Albahaca fresca» (1 compra(s)) → ¿Albahaca? (0.86)
+- «Albahaca Genovesa» (1 compra(s)) → ¿Albahaca? (0.82)
+- «Alcaparras La Curuña» (0 compra(s)) → ¿Hoja de alcaparra? (0.51)
+- «Alcohol 3800 ml» (1 compra(s)) → ¿Vinagre de Alcohol? (0.51)
+- «Almendra entera» (1 compra(s)) → ¿Almendra (entera)? (1.00)
+- «Anillos de calamar» (1 compra(s)) → ¿Calamar (anillos)? (0.97)
+- «Apio» (4 compra(s)) → ¿Apio (hojas)? (0.79)
+- «Arándanos» (4 compra(s)) → ¿Salsa de Arandanos? (0.88)
+- «Arándanos frescos» (1 compra(s)) → ¿Arandanos (fresco)? (0.97)
+- «Arándanos member selection» (1 compra(s)) → ¿Salsa de Arandanos? (0.47)
+- «Arroz bomba Castellano» (1 compra(s)) → ¿Arroz Basmati Castellano? (0.68)
+- «Arroz Castellano basmati» (1 compra(s)) → ¿Arroz Basmati Castellano? (0.96)
+- «Arroz Castellano jazmín» (1 compra(s)) → ¿Arroz Jazmin Castellano? (0.96)
+- «Arroz Diana» (1 compra(s)) → ¿Arroz chino? (0.48)
+- «Arroz Diana premium» (1 compra(s)) → ¿Arroz chino? (0.42)
+- «Azúcar Blanca mayaguez» (0 compra(s)) → ¿Azucar Blanca? (0.87)
+- «Banano» (2 compra(s)) → ¿Rabano? (0.25)
+- «Bolsa al vacío 15 x 16 cm» (1 compra(s)) → ¿Bolsa Vacio 16x15? (0.88)
+- «Bolsa alta blanca 119 bp» (1 compra(s)) → ¿Azucar Blanca? (0.41)
+- «Bolsa blanca» (1 compra(s)) → ¿Azucar Blanca? (0.49)
+- «Bolsa negra» (1 compra(s)) → ¿Pimienta Negra (polvo)? (0.44)
+- «Bolsas al vacío 15x16» (1 compra(s)) → ¿Bolsa Vacio 16x15? (0.62)
+- «Bolsas al vacío 15x20» (1 compra(s)) → ¿Bolsa Vacio 16x15? (0.62)
+- «Bolsas verde» (1 compra(s)) → ¿Te verde? (0.50)
+- «Brotes mix Hortifrescos» (1 compra(s)) → ¿Olivas mixtas? (0.34)
+- «Café» (1 compra(s)) → ¿Cafe Molido? (0.77)
+- «Cajas de flores» (1 compra(s)) → ¿Flor de Jamaica? (0.38)
+- «Cajas de germinados» (1 compra(s)) → ¿Cherry Perlitas Confitados? (0.10)
+- «Camarón vannamei 36/40» (3 compra(s)) → ¿Carcasas De Camaron? (0.44)
+- «Camarón vannamei 41/50» (3 compra(s)) → ¿Carcasas De Camaron? (0.44)
+- «Camarón vannamei 51/60» (1 compra(s)) → ¿Carcasas De Camaron? (0.44)
+- «Camarón vannamei 61/70» (3 compra(s)) → ¿Carcasas De Camaron? (0.44)
+- «camaron vannamei 91-110» (0 compra(s)) → ¿Camaron 91-110? (0.85)
+- «Carne molida» (2 compra(s)) → ¿Res Molida 80/20? (0.46)
+- «Champiñon portobello Setas Cuvia» (0 compra(s)) → ¿Champiñon Portobello? (0.88)
+- «Champiñón setas Camila» (1 compra(s)) → ¿Champiñon Paris? (0.49)
+- «Champiñón setas Cuiva» (1 compra(s)) → ¿Champiñon Paris? (0.50)
+- «Champiñones crinini» (1 compra(s)) → ¿Champiñon Porccini? (0.53)
+- «Champiñones enteros» (1 compra(s)) → ¿Champiñon Paris? (0.49)
+- «Coco» (3 compra(s)) → ¿Leche de Coco? (0.79)
+- «Coco deshidratado Selectivo» (1 compra(s)) → ¿Pepino deshidratado? (0.53)
+- «Coco entero» (1 compra(s)) → ¿Conejo entero? (0.58)
+- «Coco rallado» (2 compra(s)) → ¿Coco rallado (seco)? (0.93)
+- «Coco simple CocoMarth» (1 compra(s)) → ¿Coco rallado (seco)? (0.48)
+- «Codorniz entera» (0 compra(s)) → ¿Codorniz? (0.85)
+- «Cofias» (1 compra(s)) → ¿Cofias de malla? (0.83)
+- «Cogollo europeo» (1 compra(s)) → ¿Lechuga Cogollo Europeo? (0.89)
+- «Cogote de res» (1 compra(s)) → ¿huesos de res cogote? (0.83)
+- «combo tropical (mix de lechuga crespa)» (0 compra(s)) → ¿Lechuga Crespa Verde? (0.60)
+- «Conejo» (1 compra(s)) → ¿Conejo Cocido? (0.83)
+- «Crema de coco» (1 compra(s)) → ¿Espuma De Coco? (0.54)
+- «Crema leche» (1 compra(s)) → ¿Crema De Leche? (1.00)
+- «Detergente en polvo» (1 compra(s)) → ¿Achiote (polvo)? (0.49)
+- «Esencia de Vainilla Levapan» (0 compra(s)) → ¿Vainilla blanca (esencia)? (0.65)
+- «Esponja Matrix» (1 compra(s)) → ¿Especia Masala en polvo? (0.12)
+- «Filete de pargo» (3 compra(s)) → ¿Pargo? (0.79)
+- «Filete de pollo» (1 compra(s)) → ¿Pollo (Pechuga) Filete? (0.84)
+- «Filete de salmon» (0 compra(s)) → ¿Salmon Ceres? (0.49)
+- «filete de tilapia 5-7» (0 compra(s)) → ¿Tilapia entera? (0.47)
+- «Filete pechuga pollo» (1 compra(s)) → ¿Pollo (Pechuga) Filete? (0.95)
+- «Frambuesa» (3 compra(s)) → ¿Frambuesas? (0.92)
+- «Frambuesa Berrygood» (1 compra(s)) → ¿Frambuesas? (0.78)
+- «Frambuesa fresca» (1 compra(s)) → ¿Frambuesas? (0.82)
+- «Frambuesa nacional» (1 compra(s)) → ¿Frambuesas? (0.79)
+- «Frambuesa premium» (1 compra(s)) → ¿Frambuesas? (0.80)
+- «Garbanzos en lata» (1 compra(s)) → ¿Garbanzo? (0.82)
+- «Germinado» (1 compra(s)) → ¿Papel Parafinado? (0.17)
+- «Germinados mixtos» (1 compra(s)) → ¿Queso Mix 4? (0.32)
+- «Habanero» (1 compra(s)) → ¿Chile Habanero? (0.86)
+- «Hamburguesa Black Angus» (1 compra(s)) → ¿Frambuesas? (0.12)
+- «Harina de trigo en costal» (1 compra(s)) → ¿Harina de trigo? (0.89)
+- «Harina Farallones» (1 compra(s)) → ¿Harina de trigo? (0.46)
+- «Harina haz de oros» (1 compra(s)) → ¿Harina de trigo? (0.48)
+- «Hipoclorito» (1 compra(s)) → ¿Chile morita? (0.09)
+- «Huevo» (3 compra(s)) → ¿Huevo (Yema)? (0.83)
+- «Jabón antibacterial neutro» (1 compra(s)) → ¿Mostaza de Dijon Antigua? (0.11)
+- «Jabón lava platos» (1 compra(s)) → ¿Croqueta de Platano? (0.12)
+- «Jengibre» (1 compra(s)) → ¿Jengibre Seco? (0.88)
+- «Langostino u 10» (1 compra(s)) → ¿Langostinos U10? (0.83)
+- «Laurel seco» (1 compra(s)) → ¿Laurel (fresco)? (0.54)
+- «Leche Alquería» (2 compra(s)) → ¿Leche de Coco? (0.46)
+- «Leche condensada Aro» (0 compra(s)) → ¿Leche Condensada? (0.94)
+- «Leche Condensada jardin» (0 compra(s)) → ¿Leche Condensada? (0.91)
+- «Leche de coco Kari» (1 compra(s)) → ¿Leche de Coco? (0.90)
+- «Leche Kari» (1 compra(s)) → ¿Leche de Coco? (0.50)
+- «Lechuga Biofresco crespa» (1 compra(s)) → ¿Lechuga Crespa Verde? (0.64)
+- «Lechuga Biofresco romana» (1 compra(s)) → ¿Lechuga Romana? (0.84)
+- «Lechuga crespa» (5 compra(s)) → ¿Lechuga Crespa Verde? (0.91)
+- «Lechuga hidroponica» (1 compra(s)) → ¿Lechuga Romana? (0.46)
+- «Lechuga lisa» (1 compra(s)) → ¿Lechuga Mantecosa? (0.53)
+- «Lechuga mantequilla» (5 compra(s)) → ¿Mantequilla? (0.87)
+- «Limón» (1 compra(s)) → ¿Limón Tahití? (0.79)
+- «Lomo de res» (1 compra(s)) → ¿Res Lomo? (0.94)
+- «Mandarina» (1 compra(s)) → ¿Mandarina (entera)? (0.86)
+- «Manzana Gala» (1 compra(s)) → ¿Manzana Roja? (0.54)
+- «Manzana Royal» (1 compra(s)) → ¿Manzana Roja? (0.61)
+- «Marañón» (1 compra(s)) → ¿Marañones? (0.88)
+- «Mejillón negro» (1 compra(s)) → ¿Mejillones Verdes? (0.48)
+- «Mejillón verde» (2 compra(s)) → ¿Mejillones Verdes? (0.87)
+- «Menta» (2 compra(s)) → ¿Menta (francesa)? (0.76)
+- «Mix de queso crystal farm» (1 compra(s)) → ¿Queso Mix 4? (0.58)
+- «Mix de quesos crystal farms» (1 compra(s)) → ¿Queso Mix 4? (0.53)
+- «Molida cortes finos (familia)» (1 compra(s)) → ¿Lentejas Familia? (0.44)
+- «Mostaza» (1 compra(s)) → ¿Mostaza Amarilla? (0.80)
+- «Mostaza Dijon» (1 compra(s)) → ¿Mostaza de Dijon Antigua? (0.88)
+- «Naranja» (1 compra(s)) → ¿Salsa de Naranja? (0.85)
+- «New York steak» (3 compra(s)) → ¿Cocoa Hershey's? (0.17)
+- «Nongshim champ ong» (1 compra(s)) → ¿Champiñon Paris? (0.41)
+- «Noodle Chapaguetti» (1 compra(s)) → ¿UDON NOODLE? (0.46)
+- «Olivas Kalamata» (1 compra(s)) → ¿Olivas mixtas? (0.47)
+- «Orégano» (1 compra(s)) → ¿Oregano (polvo)? (0.85)
+- «Palo de escoba» (1 compra(s)) → ¿Tomillo (fresco)? (0.12)
+- «Panal de huevos» (3 compra(s)) → ¿Huevo (Yema)? (0.43)
+- «Panceta» (1 compra(s)) → ¿Pan Naam? (0.63)
+- «Panceta barril» (1 compra(s)) → ¿Pan Naam? (0.34)
+- «Panela doña lupe» (1 compra(s)) → ¿Panela (entera)? (0.46)
+- «Panela Palestina» (0 compra(s)) → ¿Panela (entera)? (0.46)
+- «Panko blanco» (1 compra(s)) → ¿Panko? (0.79)
+- «Papa» (2 compra(s)) → ¿Papa Capira? (0.77)
+- «Papa del sur» (1 compra(s)) → ¿Papa Capira? (0.46)
+- «Papa sucia» (1 compra(s)) → ¿Papa Capira? (0.44)
+- «Paprika Badia» (2 compra(s)) → ¿Paprika (polvo)? (0.52)
+- «Paprika Santafereño» (2 compra(s)) → ¿Paprika (polvo)? (0.47)
+- «Parmesano member selection» (1 compra(s)) → ¿Queso Parmesano (bloque)? (0.36)
+- «pasta udon» (0 compra(s)) → ¿Pasta de Miso? (0.50)
+- «Pechuga» (1 compra(s)) → ¿Pechuga De Pato? (0.87)
+- «Pecorino Colanta» (1 compra(s)) → ¿Queso Pecorino (bloque)? (0.47)
+- «Película 12 x 600 mtr» (1 compra(s)) → ¿Tocineta Pasta (120gr)? (0.22)
+- «Pepperoni sierra nevada» (1 compra(s)) → ¿Hot pepper? (0.40)
+- «Pera fruiticola» (1 compra(s)) → ¿Pera? (0.71)
+- «Perejil» (1 compra(s)) → ¿Pera? (0.18)
+- «Perejil liso» (1 compra(s)) → ¿Pera? (0.13)
+- «Pernil de pollo Bucanero» (0 compra(s)) → ¿Perniles de Pollo al Horno? (0.58)
+- «Pierna de cerdo» (1 compra(s)) → ¿Rub de cerdo? (0.49)
+- «Pierna de cordero» (2 compra(s)) → ¿Cordero pierna? (0.96)
+- «Pimentón» (3 compra(s)) → ¿Pimenton Rojo? (0.88)
+- «Pimentón mix» (1 compra(s)) → ¿Pimenton Rojo? (0.57)
+- «Pollo» (1 compra(s)) → ¿Pollo Tikka? (0.81)
+- «Pollo enteros» (1 compra(s)) → ¿Pollo (Muslo) Entero? (0.87)
+- «Pollo familia» (1 compra(s)) → ¿Arveja Familia? (0.51)
+- «Polvo cinco especias chinas» (2 compra(s)) → ¿Especia Ras en polvo? (0.61)
+- «Polvo massala» (1 compra(s)) → ¿Especia Masala en polvo? (0.55)
+- «Prosciutto Centurión» (1 compra(s)) → ¿Papa Contrafiletto (guarnición)? (0.08)
+- «Puerro» (1 compra(s)) → ¿Sopa De Puerro? (0.85)
+- «Pulpo chileno s/v» (1 compra(s)) → ¿Pulpo? (0.73)
+- «Queso bocconcino» (2 compra(s)) → ¿Queso Boconccini? (0.59)
+- «Queso cheddar» (2 compra(s)) → ¿Queso Cheddar (tajado)? (0.89)
+- «Queso ciliegine» (1 compra(s)) → ¿Queso Crema? (0.48)
+- «Queso cottage» (1 compra(s)) → ¿Queso Costeño? (0.52)
+- «Queso Grana Padano Belgioioso en cuña» (1 compra(s)) → ¿Queso Grana Padano? (0.86)
+- «Queso mix» (1 compra(s)) → ¿Queso Mix 4? (0.95)
+- «Queso mozzarella Camoti» (2 compra(s)) → ¿Queso Mozzarella? (0.91)
+- «Queso parmesano Belgioioso» (1 compra(s)) → ¿Queso Parmesano (bloque)? (0.68)
+- «Queso parmesano Centurión» (1 compra(s)) → ¿Queso Parmesano (bloque)? (0.66)
+- «Queso parmesano cuña member selection» (1 compra(s)) → ¿Queso Parmesano (bloque)? (0.59)
+- «Queso parmesano rallado Belgioioso» (1 compra(s)) → ¿Queso Parmesano (Rallado)? (0.91)
+- «Rábanos» (1 compra(s)) → ¿Rabano? (0.88)
+- «Res caderita» (2 compra(s)) → ¿Res Lomo? (0.40)
+- «Res hueso promocion» (1 compra(s)) → ¿Huesos de res? (0.74)
+- «Res riñón» (1 compra(s)) → ¿Huesos de res? (0.46)
+- «Romero» (2 compra(s)) → ¿Queso de Romero? (0.83)
+- «Rúgula» (3 compra(s)) → ¿Fecula de Maiz? (0.12)
+- «Salsa angui» (1 compra(s)) → ¿Anguila? (0.72)
+- «Salsa de ostras Panda» (1 compra(s)) → ¿Salsa de ostra? (0.84)
+- «Salsa de ostras tasia» (0 compra(s)) → ¿Salsa de ostra? (0.84)
+- «Salvia» (2 compra(s)) → ¿Sal Marina? (0.63)
+- «Shiitake deshidratado» (1 compra(s)) → ¿Tomate Deshidratado? (0.58)
+- «Shiro» (1 compra(s)) → ¿Cocoa Hershey's? (0.50)
+- «Soda» (1 compra(s)) → ¿Cocoa Hershey's? (0.50)
+- «Soju Chamisul» (1 compra(s)) → ¿Cocoa Hershey's? (0.25)
+- «Soya» (1 compra(s)) → ¿Salsa Soya? (0.79)
+- «Tapabocas» (1 compra(s)) → ¿Carcasas De Camaron? (0.08)
+- «Tocineta» (3 compra(s)) → ¿Tocineta ahumada? (0.83)
+- «Tocineta casa blanca» (1 compra(s)) → ¿Tocineta ahumada? (0.47)
+- «Tocineta premium» (2 compra(s)) → ¿Tocineta Pasta (120gr)? (0.51)
+- «Tomate baby» (1 compra(s)) → ¿Tomate Cherry? (0.50)
+- «Tomate cherry uvalina» (6 compra(s)) → ¿Tomate Cherry? (0.88)
+- «Tomate chonto» (6 compra(s)) → ¿Tomate Chonto (rojo)? (0.92)
+- «Tomate rose» (1 compra(s)) → ¿Tomate Cherry? (0.50)
+- «Tomate zebra» (1 compra(s)) → ¿Tomate Cherry Zebra? (0.85)
+- «Tomates secos al sol» (1 compra(s)) → ¿Higos Secos? (0.48)
+- «Tomates secos Karisma» (1 compra(s)) → ¿Higos Secos? (0.44)
+- «Tomillo» (1 compra(s)) → ¿Tomillo (fresco)? (0.83)
+- «Tomillo Cocinerito» (1 compra(s)) → ¿Tomillo (fresco)? (0.47)
+- «Uva isabelina» (0 compra(s)) → ¿Tomate Uvalina? (0.44)
+- «Uva morada chilena» (1 compra(s)) → ¿Uva Chilena Morada? (1.00)
+- «Vinagre blanco» (1 compra(s)) → ¿Vino Blanco? (0.57)
+- «Vinagre de vino tinto Colavita» (1 compra(s)) → ¿Vino Tinto? (0.79)
+- «Vinagre vino blanco» (1 compra(s)) → ¿Vino Blanco? (0.89)
+- «Vinagre vino blanco Colavita» (2 compra(s)) → ¿Vino Blanco? (0.80)
+- «Waypall» (1 compra(s)) → ¿Apio (tallo)? (0.06)
+- «Zapallo» (1 compra(s)) → ¿Apio (tallo)? (0.18)
+
+## Altas sin clasificar que no entraron (158)
+
+- Aceite ajonjolí [ml]
+- Aceite de chiles (BASE) [ml]
+- Aceite de esferificacion [ml]
+- Aceite de Sesamo blended [ml]
+- Aceite de Sesamo Kadoya [ml]
+- Aceituna negra deshuesada [g]
+- Aceituna negra Kalamata [g]
+- Aceituna Verde con Hueso Fortin [g]
+- Aceitunas rellenas de chorizo [g]
+- Aceitunas Verdes de jamon serrano Serpis [g]
+- Aceitunas Verdes de Pimiento Rojo Members Selettion [g]
+- Aceitunas Verdes de queso manchego Serpis [g]
+- Aceitunas Verdes rellenas de pimiento Member Selection [g]
+- Aceto Balsamico Casa vinagrera mariajosefa del gallo [ml]
+- Aceto de Vino Blanco Colvita [ml]
+- Aceto de Vino tinto Colvita [ml]
+- Agar Agar [g]
+- Aji Dulce Amarillo ( guindilla) [g]
+- Aji Dulce Amarillo Pasta [g]
+- ajo gallego [g]
+- Ajo negro con aceite de coco [ml]
+- Albahaca seca [g]
+- Alcohol antibacterial sannox [g]
+- Alga Kombu Tassya [g]
+- Aluminio [un]
+- Alverja Seletti [g]
+- Arancini a la tosca [g]
+- Arancini de experiencia [g]
+- Arancini de Viaggio [g]
+- Arepas de la costa Familia [g]
+- Arroz de coco [g]
+- Arroz de sushi California yasai [g]
+- Arroz de sushi nishiki [g]
+- Arroz Jasmin [un]
+- Arroz Jasmin Members Selection [g]
+- Arrroz jasmati rice select [g]
+- Banano pure [g]
+- Blanquillos Cocidos [un]
+- Bolsas al Vacio 15 x 20 [un]
+- Bolsas Ziploc 14x14 [un]
+- Bolsas Ziploc 30x25 [un]
+- Botanas crujientes de vegetales fritos [g]
+- Brandy Cinco Estrellas [g]
+- Brochetas pinchos [un]
+- Camarones 41/50 [g]
+- Camarones 61/70 [g]
+- Carcasas de Langostino [g]
+- Cargas de soda [g]
+- Carne a la pimienta [g]
+- Carne Molida [g]
+- Cebolla y romero en aceite [ml]
+- Cebollitas Blancas La coruña [g]
+- champiñon crimini [g]
+- Champiñon Shitake Yasai [g]
+- Cimarrón [un]
+- Cimarrón fresco [g]
+- Clavo molido [g]
+- Cocoa a Granel [g]
+- Cogollo Europeos [g]
+- Color Trifogon [g]
+- Costilla de Cerdo [g]
+- Crema de coco [ml]
+- Cremor Tartaro Delix [g]
+- Croquetas [g]
+- Diablito [g]
+- Durazno Fresco [g]
+- Encurtido de lima y jengibre [g]
+- Eneldo Fresco [g]
+- Fondo Base: Marisco (Reduccion) [ml]
+- Fondo de hongos [ml]
+- fondo de pargo [ml]
+- Fondo de setas [ml]
+- Fondo Pulpo Reduccion [ml]
+- Fondo Ramen [ml]
+- Frijoles Calima Seletti [g]
+- Frijoles Seletti [g]
+- Galletas de perrito [g]
+- Goma Guar [g]
+- Harina de Arroz Glutinoso star lion brant [g]
+- Harina de trigo [g]
+- Helado de arandano [g]
+- Hinojo (Entero) [g]
+- Huesitos de Res [g]
+- Jengibre (Cascara) [g]
+- Kombusha Artesana [g]
+- Langostinos U8 [g]
+- Laurel deshidratado [g]
+- Leche Entera [un]
+- Leche Entera Alquería Súper Cremosa [ml]
+- Lentejas Seletti [g]
+- Lima [g]
+- Limoncillo (Seco) [g]
+- Linaza Doña Lupe [g]
+- Lomo de Cerdo [g]
+- Lomo de Cerdo Adobado (Rollo de Cerdo) [g]
+- Lupulo [g]
+- Maíz amarillo Seletti [g]
+- Mamoncillo [g]
+- Mariscada [g]
+- Mariscada por completar [g]
+- Mermelada de Arandanos [g]
+- Mermelada de arando [g]
+- Mezcla de Mantequilla y Azucar [g]
+- Miga de Pan [g]
+- Mix de quesos [g]
+- Mixtura de mariscos [g]
+- Mlatodextrina Distrines [g]
+- Mole [g]
+- Mostaza french [g]
+- oregano fresco [g]
+- Panceta al barril Cerdo Americano [g]
+- Panceta entera [un]
+- Panceta Premium cerdo americano [g]
+- Panela Doña Lupe [g]
+- Papa cocida [g]
+- Pasta blanca familia [g]
+- Pasta spaguetti n 5 [g]
+- Pepperoni parisienne [g]
+- Piel de pollo [g]
+- Pimienta de Sichuan lascas [g]
+- Pimienta Negra Entera [g]
+- Pimienta rosada [g]
+- Pistacho sin Cáscara Members Seletion [g]
+- Pollo (contramuslo) Familia [g]
+- Pollo (Piel y grasa ) Familia [g]
+- Pulpa de Arandano [g]
+- Pulpa de caderita [g]
+- Queso Cottage Queseria de mi sin ti [g]
+- Queso Parmesano BELGIOSIOSO [g]
+- Queso parmesano member selction [g]
+- Queso Parmesano rayado Centurion [g]
+- Recorte de esparragos [g]
+- Recorte de Tocineta [g]
+- Recortes de Salmón [g]
+- Riñon [g]
+- Rugula [g]
+- Sal Roja [g]
+- Sal Rosada Himalaya cristales [g]
+- Sal Rosada Himalaya grano grueso Seletii [g]
+- salsa de pimienta [ml]
+- Salsa Unagi [ml]
+- Semola [g]
+- Tajín [g]
+- Tare [g]
+- Tocineta Laminada [g]
+- Tocino de personal [g]
+- Tomate Chonto ( Cascara) [g]
+- Tomate Seco Karisma [g]
+- Tomillo Molido Cocinerito [g]
+- Tortilla de maiz [g]
+- Tuile de remolacha [g]
+- Uvas fermentadas [g]
+- Vinagre balsamicio Colvita [ml]
+- Vinagre blanco clemente [ml]
+- Vinilo el [g]
+- Zapallo [g]
+- Zuccini Amarillo [g]
+- zumo de limon [ml]
+
+## Tipo por revisar (altas de cocina como MPi que parecen materia prima)
+
+- PINZAS DE CANGREJO: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Tuetano: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Menudencia de gallina: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Muslos de pollo: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Huesos de res: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- huesos de res cogote: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Codorniz: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Cabeza de mero: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Cabezas de salmón: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Camaron 91-110: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Calamar Californiano: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Tubo de Calamar: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Langostino Tigre: la alta dice «MPi Cocina», pero parece materia prima comprada.
+- Fondo de conejo: la alta dice «MPi Cocina», pero parece materia prima comprada.
+
+## Genéricos con unidades mezcladas en INV-COC-001
+
+- Aceite de Coco: und / ml / g → ml
+- Aceite De Soya: und / ml → ml
+- Acido Ascorbico: und / g → g
+- Acido Citrico - cocina: und / g → g
+- Agave azul: und / g → g
+- Ají en Hojuelas (Red Pepper): und / g → g
+- Arroz blanco: und / g → g
+- Arroz negro: und / g → g
+- Arroz soplado: und / g → g
+- Azúcar Morena: und / g → g
+- Bicarbonato de Sodio: und / g → g
+- Cafe Molido: und / ml → ml
+- Canela (entera): und / g → g
+- Canela (polvo): und / g → g
+- Cargas Para Sifón ( Crema): und / ml → ml
+- Chile Habanero: und / g → g
+- Chocolate 65%: und / g → g
+- Chocolate 70%: und / g → g
+- Crema de leche comun: und / ml → ml
+- Curry Amarillo: und / g → g
+- Curry en polvo: und / g → g
+- Curry verde: und / g → g
+- Curry Verde Fresco: und / g → g
+- Dátiles: und / g → g
+- Frijol blanco: und / g → g
+- Galleta Oreo: und / g → g
+- Garbanzo: und / g → g
+- Higos Secos: und / g → g
+- Jamon Serrano: und / g → g
+- Leche de Coco: und / ml → ml
+- Leche en Polvo: und / ml → ml
+- Maiz Blanco (seco entero): und / g → g
+- Marañones: und / g → g
+- Matcha: und / g → g
+- Mayoneza japonesa: und / g → g
+- Mezcla buñuelo: und / g → g
+- Mostaza de Dijon Antigua: und / g → g
+- Panko: und / g → g
+- Paprika (polvo): und / g → g
+- Pargo: und / g → g
+- Pasta china amarilla: und / g → g
+- Pasta de Miso: und / g → g
+- Pasta vermicelli: und / g → g
+- Pistacho con Cáscara: und / g → g
+- Pistacho Pelado: und / g → g
+- Quemado panela: und / g → g
+- Queso Azul: und / g → g
+- Queso Boconccini: und / g → g
+- Queso Brie: und / g → g
+- Queso Grana Padano: und / g → g
+- Queso Mascarpone: und / g → g
+- Queso Mix 4: und / g → g
+- Queso Mozarella (bloque): und / g → g
+- Queso Parmesano (bloque): und / g → g
+- Queso Stracciatella: und / g → g
+- Sal Marina: und / g → g
+- Sal Marina Rosada: und / g → g
+- Salsa de chocolate: und / ml → ml
+- Salsa de pescado: und / ml → ml
+- Salsa Inglesa: und / ml → ml
+- Salsa Pomodoro Egida: und / ml → ml
+- Salsa Soya: und / ml → ml
+- Suero Costeño: und / ml → ml
+- Tinta de calamar: und / g → g
+- Tomate Deshidratado: und / g → g
+- Tomate peleti: und / g → g
+- Vinagre Balsámico: und / ml → ml
+- Vinagre De Manzana: und / ml → ml
+- Vinagre de sushi: und / ml → ml
+- Vino Blanco: und / ml → ml
+
+## Recepción con otra unidad base que el genérico
+
+- «Ají amarillo» se recibe en g y el genérico Ají Amarillo va en und: sus compras no dan costo de referencia.
+- «Coliflor» se recibe en und y el genérico Coliflor va en g: sus compras no dan costo de referencia.
+- «Espinaca baby» se recibe en g y el genérico Espinaca Baby va en und: sus compras no dan costo de referencia.
+- «Leche de coco» se recibe en g y el genérico Leche de Coco va en ml: sus compras no dan costo de referencia.
+- «Lechuga crespa morada» se recibe en g y el genérico Lechuga Crespa Morada va en und: sus compras no dan costo de referencia.
+- «Lechuga romana» se recibe en g y el genérico Lechuga Romana va en und: sus compras no dan costo de referencia.
+- «Limón Tahití» se recibe en g y el genérico Limón Tahití va en und: sus compras no dan costo de referencia.
+- «Manzana roja» se recibe en g y el genérico Manzana Roja va en und: sus compras no dan costo de referencia.
+- «Papa capira» se recibe en g y el genérico Papa Capira va en und: sus compras no dan costo de referencia.
+- «salsa de pescado squid» se recibe en g y el genérico Salsa de pescado va en ml: sus compras no dan costo de referencia.
+- «Uva verde» se recibe en g y el genérico Uva Verde va en und: sus compras no dan costo de referencia.
+- «Vinagre balsamico» se recibe en und y el genérico Vinagre Balsámico va en ml: sus compras no dan costo de referencia.
+
+## Choques de categoría o cadena de frío, y decisiones no válidas
+
+Nada.
+
+## Compras repetidas
+
+- REC-COC-20260911-03-004 repite REC-COC-20260911-03-003 (Queso stracciatella, 2026-09-11, 490 g, $29900)
+
+## Compras excluidas del costo de referencia
+
+- **Revisión pendiente sobre el precio o la unidad**: 225
+- **Producto sin cruce decidido**: 154
+- **Unidad base de la compra distinta a la del genérico**: 32
+- **Línea REVERSADA**: 1
+
+## Ubicaciones a zonas que no existen
+
+Nada.
+
+Ubicaciones de productos que no entraron (sin clasificar): 160.

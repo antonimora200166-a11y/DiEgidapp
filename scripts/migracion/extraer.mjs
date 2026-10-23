@@ -8,28 +8,18 @@
 // No migra compras ni lotes al kardex: el kardex nace con el conteo inicial (SALDO_INICIAL),
 // valorizado con los costos de referencia que salen de esas compras.
 // =====================================================================================
-import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { leerXlsx, fechaExcel } from './xlsx.mjs';
 import * as M from './mapeo.mjs';
+import { norm, uuid, lit, ent, redondear } from './comun.mjs';
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
 const CORTE = arg('--corte', new Date().toISOString().slice(0, 10));
 const VENTANA_DIAS = 90;
 
-const norm = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  .replace(/\s+/g, ' ').trim();
-const uuid = (tipo, clave) => {
-  const h = createHash('sha1').update(`sgi-diegida:${tipo}:${clave}`).digest('hex');
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${((parseInt(h[16], 16) & 3) | 8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`;
-};
-const lit = (v) => (v === null || v === undefined ? 'null'
-  : typeof v === 'number' ? String(v) : typeof v === 'boolean' ? String(v) : `'${String(v).replace(/'/g, "''")}'`);
-const ent = (n) => (typeof n === 'number' && Number.isFinite(n) ? n : null);
-const redondear = (n, d = 6) => Math.round(n * 10 ** d) / 10 ** d;
 
 const libroCostos = leerXlsx(join(raiz, 'referencia', 'SGI-COSTOS · Producción y costo de MPI (LLENAR AQUÍ).xlsx'));
 const libroRecep = leerXlsx(join(raiz, 'referencia', 'REG FMT-REC-BAR-001 · Recepción de bar (LLENAR AQUÍ).xlsx'));

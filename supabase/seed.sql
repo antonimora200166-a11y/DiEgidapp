@@ -23,9 +23,9 @@ where not exists (select 1 from public.parametros p where p.clave = v.clave);
 
 insert into public.ubicaciones (codigo, nombre, area) values
   ('BAR_BODEGA', 'Bodega de bar', 'BAR'),
-  ('BAR_BARRA',  'Barra', 'BAR'),
-  ('COC_BODEGA', 'Bodega de cocina', 'COCINA')
+  ('BAR_BARRA',  'Barra', 'BAR')
 on conflict do nothing;
+-- Las ubicaciones de cocina (COC_<zona>) vienen de CAT_ZONAS de INV-COC-001: supabase/datos/historico_cocina.sql
 
 insert into public.categorias (codigo, nombre, area, exige_sello, es_perecedero) values
   ('LICOR',       'Licores',            'BAR', true,  false),

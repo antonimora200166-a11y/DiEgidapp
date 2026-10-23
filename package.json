@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test:db": "node supabase/tests/run-pglite.mjs",
-    "migracion:bar": "node scripts/migracion/extraer.mjs"
+    "migracion:bar": "node scripts/migracion/extraer.mjs",
+    "migracion:cocina": "node scripts/migracion/extraer_cocina.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8"
