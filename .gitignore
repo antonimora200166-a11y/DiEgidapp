@@ -5,3 +5,9 @@ node_modules/
 # Libros fuente con datos personales (nombres y cédulas en CAPTURA): quedan solo en disco.
 # El extractor (npm run migracion:bar) los lee de referencia/.
 referencia/*.xlsx
+
+# Next.js (web/)
+.next/
+next-env.d.ts
+*.tsbuildinfo
+!.env.example

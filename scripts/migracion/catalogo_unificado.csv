@@ -1,0 +1,1109 @@
+﻿area;codigo_fuente;generico;tipo;categoria;unidad_base;marca;presentacion;unidad_compra;factor_compra;origen_factor;clase_abc;valor_compras;participacion;compras;estado;fuentes
+BAR;BAR_MPe_0124;Aceituna verde deshuesada;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Aceituna verde deshuesada
+BAR;BAR_MPe_0071;Ácido ascórbico;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Ácido ascórbico
+BAR;BAR_MPe_0001;Ácido cítrico;MPe;INSUMO_SECO;g;;Bolsa 1.000 g;PAQ;1000;mapeo de bar (PRODUCTOS_EXTRA);C;0;;0;EXISTE;REC-BAR: Ácido cítrico
+BAR;BAR_SC_0001;Agua;SIN_COSTO;AGUA;ml;Hatsu;Botella 300 ml;BOT;variable;REC-BAR va en und: contenido variable;B;99984;1,28 %;2;EXISTE;REC-BAR: Agua Hatsu x300
+BAR;BAR_SC_0007;Agua de coco (del mismo coco);SIN_COSTO;SUBPRODUCTO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Agua de coco (del mismo coco)
+BAR;;Aguardiente atardecer sin azúcar;MPe;;und;Origen;Bot;BOT;1;por unidad;B;203960;2,61 %;2;NUEVO (PROVISIONAL);REC-BAR: Aguardiente origen atardecer sin azúcar
+BAR;BAR_MPe_0002;Albahaca;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Albahaca
+BAR;BAR_SC_0002;Almíbar de cereza;SIN_COSTO;SUBPRODUCTO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Almíbar de cereza
+BAR;BAR_MPe_0101;Amaretto Disaronno;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Amaretto Disaronno
+BAR;BAR_MPe_0130;Angostura bitters;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Angostura bitters
+BAR;BAR_MPe_0099;Aperol;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Aperol
+BAR;BAR_MPe_0003;Arándano congelado;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Arándano congelado
+BAR;BAR_MPe_0072;Arándano fresco;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Arándano fresco
+BAR;BAR_MPe_0004;Arroz blanco;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Arroz blanco
+BAR;BAR_MPe_0005;Azúcar blanca;MPe;INSUMO_SECO;g;Manuelita;Bolsa 2.500 g;PAQ;2500;mapeo de bar (PRODUCTOS_EXTRA);C;13150;0,17 %;1;EXISTE;REC-BAR: Azúcar blanca Manuelita
+BAR;BAR_MPe_0006;Azúcar glass;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Azúcar glass
+BAR;BAR_MPe_0007;Azúcar morena;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Azúcar morena
+BAR;BAR_MPe_0102;Baileys;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Baileys
+BAR;BAR_MPe_0129;Bala de CO2;MPe;OTROS;und;;Granel;UND;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Bala de CO2
+BAR;BAR_MPe_0008;Bala de N2O (sifón);MPe;OTROS;und;;Granel;UND;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Bala de N2O (sifón)
+BAR;BAR_MPe_0073;Banano;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Banano
+BAR;BAR_MPi_0062;Banano deshidratado;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Banano deshidratado
+BAR;BAR_MPi_0049;Barniz dorado comestible;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Barniz dorado comestible
+BAR;BAR_MPe_0104;Cachaça Jamel;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Cachaça Jamel
+BAR;BAR_MPe_0009;Café de máquina;MPe;OTROS;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Café de máquina
+BAR;BAR_MPe_0090;Campari;MPe;LICOR;ml;Campari;Bot 750 ml;BOT;750;mapeo de bar (INV-BAR-001);B;241980;3,09 %;1;EXISTE;REC-BAR: Aperitivo Campari
+BAR;BAR_MPe_0010;Canela cassia;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Canela cassia
+BAR;BAR_MPe_0011;Cardamomo;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Cardamomo
+BAR;BAR_SC_0004;Cáscara de naranja;SIN_COSTO;SUBPRODUCTO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Cáscara de naranja
+BAR;BAR_MPe_0012;Cerezas en almíbar;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Cerezas en almíbar
+BAR;BAR_MPi_0044;Cerezas Maceradas En Vermouth;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Cerezas Maceradas En Vermouth
+BAR;BAR_MPe_0122;Cerveza BBC Roja;MPe;CERVEZA;und;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Cerveza BBC Roja
+BAR;BAR_MPe_0121;Cerveza BBC Rosé;MPe;CERVEZA;und;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Cerveza BBC Rosé
+BAR;;Cerveza Easy Lager;MPe;CERVEZA;und;Mítica;Botella 300 ml;BOT;1;mapeo de bar (PRODUCTOS_EXTRA);C;0;;0;NUEVO (PROVISIONAL);REC-BAR: Cerveza Mítica  Easy Lager x300
+BAR;;Cerveza pale lager;MPe;CERVEZA;und;Mítica;Botella 300 ml;BOT;1;mapeo de bar (PRODUCTOS_EXTRA);C;0;;0;NUEVO (PROVISIONAL);REC-BAR: Cerveza mítica pale lager x300
+BAR;BAR_MPe_0013;Ciruela pasa;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Ciruela pasa
+BAR;BAR_MPi_0068;Clarificado de piña y romero;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Clarificado de piña y romero
+BAR;BAR_MPe_0014;Clavos de olor;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Clavos de olor
+BAR;BAR_MPe_0074;Coco;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Coco
+BAR;BAR_MPe_0100;Cointreau;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Cointreau
+BAR;BAR_MPe_0015;Colorante comestible verde;MPe;INSUMO_SECO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Colorante comestible verde
+BAR;BAR_MPe_0016;Crema de leche;MPe;LACTEO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Crema de leche
+BAR;BAR_MPi_0059;Deshidratado de limón;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Deshidratado de limón
+BAR;BAR_MPi_0060;Deshidratado de naranja;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Deshidratado de naranja
+BAR;BAR_MPi_0061;Deshidratado de piña;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Deshidratado de piña
+BAR;BAR_MPe_0075;Durazno deshidratado;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Durazno deshidratado
+BAR;BAR_MPe_0017;Durazno en almíbar;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Durazno en almíbar
+BAR;BAR_MPe_0018;Eneldo;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Eneldo
+BAR;BAR_MPi_0045;Espuma de Café;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Espuma de Café
+BAR;BAR_MPe_0110;Espumante Barón de Rothberg;MPe;VINO;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Espumante Barón de Rothberg
+BAR;BAR_MPe_0019;Extracto de vainilla;MPe;INSUMO_SECO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Extracto de vainilla
+BAR;BAR_MPe_0077;Flor de clitoria;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Flor de clitoria
+BAR;BAR_MPe_0020;Flor de Jamaica;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Flor de Jamaica
+BAR;BAR_MPe_0021;Fresa;MPe;FRUVER;g;;Granel;GR;1;granel;B;128000;1,64 %;2;EXISTE;REC-BAR: Fresa
+BAR;BAR_MPe_0078;Fresa congelada;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Fresa congelada
+BAR;BAR_MPi_0048;Garnitura de fideos de naranja;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Garnitura de fideos de naranja
+BAR;BAR_MPi_0047;Garnitura de Limón;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Garnitura de Limón
+BAR;;Ginebra;MPe;;und;Hendricks;Bot;BOT;1;por unidad;A;258990;3,31 %;1;NUEVO (PROVISIONAL);REC-BAR: Ginebra hendricks
+BAR;BAR_MPe_0108;Ginebra Beefeater Pink;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Ginebra Beefeater Pink
+BAR;BAR_MPe_0079;Ginebra Tanqueray;MPe;LICOR;ml;Tanqueray;Bot 700 ml;BOT;700;mapeo de bar (INV-BAR-001);A;744950;9,52 %;1;EXISTE;REC-BAR: Ginebra Tanqueray
+BAR;BAR_MPe_0114;Ginger ale;MPe;MIXER;ml;Canada Dry;Botella 300 ml;BOT;300;mapeo de bar (PRODUCTOS_EXTRA);C;87408;1,12 %;2;EXISTE;REC-BAR: Ginger Canad Dry x300
+BAR;BAR_MPe_0115;Ginger beer Mil976;MPe;MIXER;und;;Paq;PAQ;4;FACTORES_COMPRA;A;853200;10,90 %;1;EXISTE;REC-BAR: Mil976 Ginger beef
+BAR;BAR_MPe_0022;Granadilla;MPe;FRUVER;g;;;;variable;;C;0;;0;EXISTE;REC-BAR: Granadilla
+BAR;BAR_MPi_0058;Granita;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Granita
+BAR;BAR_MPe_0128;Helado de macadamia;MPe;LACTEO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Helado de macadamia
+BAR;;Hielo;MPe;HIELO;g;Iglú;Bolsa 3 kg;PAQ;3000;mapeo de bar (PRODUCTOS_EXTRA);B;141500;1,81 %;4;NUEVO (PROVISIONAL);REC-BAR: Hielo iglú | REC-BAR: Hielo iglú bolsa
+BAR;BAR_MPi_0026;Horchata Di Égida;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Horchata Di Égida
+BAR;BAR_MPe_0023;Huevo;MPe;OTROS;und;;Granel;UND;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Huevo
+BAR;BAR_MPi_0067;Infusión de gin y clitoria;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Infusión de gin y clitoria
+BAR;BAR_MPi_0040;Infusion De Limoncillo;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Infusion De Limoncillo
+BAR;BAR_MPi_0034;Infusion De Menta Fresca;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Infusion De Menta Fresca
+BAR;BAR_MPi_0066;Infusión Di Fiore;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Infusión Di Fiore
+BAR;BAR_MPe_0103;Jägermeister;MPe;LICOR;ml;;Bot 700 ml;BOT;700;mapeo de bar (INV-BAR-001);A;356970;4,56 %;1;EXISTE;REC-BAR: Jagermaister
+BAR;BAR_MPe_0024;Jengibre;MPe;FRUVER;g;;;;variable;;C;0;;0;EXISTE;REC-BAR: Jengibre
+BAR;BAR_MPe_0120;JP Chenet fizzy rosé (lata);MPe;MIXER;und;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: JP Chenet fizzy rosé (lata)
+BAR;BAR_MPe_0025;Kiwi;MPe;FRUVER;g;;Granel;GR;1;granel;C;39200;0,50 %;1;EXISTE;REC-BAR: Kiwi
+BAR;BAR_MPi_0043;Laminas De Jengibre;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Laminas De Jengibre
+BAR;BAR_MPe_0026;Leche condensada;MPe;LACTEO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Leche condensada
+BAR;BAR_MPi_0057;Leche de coco;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Leche de coco
+BAR;BAR_MPe_0070;Leche de coco (insumo);MPe;LACTEO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Leche de coco (insumo)
+BAR;BAR_MPe_0027;Leche entera;MPe;LACTEO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Leche entera
+BAR;BAR_MPi_0025;Leche Evaporada;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Leche Evaporada
+BAR;BAR_MPe_0094;Licor 43;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Licor 43
+BAR;BAR_MPe_0028;Licor de café;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Licor de café
+BAR;BAR_MPe_0095;Licor de chile Ancho Reyes;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Licor de chile Ancho Reyes
+BAR;BAR_MPe_0096;Licor de durazno Convier;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Licor de durazno Convier
+BAR;BAR_MPi_0039;Licor De Flor De Jamaica;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Licor De Flor De Jamaica
+BAR;BAR_MPi_0029;Licor de Granadilla;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Licor de Granadilla
+BAR;BAR_MPi_0042;Licor De Limoncillo;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Licor De Limoncillo
+BAR;BAR_MPi_0033;Licor De Manzanilla;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Licor De Manzanilla
+BAR;BAR_MPi_0036;Licor De Menta Fresca;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Licor De Menta Fresca
+BAR;BAR_MPi_0030;Licor De Vainilla;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Licor De Vainilla
+BAR;BAR_MPe_0080;Licor neutro 35°;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Licor neutro 35°
+BAR;BAR_MPe_0029;Limón lima;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Limón lima
+BAR;BAR_MPe_0030;Limón Tahití;MPe;FRUVER;g;;Granel;GR;1;granel;A;265000;3,39 %;2;EXISTE;REC-BAR: Limón Tahití
+BAR;BAR_MPe_0097;Limoncello Villa Massa;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Limoncello Villa Massa
+BAR;BAR_MPe_0031;Limoncillo;MPe;FRUVER;g;;;;variable;;C;0;;0;EXISTE;REC-BAR: Limoncillo
+BAR;BAR_SC_0008;Líquido de cereza en vermouth;SIN_COSTO;SUBPRODUCTO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Líquido de cereza en vermouth
+BAR;BAR_SC_0003;Líquido de durazno;SIN_COSTO;SUBPRODUCTO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Líquido de durazno
+BAR;BAR_SC_0009;Líquido de encurtido de aceituna;SIN_COSTO;SUBPRODUCTO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Líquido de encurtido de aceituna
+BAR;BAR_MPe_0032;Lulo;MPe;FRUVER;g;;Granel;GR;1;granel;C;16000;0,20 %;1;EXISTE;REC-BAR: Lulo
+BAR;BAR_MPe_0123;Lychee en almíbar (lata);MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Lychee en almíbar (lata)
+BAR;BAR_MPe_0033;Mandarina;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Mandarina
+BAR;BAR_MPe_0034;Mango;MPe;FRUVER;g;;;;variable;;C;0;;0;EXISTE;REC-BAR: Mango maduro
+BAR;BAR_MPe_0076;Mango deshidratado;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Mango deshidratado
+BAR;BAR_MPi_0063;Manzana deshidratada;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Manzana deshidratada
+BAR;BAR_MPe_0035;Manzana gala;MPe;FRUVER;g;;Und;UND;variable;;C;18083;0,23 %;1;EXISTE;REC-BAR: Manzana gala
+BAR;BAR_MPe_0036;Manzana roja;MPe;FRUVER;g;;Granel;GR;1;granel;C;15015;0,19 %;1;EXISTE;REC-BAR: Manzana roja
+BAR;BAR_MPe_0037;Manzana verde;MPe;FRUVER;g;;Granel;GR;1;granel;C;12636;0,16 %;1;EXISTE;REC-BAR: Manzana verde
+BAR;BAR_MPe_0038;Manzanilla (flor);MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Manzanilla (flor)
+BAR;BAR_MPe_0039;Maracuyá;MPe;FRUVER;g;;Granel;GR;1;granel;C;19200;0,25 %;1;EXISTE;REC-BAR: Maracuya
+BAR;BAR_MPe_0040;Melón;MPe;FRUVER;g;;;;variable;;C;0;;0;EXISTE;REC-BAR: Melón
+BAR;BAR_MPe_0042;Menta francesa;MPe;FRUVER;und;;Caja / bandeja;CJA;variable;;C;56400;0,72 %;3;EXISTE;REC-BAR: Menta Francesa
+BAR;BAR_MPe_0042;Menta francesa;MPe;FRUVER;und;;Caja / bandeja;CJA;25;nombre;C;56400;0,72 %;3;EXISTE;REC-BAR: Bandeja menta francesa x25 und
+BAR;BAR_MPe_0041;Menta fresca;MPe;FRUVER;g;;;;variable;;C;0;;0;EXISTE;REC-BAR: Manojo de menta fresca
+BAR;;Mezcal;MPe;;und;Ojo de Tigre;Bot;BOT;1;por unidad;A;339980;4,34 %;1;NUEVO (PROVISIONAL);REC-BAR: Mezcal ojo de tigre
+BAR;BAR_MPe_0106;Mezcal Montelobos;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Mezcal Montelobos
+BAR;BAR_MPe_0043;Miel de abejas;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Miel de abejas
+BAR;BAR_MPe_0044;Miel de agave;MPe;INSUMO_SECO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Miel de agave
+BAR;BAR_MPi_0065;Miel de jengibre;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Miel de jengibre
+BAR;BAR_MPi_0012;Mix De Citricos;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Mix De Citricos
+BAR;BAR_MPe_0081;Mix frutos rojos;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Mix frutos rojos
+BAR;BAR_MPe_0045;Mix Triple Blend (PriceSmart);MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Mix Triple Blend (PriceSmart)
+BAR;BAR_MPe_0046;Mora;MPe;FRUVER;g;;;;variable;;C;0;;0;EXISTE;REC-BAR: Mora
+BAR;BAR_MPe_0082;Mora congelada;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Mora congelada
+BAR;BAR_MPe_0047;Naranja;MPe;FRUVER;g;;Granel;GR;1;granel;C;6000;0,08 %;1;EXISTE;REC-BAR: Naranja
+BAR;BAR_MPe_0048;Naranja importada;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Naranja importada
+BAR;BAR_MPe_0131;Orange bitters;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Orange bitters
+BAR;BAR_MPi_0055;Papel de fresa;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Papel de fresa
+BAR;BAR_MPi_0056;Papel de frutos rojos;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Papel de frutos rojos
+BAR;BAR_MPi_0053;Papel de mango;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Papel de mango
+BAR;BAR_MPi_0054;Papel de maracuyá;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Papel de maracuyá
+BAR;BAR_MPe_0049;Pepino;MPe;FRUVER;g;;Granel;GR;1;granel;C;3960;0,05 %;1;EXISTE;REC-BAR: Pepino
+BAR;BAR_MPe_0050;Pera;MPe;FRUVER;g;;;;variable;;C;0;;0;EXISTE;REC-BAR: Pera
+BAR;BAR_MPi_0064;Pera caramelizada;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Pera caramelizada
+BAR;BAR_MPi_0021;Picadillo De Sangria Tradicional;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Picadillo De Sangria Tradicional
+BAR;BAR_MPi_0027;Picadillo Green Velvet;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Picadillo Green Velvet
+BAR;BAR_MPi_0022;Picadillo Morfeo Pee;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Picadillo Morfeo Pee
+BAR;BAR_MPi_0024;Picadillo y Sirope Fairy Blood;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Picadillo y Sirope Fairy Blood
+BAR;BAR_MPe_0051;Pimienta (por definir);MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Pimienta (por definir)
+BAR;BAR_MPe_0053;Pimienta de Timut;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Pimienta de Timut
+BAR;BAR_MPe_0052;Pimienta gorda (dulce);MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Pimienta gorda (dulce)
+BAR;BAR_MPe_0126;Pimienta rosada;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Pimienta rosada
+BAR;BAR_MPe_0083;Piña congelada;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Piña congelada
+BAR;BAR_MPe_0054;Piña oro miel;MPe;FRUVER;g;;Granel;GR;1;granel;C;66697;0,85 %;2;EXISTE;REC-BAR: Piña oro  miel
+BAR;BAR_MPe_0054;Piña oro miel;MPe;FRUVER;g;;;;variable;;C;66697;0,85 %;2;EXISTE;REC-BAR: Piña
+BAR;BAR_MPe_0105;Pisco Demonio de los Andes;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Pisco Demonio de los Andes
+BAR;BAR_MPe_0055;Polvillo dorado comestible;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Polvillo dorado comestible
+BAR;BAR_MPi_0069;Porcionado de fresa para jugo;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Porcionado de fresa para jugo
+BAR;BAR_MPi_0070;Porcionado de jugo de maracuyá;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Porcionado de jugo de maracuyá
+BAR;BAR_MPi_0071;Porcionado de jugo de mora;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Porcionado de jugo de mora
+BAR;BAR_MPe_0109;Prosecco;MPe;VINO;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Prosecco
+BAR;BAR_MPi_0052;Pulpa de granadilla;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Pulpa de granadilla
+BAR;BAR_MPi_0051;Pulpa de maracuyá;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Pulpa de maracuyá
+BAR;BAR_SC_0005;Reaprovechamiento ficha #6 (jengibre);SIN_COSTO;SUBPRODUCTO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Reaprovechamiento ficha #6 (jengibre)
+BAR;;Red Bull;MPe;MIXER;und;Red Bull;Lata 250 ml;LATA;1;mapeo de bar (PRODUCTOS_EXTRA);C;0;;0;NUEVO (PROVISIONAL);REC-BAR: Red Bull x250
+BAR;BAR_SC_0006;Rodajas del mix de cítricos;SIN_COSTO;SUBPRODUCTO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Rodajas del mix de cítricos
+BAR;BAR_MPe_0056;Romero;MPe;FRUVER;g;;Granel;GR;1;granel;C;12420;0,16 %;1;EXISTE;REC-BAR: Romero
+BAR;BAR_MPe_0092;Ron Bacardí Añejo;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Ron Bacardí Añejo
+BAR;BAR_MPe_0093;Ron La Hechicera Banano;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Ron La Hechicera Banano
+BAR;BAR_MPi_0046;Sal De Fresa;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sal De Fresa
+BAR;BAR_MPe_0057;Sal marina;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Sal marina
+BAR;BAR_MPe_0127;Sal rosada;MPe;INSUMO_SECO;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Sal rosada
+BAR;BAR_MPe_0125;Sandía;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Sandía
+BAR;BAR_MPi_0050;Sirope de azúcar morena;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope de azúcar morena
+BAR;BAR_MPi_0009;Sirope De Cardamomo;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope De Cardamomo
+BAR;BAR_MPi_0020;Sirope De Chamoy;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope De Chamoy
+BAR;BAR_MPi_0038;Sirope De Flor De Jamaica;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope De Flor De Jamaica
+BAR;BAR_MPi_0007;Sirope De Jengibre;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope De Jengibre
+BAR;BAR_MPi_0041;Sirope De Limoncillo;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope De Limoncillo
+BAR;BAR_MPi_0032;Sirope De Manzanilla;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope De Manzanilla
+BAR;BAR_MPi_0035;Sirope De Menta Fresca;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope De Menta Fresca
+BAR;BAR_MPi_0011;Sirope de Romero;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope de Romero
+BAR;BAR_MPi_0016;Sirope De Tamarindo;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope De Tamarindo
+BAR;BAR_MPi_0008;Sirope De Vainilla;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope De Vainilla
+BAR;BAR_MPi_0028;Sirope Green Velvet;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Green Velvet
+BAR;BAR_MPi_0023;Sirope Morfeo Pee;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Morfeo Pee
+BAR;BAR_MPi_0010;Sirope Naranja Amarga;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Naranja Amarga
+BAR;BAR_MPi_0017;Sirope Pinefizz;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Pinefizz
+BAR;BAR_MPi_0018;Sirope Scarlet Kiss;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Scarlet Kiss
+BAR;BAR_MPi_0006;Sirope Simple;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Simple
+BAR;BAR_MPi_0014;Sirope Stella Di Mango;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Stella Di Mango
+BAR;BAR_MPi_0015;Sirope Stella Di Rosso;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Stella Di Rosso
+BAR;BAR_MPi_0013;Sirope Stella Du Solei;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Stella Du Solei
+BAR;BAR_MPi_0019;Sirope Tabaco-Naranja;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Sirope Tabaco-Naranja
+BAR;BAR_MPe_0058;Soda Bretaña;MPe;MIXER;ml;Bretaña;Botella vidrio 300 ml;BOT;300;mapeo de bar (PRODUCTOS_EXTRA);B;109776;1,40 %;2;EXISTE;REC-BAR: Soda Bretaña x300 | REC-BAR: Bretaña vidrio x300
+BAR;BAR_MPe_0119;Soda Hatsu frambuesa-rosas;MPe;MIXER;und;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Soda Hatsu frambuesa-rosas
+BAR;BAR_MPe_0098;Soho (licor de lychee);MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Soho (licor de lychee)
+BAR;BAR_MPe_0118;Sparkling manzana Mil976;MPe;MIXER;und;;Paq;PAQ;4;FACTORES_COMPRA;A;359000;4,59 %;2;EXISTE;REC-BAR: Mil976 sparkling manzana
+BAR;BAR_MPe_0059;Tabaco (habano);MPe;OTROS;und;;Granel;UND;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Tabaco (habano)
+BAR;BAR_MPe_0060;Tamarindo;MPe;FRUVER;g;;Granel;GR;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Tamarindo
+BAR;BAR_MPi_0072;Té de flor de clitoria;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Té de flor de clitoria
+BAR;BAR_MPi_0037;Té de Flor de Jamaica;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Té de Flor de Jamaica
+BAR;BAR_MPi_0031;Té de Manzanilla;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Té de Manzanilla
+BAR;BAR_MPe_0087;Tequila Olmeca Chocolate;MPe;LICOR;ml;Olmeca;700 ml;;700;mapeo de bar (INV-BAR-001);C;0;;0;EXISTE;REC-BAR: Tequila Olmeca dark chocolate
+BAR;BAR_MPe_0086;Tequila Olmeca Reposado;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Tequila Olmeca Reposado
+BAR;;Tónica CERO;MPe;MIXER;und;Canada Dry;Botella 300 ml;BOT;1;mapeo de bar (PRODUCTOS_EXTRA);B;92256;1,18 %;2;NUEVO (PROVISIONAL);REC-BAR: Tónica Canadá Dry CERO x300
+BAR;BAR_MPe_0117;Tónica Mil976 Ocean;MPe;MIXER;und;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Tónica Mil976 Ocean
+BAR;BAR_MPe_0116;Tónica Mil976 Pink;MPe;MIXER;und;;Und;UND;1;por unidad;A;853200;10,90 %;2;EXISTE;REC-BAR: Mil976 agua tónica pink
+BAR;BAR_MPe_0116;Tónica Mil976 Pink;MPe;MIXER;und;;Paquete x4;PAQ;4;FACTORES_COMPRA;A;853200;10,90 %;2;EXISTE;REC-BAR: Mil976 fourpack pink
+BAR;BAR_MPe_0089;Triple sec azul Convier (curazao);MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Triple sec azul Convier (curazao)
+BAR;BAR_MPe_0088;Triple sec Convier;MPe;LICOR;ml;Convier;Bot 750 ml;BOT;750;mapeo de bar (INV-BAR-001);B;157980;2,02 %;1;EXISTE;REC-BAR: Triple sec convier
+BAR;;Tropical;MPe;MIXER;und;Gatorade;Botella;BOT;1;mapeo de bar (PRODUCTOS_EXTRA);C;0;;0;NUEVO (PROVISIONAL);REC-BAR: Gatorade tropical
+BAR;BAR_MPe_0061;Uchuva;MPe;FRUVER;g;;;;variable;;C;0;;0;EXISTE;REC-BAR: Uchuva
+BAR;;Uva verde;MPe;;und;;;;variable;;C;0;;0;NUEVO (PROVISIONAL);REC-BAR: Uva verde
+BAR;BAR_MPe_0062;Vainilla (vaina);MPe;INSUMO_SECO;und;;Granel;UND;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vainilla (vaina)
+BAR;BAR_MPe_0091;Vermouth extra dry Cinzano;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vermouth extra dry Cinzano
+BAR;BAR_MPe_0063;Vermouth rosso;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vermouth rosso
+BAR;BAR_MPe_0084;Vinagre (sin especificar);MPe;INSUMO_SECO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vinagre (sin especificar)
+BAR;BAR_MPe_0064;Vinagre balsámico;MPe;INSUMO_SECO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vinagre balsámico
+BAR;BAR_MPe_0065;Vinagre de frutas;MPe;INSUMO_SECO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vinagre de frutas
+BAR;BAR_MPe_0066;Vinagre de manzana;MPe;INSUMO_SECO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vinagre de manzana
+BAR;BAR_MPe_0085;Vinagre de sidra;MPe;INSUMO_SECO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vinagre de sidra
+BAR;BAR_MPe_0067;Vinagre de vino;MPe;INSUMO_SECO;ml;;Granel;ML;1;unidad base;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vinagre de vino
+BAR;BAR_MPe_0068;Vino blanco;MPe;VINO;ml;Mar de Frades;750 ml;;750;mapeo de bar (INV-BAR-001);C;0;;0;EXISTE;REC-BAR: Vino blanco Mar de frades Albariño
+BAR;;Vino reserva Merlot;MPe;;ml;Tarapacá;Bot;BOT;variable;REC-BAR va en und: contenido variable;A;453000;5,79 %;2;NUEVO (PROVISIONAL);REC-BAR: Vino Tarapacá, reserva Merlot
+BAR;;Vino reserva Merlot;MPe;;ml;Tarapacá;Botella 750 ml;UND;750;mapeo de bar (INV-BAR-001);A;453000;5,79 %;2;NUEVO (PROVISIONAL);REC-BAR: Vino Tarapacá, reserva Merlot bot 750 ml
+BAR;BAR_MPe_0113;Vino Rosaleda Merlot;MPe;VINO;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vino Rosaleda Merlot
+BAR;BAR_MPe_0111;Vino Rosaleda Rosé;MPe;VINO;ml;Rosaleda;Und 750 ml;UND;750;mapeo de bar (INV-BAR-001);A;387000;4,94 %;1;EXISTE;REC-BAR: vino rosaleda Rosé
+BAR;BAR_MPe_0112;Vino Rosaleda Sauvignon Blanc;MPe;VINO;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Vino Rosaleda Sauvignon Blanc
+BAR;BAR_MPe_0069;Vodka Absolut;MPe;LICOR;ml;Absolut;Bot 1000 ml;BOT;1000;mapeo de bar (INV-BAR-001);A;504000;6,44 %;1;EXISTE;REC-BAR: Vodka absolut
+BAR;;Whisky 12 años;MPe;;und;Glenfiddich;Bot;BOT;1;por unidad;A;910000;11,63 %;2;NUEVO (PROVISIONAL);REC-BAR: Whisky glenfiddich 12 años
+BAR;BAR_MPe_0107;Whisky Bulleit Bourbon;MPe;LICOR;ml;;Presentación por confirmar;BOT;variable;sin presentación en inventario ni compras;C;0;;0;EXISTE;CATALOGO_MAESTRO: Whisky Bulleit Bourbon
+BAR;BAR_MPi_0001;Zumo de Limón (Súper limón);MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Zumo de Limón (Súper limón)
+BAR;BAR_MPi_0004;Zumo de Mandarina;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Zumo de Mandarina
+BAR;BAR_MPi_0003;Zumo De Naranja;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Zumo De Naranja
+BAR;BAR_MPi_0005;Zumo De Naranja Importada;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Zumo De Naranja Importada
+BAR;BAR_MPi_0002;Zumo Manzana-Pera;MPI;MPI;g;;Producción propia;GR;1;unidad base;;0;;0;EXISTE;CATALOGO_MAESTRO: Zumo Manzana-Pera
+COCINA;;Aceite;MPe;;ml;Carapeli;Botella 1000 ml;BOT;1000;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Aceite Carapeli
+COCINA;;Aceite a la gallega;MPI;;ml;;Porción 80 ml;POR;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Aceite a la gallega
+COCINA;;Aceite de Achote;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Aceite de Achote
+COCINA;;Aceite de ajonjolí;MPe;COC_ABARROTES;ml;;Granel;ML;1;granel;A;191300;1,12 %;3;NUEVO (PROVISIONAL);REC-COC: Aceite de ajonjolí
+COCINA;;Aceite De Albahaca;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Aceite De Albahaca
+COCINA;;Aceite de Coco;MPe;;ml;;Frasco;FCO;1600;INV-COC-001: 1600 ml por unidad (validar);C;0;;0;EXISTE;INV-COC-001: Aceite de Coco
+COCINA;;Aceite de Coco;MPe;;ml;Biossens;Frasco 180 ml;FCO;180;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Aceite de Coco Biossens
+COCINA;;Aceite de Coco;MPe;;ml;MEMBER SELECTION;Frasco;FCO;variable;INV-COC-001 va en g: contenido variable;C;0;;0;EXISTE;INV-COC-001: ACEITE DE COCO MEMBER SELECTION
+COCINA;;Aceite de Coco;MPe;;ml;Member's Selection;Tarro 1650 ml;TARRO;1650;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Aceite de Coco Member's Selection
+COCINA;;Aceite de freir;MPe;COC_ABARROTES;und;;Galón;GAL;19;recepción: contenido más frecuente (2 línea(s));A;840000;4,91 %;2;NUEVO (PROVISIONAL);REC-COC: Aceite de freir
+COCINA;;Aceite de Oliva;MPe;COC_ABARROTES;ml;Olitalia;Botella 1000 ml;BOT;1000;INV-COC-001 PESO/VOL C/U;A;503196;2,94 %;3;EXISTE;INV-COC-001: Aceite de Oliva Olitalia | REC-COC: Aceite de oliva
+COCINA;;Aceite De Oliva Blend;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Aceite De Oliva Blend
+COCINA;;Aceite de oliva esencial;MPe;COC_ABARROTES;ml;;Granel;ML;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Aceite de oliva esencial
+COCINA;;Aceite de Oliva Extra Virgen (Picual);MPI;;ml;;Botella 500 ml;BOT;500;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Aceite de Oliva Extra Virgen (Picual)
+COCINA;;Aceite de sésamo Kaduya;MPe;COC_ABARROTES;ml;;Granel;ML;1;granel;A;156100;0,91 %;1;NUEVO (PROVISIONAL);REC-COC: Aceite de sésamo Kaduya
+COCINA;;Aceite De Soya;MPe;COC_ABARROTES;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;2;EXISTE;INV-COC-001: Aceite De Soya | REC-COC: Aceite de soya
+COCINA;;Aceite De Soya;MPe;COC_ABARROTES;ml;Member's Selection;Botella 5000 ml;BOT;5000;INV-COC-001 PESO/VOL C/U;C;0;;2;EXISTE;INV-COC-001: Aceite De Soya Member's Selection
+COCINA;;Aceite Egregio;MPe;;ml;;Botella 500 ml;BOT;500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Aceite Egregio
+COCINA;;Aceite Elizondo;MPe;;ml;;Botella 20 ml;BOT;20;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Aceite Elizondo
+COCINA;;Aceite Fritura;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Aceite Fritura
+COCINA;;Aceite Ila;MPe;;ml;;Botella 250 ml;BOT;250;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Aceite Ila
+COCINA;;Aceite Legado;MPe;;ml;;Botella 500 ml;BOT;500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Aceite Legado
+COCINA;;Aceitunas Negras;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Aceitunas Negras
+COCINA;;Aceitunas negras deshuesadas;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Aceitunas negras deshuesadas
+COCINA;;Aceto di Vino Blanco;MPe;;ml;;Botella 500 ml;BOT;500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Aceto di Vino Blanco
+COCINA;;Aceto di Vino Rosso;MPe;;ml;;Botella;BOT;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Aceto di Vino Rosso
+COCINA;;Achiote (polvo);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Achiote (polvo)
+COCINA;;Achiote (semillas);MPe;;g;;Tarro 246 g;TARRO;246;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Achiote (semillas)
+COCINA;;Acido Ascorbico;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Acido Ascorbico
+COCINA;;Acido Ascorbico;MPe;;g;Etter;Bolsa 395 g;BOLSA;395;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Acido Ascorbico Etter
+COCINA;;Acido Ascorbico;MPe;;g;Frutaroma;Bolsa 500 g;BOLSA;500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Acido Ascorbico Frutaroma
+COCINA;;Acido Ascorbico;MPe;;g;La Mansión;Paquete 116 g;PAQ;116;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Acido Ascorbico La Mansión
+COCINA;;Acido Citrico - cocina;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Acido Citrico - cocina
+COCINA;;Acido Citrico - cocina;MPe;;g;Etter;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Acido Citrico - cocina Etter
+COCINA;;Acido Malico;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Acido Malico
+COCINA;;ACITUNA RELLENAS QUESO MANCHEGO;MPe;;g;;Lata;LATA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: ACITUNA RELLENAS QUESO MANCHEGO
+COCINA;;Acompañamiento De Vegetales;MPI;;g;;Paquete 120 g;PAQ;120;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Acompañamiento De Vegetales
+COCINA;;Aderezo Cesar;MPI;;ml;;Bolsa 1053 ml;BOLSA;1053;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Aderezo Cesar
+COCINA;;Adobo Blanco;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Adobo Blanco
+COCINA;;Adobo de Soya Tipo Miso;MPe;COC_ABARROTES;g;;Bolsa 490 g;BOLSA;490;INV-COC-001 PESO/VOL C/U;C;0;;1;EXISTE;INV-COC-001: Adobo de Soya Tipo Miso | REC-COC: Adobo soya tipo miso
+COCINA;;Agar agar;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Agar agar
+COCINA;;Agave azul;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Agave azul
+COCINA;;Agave azul;MPe;;g;Member's Selection;Botella 1250 g;BOT;1250;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Agave azul Member's Selection
+COCINA;;Agente desengrasante;MPe;COC_ASEO;ml;;Granel;ML;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Agente desengrasante
+COCINA;;Agua Evian;MPe;;ml;;Botella 750 ml;BOT;750;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Agua Evian
+COCINA;;Ají Amarillo;MPe;COC_FRUVER;g;;Paquete;PAQ;382;INV-COC-001: 382 g por unidad (validar);C;0;;1;EXISTE;INV-COC-001: Ají Amarillo | REC-COC: Ají amarillo
+COCINA;;Aji Dulce Amarillo;MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Aji Dulce Amarillo
+COCINA;;Aji Dulce Rojo;MPe;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Aji Dulce Rojo
+COCINA;;Ají en Hojuelas (Red Pepper);MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Ají en Hojuelas (Red Pepper)
+COCINA;;Ají en Hojuelas (Red Pepper);MPe;;g;Badia;Tarro 322 g;TARRO;322;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Ají en Hojuelas (Red Pepper) Badia
+COCINA;;Ají jalapeño;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;20000;0,12 %;2;NUEVO (PROVISIONAL);REC-COC: Ají jalapeño
+COCINA;;Aji rocoto;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Aji rocoto
+COCINA;;Ají rocotto;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Ají rocotto
+COCINA;;Ajinomoto;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Ajinomoto
+COCINA;;Ajo (cabeza);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Ajo (cabeza)
+COCINA;;Ajo (diente);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Ajo (diente)
+COCINA;;Ajo (polvo);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Ajo (polvo)
+COCINA;;Ajo Negro;MPI;;g;;Bolsa 16247 g;BOLSA;16247;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Ajo Negro
+COCINA;;AJONJOLI BLANCO;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: AJONJOLI BLANCO
+COCINA;;Ajonjolí negro;MPe;;g;;Tarro 395 g;TARRO;395;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Ajonjolí negro
+COCINA;;Albahaca;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Albahaca
+COCINA;;Albahaca fresca;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;C;12000;0,07 %;1;NUEVO (PROVISIONAL);REC-COC: Albahaca fresca
+COCINA;;Albahaca Genovesa;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;20750;0,12 %;4;NUEVO (PROVISIONAL);REC-COC: Albahaca Genovesa
+COCINA;;Albahaca Morada;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Albahaca Morada
+COCINA;;Albondigon;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Albondigon
+COCINA;;Alcaparras La Curuña;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: Alcaparras La Curuña
+COCINA;;Alcaparretis;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Alcaparretis
+COCINA;;Alcohol;MPe;COC_ASEO;und;;Unidad;UND;1;granel;B;32500;0,19 %;1;NUEVO (PROVISIONAL);REC-COC: Alcohol 3800 ml
+COCINA;;Alga Combu;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Alga Combu
+COCINA;;Alginato;MPe;;g;;Paquete 90 g;PAQ;90;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Alginato
+COCINA;;Almendra (entera);MPe;COC_ABARROTES;g;;Bolsa;BOLSA;323;INV-COC-001: 323 g por unidad (validar);C;0;;1;EXISTE;INV-COC-001: Almendra (entera) | REC-COC: Almendra entera
+COCINA;;Almendra (fileteada);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Almendra (fileteada)
+COCINA;;Almidón dulce;MPe;;g;;Bolsa 1000 g;BOLSA;1000;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Almidón dulce
+COCINA;;Anchoas;MPe;;g;;Bolsa 40 g;BOLSA;40;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Anchoas
+COCINA;;Anguila;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Anguila
+COCINA;;Anillos de calamar;MPe;COC_PESCA;g;;Bolsa 1000 g;BOLSA;1000;recepción: contenido más frecuente (2 línea(s));B;100000;0,59 %;2;NUEVO (PROVISIONAL);REC-COC: Anillos de calamar
+COCINA;;Anís (semilla);MPe;;g;;Tarro;TARRO;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Anís (semilla)
+COCINA;;Anis Estrella (entero);MPe;;g;;Paquete 72 g;PAQ;72;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Anis Estrella (entero)
+COCINA;;Anis Estrella (polvo);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Anis Estrella (polvo)
+COCINA;;Apio;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;6106;0,04 %;4;NUEVO (PROVISIONAL);REC-COC: Apio
+COCINA;;Apio (hojas);MPe;;g;;Bolsa 530 g;BOLSA;530;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Apio (hojas)
+COCINA;;Apio (tallo);MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Apio (tallo)
+COCINA;;Arancini Cipolla;MPI;;g;;Unidad;UND;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Arancini Cipolla
+COCINA;;Arancini Di Funghi;MPI;;g;;Unidad 1 g;UND;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Arancini Di Funghi
+COCINA;;Arancini Di Olive;MPI;;g;;Unidad;UND;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Arancini Di Olive
+COCINA;;Arancini Di Pomodori;MPI;;g;;Unidad;UND;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Arancini Di Pomodori
+COCINA;;Arancini Di Verdure;MPI;;g;;Unidad 1 g;UND;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Arancini Di Verdure
+COCINA;;Arancini Formaggio Blu;MPI;;g;;Unidad;UND;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Arancini Formaggio Blu
+COCINA;;Arancini Prego;MPI;;und;;Unidad;UND;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Arancini Prego
+COCINA;;Arancinis a la tosca;MPI;;g;;Unidad;UND;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Arancinis a la tosca
+COCINA;;Arándanos;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;5;NUEVO (PROVISIONAL);REC-COC: Arándanos
+COCINA;;Arándanos;MPe;COC_FRUVER;g;Member Selection;Granel;GR;1;granel;C;0;;5;NUEVO (PROVISIONAL);REC-COC: Arándanos member selection
+COCINA;;Arandanos (congelado);MPe;;g;;Bolsa 1360 g;BOLSA;1360;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Arandanos (congelado)
+COCINA;;Arandanos (fresco);MPe;COC_CARNICOS;g;;Caja 500 g;CJA;500;INV-COC-001 PESO/VOL C/U;A;192067;1,12 %;2;EXISTE;INV-COC-001: Arandanos (fresco) | REC-COC: Arándanos frescos
+COCINA;;Arroz;MPe;COC_ABARROTES;g;Diana;Bolsa 12500 g;BOLSA;12500;recepción: contenido más frecuente (2 línea(s));B;48900;0,29 %;2;NUEVO (PROVISIONAL);REC-COC: Arroz Diana
+COCINA;;Arroz Basmati;MPe;COC_ABARROTES;g;Castellano;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;17950;0,11 %;1;EXISTE;INV-COC-001: Arroz Basmati Castellano
+COCINA;;Arroz Basmati;MPe;COC_ABARROTES;g;Castellano;Granel;GR;1;granel;C;17950;0,11 %;1;EXISTE;REC-COC: Arroz Castellano basmati
+COCINA;;Arroz Basmati Cocido;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Arroz Basmati Cocido
+COCINA;;Arroz blanco;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Arroz blanco
+COCINA;;Arroz blanco;MPe;;g;Diana;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Arroz blanco Diana
+COCINA;;Arroz Blanco Primium;MPe;;und;Castellano;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Arroz Blanco Primium Castellano
+COCINA;;Arroz bomba;MPe;COC_ABARROTES;g;Castellano;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Arroz bomba Castellano
+COCINA;;Arroz chino;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Arroz chino
+COCINA;;Arroz Jasmin;MPe;;g;Member's Selection;Bolsa 5875 g;BOLSA;5875;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Arroz Jasmin Member's Selection
+COCINA;;Arroz Jazmin;MPe;COC_ABARROTES;g;Castellano;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;13000;0,08 %;1;EXISTE;INV-COC-001: Arroz Jazmin Castellano
+COCINA;;Arroz Jazmin;MPe;COC_ABARROTES;g;Castellano;Granel;GR;1;granel;C;13000;0,08 %;1;EXISTE;REC-COC: Arroz Castellano jazmín
+COCINA;;Arroz Jazmin Cocido;MPI;;g;;Paquete 80 g;PAQ;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Arroz Jazmin Cocido
+COCINA;;Arroz negro;MPe;;g;;Bolsa;BOLSA;277;INV-COC-001: 277 g por unidad (validar);C;0;;0;EXISTE;INV-COC-001: Arroz negro
+COCINA;;Arroz negro;MPe;;g;Reviana;Paquete 277 g;PAQ;277;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Arroz negro Reviana
+COCINA;;Arroz nishiki;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Arroz nishiki
+COCINA;;Arroz premium;MPe;COC_ABARROTES;g;Diana;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Arroz Diana premium
+COCINA;;Arroz Risotto;MPe;COC_ABARROTES;g;Castellano;Bolsa 500 g;BOLSA;500;INV-COC-001 PESO/VOL C/U;A;394000;2,30 %;2;EXISTE;INV-COC-001: Arroz Risotto Castellano
+COCINA;;Arroz Risotto;MPe;COC_ABARROTES;g;Castellano;Granel;GR;1;granel;A;394000;2,30 %;2;EXISTE;REC-COC: Arroz risotto Castellano
+COCINA;;Arroz Risotto Cocinado;MPI;;g;;Unidad;UND;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Arroz Risotto Cocinado
+COCINA;;Arroz soplado;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Arroz soplado
+COCINA;;Arroz soplado;MPe;;g;Susanita;Paquete 20 g;PAQ;20;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Arroz soplado Susanita
+COCINA;;Arveja;MPe;;g;Familia;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Arveja Familia
+COCINA;;Atun (posta);MPe;;g;;Posta;POSTA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Atun (posta)
+COCINA;;Atun Curado;MPe;;g;;Posta;POSTA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Atun Curado
+COCINA;;Azucar Blanca;MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Azucar Blanca
+COCINA;;Azúcar Blanca mayaguez;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: Azúcar Blanca mayaguez
+COCINA;;Azucar Impalpable;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Azucar Impalpable
+COCINA;;Azúcar Morena;MPe;COC_ABARROTES;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Azúcar Morena
+COCINA;;Azúcar Morena;MPe;COC_ABARROTES;g;Manuelita;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Azúcar Morena Manuelita
+COCINA;;Azúcar Morena;MPe;COC_ABARROTES;g;Manuelita;Granel;GR;1;granel;C;0;;0;EXISTE;REC-COC: Azúcar Morena Manuelita
+COCINA;;Banano;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;2;NUEVO (PROVISIONAL);REC-COC: Banano
+COCINA;;Bechamel de coco;MPI;;g;;Porción;POR;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Bechamel de coco
+COCINA;;Bechamel de quesos;MPI;;g;;Porción 80 g;POR;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Bechamel de quesos
+COCINA;;Berenjena;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Berenjena
+COCINA;;Bicarbonato de Sodio;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Bicarbonato de Sodio
+COCINA;;Bicarbonato de Sodio;MPe;;g;La Mansión;Paquete 133 g;PAQ;133;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Bicarbonato de Sodio La Mansión
+COCINA;;Bicarbonato de Sodio;MPe;;g;Seletti;Paquete 41 g;PAQ;41;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Bicarbonato de Sodio Seletti
+COCINA;;Bofe;MPe;;g;;Bolsa 578 g;BOLSA;578;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Bofe
+COCINA;;Bolsa al vacío 15 x 16 cm;MPe;COC_ASEO;und;;Unidad;UND;1;granel;B;51200;0,30 %;1;NUEVO (PROVISIONAL);REC-COC: Bolsa al vacío 15 x 16 cm
+COCINA;;Bolsa alta blanca 119 bp;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;7300;0,04 %;1;NUEVO (PROVISIONAL);REC-COC: Bolsa alta blanca 119 bp
+COCINA;;Bolsa blanca;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Bolsa blanca
+COCINA;;Bolsa negra;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Bolsa negra
+COCINA;;Bolsa Vacio 16x15;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Bolsa Vacio 16x15
+COCINA;;Bolsa Vacio 20x10;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Bolsa Vacio 20x10
+COCINA;;Bolsa Vacio 35x35;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Bolsa Vacio 35x35
+COCINA;;Bolsa Vacio 35x36;MPe;;und;;Paquete;PAQ;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Bolsa Vacio 35x36
+COCINA;;Bolsas al vacío 15x16;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Bolsas al vacío 15x16
+COCINA;;Bolsas al vacío 15x20;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Bolsas al vacío 15x20
+COCINA;;Bolsas verde;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Bolsas verde
+COCINA;;Bouquet Garni;MPI;;g;;Unidad;UND;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Bouquet Garni
+COCINA;;BRANDY 5 Estrellas;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: BRANDY 5 Estrellas
+COCINA;;Brochetas;MPI;;und;;Paquete;PAQ;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Brochetas
+COCINA;;Brotes mix Hortifrescos;MPe;COC_CARNICOS;und;;Caja;CJA;30;recepción: contenido más frecuente (2 línea(s));C;13800;0,08 %;2;NUEVO (PROVISIONAL);REC-COC: Brotes mix Hortifrescos
+COCINA;;Cabeza De Cochinillo;MPe;;und;;Porción;POR;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Cabeza De Cochinillo
+COCINA;;Cabeza de mero;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Cabeza de mero
+COCINA;;Cabeza De Pulpo ( Recortes);MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Cabeza De Pulpo ( Recortes)
+COCINA;;Cabeza de salmon;MPe;;g;gran langostino;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: cabeza de salmon gran langostino
+COCINA;;Cabeza de salmon;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Cabezas de salmón
+COCINA;;Café;MPe;COC_ABARROTES;und;;Bolsa;BOLSA;2500;recepción: contenido más frecuente (2 línea(s));A;159900;0,94 %;2;NUEVO (PROVISIONAL);REC-COC: Café
+COCINA;;Cafe Molido;MPe;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Cafe Molido
+COCINA;;Cafe Molido;MPe;;ml;Viejo Molino;Bolsa 558 ml;BOLSA;558;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Cafe Molido Viejo Molino
+COCINA;;Café Vélez (Caturra);MPI;;ml;;Bolsa 295 ml;BOLSA;295;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Café Vélez (Caturra)
+COCINA;;Café, mesa de los santos;MPI;;ml;;Bolsa 421 ml;BOLSA;421;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Café, mesa de los santos
+COCINA;;Cajas de flores;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Cajas de flores
+COCINA;;Cajas de germinados;MPe;COC_FRUVER;g;;Caja 1 g;CJA;1;recepción: contenido más frecuente (2 línea(s));C;15000;0,09 %;2;NUEVO (PROVISIONAL);REC-COC: Cajas de germinados
+COCINA;;Calabacin Amarillo;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Calabacin Amarillo
+COCINA;;Calamar (anillos);MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Calamar (anillos)
+COCINA;;Calamar (anillos);MPe;;g;Familia;Bolsa 140 g;BOLSA;140;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Calamar (anillos) Familia
+COCINA;;Calamar Californiano;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Calamar Californiano
+COCINA;;Calcium lactate;MPI;;g;;Paquete 132 g;PAQ;132;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Calcium lactate
+COCINA;;Calcium lactate;MPI;;g;YumCraft;Paquete 170 g;PAQ;170;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Calcium lactate YumCraft
+COCINA;;Camaron 91-110;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Camaron 91-110
+COCINA;;Camarón vannamei 36/40;MPe;COC_PESCA;g;;Granel;GR;1;granel;A;219456;1,28 %;3;NUEVO (PROVISIONAL);REC-COC: Camarón vannamei 36/40
+COCINA;;Camarón vannamei 41/50;MPe;COC_PESCA;g;;Granel;GR;1;granel;A;449438;2,63 %;3;NUEVO (PROVISIONAL);REC-COC: Camarón vannamei 41/50
+COCINA;;Camarón vannamei 51/60;MPe;COC_PESCA;g;;Bolsa 1000 g;BOLSA;1000;recepción: contenido más frecuente (2 línea(s));A;106462;0,62 %;2;NUEVO (PROVISIONAL);REC-COC: Camarón vannamei 51/60
+COCINA;;Camarón vannamei 61/70;MPe;COC_PESCA;g;;Granel;GR;1;granel;A;352257;2,06 %;3;NUEVO (PROVISIONAL);REC-COC: Camarón vannamei 61/70
+COCINA;;Camaron vannamei 91-110;MPe;COC_PESCA;g;;Granel;GR;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: camaron vannamei 91-110
+COCINA;;Camarones 16/20;MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Camarones 16/20
+COCINA;;Camarones al Ajillo;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Camarones al Ajillo
+COCINA;;Camarones U10;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Camarones U10
+COCINA;;Canela (entera);MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Canela (entera)
+COCINA;;Canela (entera);MPe;;g;Badia;Tarro;TARRO;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Canela (entera) Badia
+COCINA;;Canela (polvo);MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Canela (polvo) | INV-COC-001: CANELA EN POLVO
+COCINA;;Canela (polvo);MPe;;g;Badia;Tarro 453.6 g;TARRO;453,6;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Canela (polvo) Badia
+COCINA;;Carbón;MPe;;g;;Bolsa 550 g;BOLSA;550;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Carbón
+COCINA;;Carcasas De Camaron;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Carcasas De Camaron
+COCINA;;Cardamomo;MPe;;g;;Tarro 70 g;TARRO;70;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Cardamomo
+COCINA;;Cargas Para Sifón ( Crema);MPI;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;;0;;0;EXISTE;INV-COC-001: Cargas Para Sifón ( Crema)
+COCINA;;Cargas Para Sifón ( Crema);MPI;;ml;ISI;Caja 17 ml;CJA;17;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Cargas Para Sifón ( Crema) ISI
+COCINA;;Carne de Cerdo Madurada (Don Simón);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Carne de Cerdo Madurada (Don Simón)
+COCINA;;Carne molida;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;A;266394;1,56 %;4;NUEVO (PROVISIONAL);REC-COC: Carne molida
+COCINA;;Cebolla (polvo);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Cebolla (polvo)
+COCINA;;Cebolla Blanca Caramelizada;MPI;;g;;Paquete 40 g;PAQ;40;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Cebolla Blanca Caramelizada
+COCINA;;Cebolla Cabezona Blanca;MPe;COC_FRUVER;g;;Bolsa 1 g;BOLSA;1;INV-COC-001 PESO/VOL C/U;A;128800;0,75 %;6;EXISTE;INV-COC-001: Cebolla Cabezona Blanca | REC-COC: Cebolla cabezona blanca
+COCINA;;Cebolla Cabezona Morada;MPe;COC_FRUVER;g;;Granel;GR;1;granel;B;37000;0,22 %;5;EXISTE;INV-COC-001: Cebolla Cabezona Morada | REC-COC: Cebolla cabezona morada
+COCINA;;Cebolla carmelizada para sopa;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Cebolla carmelizada para sopa
+COCINA;;Cebolla Larga;MPe;COC_FRUVER;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;21000;0,12 %;2;EXISTE;INV-COC-001: Cebolla Larga | REC-COC: Cebolla larga
+COCINA;;Cebolla Morada Caramelizada;MPI;;g;;Paquete 40 g;PAQ;40;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Cebolla Morada Caramelizada
+COCINA;;Cebolla Morada Caramelizada;MPI;;g;;Paquete 20 g;PAQ;20;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Cebolla Morada Caramelizada 20 gr
+COCINA;;Cebolla Morada Crispy;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Cebolla Morada Crispy
+COCINA;;Cebolla Puerro;MPe;COC_FRUVER;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);B;80000;0,47 %;2;EXISTE;INV-COC-001: Cebolla Puerro | REC-COC: Cebolla puerro
+COCINA;;Cebollino;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Cebollino
+COCINA;;Cebollo Puerro Crispy;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Cebollo Puerro Crispy
+COCINA;;Cerdo Brazo;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Cerdo Brazo
+COCINA;;Cerdo Costilla Carnosa;MPe;;g;;Bolsa 4222 g;BOLSA;4222;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Cerdo Costilla Carnosa
+COCINA;;Cerveza Rubia (club colombia);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Cerveza Rubia (club colombia)
+COCINA;;Champinpn Oyster;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Champinpn Oyster
+COCINA;;Champiñon Chitake;MPe;;und;;Paquete;PAQ;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Champiñon Chitake
+COCINA;;Champiñon Orellana;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Champiñon Orellana
+COCINA;;Champiñon Paris;MPe;COC_FRUVER;g;;Unidad;UND;variable;variable (se registra en cada recepción);A;114000;0,67 %;5;EXISTE;INV-COC-001: Champiñon Paris | REC-COC: Champiñón París
+COCINA;;Champiñon Porccini;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Champiñon Porccini
+COCINA;;Champiñon Portobello;MPe;COC_FRUVER;g;;Unidad;UND;variable;variable (se registra en cada recepción);A;176200;1,03 %;8;EXISTE;INV-COC-001: Champiñon Portobello | REC-COC: Champiñón portobello
+COCINA;;Champiñon portobello Setas Cuvia;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: Champiñon portobello Setas Cuvia
+COCINA;;Champiñón setas Camila;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;9500;0,06 %;1;NUEVO (PROVISIONAL);REC-COC: Champiñón setas Camila
+COCINA;;Champiñón setas Cuiva;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;9500;0,06 %;1;NUEVO (PROVISIONAL);REC-COC: Champiñón setas Cuiva
+COCINA;;Champiñones crinini;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Champiñones crinini
+COCINA;;Champiñones enteros;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Champiñones enteros
+COCINA;;Cherry Pera Confitados;MPI;;g;;Bolsa 500 g;BOLSA;500;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Cherry Pera Confitados
+COCINA;;Cherry Perlitas Confitados;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Cherry Perlitas Confitados
+COCINA;;Chia (semillas);MPe;;g;;Tarro 691 g;TARRO;691;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Chia (semillas)
+COCINA;;Chicharron;MPe;;g;;Bolsa 3933 g;BOLSA;3933;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Chicharron
+COCINA;;Chicharron Cocido;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Chicharron Cocido
+COCINA;;Chile Chipotle Seco;MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Chile Chipotle Seco
+COCINA;;Chile de Arbol;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Chile de Arbol
+COCINA;;Chile Habanero;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Chile Habanero
+COCINA;;Chile Habanero seco;MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Chile Habanero Seco
+COCINA;;Chile morita;MPe;;g;;Bolsa 453 g;BOLSA;453;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Chile morita
+COCINA;;Chile Poblano;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Chile Poblano
+COCINA;;Chocolate 65%;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Chocolate 65%
+COCINA;;Chocolate 65%;MPe;;g;Cordillera;Bolsa 591 g;BOLSA;591;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Chocolate 65% Cordillera
+COCINA;;Chocolate 70%;MPe;;g;;Paquete;PAQ;2500;INV-COC-001: 2500 g por unidad (validar);C;0;;0;EXISTE;INV-COC-001: Chocolate 70%
+COCINA;;Chocolate 70%;MPe;;g;Cordillera;Bolsa 5090 g;BOLSA;5090;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Chocolate 70% Cordillera
+COCINA;;Chocolate 70%;MPe;;g;Experto;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Chocolate 70% Experto
+COCINA;;Chocolate 70%;MPe;;g;Huila Orígenes;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Chocolate 70% Huila Orígenes
+COCINA;;Chutney De Melocoton;MPI;;g;;Porción;POR;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Chutney De Melocoton
+COCINA;;Cilantro (fresco);MPe;;g;;Unidad 109 g;UND;109;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Cilantro (fresco)
+COCINA;;Clara de Huevo;MPe;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Clara de Huevo
+COCINA;;Clavos de olor (enteros);MPe;;g;;Tarro 414 g;TARRO;414;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Clavos de olor (enteros)
+COCINA;;Clavos de olor (polvo);MPe;;g;;Paquete 114 g;PAQ;114;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Clavos de olor (polvo)
+COCINA;;Cloruro de calcio;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Cloruro de calcio
+COCINA;;Coco;MPe;COC_FRUVER;und;;Unidad;UND;1;granel;C;27000;0,16 %;3;NUEVO (PROVISIONAL);REC-COC: Coco
+COCINA;;Coco deshidratado Selectivo;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Coco deshidratado Selectivo
+COCINA;;Coco entero;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Coco entero
+COCINA;;Coco rallado;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;7550;0,04 %;2;NUEVO (PROVISIONAL);REC-COC: Coco rallado
+COCINA;;Coco rallado (seco);MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Coco rallado (seco)
+COCINA;;Coco rallado (seco);MPe;;g;Seletti;Paquete 100 g;PAQ;100;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Coco rallado (seco) Seletti
+COCINA;;Coco rallado (seco);MPe;;g;sin Azúcar Seletti;Paquete 100 g;PAQ;100;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Coco rallado (seco) sin Azúcar) Seletti
+COCINA;;Coco simple CocoMarth;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;12400;0,07 %;1;NUEVO (PROVISIONAL);REC-COC: Coco simple CocoMarth
+COCINA;;Cocoa Hershey's;MPe;;g;;Tarro 91.5 g;TARRO;91,5;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Cocoa Hershey's
+COCINA;;Codorniz;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Codorniz
+COCINA;;Codorniz entera;MPe;COC_AVES_HUEVOS;und;;Unidad;UND;1;recepción: contenido más frecuente (1 línea(s));A;328500;1,92 %;1;NUEVO (PROVISIONAL);REC-COC: Codorniz entera
+COCINA;;Cofias;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Cofias
+COCINA;;Cofias de malla;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Cofias de malla
+COCINA;;Cogollo europeo;MPe;COC_FRUVER;g;;Bolsa 250 g;BOLSA;250;recepción: contenido más frecuente (4 línea(s));C;14150;0,08 %;4;NUEVO (PROVISIONAL);REC-COC: Cogollo europeo
+COCINA;;Cogote de res;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;B;73778;0,43 %;1;NUEVO (PROVISIONAL);REC-COC: Cogote de res
+COCINA;;Cola pez;MPI;;g;;Paquete 57 g;PAQ;57;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Cola pez
+COCINA;;Coles De Brusela Encurtidas;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Coles De Brusela Encurtidas
+COCINA;;Coles de bruselas;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Coles de bruselas
+COCINA;;Coliflor;MPe;COC_FRUVER;g;;Tarro 180 g;TARRO;180;INV-COC-001 PESO/VOL C/U;B;88300;0,52 %;7;EXISTE;INV-COC-001: Coliflor | REC-COC: Coliflor
+COCINA;;Coliflor Asada;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Coliflor Asada
+COCINA;;Combo tropical (mix de lechuga crespa);MPe;;g;;Bolsa 240 g;BOLSA;240;recepción: contenido más frecuente (1 línea(s));C;4450;0,03 %;1;NUEVO (PROVISIONAL);REC-COC: combo tropical (mix de lechuga crespa)
+COCINA;;Comino (fresco);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Comino (fresco)
+COCINA;;Comino (polvo);MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Comino (polvo)
+COCINA;;Conejo;MPe;COC_CARNICOS;g;;Unidad 5060 g;UND;5060;recepción: contenido más frecuente (2 línea(s));A;483911;2,83 %;2;NUEVO (PROVISIONAL);REC-COC: Conejo
+COCINA;;Conejo Cocido;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Conejo Cocido
+COCINA;;Conejo entero;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Conejo entero
+COCINA;;Contrafiletto;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Contrafiletto
+COCINA;;Cordero pierna;MPe;;g;;Pieza 825 g;PZA;825;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Cordero pierna
+COCINA;;Corvina;MPe;;g;;Bolsa 715 g;BOLSA;715;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Corvina
+COCINA;;Costilla de Cerdo;MPe;;und;Familia;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Costilla de Cerdo Familia
+COCINA;;Costilla De Venado;MPe;;g;;Pieza 578 g;PZA;578;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Costilla De Venado
+COCINA;;Costilla SousVide;MPI;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Costilla SousVide
+COCINA;;Couscous;MPe;;g;;Paquete 200 g;PAQ;200;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Couscous
+COCINA;;Couscous;MPe;;g;Molisana;Caja 500 g;CJA;500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Couscous Molisana
+COCINA;;Crema Café Khalid;MPI;;ml;;Botella 600 ml;BOT;600;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Crema Café Khalid
+COCINA;;Crema de coco;MPe;COC_LACTEOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Crema de coco
+COCINA;;Crema De Leche;MPe;COC_LACTEOS;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;A;288350;1,69 %;4;EXISTE;INV-COC-001: Crema De Leche | REC-COC: Crema de leche | REC-COC: Crema leche
+COCINA;;Crema de leche comun;MPe;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Crema de leche comun
+COCINA;;Crema de leche comun;MPe;;ml;Alquería;Bolsa 850 ml;BOLSA;850;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Crema de leche comun Alquería
+COCINA;;Crema de leche comun;MPe;;ml;Colanta;Bolsa 873.5 ml;BOLSA;873,5;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Crema de leche comun Colanta
+COCINA;;Cremar tártaro;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Cremar tártaro
+COCINA;;Croissant;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Croissant
+COCINA;;Croqueta de Papa;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Croqueta de Papa
+COCINA;;Croqueta de Platano;MPI;;und;;Unidad;UND;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Croqueta de Platano
+COCINA;;Croqueta de Yuca;MPI;;und;;Unidad;UND;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Croqueta de Yuca
+COCINA;;Croquetas tres sabores;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: croquetas tres sabores
+COCINA;;Crutones Di Egida;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Crutones Di Egida
+COCINA;;Cubos arroz;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: cubos arroz
+COCINA;;Cúrcuma;MPe;;g;;Paquete 166 g;PAQ;166;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Cúrcuma
+COCINA;;Curry Amarillo;MPI;;und;;Tarro;TARRO;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Curry Amarillo
+COCINA;;Curry Amarillo pasta;MPI;;g;S Y B;Caja 92 g;CJA;92;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Curry Amarillo (Pasta) S Y B
+COCINA;;Curry Amarillo polvo;MPI;;g;BADIA;Tarro 771 g;TARRO;771;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Curry Amarillo (Polvo) BADIA
+COCINA;;Curry Amarillo polvo;MPI;;g;SYB;Paquete 125 g;PAQ;125;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Curry Amarillo (Polvo) SYB
+COCINA;;Curry en polvo;MPe;;g;;Porción;POR;113;INV-COC-001: 113 g por unidad (validar);C;0;;0;EXISTE;INV-COC-001: Curry en polvo
+COCINA;;Curry en polvo;MPe;;g;Badia;Tarro 468.3 g;TARRO;468,3;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Curry en polvo Badia
+COCINA;;Curry verde;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Curry verde
+COCINA;;Curry Verde Fresco;MPI;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;;0;;0;EXISTE;INV-COC-001: Curry Verde Fresco
+COCINA;;Curry Verde Fresco;MPI;;g;Mae ploy;Tarro 1000 g;TARRO;1000;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Curry Verde Fresco Mae ploy
+COCINA;;Curry verde pasta;MPI;;g;SYB;Caja 92 g;CJA;92;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Curry verde (Pasta) SYB
+COCINA;;Dátiles;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Dátiles
+COCINA;;Dátiles;MPe;;g;Mariani;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Dátiles Mariani
+COCINA;;Detergente en polvo;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;B;75000;0,44 %;1;NUEVO (PROVISIONAL);REC-COC: Detergente en polvo
+COCINA;;Dextrosa;MPI;;g;;Bolsa 858 g;BOLSA;858;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Dextrosa
+COCINA;;Durazno ( );MPe;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Durazno (lata)
+COCINA;;Durazno en almíbar;MPe;;ml;;Bolsa 695 ml;BOLSA;695;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Durazno en almíbar
+COCINA;;Durazno en almíbar;MPe;;ml;alfa;Lata 820 ml;LATA;820;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Durazno en almíbar alfa
+COCINA;;Eneldo (semilla);MPe;;g;;Paquete 125 g;PAQ;125;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Eneldo (semilla)
+COCINA;;ENTRADA Arancinis De la Tosca;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: ENTRADA Arancinis De la Tosca
+COCINA;;ENTRADA il viaggio degli Arancinis;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: ENTRADA il viaggio degli Arancinis
+COCINA;;ENTRADA Pulpo a la Gallega;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: ENTRADA Pulpo a la Gallega
+COCINA;;Esencia de Vainilla;MPe;COC_ABARROTES;ml;Levapan;Granel;ML;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: Esencia de Vainilla Levapan
+COCINA;;Esparragos;MPe;COC_FRUVER;g;;Paquete 529 g;PAQ;529;INV-COC-001 PESO/VOL C/U;A;122500;0,72 %;3;EXISTE;INV-COC-001: Esparragos | REC-COC: Espárragos
+COCINA;;Especia Masala en polvo;MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Especia Masala en polvo
+COCINA;;Especia Ras en polvo;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Especia Ras en polvo
+COCINA;;Espinaca Baby;MPe;COC_FRUVER;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;1;EXISTE;INV-COC-001: Espinaca Baby | REC-COC: Espinaca baby
+COCINA;;Espirulina;MPe;;g;;Paquete 125 g;PAQ;125;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Espirulina
+COCINA;;Esponja Matrix;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Esponja Matrix
+COCINA;;Espuma De Coco;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Espuma De Coco
+COCINA;;Espuma De Suero;MPI;;ml;;Porción 159 ml;POR;159;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Espuma De Suero
+COCINA;;Espuma De Vainilla;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Espuma De Vainilla
+COCINA;;Extracto De Vainilla;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Extracto De Vainilla
+COCINA;;Fecula de Maiz;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Fecula de Maiz
+COCINA;;Filete de pargo;MPe;COC_PESCA;g;;Granel;GR;1;granel;A;121026;0,71 %;3;NUEVO (PROVISIONAL);REC-COC: Filete de pargo
+COCINA;;Filete de pollo;MPe;COC_AVES_HUEVOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Filete de pollo
+COCINA;;Filete de salmon;MPe;COC_PESCA;g;;Paquete 1400 g;PAQ;1400;recepción: contenido más frecuente (1 línea(s));B;64540;0,38 %;1;NUEVO (PROVISIONAL);REC-COC: Filete de salmon
+COCINA;;Filete de tilapia 5-7;MPe;COC_PESCA;g;;Granel;GR;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: filete de tilapia 5-7
+COCINA;;Filete pechuga pollo;MPe;COC_AVES_HUEVOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Filete pechuga pollo
+COCINA;;Flan de Caramelo;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Flan de Caramelo
+COCINA;;Flor de Jamaica;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Flor de Jamaica
+COCINA;;Fondo Base: Cogote (oscuro);MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Fondo Base: Cogote (oscuro)
+COCINA;;Fondo Base: Marisco (claro);MPI;;ml;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Fondo Base: Marisco (claro)
+COCINA;;Fondo Base: Pescado (claro);MPI;;ml;;Bolsa 2448 ml;BOLSA;2448;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Fondo Base: Pescado (claro)
+COCINA;;Fondo Base: Pollo (oscuro);MPI;;ml;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Fondo Base: Pollo (oscuro)
+COCINA;;Fondo Base: Porcinni (claro);MPI;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Fondo Base: Porcinni (claro)
+COCINA;;Fondo Base: Res (oscuro);MPI;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Fondo Base: Res (oscuro)
+COCINA;;Fondo Base: Verduras (oscuro);MPI;;ml;;Bolsa 445 ml;BOLSA;445;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Fondo Base: Verduras (oscuro)
+COCINA;;Fondo de conejo;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Fondo de conejo
+COCINA;;Fondo de Don Simón;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Fondo de Don Simón
+COCINA;;Fondo De Mollejas;MPI;;ml;;Bolsa 1753 ml;BOLSA;1753;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Fondo De Mollejas
+COCINA;;Fondo De Pulpo;MPI;;ml;;Bloque;BLQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Fondo De Pulpo
+COCINA;;Frambuesa Berrygood;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;32000;0,19 %;1;NUEVO (PROVISIONAL);REC-COC: Frambuesa Berrygood
+COCINA;;Frambuesa fresca;MPe;COC_CARNICOS;g;;Caja 250 g;CJA;250;recepción: contenido más frecuente (2 línea(s));A;198000;1,16 %;2;NUEVO (PROVISIONAL);REC-COC: Frambuesa fresca
+COCINA;;Frambuesa nacional;MPe;COC_FRUVER;und;;Unidad;UND;1;granel;C;30000;0,18 %;1;NUEVO (PROVISIONAL);REC-COC: Frambuesa nacional
+COCINA;;Frambuesa premium;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;20420;0,12 %;1;NUEVO (PROVISIONAL);REC-COC: Frambuesa premium
+COCINA;;Frambuesas;MPe;COC_FRUVER;g;;Bandeja;BAND;250;INV-COC-001: 250 g por unidad (validar);C;0;;3;EXISTE;INV-COC-001: Frambuesas | REC-COC: Frambuesa
+COCINA;;Fresa;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Fresa
+COCINA;;Fresa fruta;MPe;;g;;Bolsa 1558 g;BOLSA;1558;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Fresa fruta
+COCINA;;Frijol blanco;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Frijol blanco
+COCINA;;Frijol blanco;MPe;;g;Seletti;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Frijol blanco Seletti
+COCINA;;Frijoles caraota;MPe;;g;;Bolsa 245 g;BOLSA;245;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Frijoles caraota
+COCINA;;Frijoles tradicional;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Frijoles tradicional
+COCINA;;Frosting;MPI;;g;;Bolsa 80 g;BOLSA;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: frosting
+COCINA;;Galleta;MPe;;und;Noel;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Galleta Noel
+COCINA;;Galleta Oreo;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Galleta Oreo
+COCINA;;Galleta Oreo;MPe;;g;Nestle;Paquete 38 g;PAQ;38;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Galleta Oreo Nestle
+COCINA;;Garbanzo;MPe;COC_ABARROTES;g;;Unidad;UND;454;INV-COC-001: 454 g por unidad (validar);C;0;;1;EXISTE;INV-COC-001: Garbanzo | REC-COC: Garbanzos en lata
+COCINA;;Garbanzo;MPe;COC_ABARROTES;g;Doña Lupe;Bolsa 500 g;BOLSA;500;INV-COC-001 PESO/VOL C/U;C;0;;1;EXISTE;INV-COC-001: Garbanzo Doña Lupe
+COCINA;;Garbanzo;MPe;COC_ABARROTES;g;Seletti;Bolsa 500 g;BOLSA;500;INV-COC-001 PESO/VOL C/U;C;0;;1;EXISTE;INV-COC-001: Garbanzo Seletti
+COCINA;;Garbanzo;MPe;COC_ABARROTES;g;Seletti cocidos;Lata 440 g;LATA;440;INV-COC-001 PESO/VOL C/U;C;0;;1;EXISTE;INV-COC-001: Garbanzo Seletti cocidos
+COCINA;;Garbanzo Cocido;MPI;;g;Familia;Bolsa 2058 g;BOLSA;2058;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Garbanzo Cocido Familia
+COCINA;;Gel remolacha;MPI;;g;;Porción 80 g;POR;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Gel remolacha
+COCINA;;Germinado;MPe;COC_FRUVER;und;;Caja;CJA;125;recepción: contenido más frecuente (2 línea(s));C;31000;0,18 %;2;NUEVO (PROVISIONAL);REC-COC: Germinado
+COCINA;;Germinados mixtos;MPe;COC_FRUVER;und;;Unidad;UND;1;granel;C;15300;0,09 %;1;NUEVO (PROVISIONAL);REC-COC: Germinados mixtos
+COCINA;;Ghee de Ajo Negro;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Ghee de Ajo Negro
+COCINA;;Goma Xantana;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Goma Xantana
+COCINA;;Grasa De Cerdo;MPe;;g;Familia;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Grasa De Cerdo (Familia)
+COCINA;;Grasa De Cerdo;MPe;;g;La manteca artesanal;Bolsa 482 g;BOLSA;482;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Grasa De Cerdo (Familia) La manteca artesanal
+COCINA;;GREEN PEPPER;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: GREEN PEPPER
+COCINA;;Guasacaca;MPI;;g;;Bolsa 1454 g;BOLSA;1454;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Guasacaca
+COCINA;;Guayaba;MPe;;g;;Bolsa 1075 g;BOLSA;1075;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Guayaba
+COCINA;;Habanero;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Habanero
+COCINA;;Hamburguesa Black Angus;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;B;36397;0,21 %;1;NUEVO (PROVISIONAL);REC-COC: Hamburguesa Black Angus
+COCINA;;Harina;MPe;COC_ABARROTES;g;Haz de Oros;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Harina haz de oros
+COCINA;;Harina almendras;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Harina almendras
+COCINA;;Harina de Arros Glutinoso;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Harina de Arros Glutinoso
+COCINA;;Harina de trigo;MPe;COC_ABARROTES;g;Haz de Oros;Bolsa 1000 g;BOLSA;1000;INV-COC-001 PESO/VOL C/U;B;89929;0,53 %;3;EXISTE;INV-COC-001: Harina de trigo Haz de Oros | REC-COC: Harina de trigo en costal | REC-COC: Harina de trigo
+COCINA;;Harina De Trigo (la monjita);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Harina De Trigo (la monjita)
+COCINA;;Harina Farallones;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Harina Farallones
+COCINA;;Helado de Flan;MPI;;g;;Porción 92 g;POR;92;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Helado de Flan
+COCINA;;Higado;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Higado
+COCINA;;Higos Secos;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Higos Secos
+COCINA;;Higos Secos;MPe;;g;Happy Villaje;Bolsa 1130 g;BOLSA;1130;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Higos Secos Happy Villaje
+COCINA;;Hinojo (polvo);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Hinojo (polvo)
+COCINA;;Hipoclorito;MPe;COC_ASEO;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Hipoclorito
+COCINA;;Hoja de alcaparra;MPe;;g;la viña la esneda;Bandeja 150 g;BAND;150;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Hoja de alcaparra la viña la esneda
+COCINA;;Hoja de Bijao;MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Hoja de Bijao
+COCINA;;Holandesa de Naranja y Miel;MPI;;und;;Paquete;PAQ;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Holandesa de Naranja y Miel
+COCINA;;Hot pepper;MPI;;g;;Caja;CJA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Hot pepper
+COCINA;;Huesito De Costilla;MPI;;g;Familia;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Huesito De Costilla (Familia)
+COCINA;;Huesos De Cerdo;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Huesos De Cerdo
+COCINA;;Huesos de res;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Huesos de res
+COCINA;;Huesos de res cogote;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: huesos de res cogote
+COCINA;;Huevo;MPe;COC_AVES_HUEVOS;und;;Unidad;UND;1;granel;B;70379;0,41 %;3;NUEVO (PROVISIONAL);REC-COC: Huevo
+COCINA;;Huevo (Entero);MPe;;und;;Unidad;UND;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Huevo (Entero)
+COCINA;;Huevo (Yema);MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Huevo (Yema)
+COCINA;;Ice tea;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Ice tea
+COCINA;;Jabón antibacterial neutro;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;23700;0,14 %;1;NUEVO (PROVISIONAL);REC-COC: Jabón antibacterial neutro
+COCINA;;Jabón lava platos;MPe;COC_ASEO;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Jabón lava platos
+COCINA;;Jaiba Azul;MPe;;g;;Lata 454 g;LATA;454;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Jaiba Azul
+COCINA;;Jalapeño fresco;MPe;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Jalapeño fresco
+COCINA;;Jamon de Cerdo;MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Jamon de Cerdo
+COCINA;;Jamon Serrano;MPe;COC_CARNICOS;g;;Bandeja;BAND;80;INV-COC-001: 80 g por unidad (validar);A;124780;0,73 %;2;EXISTE;INV-COC-001: Jamon Serrano | REC-COC: Jamón serrano
+COCINA;;Jamon Serrano;MPe;COC_CARNICOS;g;Centurion;Paquete;PAQ;variable;variable (se registra en cada recepción);A;124780;0,73 %;2;EXISTE;INV-COC-001: Jamon Serrano Centurion
+COCINA;;Jengibre;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Jengibre
+COCINA;;Jengibre (fresco);MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Jengibre (fresco)
+COCINA;;Jengibre Seco;MPe;;g;;Paquete 20 g;PAQ;20;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Jengibre Seco
+COCINA;;Katsubushi;MPe;;g;;Paquete 45 g;PAQ;45;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Katsubushi
+COCINA;;Kimchi;MPe;;g;;Tarro 3000 g;TARRO;3000;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Kimchi
+COCINA;;Langostino (cabeza);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Langostino (cabeza)
+COCINA;;Langostino Tigre;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Langostino Tigre
+COCINA;;Langostino u 10;MPe;COC_PESCA;g;;Paquete 750 g;PAQ;750;recepción: contenido más frecuente (2 línea(s));A;387000;2,26 %;2;NUEVO (PROVISIONAL);REC-COC: Langostino u 10
+COCINA;;Langostinos U10;MPe;;g;;Paquete 500 g;PAQ;500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Langostinos U10
+COCINA;;Laurel (fresco);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Laurel (fresco)
+COCINA;;Laurel seco;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Laurel seco
+COCINA;;Leche;MPe;COC_LACTEOS;ml;Alquería;Granel;ML;1;granel;B;86550;0,51 %;3;NUEVO (PROVISIONAL);REC-COC: Leche Alquería
+COCINA;;Leche;MPe;COC_LACTEOS;ml;Kari;Granel;ML;1;granel;B;86550;0,51 %;3;NUEVO (PROVISIONAL);REC-COC: Leche Kari
+COCINA;;Leche Condensada;MPe;COC_ABARROTES;ml;;Frasco;FCO;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Leche Condensada
+COCINA;;Leche Condensada;MPe;COC_ABARROTES;ml;nestle;Lata 393 ml;LATA;393;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Leche Condensada nestle
+COCINA;;Leche Condensada;MPe;COC_ABARROTES;ml;Jardin;Granel;GR;variable;REC-COC va en g: contenido variable;C;0;;0;EXISTE;REC-COC: Leche Condensada jardin
+COCINA;;Leche condensada Aro;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: Leche condensada Aro
+COCINA;;Leche de Coco;MPe;COC_LACTEOS;ml;;Unidad;UND;1132;INV-COC-001: 1132 ml por unidad (validar);B;65850;0,39 %;2;EXISTE;INV-COC-001: Leche de Coco | REC-COC: Leche de coco
+COCINA;;Leche de Coco;MPe;COC_LACTEOS;ml;Kali;Lata 400 ml;LATA;400;INV-COC-001 PESO/VOL C/U;B;65850;0,39 %;2;EXISTE;INV-COC-001: Leche de Coco Kali
+COCINA;;Leche de Coco;MPe;COC_LACTEOS;ml;Kari;Unidad;UND;variable;REC-COC va en und: contenido variable;B;65850;0,39 %;2;EXISTE;REC-COC: Leche de coco Kari
+COCINA;;Leche de coliflor;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Leche de coliflor
+COCINA;;Leche en Polvo;MPe;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Leche en Polvo
+COCINA;;Leche en Polvo;MPe;;ml;Member's Selection;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Leche en Polvo Member's Selection
+COCINA;;Leche Entera Super Cremosa;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Leche Entera Super Cremosa
+COCINA;;Lechuga Biofresco crespa;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;C;8031;0,05 %;1;NUEVO (PROVISIONAL);REC-COC: Lechuga Biofresco crespa
+COCINA;;Lechuga Biofresco romana;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;C;13200;0,08 %;1;NUEVO (PROVISIONAL);REC-COC: Lechuga Biofresco romana
+COCINA;;Lechuga Cogollo Europeo;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Lechuga Cogollo Europeo
+COCINA;;Lechuga crespa;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;B;65750;0,38 %;9;NUEVO (PROVISIONAL);REC-COC: Lechuga crespa
+COCINA;;Lechuga Crespa Morada;MPe;COC_FRUVER;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;B;82600;0,48 %;9;EXISTE;INV-COC-001: Lechuga Crespa Morada | REC-COC: Lechuga crespa morada
+COCINA;;Lechuga Crespa Verde;MPe;;und;;Paquete;PAQ;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Lechuga Crespa Verde
+COCINA;;Lechuga hidroponica;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;13000;0,08 %;1;NUEVO (PROVISIONAL);REC-COC: Lechuga hidroponica
+COCINA;;Lechuga lisa;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;7280;0,04 %;1;NUEVO (PROVISIONAL);REC-COC: Lechuga lisa
+COCINA;;Lechuga Mantecosa;MPe;;und;;Paquete;PAQ;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Lechuga Mantecosa
+COCINA;;Lechuga mantequilla;MPe;COC_LACTEOS;g;;Granel;GR;1;granel;A;100300;0,59 %;9;NUEVO (PROVISIONAL);REC-COC: Lechuga mantequilla
+COCINA;;Lechuga Romana;MPe;COC_FRUVER;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;B;98090;0,57 %;13;EXISTE;INV-COC-001: Lechuga Romana | REC-COC: Lechuga romana
+COCINA;;Lentejas;MPe;;g;Familia;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Lentejas Familia
+COCINA;;Levadura (seca);MPe;;g;;Frasco 271 g;FCO;271;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Levadura (seca)
+COCINA;;Levadura (seca);MPe;;g;Fabao;Bolsa 171 g;BOLSA;171;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Levadura (seca) Fabao
+COCINA;;Licor De Naranja Con Jengibre;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Licor De Naranja Con Jengibre
+COCINA;;Limón;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Limón
+COCINA;;Limón Amarillo;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Limón Amarillo
+COCINA;;Limon Mandarino (zumo);MPe;;ml;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Limon Mandarino (zumo)
+COCINA;;Limón Tahití;MPe;COC_FRUVER;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;8000;0,05 %;2;EXISTE;INV-COC-001: Limón Tahití | REC-COC: Limón Tahití
+COCINA;;Limon tahiti (entero);MPe;;g;;Unidad;UND;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Limon tahiti (entero)
+COCINA;;Limoncillo (fresco);MPe;;g;;Paquete 56 g;PAQ;56;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Limoncillo (fresco)
+COCINA;;Limoneta Salmón;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Limoneta Salmón
+COCINA;;Lomo de Cerdo;MPe;COC_CARNICOS;g;Familia;Bolsa;BOLSA;variable;variable (se registra en cada recepción);A;492393;2,88 %;5;EXISTE;INV-COC-001: Lomo de Cerdo Familia | REC-COC: Lomo de cerdo
+COCINA;;Lomo de res;MPe;COC_CARNICOS;g;;Bolsa 1926 g;BOLSA;1926;recepción: contenido más frecuente (3 línea(s));A;998712;5,84 %;3;NUEVO (PROVISIONAL);REC-COC: Lomo de res
+COCINA;;Lump Hollmans;MPI;;g;;Lata;LATA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Lump Hollmans
+COCINA;;Maicena;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Maicena
+COCINA;;Maiz Amarillo Fresco;MPe;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Maiz Amarillo Fresco
+COCINA;;Maiz Blanco (seco entero);MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Maiz Blanco (seco entero)
+COCINA;;Maiz Blanco (seco entero);MPe;;g;Seletti;Bolsa 500 g;BOLSA;500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Maiz Blanco (seco entero) Seletti
+COCINA;;Maíz PIRA;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Maíz PIRA
+COCINA;;Maltodextrina;MPI;;g;;Bolsa 500 g;BOLSA;500;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Maltodextrina
+COCINA;;Maltodextrina;MPI;;g;Destrines;Bolsa 491 g;BOLSA;491;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Maltodextrina Destrines
+COCINA;;Mandarina;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Mandarina
+COCINA;;Mandarina (entera);MPe;;g;;Bolsa 479 g;BOLSA;479;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mandarina (entera)
+COCINA;;Mango fruta;MPe;;g;;Bolsa 140 g;BOLSA;140;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mango fruta
+COCINA;;Mantequilla;MPe;COC_LACTEOS;g;;Bolsa 504 g;BOLSA;504;INV-COC-001 PESO/VOL C/U;A;384218;2,25 %;2;EXISTE;INV-COC-001: Mantequilla
+COCINA;;Mantequilla;MPe;COC_LACTEOS;g;Alpina;Bolsa;BOLSA;variable;variable (se registra en cada recepción);A;384218;2,25 %;2;EXISTE;INV-COC-001: Mantequilla Alpina
+COCINA;;Mantequilla;MPe;COC_LACTEOS;g;Colanta;Paquete;PAQ;variable;variable (se registra en cada recepción);A;384218;2,25 %;2;EXISTE;INV-COC-001: Mantequilla Colanta
+COCINA;;Mantequilla;MPe;COC_LACTEOS;g;Colanta;Granel;GR;1;granel;A;384218;2,25 %;2;EXISTE;REC-COC: Mantequilla Colanta
+COCINA;;Mantequilla Ahumada;MPe;;g;;Bolsa 60 g;BOLSA;60;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mantequilla Ahumada
+COCINA;;Mantequilla de Limón;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Mantequilla de Limón
+COCINA;;Manzana Gala;MPe;COC_FRUVER;g;;Unidad 6 g;UND;6;recepción: contenido más frecuente (2 línea(s));C;29253;0,17 %;2;NUEVO (PROVISIONAL);REC-COC: Manzana Gala
+COCINA;;Manzana Roja;MPe;COC_FRUVER;g;;Bolsa;BOLSA;3108;INV-COC-001: 3108 g por unidad (validar);A;134185;0,79 %;4;EXISTE;INV-COC-001: Manzana Roja | REC-COC: Manzana roja
+COCINA;;Manzana Royal;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Manzana Royal
+COCINA;;Manzana Verde;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Manzana Verde
+COCINA;;Manzana Verde Asada;MPI;;g;;Bolsa 330 g;BOLSA;330;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Manzana Verde Asada
+COCINA;;Marañón (cerrado);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Marañón (cerrado)
+COCINA;;Marañones;MPe;COC_FRUVER;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;1;EXISTE;INV-COC-001: Marañones | REC-COC: Marañón
+COCINA;;Marañones;MPe;COC_FRUVER;g;Member's Selection;Unidad;UND;variable;variable (se registra en cada recepción);C;0;;1;EXISTE;INV-COC-001: Marañones Member's Selection
+COCINA;;Mariscada Salteada;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Mariscada Salteada
+COCINA;;Mariscos Onda di Mare;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Mariscos Onda di Mare
+COCINA;;Masa de Guiozas;MPI;;g;;Paquete 475 g;PAQ;475;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Masa de Guiozas
+COCINA;;Masa de Lumpia;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Masa de Lumpia
+COCINA;;Masa Filo;MPI;;g;;Unidad 45 g;UND;45;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Masa Filo
+COCINA;;Masa Madre;MPI;;g;;Frasco 500 g;FCO;500;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Masa Madre
+COCINA;;Matcha;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Matcha
+COCINA;;Matcha;MPe;;g;Yasai;Bolsa 482 g;BOLSA;482;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Matcha Yasai
+COCINA;;Mayoneza japonesa;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Mayoneza japonesa
+COCINA;;Mayoneza japonesa;MPe;;g;Best Choice;Tarro 300 g;TARRO;300;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mayoneza japonesa Best Choice
+COCINA;;Mazorca dulce;MPe;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mazorca dulce
+COCINA;;Mejillón negro;MPe;COC_PESCA;g;;Granel;GR;1;granel;B;37393;0,22 %;1;NUEVO (PROVISIONAL);REC-COC: Mejillón negro
+COCINA;;Mejillón verde;MPe;COC_PESCA;g;;Granel;GR;1;granel;B;74991;0,44 %;2;NUEVO (PROVISIONAL);REC-COC: Mejillón verde
+COCINA;;Mejillones Verdes;MPe;;g;;Bolsa 825 g;BOLSA;825;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mejillones Verdes
+COCINA;;Mejollones;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Mejollones
+COCINA;;Mejora masa;MPe;;g;;Bolsa 1054 g;BOLSA;1054;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mejora masa
+COCINA;;Menta;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;5000;0,03 %;3;NUEVO (PROVISIONAL);REC-COC: Menta
+COCINA;;Menta (francesa);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Menta (francesa)
+COCINA;;Menudencia de gallina;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Menudencia de gallina
+COCINA;;Mezcla buñuelo;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Mezcla buñuelo
+COCINA;;Mezcla buñuelo;MPe;;g;Colmaiz;Bolsa 520 g;BOLSA;520;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mezcla buñuelo Colmaiz
+COCINA;;Miel De Abeja;MPe;;ml;;Tarro;TARRO;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Miel De Abeja
+COCINA;;Miel De Agave;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Miel De Agave
+COCINA;;Mirin;MPe;;ml;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Mirin
+COCINA;;Mix De Albahaca Y Clara;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Mix De Albahaca Y Clara
+COCINA;;Mix de quesos;MPe;COC_LACTEOS;g;Crystal Farms;Granel;GR;1;granel;A;462000;2,70 %;4;NUEVO (PROVISIONAL);REC-COC: Mix de quesos crystal farms
+COCINA;;Mix de quesos;MPe;COC_LACTEOS;g;Crystal Farm;Bolsa;BOLSA;variable;REC-COC va en und: contenido variable;A;462000;2,70 %;4;NUEVO (PROVISIONAL);REC-COC: Mix de queso crystal farm
+COCINA;;Molida cortes finos;MPe;COC_CARNICOS;g;Familia;Granel;GR;1;granel;A;109887;0,64 %;1;NUEVO (PROVISIONAL);REC-COC: Molida cortes finos (familia)
+COCINA;;Molleja Cruda;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Molleja Cruda
+COCINA;;Mollejas Cocidas;MPI;;g;;Bolsa 323 g;BOLSA;323;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Mollejas Cocidas
+COCINA;;Mora;MPe;;g;;Bolsa 263 g;BOLSA;263;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mora
+COCINA;;Mostaza;MPe;COC_ABARROTES;g;;Tarro 850 g;TARRO;850;recepción: contenido más frecuente (2 línea(s));B;41900;0,25 %;2;NUEVO (PROVISIONAL);REC-COC: Mostaza
+COCINA;;Mostaza Amarilla;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Mostaza Amarilla
+COCINA;;Mostaza de Dijon Antigua;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Mostaza de Dijon Antigua
+COCINA;;Mostaza de Dijon Antigua;MPe;;g;comapan;Frasco 250 g;FCO;250;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Mostaza de Dijon Antigua comapan
+COCINA;;Mostaza Dijon;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Mostaza Dijon
+COCINA;;Mousse De Queso De Cabra;MPI;;g;;Bolsa 325 g;BOLSA;325;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Mousse De Queso De Cabra
+COCINA;;Muslos de pollo;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Muslos de pollo
+COCINA;;Naranja;MPe;COC_FRUVER;g;;Bolsa 4000 g;BOLSA;4000;recepción: contenido más frecuente (3 línea(s));B;45500;0,27 %;3;NUEVO (PROVISIONAL);REC-COC: Naranja
+COCINA;;Naranja (entera);MPe;;g;;Unidad;UND;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Naranja (entera)
+COCINA;;Naranja tangelo;MPe;;g;importada;Bolsa 100 g;BOLSA;100;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Naranja tangelo importada
+COCINA;;Naruto Maki;MPI;;g;;Bolsa 150 g;BOLSA;150;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Naruto Maki
+COCINA;;Natilla;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Natilla
+COCINA;;New York steak;MPe;COC_CARNICOS;und;;Unidad;UND;1;granel;A;547875;3,21 %;3;NUEVO (PROVISIONAL);REC-COC: New York steak
+COCINA;;Nongshim champ ong;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Nongshim champ ong
+COCINA;;Noodle Chapaguetti;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Noodle Chapaguetti
+COCINA;;Nuez Moscada (entera);MPe;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Nuez Moscada (entera)
+COCINA;;Nuez Moscada (polvo);MPe;;g;;Paquete 145 g;PAQ;145;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Nuez Moscada (polvo)
+COCINA;;Ogao Colombiano;MPI;;g;;Porción 160 g;POR;160;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Ogao Colombiano
+COCINA;;Olivas Kalamata;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Olivas Kalamata
+COCINA;;Olivas mixtas;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Olivas mixtas
+COCINA;;Olivas queen;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Olivas queen
+COCINA;;Olivas Reyna;MPe;;g;;Unidad 800 g;UND;800;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Olivas Reyna
+COCINA;;Onda Di mare Actualizada;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Onda Di mare Actualizada
+COCINA;;Orégano;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;7000;0,04 %;1;NUEVO (PROVISIONAL);REC-COC: Orégano
+COCINA;;Oregano (polvo);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Oregano (polvo)
+COCINA;;Palo de escoba;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Palo de escoba
+COCINA;;Pan Ciabatta Servicio;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Pan Ciabatta Servicio
+COCINA;;Pan Naam;MPI;;g;;Paquete 90 g;PAQ;90;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Pan Naam
+COCINA;;Panal de huevos;MPe;COC_AVES_HUEVOS;und;;Unidad;UND;1;granel;A;118670;0,69 %;4;NUEVO (PROVISIONAL);REC-COC: Panal de huevos
+COCINA;;Panceta;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Panceta
+COCINA;;Panceta barril;MPe;COC_CARNICOS;und;;Unidad;UND;1;granel;C;21900;0,13 %;1;NUEVO (PROVISIONAL);REC-COC: Panceta barril
+COCINA;;Panela;MPe;COC_ABARROTES;g;Doña Lupe;Granel;GR;1;granel;C;27800;0,16 %;1;NUEVO (PROVISIONAL);REC-COC: Panela doña lupe
+COCINA;;Panela (entera);MPe;;g;;Pieza 386 g;PZA;386;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Panela (entera)
+COCINA;;Panela Palestina;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: Panela Palestina
+COCINA;;Panko;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Panko
+COCINA;;Panko;MPe;;g;Costal Bakers;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Panko Costal Bakers
+COCINA;;Panko;MPe;;g;en bolsa ziploc;Bolsa;BOLSA;860;INV-COC-001: 860 g por unidad (validar);C;0;;0;EXISTE;INV-COC-001: Panko en bolsa ziploc
+COCINA;;Panko;MPe;;g;Susanita;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Panko Susanita
+COCINA;;Panko blanco;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;A;154800;0,91 %;1;NUEVO (PROVISIONAL);REC-COC: Panko blanco
+COCINA;;Papa;MPe;COC_FRUVER;g;;Granel;GR;1;granel;A;123598;0,72 %;3;NUEVO (PROVISIONAL);REC-COC: Papa
+COCINA;;Papa Amarilla;MPe;COC_FRUVER;g;;Bolsa 1630 g;BOLSA;1630;INV-COC-001 PESO/VOL C/U;C;20080;0,12 %;1;EXISTE;INV-COC-001: Papa Amarilla | REC-COC: Papa amarilla
+COCINA;;Papa Capira;MPe;COC_FRUVER;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;B;48000;0,28 %;3;EXISTE;INV-COC-001: Papa Capira | REC-COC: Papa capira
+COCINA;;Papa Contrafiletto (guarnición);MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Papa Contrafiletto (guarnición)
+COCINA;;Papa del sur;MPe;COC_FRUVER;g;;Granel;GR;1;granel;B;62500;0,37 %;1;NUEVO (PROVISIONAL);REC-COC: Papa del sur
+COCINA;;Papa pochada para caldero;MPI;;g;;Paquete 100 g;PAQ;100;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: papa pochada para caldero
+COCINA;;Papa sucia;MPe;COC_FRUVER;g;;Granel;GR;1;granel;B;34000;0,20 %;1;NUEVO (PROVISIONAL);REC-COC: Papa sucia
+COCINA;;Papa Tortilla;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Papa Tortilla
+COCINA;;Papel Aluminio;MPe;COC_ASEO;und;;Caja;CJA;1;INV-COC-001 PESO/VOL C/U;A;140400;0,82 %;1;EXISTE;INV-COC-001: Papel Aluminio | REC-COC: Papel aluminio
+COCINA;;Papel de arroz;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Papel de arroz
+COCINA;;Papel de arroz;MPI;;und;Best Choice;Unidad;UND;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Papel de arroz Best Choice
+COCINA;;Papel Parafinado;MPe;;und;;Unidad;UND;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Papel Parafinado
+COCINA;;Papel Vinipel;MPe;;und;;Unidad;UND;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Papel Vinipel
+COCINA;;Paprika;MPe;COC_ABARROTES;g;Badia;Granel;GR;1;granel;A;134443;0,79 %;4;NUEVO (PROVISIONAL);REC-COC: Paprika Badia
+COCINA;;Paprika;MPe;COC_ABARROTES;g;Santafereño;Granel;GR;1;granel;A;134443;0,79 %;4;NUEVO (PROVISIONAL);REC-COC: Paprika Santafereño
+COCINA;;Paprika (polvo);MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Paprika (polvo)
+COCINA;;Paprika (polvo);MPe;;g;Badia;Frasco 453.6 g;FCO;453,6;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Paprika (polvo) Badia
+COCINA;;Paprika (polvo);MPe;;g;Santafereño;Frasco 500 g;FCO;500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Paprika (polvo) Santafereño
+COCINA;;Pargo;MPe;;g;;Porción;POR;1174;INV-COC-001: 1174 g por unidad (validar);C;0;;0;EXISTE;INV-COC-001: Pargo
+COCINA;;Pargo;MPe;;g;Filete;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Pargo Filete
+COCINA;;Pargo;MPe;;g;Trozos;Bolsa 1075 g;BOLSA;1075;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pargo Trozos
+COCINA;;Parmesano;MPe;COC_LACTEOS;g;Member Selection;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Parmesano member selection
+COCINA;;Pasta china amarilla;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Pasta china amarilla
+COCINA;;Pasta china amarilla;MPe;;g;best Choice;Paquete 825 g;PAQ;825;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pasta china amarilla best Choice
+COCINA;;Pasta de ají rojo;MPI;;g;;Tarro 30 g;TARRO;30;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Pasta de ají rojo
+COCINA;;Pasta de ajo con coco;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Pasta de ajo con coco
+COCINA;;Pasta De Arroz;MPe;;g;;Bolsa 213 g;BOLSA;213;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pasta De Arroz
+COCINA;;Pasta de higos;MPe;;g;;Bolsa 554 g;BOLSA;554;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pasta de higos
+COCINA;;Pasta De Lasaña;MPe;;g;;Unidad;UND;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Pasta De Lasaña
+COCINA;;Pasta de Miso;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Pasta de Miso
+COCINA;;Pasta de Miso;MPe;;g;Shiro;Caja;CJA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Pasta de Miso Shiro
+COCINA;;Pasta fettuccine;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Pasta fettuccine
+COCINA;;Pasta Spaghetti #5;MPe;;und;;Paquete;PAQ;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pasta Spaghetti #5
+COCINA;;Pasta Tagliatelle basilico fresca;MPI;;g;;Unidad 120 g;UND;120;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Pasta Tagliatelle basilico fresca
+COCINA;;Pasta Tagliatelle basilico fresca;MPI;;g;Familia;Unidad;UND;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Pasta Tagliatelle basilico fresca Familia
+COCINA;;Pasta Tagliatelle uovo fresca;MPI;;g;;Unidad 120 g;UND;120;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Pasta Tagliatelle uovo fresca
+COCINA;;Pasta udon;MPe;;g;;Paquete 300 g;PAQ;300;recepción: contenido más frecuente (1 línea(s));C;9010;0,05 %;1;NUEVO (PROVISIONAL);REC-COC: pasta udon
+COCINA;;Pasta vermicelli;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Pasta vermicelli
+COCINA;;Pasta vermicelli;MPe;;g;Monticello n3;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Pasta vermicelli Monticello n3
+COCINA;;Pasta vermicelli;MPe;;g;n3;Paquete 1000 g;PAQ;1000;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pasta vermicelli n3
+COCINA;;Patas De Cerdo;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Patas De Cerdo
+COCINA;;Patas De Cerdo;MPe;;g;cocida;Bolsa 549 g;BOLSA;549;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Patas De Cerdo cocida
+COCINA;;Pavo (muslos) Entera;MPe;;g;;Bolsa 1890 g;BOLSA;1890;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pavo (muslos) Entera
+COCINA;;Pechuga;MPe;COC_AVES_HUEVOS;g;;Granel;GR;1;granel;B;76800;0,45 %;2;NUEVO (PROVISIONAL);REC-COC: Pechuga
+COCINA;;Pechuga adbada menú SV;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Pechuga adbada menú SV
+COCINA;;Pechuga De Pato;MPe;;g;;Bolsa 787 g;BOLSA;787;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pechuga De Pato
+COCINA;;Pecorino;MPe;COC_LACTEOS;g;Colanta;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Pecorino Colanta
+COCINA;;Película 12 x 600 mtr;MPe;COC_ASEO;und;;Unidad;UND;1;granel;A;101400;0,59 %;1;NUEVO (PROVISIONAL);REC-COC: Película 12 x 600 mtr
+COCINA;;Pepinillos Encurtidos (entero);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Pepinillos Encurtidos (entero)
+COCINA;;Pepino;MPe;COC_FRUVER;g;;Unidad;UND;variable;variable (se registra en cada recepción);B;38500;0,23 %;3;EXISTE;INV-COC-001: Pepino | REC-COC: Pepino
+COCINA;;Pepino deshidratado;MPe;;g;;Paquete 6 g;PAQ;6;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pepino deshidratado
+COCINA;;Pepino Encurtido;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Pepino Encurtido
+COCINA;;Pepperoni sierra nevada;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Pepperoni sierra nevada
+COCINA;;Pera;MPe;COC_FRUVER;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;2;EXISTE;INV-COC-001: Pera | REC-COC: Pera
+COCINA;;Pera fruiticola;MPe;COC_FRUVER;und;;Unidad;UND;1;granel;C;9498;0,06 %;1;NUEVO (PROVISIONAL);REC-COC: Pera fruiticola
+COCINA;;Perejil;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;2000;0,01 %;2;NUEVO (PROVISIONAL);REC-COC: Perejil
+COCINA;;Perejil liso;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Perejil liso
+COCINA;;Pernil de pollo Bucanero;MPe;COC_AVES_HUEVOS;g;;Granel;GR;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: Pernil de pollo Bucanero
+COCINA;;Perniles de Pollo al Horno;MPI;;und;;Porción;POR;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Perniles de Pollo al Horno
+COCINA;;Petalos De Rosa;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Petalos De Rosa
+COCINA;;Piangua;MPI;COC_PESCA;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;35000;;1;EXISTE;INV-COC-001: Piangua | REC-COC: piangua
+COCINA;;Pierna de cerdo;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Pierna de cerdo
+COCINA;;Pierna de cordero;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;B;66400;0,39 %;2;NUEVO (PROVISIONAL);REC-COC: Pierna de cordero
+COCINA;;Pimentón;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;15496;0,09 %;4;NUEVO (PROVISIONAL);REC-COC: Pimentón
+COCINA;;Pimentón mix;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Pimentón mix
+COCINA;;Pimenton Rojo;MPe;COC_FRUVER;g;;Unidad 757 g;UND;757;INV-COC-001 PESO/VOL C/U;C;0;;1;EXISTE;INV-COC-001: Pimenton Rojo | REC-COC: Pimentón rojo
+COCINA;;Pimienta de Sichuan (polvo);MPe;;g;;Tarro;TARRO;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Pimienta de Sichuan (polvo)
+COCINA;;Pimienta De Timut molida;MPe;;g;;Paquete 496 g;PAQ;496;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pimienta De Timut molida
+COCINA;;Pimienta Dulce (entera);MPe;;g;;Paquete 38 g;PAQ;38;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pimienta Dulce (entera)
+COCINA;;Pimienta gorda;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Pimienta gorda
+COCINA;;Pimienta Negra (polvo);MPe;;und;;Frasco;FCO;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pimienta Negra (polvo)
+COCINA;;Pimienta shichimi;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Pimienta shichimi
+COCINA;;Pimienta Verde (entera);MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Pimienta Verde (entera)
+COCINA;;Pimienta Verde (entera);MPe;;g;encurtida Nguan;Frasco 454 g;FCO;454;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pimienta Verde (entera) encurtida) Nguan
+COCINA;;PINZAS DE CANGREJO;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: PINZAS DE CANGREJO
+COCINA;;Pistacho con Cáscara;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Pistacho con Cáscara
+COCINA;;Pistacho con Cáscara;MPe;;g;Member's Selection;Tarro;TARRO;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Pistacho con Cáscara Member's Selection
+COCINA;;Pistacho Pelado;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Pistacho Pelado
+COCINA;;Pistacho Pelado;MPe;;g;Wonderful;Paquete 680 g;PAQ;680;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pistacho Pelado Wonderful
+COCINA;;Pistachos;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Pistachos
+COCINA;;Platano Maduro;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Platano Maduro
+COCINA;;Platano Verde;MPe;;g;;Unidad;UND;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Platano Verde
+COCINA;;Pollo;MPe;COC_AVES_HUEVOS;g;;Granel;GR;1;granel;C;0;;2;NUEVO (PROVISIONAL);REC-COC: Pollo
+COCINA;;Pollo;MPe;COC_AVES_HUEVOS;g;Familia;Unidad;UND;variable;REC-COC va en und: contenido variable;C;0;;2;NUEVO (PROVISIONAL);REC-COC: Pollo familia
+COCINA;;Pollo (Alas) Enteras;MPe;;g;;Bolsa 972 g;BOLSA;972;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pollo (Alas) Enteras
+COCINA;;Pollo (Muslo) Entero;MPe;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pollo (Muslo) Entero
+COCINA;;Pollo (Pechuga) Entera;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Pollo (Pechuga) Entera
+COCINA;;Pollo (Pechuga) Filete;MPe;;g;;Porción 200 g;POR;200;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pollo (Pechuga) Filete
+COCINA;;Pollo (Pechuga) Filete;MPe;;g;Familia;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Pollo (Pechuga) Filete Familia
+COCINA;;Pollo (Pechuga) Hueso;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Pollo (Pechuga) Hueso
+COCINA;;Pollo enteros;MPe;COC_AVES_HUEVOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Pollo enteros
+COCINA;;Pollo Tikka;MPI;;g;;Paquete 200 g;PAQ;200;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Pollo Tikka
+COCINA;;POLVO 5 ESPECIE;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: POLVO 5 ESPECIE
+COCINA;;Polvo cinco especias chinas;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;31700;0,19 %;2;NUEVO (PROVISIONAL);REC-COC: Polvo cinco especias chinas
+COCINA;;Polvo massala;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Polvo massala
+COCINA;;Polvo para Hornear;MPe;;g;;Tarro 181 g;TARRO;181;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Polvo para Hornear
+COCINA;;Porcini Deshidratado;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Porcini Deshidratado
+COCINA;;Porcini hidratado;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Porcini hidratado
+COCINA;;POSTRE Flan de Caramelo;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: POSTRE Flan de Caramelo
+COCINA;;PRINCIPAL Cordon Bleu;MPI;;g;;Unidad 348 g;UND;348;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: PRINCIPAL Cordon Bleu
+COCINA;;PRINCIPAL Costillas de Cerdo al Datil*;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: PRINCIPAL Costillas de Cerdo al Datil*
+COCINA;;PRINCIPAL Pollo Colombiano;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: PRINCIPAL Pollo Colombiano
+COCINA;;PRINCIPAL Rollo de Cerdo a la naranja;MPI;;g;;Unidad;UND;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: PRINCIPAL Rollo de Cerdo a la naranja
+COCINA;;Prosciutto;MPe;COC_CARNICOS;g;Centurion;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Prosciutto Centurión
+COCINA;;Puerro;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Puerro
+COCINA;;Pulpa De Cordero;MPe;;g;;Bolsa 1676 g;BOLSA;1676;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Pulpa De Cordero
+COCINA;;Pulpo;MPe;COC_PESCA;g;;Pieza 3310 g;PZA;3310;INV-COC-001 PESO/VOL C/U;C;0;;1;EXISTE;INV-COC-001: Pulpo | REC-COC: Pulpo
+COCINA;;Pulpo;MPe;COC_PESCA;g;cocido;Bolsa 509 g;BOLSA;509;INV-COC-001 PESO/VOL C/U;C;0;;1;EXISTE;INV-COC-001: Pulpo cocido
+COCINA;;Pulpo a la gallega;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: pulpo a la gallega
+COCINA;;Pulpo Baby;MPe;COC_PESCA;g;;Bolsa 690 g;BOLSA;690;INV-COC-001 PESO/VOL C/U;B;89200;0,52 %;2;EXISTE;INV-COC-001: Pulpo Baby | REC-COC: Pulpo baby
+COCINA;;Pulpo chileno s/v;MPe;COC_PESCA;g;;Bolsa 2115 g;BOLSA;2115;recepción: contenido más frecuente (2 línea(s));A;641675;3,75 %;2;NUEVO (PROVISIONAL);REC-COC: Pulpo chileno s/v
+COCINA;;Pure De Coliflor;MPI;;g;;Paquete 80 g;PAQ;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Pure De Coliflor
+COCINA;;Puré de Papa Amarilla;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Puré de Papa Amarilla
+COCINA;;Pure Robushon;MPI;;g;;Porción 150 g;POR;150;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Pure Robushon
+COCINA;;Quemado panela;MPI;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;;0;;0;EXISTE;INV-COC-001: Quemado panela
+COCINA;;Quemado panela;MPI;;g;Jardin;Frasco 250 g;FCO;250;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Quemado panela Jardin
+COCINA;;Queso;MPe;;g;Philadelphia;Caja 226 g;CJA;226;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Philadelphia
+COCINA;;Queso Artigiano;MPe;;g;;Cuña 453 g;CUNA;453;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Artigiano
+COCINA;;Queso Azul;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Queso Azul
+COCINA;;Queso Azul;MPe;;g;Centurion;Cuña;CUNA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Queso Azul Centurion
+COCINA;;Queso bocconcino;MPe;COC_LACTEOS;g;;Granel;GR;1;granel;A;157850;0,92 %;4;NUEVO (PROVISIONAL);REC-COC: Queso bocconcino
+COCINA;;Queso Boconccini;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Queso Boconccini
+COCINA;;Queso Boconccini;MPe;;g;Dibufala;Tarro 500 g;TARRO;500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Boconccini Dibufala
+COCINA;;Queso Brie;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Queso Brie
+COCINA;;Queso Brie;MPe;;g;Alpina;Cuña;CUNA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Queso Brie Alpina
+COCINA;;Queso Brie;MPe;;g;Reny Picot;Caja;CJA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Queso Brie Reny Picot
+COCINA;;Queso cheddar;MPe;COC_LACTEOS;g;;Granel;GR;1;granel;A;190742;1,12 %;3;NUEVO (PROVISIONAL);REC-COC: Queso cheddar
+COCINA;;Queso Cheddar (tajado);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Queso Cheddar (tajado)
+COCINA;;Queso ciliegine;MPe;COC_LACTEOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Queso ciliegine
+COCINA;;Queso Costeño;MPe;;g;;Paquete 132 g;PAQ;132;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Costeño
+COCINA;;Queso cottage;MPe;COC_LACTEOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Queso cottage
+COCINA;;Queso Crema;MPe;;ml;;Bloque 652 ml;BLQ;652;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Crema
+COCINA;;Queso Cuajada;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Queso Cuajada
+COCINA;;Queso de Romero;MPe;;g;;Cuña 98 g;CUNA;98;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso de Romero
+COCINA;;Queso Feta;MPe;;g;;Caja 454 g;CJA;454;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Feta
+COCINA;;Queso Grana Padano;MPe;;g;;Cuña;CUNA;200;INV-COC-001: 200 g por unidad (validar);C;0;;0;EXISTE;INV-COC-001: Queso Grana Padano
+COCINA;;Queso Grana Padano;MPe;;g;Belgiosioso;Cuña 453 g;CUNA;453;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Grana Padano Belgiosioso
+COCINA;;Queso Grana Padano;MPe;;g;Zanetti;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Queso Grana Padano Zanetti
+COCINA;;Queso Grana Padano en cuña;MPe;COC_LACTEOS;g;Belgioioso;Granel;GR;1;granel;B;91000;0,53 %;1;NUEVO (PROVISIONAL);REC-COC: Queso Grana Padano Belgioioso en cuña
+COCINA;;Queso Granapadano;MPI;;g;Beligiosioso;Cuña;CUNA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Queso Granapadano Beligiosioso
+COCINA;;Queso Manchego;MPe;;g;;Cuña 250 g;CUNA;250;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Manchego
+COCINA;;Queso Mascarpone;MPe;COC_LACTEOS;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;23900;0,14 %;1;EXISTE;INV-COC-001: Queso Mascarpone | REC-COC: Queso mascarpone
+COCINA;;Queso Mascarpone;MPe;COC_LACTEOS;g;Belgiosioso;Tarro;TARRO;variable;variable (se registra en cada recepción);C;23900;0,14 %;1;EXISTE;INV-COC-001: Queso Mascarpone Belgiosioso
+COCINA;;Queso mix;MPe;COC_LACTEOS;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Queso mix
+COCINA;;Queso Mix 4;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Queso Mix 4
+COCINA;;Queso Mix 4;MPe;;g;Crystal farms;Bolsa 907 g;BOLSA;907;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Mix 4 Crystal farms
+COCINA;;Queso Mozarella;MPI;;g;Corlaza;Cuña;CUNA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Queso  Mozarella Corlaza
+COCINA;;Queso Mozarella (bloque);MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Queso Mozarella (bloque)
+COCINA;;Queso Mozarella (bloque);MPe;;g;Camoti;Pieza;PZA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Queso Mozarella (bloque) Camoti
+COCINA;;Queso Mozarella (porcionado);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Queso Mozarella (porcionado)
+COCINA;;Queso Mozzarella;MPI;COC_LACTEOS;g;Corlaza;Bloque;BLQ;variable;variable (se registra en cada recepción);;427049;;7;EXISTE;INV-COC-001: Queso Mozzarella Corlaza | REC-COC: Queso mozzarella
+COCINA;;Queso Mozzarella;MPI;COC_LACTEOS;g;Camoti;Granel;GR;1;granel;;427049;;7;EXISTE;REC-COC: Queso mozzarella Camoti
+COCINA;;Queso parmesano;MPe;COC_LACTEOS;g;Belgioioso;Bolsa 1360 g;BOLSA;1360;recepción: contenido más frecuente (2 línea(s));A;269700;1,58 %;3;NUEVO (PROVISIONAL);REC-COC: Queso parmesano Belgioioso
+COCINA;;Queso parmesano;MPe;COC_LACTEOS;g;Centurion;Granel;GR;1;granel;A;269700;1,58 %;3;NUEVO (PROVISIONAL);REC-COC: Queso parmesano Centurión
+COCINA;;Queso Parmesano (bloque);MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Queso Parmesano (bloque)
+COCINA;;Queso Parmesano (bloque);MPe;;g;Belgiosioso;Cuña 453 g;CUNA;453;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Parmesano (bloque) Belgiosioso
+COCINA;;Queso Parmesano (Rallado);MPe;COC_LACTEOS;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;19700;0,12 %;1;EXISTE;INV-COC-001: Queso Parmesano (Rallado)
+COCINA;;Queso Parmesano (Rallado);MPe;COC_LACTEOS;g;Belgioioso;Granel;GR;1;granel;C;19700;0,12 %;1;EXISTE;REC-COC: Queso parmesano rallado Belgioioso
+COCINA;;Queso parmesano cuña;MPe;COC_LACTEOS;und;Member Selection;Unidad;UND;453;recepción: contenido más frecuente (2 línea(s));A;119328;0,70 %;2;NUEVO (PROVISIONAL);REC-COC: Queso parmesano cuña member selection
+COCINA;;Queso Pecorino (bloque);MPe;;g;;Cuña 198 g;CUNA;198;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Pecorino (bloque)
+COCINA;;Queso Stracciatella;MPe;COC_LACTEOS;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;A;179600;1,05 %;6;EXISTE;INV-COC-001: Queso Stracciatella | REC-COC: Queso stracciatella
+COCINA;;Queso Stracciatella;MPe;COC_LACTEOS;g;Dibufala;Cuña 490 g;CUNA;490;INV-COC-001 PESO/VOL C/U;A;179600;1,05 %;6;EXISTE;INV-COC-001: Queso Stracciatella Dibufala
+COCINA;;Queso Tilsit;MPe;;g;;Cuña 145 g;CUNA;145;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Queso Tilsit
+COCINA;;Rabano;MPe;COC_FRUVER;g;;Unidad 573 g;UND;573;INV-COC-001 PESO/VOL C/U;C;5000;0,03 %;1;EXISTE;INV-COC-001: Rabano | REC-COC: Rábanos
+COCINA;;Rabano Encurtido;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Rabano Encurtido
+COCINA;;Ragu Di Coniglio;MPI;;g;;Paquete 200 g;PAQ;200;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Ragu Di Coniglio
+COCINA;;Recorte De Lomo De Res;MPI;;g;Familia;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Recorte De Lomo De Res (Familia)
+COCINA;;Recortes De Papa;MPI;;g;Familia;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Recortes De Papa Familia
+COCINA;;Red chili flakes;MPe;;g;;Paquete 196 g;PAQ;196;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Red chili flakes
+COCINA;;Reduccion de Balsamico;MPI;;ml;;Bolsa 379 ml;BOLSA;379;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Reduccion de Balsamico
+COCINA;;Reduccion Fondo De Conejo;MPI;;ml;;Bolsa 949 ml;BOLSA;949;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Reduccion Fondo De Conejo
+COCINA;;Rellena;MPe;;g;;Bolsa 645 g;BOLSA;645;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Rellena
+COCINA;;Remolacha;MPe;COC_FRUVER;g;;Bolsa 1286 g;BOLSA;1286;INV-COC-001 PESO/VOL C/U;C;6000;0,04 %;2;EXISTE;INV-COC-001: Remolacha | REC-COC: Remolacha
+COCINA;;Repollo Blanco;MPe;COC_AVES_HUEVOS;g;;Unidad;UND;variable;variable (se registra en cada recepción);C;24500;0,14 %;2;EXISTE;INV-COC-001: Repollo Blanco | REC-COC: Repollo blanco
+COCINA;;Repollo Morado;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Repollo Morado
+COCINA;;Repollo Morado Encurtido;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Repollo Morado Encurtido
+COCINA;;Res (lomo fino);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Res (lomo fino)
+COCINA;;Res (Lomo);MPI;;g;;Porción 160 g;POR;160;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Res (Lomo) 160 gr
+COCINA;;Res (Lomo);MPI;;g;;Paquete 200 g;PAQ;200;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Res (Lomo) 200 gr
+COCINA;;Res (Lomo);MPI;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;;0;;0;EXISTE;INV-COC-001: Res Lomo
+COCINA;;Res caderita;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;A;197400;1,15 %;2;NUEVO (PROVISIONAL);REC-COC: Res caderita
+COCINA;;Res hueso promocion;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;C;5930;0,03 %;1;NUEVO (PROVISIONAL);REC-COC: Res hueso promocion
+COCINA;;Res Molida 80/20;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Res Molida 80/20
+COCINA;;Res riñón;MPe;COC_CARNICOS;und;;Unidad;UND;1;granel;C;4350;0,03 %;1;NUEVO (PROVISIONAL);REC-COC: Res riñón
+COCINA;;Rollo Cordon Bleu;MPI;;g;;Paquete 300 g;PAQ;300;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Rollo Cordon Bleu
+COCINA;;Romero;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;5000;0,03 %;2;NUEVO (PROVISIONAL);REC-COC: Romero
+COCINA;;Romero (fresco);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Romero (fresco)
+COCINA;;Ron Viejo de Caldas;MPe;;ml;;Botella 100 ml;BOT;100;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Ron Viejo de Caldas
+COCINA;;Roux Claro;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Roux Claro
+COCINA;;Roux Oscuro;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Roux Oscuro
+COCINA;;Rub de cerdo;MPI;;g;;Tarro 776 g;TARRO;776;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Rub de cerdo
+COCINA;;RUD - Adobo para Cerdo;MPI;;g;;Tarro;TARRO;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: RUD - Adobo para Cerdo
+COCINA;;Rúgula;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;12750;0,07 %;5;NUEVO (PROVISIONAL);REC-COC: Rúgula
+COCINA;;Sal Himalaya (molida);MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Sal Himalaya (molida)
+COCINA;;Sal Marina;MPe;COC_ABARROTES;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;4330;0,03 %;2;EXISTE;INV-COC-001: Sal Marina | REC-COC: Sal marina
+COCINA;;Sal Marina;MPe;COC_ABARROTES;g;Natusal;Bolsa 1000 g;BOLSA;1000;INV-COC-001 PESO/VOL C/U;C;4330;0,03 %;2;EXISTE;INV-COC-001: Sal Marina Natusal
+COCINA;;Sal Marina;MPe;COC_ABARROTES;g;Refisal;Bolsa 1000 g;BOLSA;1000;INV-COC-001 PESO/VOL C/U;C;4330;0,03 %;2;EXISTE;INV-COC-001: Sal Marina Refisal
+COCINA;;Sal Marina Rosada;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Sal Marina Rosada
+COCINA;;Sal Marina Rosada;MPe;;g;Cristales Refisal;Paquete 719 g;PAQ;719;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Sal Marina Rosada Cristales Refisal
+COCINA;;Sal Parillera;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Sal Parillera
+COCINA;;Salas De Ostras;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Salas De Ostras
+COCINA;;Salmon Ceres;MPI;;g;;Porción;POR;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Salmon Ceres
+COCINA;;Salsa 5 especies;MPI;;ml;;Paquete 50 ml;PAQ;50;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: salsa 5 especies
+COCINA;;Salsa a la Asesina;MPI;;ml;;Porción 80 ml;POR;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa a la Asesina
+COCINA;;Salsa angui;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Salsa angui
+COCINA;;Salsa bechamel cordon Bleu;MPI;;ml;;Porción 80 ml;POR;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa bechamel cordon Bleu
+COCINA;;Salsa Carbonara;MPI;;ml;;Porción;POR;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Salsa Carbonara
+COCINA;;Salsa de Arandanos;MPI;;ml;;Paquete 110 ml;PAQ;110;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa de Arandanos
+COCINA;;Salsa de chocolate;MPI;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;;0;;0;EXISTE;INV-COC-001: Salsa de chocolate
+COCINA;;Salsa de chocolate;MPI;;ml;Hersheys;Botella;BOT;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Salsa de chocolate Hersheys
+COCINA;;Salsa De Chontaduro;MPI;;ml;;Bolsa 308 ml;BOLSA;308;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa De Chontaduro
+COCINA;;Salsa de Dátiles;MPI;;ml;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Salsa de Dátiles
+COCINA;;Salsa de Mayonesa Di Egida;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Salsa de Mayonesa Di Egida
+COCINA;;Salsa de Naranja;MPI;;ml;;Porción 80 ml;POR;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa de Naranja
+COCINA;;Salsa de ostra;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Salsa de ostra
+COCINA;;Salsa de ostras Panda;MPe;COC_ABARROTES;und;;Unidad;UND;1;granel;B;66800;0,39 %;1;NUEVO (PROVISIONAL);REC-COC: Salsa de ostras Panda
+COCINA;;Salsa de ostras tasia;MPe;;g;;Botella 260 g;BOT;260;recepción: contenido más frecuente (1 línea(s));C;27370;0,16 %;1;NUEVO (PROVISIONAL);REC-COC: Salsa de ostras tasia
+COCINA;;Salsa de pescado;MPI;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;;18530;;1;EXISTE;INV-COC-001: Salsa de pescado
+COCINA;;Salsa de pescado;MPI;;ml;Brand;Botella;BOT;variable;variable (se registra en cada recepción);;18530;;1;EXISTE;INV-COC-001: Salsa de pescado Brand
+COCINA;;Salsa de pescado;MPI;;ml;Squid;Botella 700 ml;BOT;700;INV-COC-001 PESO/VOL C/U;;18530;;1;EXISTE;INV-COC-001: Salsa de pescado Squid
+COCINA;;Salsa de pescado;MPI;;ml;Squid;Botella 700 g;BOT;variable;REC-COC va en g: contenido variable;;18530;;1;EXISTE;REC-COC: salsa de pescado squid
+COCINA;;Salsa Fuoco delle Driadi;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Salsa Fuoco delle Driadi
+COCINA;;Salsa Inglesa;MPe;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Salsa Inglesa
+COCINA;;Salsa Inglesa;MPe;;ml;Worcestershire;Botella;BOT;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Salsa Inglesa Worcestershire
+COCINA;;Salsa Inglesa;MPe;;ml;Wrcestershire;Botella 591 ml;BOT;591;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Salsa Inglesa Wrcestershire
+COCINA;;Salsa Madre: Bechamel;MPI;;und;;Paquete;PAQ;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa Madre: Bechamel
+COCINA;;Salsa Madre: Demi Glace;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Salsa Madre: Demi Glace
+COCINA;;Salsa Madre: Holandesa;MPI;;ml;;Porción 90 ml;POR;90;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa Madre: Holandesa
+COCINA;;Salsa Mango Habanero;MPI;;ml;;Paquete 80 ml;PAQ;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa Mango Habanero
+COCINA;;Salsa Mediterranea;MPI;;ml;;Porción 80 ml;POR;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa Mediterranea
+COCINA;;Salsa Obsidiana;MPI;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa Obsidiana
+COCINA;;Salsa Pomodoro Egida;MPI;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;;0;;0;EXISTE;INV-COC-001: Salsa Pomodoro Egida
+COCINA;;Salsa Pomodoro Egida;MPI;;ml;;Paquete 120 ml;PAQ;120;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa Pomodoro Egida 120 gr
+COCINA;;Salsa Pomodoro Egida;MPI;;ml;;Paquete 180 ml;PAQ;180;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa Pomodoro Egida 180 gr
+COCINA;;Salsa Soya;MPe;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Salsa Soya
+COCINA;;Salsa Soya;MPe;;ml;Teshima;Tarro;TARRO;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Salsa Soya Teshima
+COCINA;;Salsa Tikka Masala;MPI;;ml;;Porción 80 ml;POR;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Salsa Tikka Masala
+COCINA;;Salvia;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;4000;0,02 %;2;NUEVO (PROVISIONAL);REC-COC: Salvia
+COCINA;;Sesamo Blanco;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Sesamo Blanco
+COCINA;;Shiitake deshidratado;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Shiitake deshidratado
+COCINA;;Shiro;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Shiro
+COCINA;;Sidra de Manzana;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Sidra de Manzana
+COCINA;;Sirope De Chamoy;MPI;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Sirope De Chamoy
+COCINA;;Soda;MPe;COC_ASEO;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Soda
+COCINA;;Soju Chamisul;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Soju Chamisul
+COCINA;;Sopa de cebolla caramelizada porcion;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Sopa de cebolla caramelizada porcion
+COCINA;;Sopa De Puerro;MPI;;g;;Bolsa 698 g;BOLSA;698;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Sopa De Puerro
+COCINA;;Sopa de puerro Grande;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Sopa de puerro  Grande
+COCINA;;Soya;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Soya
+COCINA;;Sponge;MPe;;g;;Tarro 873 g;TARRO;873;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Sponge
+COCINA;;Suero Costeño;MPe;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Suero Costeño
+COCINA;;Suero Costeño;MPe;;ml;Alquería;Paquete;PAQ;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Suero Costeño Alquería
+COCINA;;Syrop maracuyá;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: syrop maracuyá
+COCINA;;Tamarindo;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Tamarindo
+COCINA;;Tapabocas;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Tapabocas
+COCINA;;Te de durazno;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Te de durazno
+COCINA;;Te verde;MPe;;g;;Paquete 78 g;PAQ;78;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Te verde
+COCINA;;Tilapia entera;MPe;;g;;Pieza 695 g;PZA;695;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Tilapia entera
+COCINA;;Tinta de calamar;MPI;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;;0;;0;EXISTE;INV-COC-001: Tinta de calamar
+COCINA;;Tinta de calamar;MPI;;g;Nortindal;Frasco 90 g;FCO;90;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Tinta de calamar Nortindal
+COCINA;;Tocineta;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;A;690357;4,04 %;6;NUEVO (PROVISIONAL);REC-COC: Tocineta
+COCINA;;Tocineta ahumada;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Tocineta ahumada
+COCINA;;Tocineta Caldero (50gr);MPI;;g;;Paquete 50 g;PAQ;50;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Tocineta Caldero (50gr)
+COCINA;;Tocineta casa blanca;MPe;COC_CARNICOS;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Tocineta casa blanca
+COCINA;;Tocineta Contrafileto (90gr);MPI;;g;;Paquete 90 g;PAQ;90;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Tocineta Contrafileto (90gr)
+COCINA;;Tocineta Pasta (120gr);MPI;;g;;Paquete 120 g;PAQ;120;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Tocineta Pasta (120gr)
+COCINA;;Tocineta premium;MPe;COC_CARNICOS;g;;Granel;GR;1;granel;A;824791;4,83 %;2;NUEVO (PROVISIONAL);REC-COC: Tocineta premium
+COCINA;;Tofu;MPe;;g;;Caja;CJA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Tofu
+COCINA;;Tomahawk;MPe;;g;;Pieza;PZA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Tomahawk
+COCINA;;Tomahawk Curado;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Tomahawk Curado
+COCINA;;Tomate baby;MPe;COC_FRUVER;g;;Caja 200 g;CJA;200;recepción: contenido más frecuente (2 línea(s));B;41000;0,24 %;2;NUEVO (PROVISIONAL);REC-COC: Tomate baby
+COCINA;;Tomate Cherry;MPe;COC_FRUVER;g;;Caja 521 g;CJA;521;INV-COC-001 PESO/VOL C/U;B;46000;0,27 %;5;EXISTE;INV-COC-001: Tomate Cherry | REC-COC: Tomate cherry
+COCINA;;Tomate Cherry Perlita;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Tomate Cherry Perlita
+COCINA;;Tomate cherry uvalina;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;14700;0,09 %;6;NUEVO (PROVISIONAL);REC-COC: Tomate cherry uvalina
+COCINA;;Tomate Cherry Zebra;MPe;;g;;Caja 377 g;CJA;377;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Tomate Cherry Zebra
+COCINA;;Tomate chonto;MPe;COC_FRUVER;g;;Granel;GR;1;granel;A;178700;1,05 %;9;NUEVO (PROVISIONAL);REC-COC: Tomate chonto
+COCINA;;Tomate Chonto (rojo);MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Tomate Chonto (rojo)
+COCINA;;Tomate Deshidratado;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Tomate Deshidratado
+COCINA;;Tomate Deshidratado;MPe;;g;Bella sun Luci;Frasco 307 g;FCO;307;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Tomate Deshidratado Bella sun Luci
+COCINA;;Tomate Pasta;MPe;;g;;Bolsa 970 g;BOLSA;970;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Tomate Pasta lata
+COCINA;;Tomate Pasta;MPe;;g;Heinz;Lata 3150 g;LATA;3150;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Tomate Pasta lata Heinz
+COCINA;;Tomate peleti;MPe;;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Tomate peleti
+COCINA;;Tomate peleti;MPe;;g;SW Premium;Lata 2900 g;LATA;2900;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Tomate peleti SW Premium
+COCINA;;Tomate rose;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;12450;0,07 %;1;NUEVO (PROVISIONAL);REC-COC: Tomate rose
+COCINA;;Tomate Uvalina;MPe;;g;;Caja 841 g;CJA;841;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Tomate Uvalina
+COCINA;;Tomate zebra;MPe;COC_FRUVER;g;;Caja 500 g;CJA;500;recepción: contenido más frecuente (2 línea(s));B;55500;0,32 %;2;NUEVO (PROVISIONAL);REC-COC: Tomate zebra
+COCINA;;Tomates secos al sol;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Tomates secos al sol
+COCINA;;Tomates secos Karisma;MPe;COC_FRUVER;und;;Unidad;UND;1;granel;B;57300;0,34 %;1;NUEVO (PROVISIONAL);REC-COC: Tomates secos Karisma
+COCINA;;Tomillo;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;7000;0,04 %;1;NUEVO (PROVISIONAL);REC-COC: Tomillo
+COCINA;;Tomillo (fresco);MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Tomillo (fresco)
+COCINA;;Tomillo Cocinerito;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;23800;0,14 %;1;NUEVO (PROVISIONAL);REC-COC: Tomillo Cocinerito
+COCINA;;Tubo de Calamar;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Tubo de Calamar
+COCINA;;Tuetano;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Tuetano
+COCINA;;Tuile De Remolacha Mezcla;MPI;;und;;Bolsa;BOLSA;1;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Tuile De Remolacha Mezcla
+COCINA;;UDON NOODLE;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: UDON NOODLE
+COCINA;;Unagi;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Unagi
+COCINA;;Uva Chilena Morada;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Uva Chilena Morada
+COCINA;;Uva isabelina;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;0;NUEVO (PROVISIONAL);REC-COC: Uva isabelina
+COCINA;;Uva morada chilena;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;12000;0,07 %;1;NUEVO (PROVISIONAL);REC-COC: Uva morada chilena
+COCINA;;Uva Verde;MPe;COC_FRUVER;g;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;B;75000;0,44 %;4;EXISTE;INV-COC-001: Uva Verde | REC-COC: Uva verde
+COCINA;;Vainilla blanca (esencia);MPe;;ml;;Botella 114 ml;BOT;114;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Vainilla blanca (esencia)
+COCINA;;Veloute de Porcini;MPI;;g;;Porción 80 g;POR;80;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Veloute de Porcini
+COCINA;;Venado Pulpa;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Venado Pulpa
+COCINA;;Verduras Torneadas Confitadas;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Verduras Torneadas Confitadas
+COCINA;;Vieras;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Vieras
+COCINA;;Vinagre Balsámico;MPe;COC_ABARROTES;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;B;81300;0,48 %;2;EXISTE;INV-COC-001: Vinagre Balsámico | REC-COC: Vinagre balsamico
+COCINA;;Vinagre Balsámico;MPe;COC_ABARROTES;ml;Colavita;Botella 250 ml;BOT;250;INV-COC-001 PESO/VOL C/U;B;81300;0,48 %;2;EXISTE;INV-COC-001: Vinagre Balsámico Colavita
+COCINA;;Vinagre Balsámico;MPe;COC_ABARROTES;ml;Roland;Tarro;TARRO;variable;variable (se registra en cada recepción);B;81300;0,48 %;2;EXISTE;INV-COC-001: Vinagre Balsámico Roland
+COCINA;;Vinagre blanco;MPe;COC_ABARROTES;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Vinagre blanco
+COCINA;;Vinagre de Alcohol;MPe;COC_ABARROTES;ml;;Frasco;FCO;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Vinagre de Alcohol | REC-COC: Vinagre de Alcohol
+COCINA;;Vinagre de Jerez;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Vinagre de Jerez
+COCINA;;Vinagre De Manzana;MPe;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Vinagre De Manzana
+COCINA;;Vinagre De Manzana;MPe;;ml;La Abeja Dorada;Botella 259 ml;BOT;259;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Vinagre De Manzana La Abeja Dorada
+COCINA;;Vinagre De Manzana;MPe;;ml;Seletti;Botella 56 ml;BOT;56;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Vinagre De Manzana Seletti
+COCINA;;Vinagre de sushi;MPe;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Vinagre de sushi
+COCINA;;Vinagre de sushi;MPe;;ml;Best Choice;Botella;BOT;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Vinagre de sushi Best Choice
+COCINA;;Vinagre de sushi;MPe;;ml;Mizkan;Botella 50 ml;BOT;50;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Vinagre de sushi Mizkan
+COCINA;;Vinagre de vino tinto;MPe;COC_ABARROTES;und;Colavita;Botella;BOT;500;recepción: contenido más frecuente (2 línea(s));B;46375;0,27 %;2;NUEVO (PROVISIONAL);REC-COC: Vinagre de vino tinto Colavita
+COCINA;;Vinagre vino blanco;MPe;COC_ABARROTES;ml;Colavita;Unidad;UND;variable;REC-COC va en und: contenido variable;B;61775;0,36 %;4;NUEVO (PROVISIONAL);REC-COC: Vinagre vino blanco Colavita
+COCINA;;Vinagre vino blanco;MPe;COC_ABARROTES;ml;;Granel;ML;1;granel;B;61775;0,36 %;4;NUEVO (PROVISIONAL);REC-COC: Vinagre vino blanco
+COCINA;;Vinagreta Di Egida;MPI;;ml;;Bolsa 1190.5 ml;BOLSA;1190,5;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Vinagreta Di Egida
+COCINA;;Vino Blanco;MPe;;ml;;Unidad;UND;variable;INV-COC-001 va en und: contenido variable;C;0;;0;EXISTE;INV-COC-001: Vino Blanco
+COCINA;;Vino Blanco;MPe;;ml;Frontera;Botella 1450 ml;BOT;1450;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Vino Blanco Frontera
+COCINA;;Vino Blanco;MPe;;ml;Viejo viñedo;Botella 750 ml;BOT;750;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Vino Blanco Viejo viñedo
+COCINA;;Vino Tinto;MPe;;und;;Unidad;UND;1;granel;C;0;;0;EXISTE;INV-COC-001: Vino Tinto
+COCINA;;Vitina (Mantequilla para Hojaldre);MPe;;g;;Bloque 2500 g;BLQ;2500;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Vitina (Mantequilla para Hojaldre)
+COCINA;;Waypall;MPe;COC_ASEO;und;;Unidad;UND;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Waypall
+COCINA;;Whip Topping;MPe;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Whip Topping
+COCINA;;Whip Topping;MPe;;g;Richs;Caja 4000 g;CJA;4000;INV-COC-001 PESO/VOL C/U;C;0;;0;EXISTE;INV-COC-001: Whip Topping Richs
+COCINA;;Yemas curadas;MPI;;g;;Bolsa 380 g;BOLSA;380;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Yemas curadas
+COCINA;;Yogurt Griego;MPe;;ml;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Yogurt Griego
+COCINA;;Yuca;MPe;COC_FRUVER;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;0;;1;EXISTE;INV-COC-001: Yuca | REC-COC: Yuca
+COCINA;;Yuzu;MPe;;g;;Botella;BOT;variable;variable (se registra en cada recepción);C;0;;0;EXISTE;INV-COC-001: Yuzu
+COCINA;;Zanahoria;MPe;COC_FRUVER;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);C;27808;0,16 %;4;EXISTE;INV-COC-001: Zanahoria | REC-COC: Zanahoria
+COCINA;;Zanahoria Ahumada (Maquillada);MPI;;g;;Bolsa 510 g;BOLSA;510;INV-COC-001 PESO/VOL C/U;;0;;0;EXISTE;INV-COC-001: Zanahoria Ahumada (Maquillada)
+COCINA;;Zanahoria Confitada;MPI;;g;;Paquete;PAQ;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Zanahoria Confitada
+COCINA;;Zanahoria Encurtida;MPI;;und;;Unidad;UND;1;granel;;0;;0;EXISTE;INV-COC-001: Zanahoria Encurtida
+COCINA;;Zapallo;MPe;COC_FRUVER;g;;Granel;GR;1;granel;C;0;;1;NUEVO (PROVISIONAL);REC-COC: Zapallo
+COCINA;;Zumo de remolacha;MPI;;g;;Bolsa;BOLSA;variable;variable (se registra en cada recepción);;0;;0;EXISTE;INV-COC-001: Zumo de remolacha

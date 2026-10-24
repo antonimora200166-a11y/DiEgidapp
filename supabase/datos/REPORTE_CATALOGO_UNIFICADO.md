@@ -1,0 +1,525 @@
+# Catálogo unificado
+
+Generado por `scripts/migracion/unificar.mjs` · 2026-10-24 · fuentes: `CATALOGO_MAESTRO` (SGI-COSTOS), `INV-COC-001`, `REG_REC_COC_003` y `FMT-REC-BAR-001`.
+
+## Qué salió
+
+| Qué | Cantidad |
+|---|---|
+| Registros leídos | 1200 (catálogo maestro 212, INV-COC-001 684, recepción cocina 248, recepción bar 56) |
+| Enlaces automáticos (ya decididos o mismo genérico) | 103 |
+| Genéricos unificados | 970 (bar 224, cocina 746) |
+| Productos (genérico + marca + presentación) | 1108 |
+| Genéricos nuevos que entrarían PROVISIONALES | 192 |
+| Pares para revisar | 117 (duplicados 1, casi-duplicados 116) · **117 sin decisión** |
+| Productos con factor de compra variable o sin factor | 302 |
+
+### Clase ABC por valor comprado
+
+| Área | A | B | C | Valor comprado |
+|---|---|---|---|---|
+| Bar | 12 (80 %) | 8 (15 %) | 132 (5 %) | $7.826.895 |
+| Cocina | 47 (78 %) | 39 (14 %) | 453 (5 %) | $17.573.947 |
+
+Valor = suma de las líneas activas de recepción (todo el histórico de los libros). Los MPI no tienen clase hasta que el kardex dé su consumo.
+
+## Cómo revisar
+
+1. Abrir `scripts/migracion/revision_catalogo.csv` (Excel o Sheets, separador «;»).
+2. En **decision** escribir `OK` (acepta la propuesta), `FUSIONAR` (B pasa a ser alias de A) o `SEPARAR` (son productos distintos). Las propuestas `REVISAR` necesitan FUSIONAR o SEPARAR.
+3. Volver a correr `npm run migracion:unificar`: conserva lo decidido y recalcula. Con todo decidido, `npm run migracion:unificar -- --cargar` escribe `supabase/datos/catalogo_unificado.sql`.
+
+Esta revisión reemplaza a `cruces_cocina.csv`: los nombres de recepción de cocina que no enlazaron solos están aquí como casi-duplicados o como genéricos nuevos.
+
+## Duplicados exactos (1)
+
+- REC-COC «Harina de trigo» = «Harina de trigo en costal»
+
+## Genéricos nuevos (no están en el catálogo maestro ni en INV-COC-001: entran PROVISIONALES)
+
+- COCINA · Aceite de ajonjolí («Aceite de ajonjolí») · 3 compra(s)
+- COCINA · Aceite de freir («Aceite de freir») · 2 compra(s)
+- COCINA · Aceite de oliva esencial («Aceite de oliva esencial») · 1 compra(s)
+- COCINA · Aceite de sésamo Kaduya («Aceite de sésamo Kaduya») · 1 compra(s)
+- COCINA · Aceitunas negras deshuesadas («Aceitunas negras deshuesadas») · 1 compra(s)
+- COCINA · Agar agar («Agar agar») · 1 compra(s)
+- COCINA · Agente desengrasante («Agente desengrasante») · 1 compra(s)
+- COCINA · Ají jalapeño («Ají jalapeño») · 2 compra(s)
+- COCINA · Ají rocotto («Ají rocotto») · 1 compra(s)
+- COCINA · Albahaca fresca («Albahaca fresca») · 1 compra(s)
+- COCINA · Albahaca Genovesa («Albahaca Genovesa») · 4 compra(s)
+- COCINA · Alcaparras La Curuña («Alcaparras La Curuña») · 0 compra(s)
+- COCINA · Alcohol («Alcohol 3800 ml») · 1 compra(s)
+- COCINA · Anillos de calamar («Anillos de calamar») · 2 compra(s)
+- COCINA · Apio («Apio») · 4 compra(s)
+- COCINA · Arándanos («Arándanos», «Arándanos member selection») · 5 compra(s)
+- COCINA · Arroz bomba («Arroz bomba Castellano») · 1 compra(s)
+- COCINA · Arroz («Arroz Diana») · 2 compra(s)
+- COCINA · Arroz premium («Arroz Diana premium») · 1 compra(s)
+- COCINA · Azúcar Blanca mayaguez («Azúcar Blanca mayaguez») · 0 compra(s)
+- COCINA · Banano («Banano») · 2 compra(s)
+- COCINA · Bolsa al vacío 15 x 16 cm («Bolsa al vacío 15 x 16 cm») · 1 compra(s)
+- COCINA · Bolsa alta blanca 119 bp («Bolsa alta blanca 119 bp») · 1 compra(s)
+- COCINA · Bolsa blanca («Bolsa blanca») · 1 compra(s)
+- COCINA · Bolsa negra («Bolsa negra») · 1 compra(s)
+- COCINA · Bolsas al vacío 15x16 («Bolsas al vacío 15x16») · 1 compra(s)
+- COCINA · Bolsas al vacío 15x20 («Bolsas al vacío 15x20») · 1 compra(s)
+- COCINA · Bolsas verde («Bolsas verde») · 1 compra(s)
+- COCINA · Brotes mix Hortifrescos («Brotes mix Hortifrescos») · 2 compra(s)
+- COCINA · Café («Café») · 2 compra(s)
+- COCINA · Cajas de flores («Cajas de flores») · 1 compra(s)
+- COCINA · Cajas de germinados («Cajas de germinados») · 2 compra(s)
+- COCINA · Camarón vannamei 36/40 («Camarón vannamei 36/40») · 3 compra(s)
+- COCINA · Camarón vannamei 41/50 («Camarón vannamei 41/50») · 3 compra(s)
+- COCINA · Camarón vannamei 51/60 («Camarón vannamei 51/60») · 2 compra(s)
+- COCINA · Camarón vannamei 61/70 («Camarón vannamei 61/70») · 3 compra(s)
+- COCINA · Camaron vannamei 91-110 («camaron vannamei 91-110») · 0 compra(s)
+- COCINA · Carne molida («Carne molida») · 4 compra(s)
+- COCINA · Champiñon portobello Setas Cuvia («Champiñon portobello Setas Cuvia») · 0 compra(s)
+- COCINA · Champiñón setas Camila («Champiñón setas Camila») · 1 compra(s)
+- COCINA · Champiñón setas Cuiva («Champiñón setas Cuiva») · 1 compra(s)
+- COCINA · Champiñones crinini («Champiñones crinini») · 1 compra(s)
+- COCINA · Champiñones enteros («Champiñones enteros») · 1 compra(s)
+- COCINA · Coco («Coco») · 3 compra(s)
+- COCINA · Coco deshidratado Selectivo («Coco deshidratado Selectivo») · 1 compra(s)
+- COCINA · Coco entero («Coco entero») · 1 compra(s)
+- COCINA · Coco rallado («Coco rallado») · 2 compra(s)
+- COCINA · Coco simple CocoMarth («Coco simple CocoMarth») · 1 compra(s)
+- COCINA · Codorniz entera («Codorniz entera») · 1 compra(s)
+- COCINA · Cofias («Cofias») · 1 compra(s)
+- COCINA · Cogollo europeo («Cogollo europeo») · 4 compra(s)
+- COCINA · Cogote de res («Cogote de res») · 1 compra(s)
+- COCINA · Combo tropical (mix de lechuga crespa) («combo tropical (mix de lechuga crespa)») · 1 compra(s)
+- COCINA · Conejo («Conejo») · 2 compra(s)
+- COCINA · Crema de coco («Crema de coco») · 1 compra(s)
+- COCINA · Detergente en polvo («Detergente en polvo») · 1 compra(s)
+- COCINA · Esencia de Vainilla («Esencia de Vainilla Levapan») · 0 compra(s)
+- COCINA · Esponja Matrix («Esponja Matrix») · 1 compra(s)
+- COCINA · Filete de pargo («Filete de pargo») · 3 compra(s)
+- COCINA · Filete de pollo («Filete de pollo») · 1 compra(s)
+- COCINA · Filete de salmon («Filete de salmon») · 1 compra(s)
+- COCINA · Filete de tilapia 5-7 («filete de tilapia 5-7») · 0 compra(s)
+- COCINA · Filete pechuga pollo («Filete pechuga pollo») · 1 compra(s)
+- COCINA · Frambuesa Berrygood («Frambuesa Berrygood») · 1 compra(s)
+- COCINA · Frambuesa fresca («Frambuesa fresca») · 2 compra(s)
+- COCINA · Frambuesa nacional («Frambuesa nacional») · 1 compra(s)
+- COCINA · Frambuesa premium («Frambuesa premium») · 1 compra(s)
+- COCINA · Germinado («Germinado») · 2 compra(s)
+- COCINA · Germinados mixtos («Germinados mixtos») · 1 compra(s)
+- COCINA · Habanero («Habanero») · 1 compra(s)
+- COCINA · Hamburguesa Black Angus («Hamburguesa Black Angus») · 1 compra(s)
+- COCINA · Harina Farallones («Harina Farallones») · 1 compra(s)
+- COCINA · Harina («Harina haz de oros») · 1 compra(s)
+- COCINA · Hipoclorito («Hipoclorito») · 1 compra(s)
+- COCINA · Huevo («Huevo») · 3 compra(s)
+- COCINA · Jabón antibacterial neutro («Jabón antibacterial neutro») · 1 compra(s)
+- COCINA · Jabón lava platos («Jabón lava platos») · 1 compra(s)
+- COCINA · Jengibre («Jengibre») · 1 compra(s)
+- COCINA · Langostino u 10 («Langostino u 10») · 2 compra(s)
+- COCINA · Laurel seco («Laurel seco») · 1 compra(s)
+- COCINA · Leche («Leche Alquería», «Leche Kari») · 3 compra(s)
+- COCINA · Leche condensada Aro («Leche condensada Aro») · 0 compra(s)
+- COCINA · Lechuga Biofresco crespa («Lechuga Biofresco crespa») · 1 compra(s)
+- COCINA · Lechuga Biofresco romana («Lechuga Biofresco romana») · 1 compra(s)
+- COCINA · Lechuga crespa («Lechuga crespa») · 9 compra(s)
+- COCINA · Lechuga hidroponica («Lechuga hidroponica») · 1 compra(s)
+- COCINA · Lechuga lisa («Lechuga lisa») · 1 compra(s)
+- COCINA · Lechuga mantequilla («Lechuga mantequilla») · 9 compra(s)
+- COCINA · Limón («Limón») · 1 compra(s)
+- COCINA · Lomo de res («Lomo de res») · 3 compra(s)
+- COCINA · Mandarina («Mandarina») · 1 compra(s)
+- COCINA · Manzana Gala («Manzana Gala») · 2 compra(s)
+- COCINA · Manzana Royal («Manzana Royal») · 1 compra(s)
+- COCINA · Mejillón negro («Mejillón negro») · 1 compra(s)
+- COCINA · Mejillón verde («Mejillón verde») · 2 compra(s)
+- COCINA · Menta («Menta») · 3 compra(s)
+- COCINA · Mix de quesos («Mix de quesos crystal farms», «Mix de queso crystal farm») · 4 compra(s)
+- COCINA · Molida cortes finos («Molida cortes finos (familia)») · 1 compra(s)
+- COCINA · Mostaza («Mostaza») · 2 compra(s)
+- COCINA · Mostaza Dijon («Mostaza Dijon») · 1 compra(s)
+- COCINA · Naranja («Naranja») · 3 compra(s)
+- COCINA · New York steak («New York steak») · 3 compra(s)
+- COCINA · Nongshim champ ong («Nongshim champ ong») · 1 compra(s)
+- COCINA · Noodle Chapaguetti («Noodle Chapaguetti») · 1 compra(s)
+- COCINA · Olivas Kalamata («Olivas Kalamata») · 1 compra(s)
+- COCINA · Orégano («Orégano») · 1 compra(s)
+- COCINA · Palo de escoba («Palo de escoba») · 1 compra(s)
+- COCINA · Panal de huevos («Panal de huevos») · 4 compra(s)
+- COCINA · Panceta («Panceta») · 1 compra(s)
+- COCINA · Panceta barril («Panceta barril») · 1 compra(s)
+- COCINA · Panela («Panela doña lupe») · 1 compra(s)
+- COCINA · Panela Palestina («Panela Palestina») · 0 compra(s)
+- COCINA · Panko blanco («Panko blanco») · 1 compra(s)
+- COCINA · Papa («Papa») · 3 compra(s)
+- COCINA · Papa del sur («Papa del sur») · 1 compra(s)
+- COCINA · Papa sucia («Papa sucia») · 1 compra(s)
+- COCINA · Paprika («Paprika Badia», «Paprika Santafereño») · 4 compra(s)
+- COCINA · Parmesano («Parmesano member selection») · 1 compra(s)
+- COCINA · Pasta udon («pasta udon») · 1 compra(s)
+- COCINA · Pechuga («Pechuga») · 2 compra(s)
+- COCINA · Pecorino («Pecorino Colanta») · 1 compra(s)
+- COCINA · Película 12 x 600 mtr («Película 12 x 600 mtr») · 1 compra(s)
+- COCINA · Pepperoni sierra nevada («Pepperoni sierra nevada») · 1 compra(s)
+- COCINA · Pera fruiticola («Pera fruiticola») · 1 compra(s)
+- COCINA · Perejil («Perejil») · 2 compra(s)
+- COCINA · Perejil liso («Perejil liso») · 1 compra(s)
+- COCINA · Pernil de pollo Bucanero («Pernil de pollo Bucanero») · 0 compra(s)
+- COCINA · Pierna de cerdo («Pierna de cerdo») · 1 compra(s)
+- COCINA · Pierna de cordero («Pierna de cordero») · 2 compra(s)
+- COCINA · Pimentón («Pimentón») · 4 compra(s)
+- COCINA · Pimentón mix («Pimentón mix») · 1 compra(s)
+- COCINA · Pollo («Pollo», «Pollo familia») · 2 compra(s)
+- COCINA · Pollo enteros («Pollo enteros») · 1 compra(s)
+- COCINA · Polvo cinco especias chinas («Polvo cinco especias chinas») · 2 compra(s)
+- COCINA · Polvo massala («Polvo massala») · 1 compra(s)
+- COCINA · Prosciutto («Prosciutto Centurión») · 1 compra(s)
+- COCINA · Puerro («Puerro») · 1 compra(s)
+- COCINA · Pulpo chileno s/v («Pulpo chileno s/v») · 2 compra(s)
+- COCINA · Queso bocconcino («Queso bocconcino») · 4 compra(s)
+- COCINA · Queso cheddar («Queso cheddar») · 3 compra(s)
+- COCINA · Queso ciliegine («Queso ciliegine») · 1 compra(s)
+- COCINA · Queso cottage («Queso cottage») · 1 compra(s)
+- COCINA · Queso Grana Padano en cuña («Queso Grana Padano Belgioioso en cuña») · 1 compra(s)
+- COCINA · Queso mix («Queso mix») · 1 compra(s)
+- COCINA · Queso parmesano («Queso parmesano Belgioioso», «Queso parmesano Centurión») · 3 compra(s)
+- COCINA · Queso parmesano cuña («Queso parmesano cuña member selection») · 2 compra(s)
+- COCINA · Res caderita («Res caderita») · 2 compra(s)
+- COCINA · Res hueso promocion («Res hueso promocion») · 1 compra(s)
+- COCINA · Res riñón («Res riñón») · 1 compra(s)
+- COCINA · Romero («Romero») · 2 compra(s)
+- COCINA · Rúgula («Rúgula») · 5 compra(s)
+- COCINA · Salsa angui («Salsa angui») · 1 compra(s)
+- COCINA · Salsa de ostras Panda («Salsa de ostras Panda») · 1 compra(s)
+- COCINA · Salsa de ostras tasia («Salsa de ostras tasia») · 1 compra(s)
+- COCINA · Salvia («Salvia») · 2 compra(s)
+- COCINA · Shiitake deshidratado («Shiitake deshidratado») · 1 compra(s)
+- COCINA · Shiro («Shiro») · 1 compra(s)
+- COCINA · Soda («Soda») · 1 compra(s)
+- COCINA · Soju Chamisul («Soju Chamisul») · 1 compra(s)
+- COCINA · Soya («Soya») · 1 compra(s)
+- COCINA · Tapabocas («Tapabocas») · 1 compra(s)
+- COCINA · Tocineta («Tocineta») · 6 compra(s)
+- COCINA · Tocineta casa blanca («Tocineta casa blanca») · 1 compra(s)
+- COCINA · Tocineta premium («Tocineta premium») · 2 compra(s)
+- COCINA · Tomate baby («Tomate baby») · 2 compra(s)
+- COCINA · Tomate cherry uvalina («Tomate cherry uvalina») · 6 compra(s)
+- COCINA · Tomate chonto («Tomate chonto») · 9 compra(s)
+- COCINA · Tomate rose («Tomate rose») · 1 compra(s)
+- COCINA · Tomate zebra («Tomate zebra») · 2 compra(s)
+- COCINA · Tomates secos al sol («Tomates secos al sol») · 1 compra(s)
+- COCINA · Tomates secos Karisma («Tomates secos Karisma») · 1 compra(s)
+- COCINA · Tomillo («Tomillo») · 1 compra(s)
+- COCINA · Tomillo Cocinerito («Tomillo Cocinerito») · 1 compra(s)
+- COCINA · Uva isabelina («Uva isabelina») · 0 compra(s)
+- COCINA · Uva morada chilena («Uva morada chilena») · 1 compra(s)
+- COCINA · Vinagre blanco («Vinagre blanco») · 1 compra(s)
+- COCINA · Vinagre de vino tinto («Vinagre de vino tinto Colavita») · 2 compra(s)
+- COCINA · Vinagre vino blanco («Vinagre vino blanco Colavita», «Vinagre vino blanco») · 4 compra(s)
+- COCINA · Waypall («Waypall») · 1 compra(s)
+- COCINA · Zapallo («Zapallo») · 1 compra(s)
+- BAR · Ginebra («Ginebra hendricks») · 1 compra(s)
+- BAR · Tónica CERO («Tónica Canadá Dry CERO x300») · 2 compra(s)
+- BAR · Hielo («Hielo iglú», «Hielo iglú bolsa») · 4 compra(s)
+- BAR · Mezcal («Mezcal ojo de tigre») · 1 compra(s)
+- BAR · Vino reserva Merlot («Vino Tarapacá, reserva Merlot», «Vino Tarapacá, reserva Merlot bot 750 ml») · 2 compra(s)
+- BAR · Aguardiente atardecer sin azúcar («Aguardiente origen atardecer sin azúcar») · 2 compra(s)
+- BAR · Whisky 12 años («Whisky glenfiddich 12 años») · 2 compra(s)
+- BAR · Cerveza Easy Lager («Cerveza Mítica  Easy Lager x300») · 0 compra(s)
+- BAR · Cerveza pale lager («Cerveza mítica pale lager x300») · 0 compra(s)
+- BAR · Red Bull («Red Bull x250») · 0 compra(s)
+- BAR · Tropical («Gatorade tropical») · 0 compra(s)
+- BAR · Uva verde («Uva verde») · 0 compra(s)
+
+## Productos sin factor de compra
+
+- BAR · Manzana gala  · Und
+- BAR · Menta francesa  · Caja / bandeja
+- BAR · Agua Hatsu · Botella 300 ml
+- COCINA · Aceite De Soya  · Unidad
+- COCINA · Cebolla Larga  · Bolsa
+- COCINA · Cebolla Puerro  · Bolsa
+- COCINA · Champiñon Paris  · Unidad
+- COCINA · Champiñon Portobello  · Unidad
+- COCINA · Crema De Leche  · Unidad
+- COCINA · Espinaca Baby  · Unidad
+- COCINA · Leche de Coco Kari · Unidad
+- COCINA · Lechuga Crespa Morada  · Unidad
+- COCINA · Lechuga Romana  · Unidad
+- COCINA · Limón Tahití  · Unidad
+- COCINA · Lomo de Cerdo Familia · Bolsa
+- COCINA · Marañones  · Unidad
+- COCINA · Papa Capira  · Unidad
+- COCINA · Pepino  · Unidad
+- COCINA · Pera  · Paquete
+- COCINA · Queso Mascarpone  · Unidad
+- COCINA · Queso Stracciatella  · Unidad
+- COCINA · Repollo Blanco  · Unidad
+- COCINA · Sal Marina  · Unidad
+- COCINA · Salsa de pescado Squid · Botella 700 g
+- COCINA · Uva Verde  · Unidad
+- COCINA · Vinagre Balsámico  · Unidad
+- COCINA · Yuca  · Bolsa
+- COCINA · Zanahoria  · Bolsa
+- COCINA · Piangua  · Bolsa
+- COCINA · Queso Mozzarella Corlaza · Bloque
+- COCINA · Mix de quesos Crystal Farm · Bolsa
+- COCINA · Pollo Familia · Unidad
+- COCINA · Vinagre vino blanco Colavita · Unidad
+- BAR · Vino reserva Merlot Tarapacá · Bot
+
+## Avisos
+
+- Agua (BAR): las fuentes traen unidades base distintas (CATALOGO_MAESTRO ml, REC-BAR und); quedó ml.
+- Aceite de Coco (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml, INV-COC-001 g); quedó ml.
+- Aceite De Soya (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml, REC-COC ml); quedó ml.
+- Acido Ascorbico (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Acido Citrico - cocina (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Agave azul (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Ají Amarillo (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Ají en Hojuelas (Red Pepper) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Almendra (entera) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Arroz Basmati (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Arroz blanco (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Arroz Jazmin (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Arroz negro (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Arroz soplado (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Azúcar Morena (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g, REC-COC g); quedó g.
+- Bicarbonato de Sodio (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Cafe Molido (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Canela (entera) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Canela (polvo) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Cargas Para Sifón ( Crema) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Chocolate 65% (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Chocolate 70% (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Coliflor (COCINA): las fuentes traen unidades base distintas (INV-COC-001 g, REC-COC und); quedó g.
+- Crema De Leche (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC und, REC-COC g); quedó g.
+- Crema de leche comun (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Curry en polvo (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Curry Verde Fresco (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Dátiles (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Espinaca Baby (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Frambuesas (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Frijol blanco (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Galleta Oreo (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Garbanzo (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g, REC-COC g); quedó g.
+- Higos Secos (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Jamon Serrano (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g, REC-COC g); quedó g.
+- Leche Condensada (COCINA): las fuentes traen unidades base distintas (INV-COC-001 ml, REC-COC g); quedó ml.
+- Leche de Coco (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml, REC-COC und, REC-COC g); quedó ml.
+- Leche en Polvo (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Lechuga Crespa Morada (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Lechuga Romana (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Limón Tahití (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Maiz Blanco (seco entero) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Manzana Roja (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Marañones (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g, REC-COC g); quedó g.
+- Matcha (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Mayoneza japonesa (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Mezcla buñuelo (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Mostaza de Dijon Antigua (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Panko (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Papa Capira (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Paprika (polvo) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Pargo (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Pasta china amarilla (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Pasta de Miso (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Pasta vermicelli (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Pistacho con Cáscara (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Pistacho Pelado (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Quemado panela (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Queso Azul (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Queso Boconccini (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Queso Brie (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Queso Grana Padano (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Queso Mascarpone (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g, REC-COC g); quedó g.
+- Queso Mix 4 (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Queso Mozarella (bloque) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Queso Parmesano (bloque) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Queso Parmesano (Rallado) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Queso Stracciatella (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g, REC-COC g); quedó g.
+- Res (Lomo) (COCINA): las fuentes traen unidades base distintas (INV-COC-001 g, INV-COC-001 und); quedó g.
+- Sal Marina (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g, REC-COC g); quedó g.
+- Sal Marina Rosada (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Salsa de chocolate (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Salsa de pescado (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml, REC-COC g); quedó ml.
+- Salsa Inglesa (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Salsa Pomodoro Egida (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Salsa Soya (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Suero Costeño (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Tinta de calamar (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Tomate Deshidratado (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Tomate peleti (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 g); quedó g.
+- Uva Verde (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, REC-COC g); quedó g.
+- Vinagre Balsámico (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml, REC-COC und); quedó ml.
+- Vinagre De Manzana (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Vinagre de sushi (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Vino Blanco (COCINA): las fuentes traen unidades base distintas (INV-COC-001 und, INV-COC-001 ml); quedó ml.
+- Mix de quesos (COCINA): las fuentes traen unidades base distintas (REC-COC g, REC-COC und); quedó g.
+- Pollo (COCINA): las fuentes traen unidades base distintas (REC-COC g, REC-COC und); quedó g.
+- Vinagre vino blanco (COCINA): las fuentes traen unidades base distintas (REC-COC und, REC-COC ml); quedó ml.
+- Vino reserva Merlot (BAR): las fuentes traen unidades base distintas (REC-BAR und, REC-BAR ml); quedó ml.
+
+## No entran
+
+- INV-COC-001 «Aceite ajonjolí»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceite de chiles (BASE)»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceite de esferificacion»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceite de Sesamo blended»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceite de Sesamo Kadoya»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceituna negra deshuesada»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceituna negra Kalamata»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceituna Verde con Hueso Fortin»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceitunas rellenas de chorizo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceitunas Verdes de jamon serrano Serpis»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceitunas Verdes de Pimiento Rojo Members Selettion»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceitunas Verdes de queso manchego Serpis»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceitunas Verdes rellenas de pimiento Member Selection»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceto Balsamico Casa vinagrera mariajosefa del gallo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceto de Vino Blanco Colvita»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aceto de Vino tinto Colvita»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Agar Agar»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aji Dulce Amarillo ( guindilla)»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aji Dulce Amarillo Pasta»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «ajo gallego»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Ajo negro con aceite de coco»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Albahaca seca»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Alcohol antibacterial sannox»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Alga Kombu Tassya»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Aluminio»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Alverja Seletti»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arancini a la tosca»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arancini de experiencia»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arancini de Viaggio»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arepas de la costa Familia»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arroz de coco»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arroz de sushi California yasai»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arroz de sushi nishiki»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arroz Jasmin»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arroz Jasmin Members Selection»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Arrroz jasmati rice select»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Banano pure»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Blanquillos Cocidos»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Bolsas al Vacio 15 x 20»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Bolsas Ziploc 14x14»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Bolsas Ziploc 30x25»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Botanas crujientes de vegetales fritos»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Brandy Cinco Estrellas»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Brochetas pinchos»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Camarones 41/50»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Camarones 61/70»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Carcasas de Langostino»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Cargas de soda»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Carne a la pimienta»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Carne Molida»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Cebolla y romero en aceite»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Cebollitas Blancas La coruña»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «champiñon crimini»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Champiñon Shitake Yasai»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Cimarrón»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Cimarrón fresco»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Clavo molido»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Cocoa a Granel»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Cogollo Europeos»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Color Trifogon»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Costilla de Cerdo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Crema de coco»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Cremor Tartaro Delix»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Croquetas»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Diablito»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Durazno Fresco»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Encurtido de lima y jengibre»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Eneldo Fresco»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Fondo Base: Marisco (Reduccion)»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Fondo de hongos»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «fondo de pargo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Fondo de setas»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Fondo Pulpo Reduccion»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Fondo Ramen»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Frijoles Calima Seletti»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Frijoles Seletti»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Galletas de perrito»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Goma Guar»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Harina de Arroz Glutinoso star lion brant»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Harina de trigo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Helado de arandano»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Hinojo (Entero)»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Huesitos de Res»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Jengibre (Cascara)»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Kombusha Artesana»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Langostinos U8»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Laurel deshidratado»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Leche Entera»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Leche Entera Alquería Súper Cremosa»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Lentejas Seletti»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Lima»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Limoncillo (Seco)»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Linaza Doña Lupe»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Lomo de Cerdo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Lomo de Cerdo Adobado (Rollo de Cerdo)»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Lupulo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Maíz amarillo Seletti»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mamoncillo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mariscada»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mariscada por completar»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mermelada de Arandanos»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mermelada de arando»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mezcla de Mantequilla y Azucar»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Miga de Pan»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mix de quesos»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mixtura de mariscos»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mlatodextrina Distrines»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mole»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Mostaza french»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «oregano fresco»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Panceta al barril Cerdo Americano»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Panceta entera»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Panceta Premium cerdo americano»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Panela Doña Lupe»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Papa cocida»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pasta blanca familia»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pasta spaguetti n 5»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pepperoni parisienne»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Piel de pollo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pimienta de Sichuan lascas»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pimienta Negra Entera»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pimienta rosada»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pistacho sin Cáscara Members Seletion»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pollo (contramuslo) Familia»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pollo (Piel y grasa ) Familia»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pulpa de Arandano»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Pulpa de caderita»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Queso Cottage Queseria de mi sin ti»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Queso Parmesano BELGIOSIOSO»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Queso parmesano member selction»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Queso Parmesano rayado Centurion»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Recorte de esparragos»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Recorte de Tocineta»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Recortes de Salmón»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Riñon»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Rugula»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Sal Roja»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Sal Rosada Himalaya cristales»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Sal Rosada Himalaya grano grueso Seletii»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «salsa de pimienta»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Salsa Unagi»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Semola»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Tajín»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Tare»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Tocineta Laminada»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Tocino de personal»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Tomate Chonto ( Cascara)»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Tomate Seco Karisma»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Tomillo Molido Cocinerito»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Tortilla de maiz»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Tuile de remolacha»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Uvas fermentadas»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Vinagre balsamicio Colvita»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Vinagre blanco clemente»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Vinilo el»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Zapallo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «Zuccini Amarillo»: alta sin clasificar (decisión 22/10/2026).
+- INV-COC-001 «zumo de limon»: alta sin clasificar (decisión 22/10/2026).
+- REC-BAR «PRUEBA ALTA BAR»: Línea de prueba del motor (05/10/2026).
+- REC-BAR «Domicilio»: Servicio de transporte: no es insumo.
+- REC-BAR «Bolsa»: Desechable de servicio: no es insumo del kardex.
+- REC-BAR «Sobrecosto por flete»: Servicio de transporte: no es insumo.

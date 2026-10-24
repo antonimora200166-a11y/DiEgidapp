@@ -3,6 +3,7 @@
 //
 //   npm run test:db
 import { PGlite } from '@electric-sql/pglite';
+import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +17,7 @@ function expandir(ruta) {
   return leer(ruta).replace(/^\\ir\s+(\S+)\s*$/gm, (_, inc) => expandir(join(dirname(ruta), inc)));
 }
 
-const db = new PGlite();
+const db = new PGlite({ extensions: { pg_trgm } });
 await db.exec(leer(join(raiz, 'local', 'supabase_stub.sql')));
 
 const migraciones = readdirSync(join(raiz, 'migrations')).filter((f) => f.endsWith('.sql')).sort();
