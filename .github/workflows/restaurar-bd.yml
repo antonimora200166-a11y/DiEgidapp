@@ -1,0 +1,97 @@
+# Restaura una copia diaria en un proyecto de Supabase NUEVO y vacío. Nunca sobre la base en uso:
+# si el destino ya tiene el SGI, se detiene sin tocar nada.
+# Necesita los secretos COPIA_CLAVE (la misma de la copia) y DESTINO_URL (cadena del proyecto nuevo:
+# Supabase → Connect → Session pooler). Se corre a mano: Actions → «Restaurar una copia» → Run workflow.
+name: Restaurar una copia
+
+on:
+  workflow_dispatch:
+    inputs:
+      ejecucion:
+        description: 'Número de la ejecución de la copia (el número largo al final de su dirección: …/actions/runs/NÚMERO)'
+        required: true
+      confirmar:
+        description: 'Escribe RESTAURAR para confirmar'
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  restaurar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Revisar confirmación y secretos
+        env:
+          DESTINO_URL: ${{ secrets.DESTINO_URL }}
+          COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
+        run: |
+          [ "${{ inputs.confirmar }}" = "RESTAURAR" ] || { echo "::error::No escribiste RESTAURAR: no se hizo nada."; exit 1; }
+          [ -n "$DESTINO_URL" ] || { echo "::error::Falta el secreto DESTINO_URL (el proyecto nuevo)."; exit 1; }
+          [ -n "$COPIA_CLAVE" ] || { echo "::error::Falta el secreto COPIA_CLAVE."; exit 1; }
+
+      - name: Instalar cliente de Postgres 17
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: El destino debe estar vacío
+        env:
+          DESTINO_URL: ${{ secrets.DESTINO_URL }}
+        run: |
+          OCUPADO=$(/usr/lib/postgresql/17/bin/psql "$DESTINO_URL" -At -c "select to_regclass('public.perfiles') is not null or to_regnamespace('privado') is not null")
+          if [ "$OCUPADO" = "t" ]; then
+            echo "::error::El destino ya tiene el SGI. Esta tarea solo restaura en un proyecto nuevo y vacío: no se tocó nada."
+            exit 1
+          fi
+
+      - name: Bajar la copia
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.ejecucion }}
+          github-token: ${{ github.token }}
+          pattern: copia-sgi-*
+          merge-multiple: true
+          path: bajada
+
+      - name: Descifrar
+        env:
+          COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
+        run: |
+          set -euo pipefail
+          ARCHIVO=$(ls bajada/*.gpg | head -1)
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --decrypt --output copia.tar.gz "$ARCHIVO" <<< "$COPIA_CLAVE"
+          mkdir copia && tar -xzf copia.tar.gz -C copia
+          echo "Restaurando $ARCHIVO" && cat copia/resumen.txt
+
+      - name: Restaurar
+        env:
+          DESTINO_URL: ${{ secrets.DESTINO_URL }}
+        run: |
+          set -uo pipefail
+          BIN=/usr/lib/postgresql/17/bin
+          $BIN/psql "$DESTINO_URL" -v ON_ERROR_STOP=1 -c "create extension if not exists pg_trgm with schema extensions;" || exit 1
+          # orden: estructura → datos → usuarios → índices, llaves, disparadores y RLS (las llaves a auth.users
+          # necesitan los usuarios ya cargados)
+          paso() {
+            echo "── $1"
+            $BIN/pg_restore --dbname="$DESTINO_URL" --no-owner "${@:2}" 2> errores.log
+            # el esquema public ya existe en un proyecto nuevo: ese aviso no cuenta como fallo
+            if grep -E "ERROR" errores.log | grep -vq 'schema "public" already exists'; then
+              cat errores.log; echo "::error::Falló: $1"; exit 1
+            fi
+          }
+          paso "estructura" --section=pre-data copia/sgi.dump
+          paso "datos" --section=data copia/sgi.dump
+          paso "usuarios" copia/usuarios.dump
+          paso "llaves, índices, disparadores y RLS" --section=post-data copia/sgi.dump
+          echo "── comprobación"
+          $BIN/psql "$DESTINO_URL" -At -c "select 'productos: ' || count(*) from public.productos union all
+                                            select 'genéricos: ' || count(*) from public.genericos union all
+                                            select 'movimientos: ' || count(*) from public.movimientos union all
+                                            select 'usuarios: ' || count(*) from public.perfiles"
+          echo "Debe coincidir con lo que tenía la copia:" && cat copia/resumen.txt

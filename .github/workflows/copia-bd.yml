@@ -1,0 +1,85 @@
+# Copia diaria de la base de Supabase, cifrada, guardada 90 días en GitHub (Actions → artefactos).
+# Necesita dos secretos del repositorio (Settings → Secrets and variables → Actions):
+#   DATABASE_URL  — la misma cadena de web/.env.local (Supabase → Connect → Session pooler)
+#   COPIA_CLAVE   — frase para cifrar la copia. Guárdala aparte: sin ella la copia no se abre.
+# Si una copia falla, GitHub avisa por correo al dueño del repositorio.
+name: Copia diaria de la base
+
+on:
+  schedule:
+    - cron: '0 7 * * *'        # 07:00 UTC = 2:00 a. m. en Cali
+  workflow_dispatch: {}          # botón «Run workflow» para sacar una copia a mano
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copia-bd
+  cancel-in-progress: false
+
+jobs:
+  copia:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Revisar secretos
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
+        run: |
+          [ -n "$DATABASE_URL" ] || { echo "::error::Falta el secreto DATABASE_URL"; exit 1; }
+          [ ${#COPIA_CLAVE} -ge 12 ] || { echo "::error::Falta el secreto COPIA_CLAVE (mínimo 12 caracteres)"; exit 1; }
+
+      - name: Instalar cliente de Postgres 17 (igual a la base)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Sacar la copia
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          BIN=/usr/lib/postgresql/17/bin
+          FECHA=$(TZ=America/Bogota date +%Y-%m-%d)
+          echo "FECHA=$FECHA" >> "$GITHUB_ENV"
+          mkdir copia
+          # 1. tablas, funciones, permisos y RLS del SGI, con sus datos
+          $BIN/pg_dump "$DATABASE_URL" --format=custom --no-owner --schema=public --schema=privado \
+            --file=copia/sgi.dump
+          # 2. los usuarios de la app (sin ellos los perfiles no se pueden restaurar)
+          $BIN/pg_dump "$DATABASE_URL" --format=custom --data-only --table=auth.users --table=auth.identities \
+            --file=copia/usuarios.dump
+          # comprobar que las copias se pueden leer y no vienen vacías
+          $BIN/pg_restore --list copia/sgi.dump > copia/contenido_sgi.txt
+          $BIN/pg_restore --list copia/usuarios.dump > copia/contenido_usuarios.txt
+          grep -q "TABLE DATA public productos" copia/contenido_sgi.txt || { echo "::error::La copia no trae los productos"; exit 1; }
+          grep -q "TABLE DATA auth users" copia/contenido_usuarios.txt || { echo "::error::La copia no trae los usuarios"; exit 1; }
+          $BIN/psql "$DATABASE_URL" -At -c "select 'productos: ' || count(*) from public.productos union all
+                                             select 'genéricos: ' || count(*) from public.genericos union all
+                                             select 'movimientos: ' || count(*) from public.movimientos union all
+                                             select 'usuarios: ' || count(*) from public.perfiles" > copia/resumen.txt
+          echo "Copia del $FECHA" && cat copia/resumen.txt && ls -l copia
+
+      - name: Cifrar
+        env:
+          COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
+        run: |
+          set -euo pipefail
+          tar -czf "sgi-$FECHA.tar.gz" -C copia .
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            --output "sgi-$FECHA.tar.gz.gpg" "sgi-$FECHA.tar.gz" <<< "$COPIA_CLAVE"
+          rm -rf copia "sgi-$FECHA.tar.gz"
+          ls -l "sgi-$FECHA.tar.gz.gpg"
+
+      - name: Guardar en GitHub (90 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: copia-sgi-${{ env.FECHA }}-${{ github.run_number }}
+          path: sgi-${{ env.FECHA }}.tar.gz.gpg
+          retention-days: 90
+          if-no-files-found: error
+          compression-level: 0
