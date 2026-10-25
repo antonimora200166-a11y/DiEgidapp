@@ -50,10 +50,14 @@ Pide la contraseña en la terminal. El resto del equipo se crea desde la app, en
 
 ## 5. Publicar la app (para usarla en celulares y iPad)
 
-1. En [vercel.com](https://vercel.com) → **Add New → Project** → importa el repositorio `DiEgidapp`.
-2. **Root Directory**: `web`.
-3. **Environment Variables**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_DOMINIO_USUARIOS` y `SUPABASE_SERVICE_ROLE_KEY`. **No** pongas `DATABASE_URL`.
-4. **Deploy**. Cada `git push` a `main` vuelve a publicar.
+1. Entra a [vercel.com](https://vercel.com) con **Continue with GitHub** (la misma cuenta del repositorio).
+2. **Add New → Project** → busca `DiEgidapp` → **Import**. Si no aparece: **Adjust GitHub App Permissions** y dale acceso a ese repositorio.
+3. En **Root Directory** toca **Edit** y elige la carpeta `web`. El Framework se detecta solo (Next.js).
+4. Abre **Environment Variables**. Abre `web/.env.produccion` con el Bloc de notas, copia todo y pégalo en el primer campo (Vercel separa las 4 variables solo). Ahí **no** va `DATABASE_URL`.
+5. **Deploy**. En uno o dos minutos te da la dirección (algo como `di-egidapp.vercel.app`).
+6. En Supabase → **Authentication → URL Configuration** → **Site URL**: pega esa dirección y guarda.
+
+Cada `git push` a `main` vuelve a publicar solo.
 
 Para instalarla en el equipo: en iPhone/iPad, Safari → Compartir → **Agregar a inicio**; en Android, Chrome → menú → **Instalar app**.
 

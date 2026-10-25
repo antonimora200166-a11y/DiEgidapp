@@ -12,6 +12,15 @@ export async function crearProducto(datos: Record<string, unknown>): Promise<Res
   return data as Resultado;
 }
 
+// Corrige genérico y presentación; con validar: true también lo valida (public.editar_producto).
+export async function editarProducto(datos: Record<string, unknown>): Promise<Resultado> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('editar_producto', { p: datos });
+  if (error) return { ok: false, id: null, codigo: null, fatales: [error.message], bloqueos: [], avisos: [] };
+  if ((data as Resultado).ok) revalidatePath('/catalogo', 'layout');
+  return data as Resultado;
+}
+
 export async function validarProducto(form: FormData) {
   const supabase = await supabaseServidor();
   await supabase.rpc('validar_producto', { p_id: String(form.get('id')) });

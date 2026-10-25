@@ -56,7 +56,9 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
               {(encontrados as Parecido[]).map((p) => (
                 <li key={p.producto_id} className="linea">
                   <div>
-                    <strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}{p.presentacion && ` · ${p.presentacion}`}
+                    {valida.includes(p.area)
+                      ? <Link href={`/catalogo/producto/${p.producto_id}`}><strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}{p.presentacion && ` · ${p.presentacion}`}</Link>
+                      : <><strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}{p.presentacion && ` · ${p.presentacion}`}</>}
                     <div className="cod">{p.codigo} · {p.area} · <span className={`etiqueta ${p.activo ? p.estado.toLowerCase() : 'inactivo'}`}>{p.activo ? p.estado : 'INACTIVO'}</span></div>
                   </div>
                   <span className="pct">{Math.round(p.parecido * 100)} %</span>
@@ -87,10 +89,13 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
                       </div>
                       {p.nota && <div className="suave" style={{ fontSize: '.85rem' }}>{p.nota}</div>}
                     </div>
-                    <form action={validarProducto}>
-                      <input type="hidden" name="id" value={p.id} />
-                      <button type="submit">Validar</button>
-                    </form>
+                    <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <Link href={`/catalogo/producto/${p.id}`} className="boton">Revisar</Link>
+                      <form action={validarProducto}>
+                        <input type="hidden" name="id" value={p.id} />
+                        <button type="submit" className="secundario" title="Validar sin cambios">Validar</button>
+                      </form>
+                    </div>
                   </div>
                 </li>
               ))}

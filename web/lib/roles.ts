@@ -15,7 +15,9 @@ export const ROLES: { rol: Rol; nombre: string; areas: Area[] }[] = [
 ];
 export const nombreRol = (r: Rol) => ROLES.find((x) => x.rol === r)?.nombre ?? r;
 
-export type Perfil = { id: string; nombre: string; usuario: string | null; rol: Rol; areas: Area[]; activo: boolean };
+export type Perfil = {
+  id: string; nombre: string; usuario: string | null; rol: Rol; areas: Area[]; activo: boolean; debe_cambiar_clave: boolean;
+};
 
 // Áreas donde opera: el admin en todas (privado.opera_en)
 export const areasDe = (p: Perfil): Area[] => (p.rol === 'admin' ? ['BAR', 'COCINA'] : p.areas);

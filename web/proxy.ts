@@ -6,6 +6,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 const PUBLICAS = ['/login', '/offline'];
 
 export async function proxy(request: NextRequest) {
+  // la ruta viaja a los layouts (que no la conocen) para mandar a /cuenta a quien tiene contraseña temporal
+  request.headers.set('x-ruta', request.nextUrl.pathname);
   let respuesta = NextResponse.next({ request });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {

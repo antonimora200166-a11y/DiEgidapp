@@ -32,13 +32,38 @@ export async function crearUsuario(_: EstadoUsuario, form: FormData): Promise<Es
   }
   // el perfil lo inserta el admin con su sesión: la bitácora queda a su nombre
   const supabase = await supabaseServidor();
-  const { error: e2 } = await supabase.from('perfiles').insert({ id: data.user.id, nombre, usuario, rol, areas });
+  // la contraseña la puso administración: al primer ingreso se le pide una propia
+  const { error: e2 } = await supabase.from('perfiles').insert({ id: data.user.id, nombre, usuario, rol, areas, debe_cambiar_clave: true });
   if (e2) {
     await servicio.auth.admin.deleteUser(data.user.id);   // usuario de Auth recién creado y sin perfil: no deja rastro operativo
     return { error: `No se pudo crear el perfil: ${e2.message}` };
   }
   revalidatePath('/admin/usuarios');
-  return { ok: `Usuario «${usuario}» creado. Entrégale su contraseña en persona.` };
+  return { ok: `Usuario «${usuario}» creado. Entrégale su contraseña en persona; al entrar, la app le pedirá una propia.` };
+}
+
+// Contraseña temporal legible para dictarla en persona («Egida-4821-kiwi»)
+const PALABRAS = ['kiwi', 'lulo', 'mango', 'limon', 'mora', 'pera', 'coco', 'anis', 'menta', 'cacao', 'trigo', 'salvia'];
+function claveTemporal() {
+  const al = (n: number) => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+  return `Egida-${1000 + al(9000)}-${PALABRAS[al(PALABRAS.length)]}`;
+}
+
+export type EstadoRestablecer = { clave?: string; error?: string };
+
+export async function restablecerClave(_: EstadoRestablecer, form: FormData): Promise<EstadoRestablecer> {
+  const yo = await perfilActual();
+  if (yo.rol !== 'admin') return { error: 'Solo administración restablece contraseñas.' };
+  const id = String(form.get('id') || '');
+  if (!id || id === yo.id) return { error: 'Tu propia contraseña se cambia en Mi cuenta.' };
+  const clave = claveTemporal();
+  const { error } = await supabaseServicio().auth.admin.updateUserById(id, { password: clave });
+  if (error) return { error: `No se pudo restablecer: ${error.message}` };
+  // con la sesión del admin: la bitácora registra quién la restableció
+  const supabase = await supabaseServidor();
+  await supabase.from('perfiles').update({ debe_cambiar_clave: true }).eq('id', id);
+  revalidatePath('/admin/usuarios');
+  return { clave };
 }
 
 export async function cambiarActivo(form: FormData) {

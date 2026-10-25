@@ -8,7 +8,7 @@ export const perfilActual = cache(async (): Promise<Perfil> => {
   const supabase = await supabaseServidor();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-  const { data } = await supabase.from('perfiles').select('id, nombre, usuario, rol, areas, activo').eq('id', user.id).maybeSingle();
+  const { data } = await supabase.from('perfiles').select('id, nombre, usuario, rol, areas, activo, debe_cambiar_clave').eq('id', user.id).maybeSingle();
   if (!data || !data.activo) redirect('/login?error=sin-perfil');
   return data as Perfil;
 });
