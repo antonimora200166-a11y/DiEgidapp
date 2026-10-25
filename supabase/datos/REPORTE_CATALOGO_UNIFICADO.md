@@ -1,6 +1,6 @@
 # Catálogo unificado
 
-Generado por `scripts/migracion/unificar.mjs` · 2026-10-24 · fuentes: `CATALOGO_MAESTRO` (SGI-COSTOS), `INV-COC-001`, `REG_REC_COC_003` y `FMT-REC-BAR-001`.
+Generado por `scripts/migracion/unificar.mjs` · 2026-10-25 · fuentes: `CATALOGO_MAESTRO` (SGI-COSTOS), `INV-COC-001`, `REG_REC_COC_003` y `FMT-REC-BAR-001`.
 
 ## Qué salió
 

@@ -263,6 +263,7 @@ for (const { nombre, f } of nombresCoc) {
                    marca: s.marca, presentacion: granel ? (ub === 'und' ? 'Unidad' : 'Granel') : `${envase}${contenido && ub !== 'und' ? ` ${contenido} ${ub}` : ''}`,
                    ucompra: granel ? { g: 'GR', ml: 'ML', und: 'UND' }[ub] : UNIDAD_CONTEO[norm(envase)] || norm(envase).toUpperCase().slice(0, 6),
                    contenido, variable: !contenido, ub, tipo: 'MPe', categoria: CATEGORIA[norm(f?.D)] || null,
+                   conservacion: ['Ambiente', 'Refrigerado', 'Congelado'].includes(f?.E) ? f.E : null, tmax: ent(f?.F),
                    activo: f ? norm(f.I) !== 'inactivo' : true, valor, compras: lineas.length,
                    origenFactor: granel ? 'granel' : cont ? `recepción: contenido más frecuente (${lineas.length} línea(s))` : s.contenido ? 'nombre' : '' });
 }
@@ -442,6 +443,8 @@ for (const regs of grupos.values()) {
   const ub = ubGrupo(regs);
   const g = { clave: lider.id, area: lider.area, generico: lider.generico, ub, tipo: lider.tipo,
               categoria: regs.map((r) => r.categoria).find(Boolean) || null, registros: regs,
+              conservacion: regs.map((r) => r.conservacion).find(Boolean) || null,
+              tmax: regs.map((r) => r.tmax).find((t) => t !== null && t !== undefined) ?? null,
               valor: regs.reduce((t, r) => t + r.valor, 0), compras: regs.reduce((t, r) => t + r.compras, 0),
               activo: regs.some((r) => r.activo), productos: [] };
   // productos: los del inventario y los de compra con marca o presentación propia; el catálogo maestro
@@ -572,12 +575,13 @@ const grupoDe = new Map();
 for (const g of unificados) for (const r of g.registros) grupoDe.set(r.id, g.clave);
 const filasPares = pendientes.map((p) => `(${[p.id, p.a.area, p.tipo, Math.round(p.parecido * 1000) / 1000, p.propuesta, p.motivo || null,
   p.a.fuente, p.a.nombre, grupoDe.get(p.a.id), p.b.fuente, p.b.nombre, grupoDe.get(p.b.id)].map(lit).join(', ')})`);
-const filasMiembros = [], filasNuevos = [], filasAbc = [];
+const filasMiembros = [], filasNuevos = [], filasAbc = [], filasDatos = [];
 for (const g of unificados) {
   for (const r of g.registros) {
     filasMiembros.push(`(${lit(g.clave)}, ${lit(g.area)}, ${lit(r.fuente)}, ${lit(r.ref)}, ${PRIORIDAD[r.fuente]})`);
   }
   if (g.abc) filasAbc.push(`(${lit(g.clave)}, ${lit(g.abc)})`);
+  if (g.categoria || g.conservacion || g.tmax !== null) filasDatos.push(`(${[g.clave, g.categoria, g.conservacion, g.tmax].map(lit).join(', ')})`);
   if (estadoDe(g) !== 'EXISTE') {
     const p = g.productos[0];
     filasNuevos.push(`(${lit(g.clave)}, ${lit(g.area)}, ${lit(g.generico)}, ${lit(g.tipo === 'MPI' ? 'MPI' : 'MPe')}, ${lit(g.categoria)}, ${lit(g.ub)}, ${lit(p.marca || '')}, ${lit(p.presentacion || 'Granel')}, ${lit(p.ucompra || { g: 'GR', ml: 'ML', und: 'UND' }[g.ub])}, ${lit(p.variable ? null : p.contenido)}, ${p.variable}, ${g.activo})`);
@@ -598,6 +602,7 @@ create temp table _nuevos (grupo text, area public.area_app, nombre text, tipo p
                            unidad_base public.unidad_base, marca text, presentacion text, unidad_compra text,
                            contenido numeric, variable boolean, activo boolean) on commit drop;
 create temp table _abc (grupo text, clase public.clase_abc) on commit drop;
+create temp table _datos (grupo text, categoria text, conservacion text, tmax numeric) on commit drop;
 create temp table _pares (id text, area public.area_app, tipo text, parecido numeric, propuesta text, motivo text,
                           a_fuente text, a_nombre text, a_grupo text, b_fuente text, b_nombre text, b_grupo text) on commit drop;
 
@@ -605,6 +610,7 @@ ${bloque('_miembros', 'grupo, area, fuente, ref, prioridad', filasMiembros)}
 ${bloque('_pares', 'id, area, tipo, parecido, propuesta, motivo, a_fuente, a_nombre, a_grupo, b_fuente, b_nombre, b_grupo', filasPares)}
 ${bloque('_nuevos', 'grupo, area, nombre, tipo, categoria, unidad_base, marca, presentacion, unidad_compra, contenido, variable, activo', filasNuevos)}
 ${bloque('_abc', 'grupo, clase', filasAbc)}
+${bloque('_datos', 'grupo, categoria, conservacion, tmax', filasDatos)}
 -- ubicar cada fuente en lo que ya cargaron los históricos
 update _miembros m set generico_id = g.id from public.genericos g
  where m.fuente = 'CATALOGO_MAESTRO' and g.codigo = m.ref;
@@ -616,7 +622,7 @@ update _miembros m set generico_id = g.id from public.genericos g
 
 do $$
 declare
-  n record; v_gen uuid; v_cod text; v_destino uuid; r record; v_fusiones int := 0; v_nuevos int := 0; v_alias int := 0;
+  n record; v_gen uuid; v_cod text; v_destino uuid; r record; v_fusiones int := 0; v_nuevos int := 0; v_alias int := 0; v_datos int := 0;
 begin
   -- 1. lo que no existe entra PROVISIONAL, con sus nombres de recepción como alias
   for n in select * from _nuevos x where not exists (select 1 from _miembros m where m.grupo = x.grupo and m.generico_id is not null) loop
@@ -638,10 +644,10 @@ begin
     on conflict do nothing;
   end loop;
 
-  -- 2. fusiones: el genérico de mayor prioridad del grupo se queda; los otros pasan a él
+  -- 2. fusiones: se queda el genérico activo de mayor prioridad (una unión hecha en la app no se deshace)
   for r in select distinct m.grupo, m.generico_id from _miembros m where m.generico_id is not null loop
     select m.generico_id into v_destino from _miembros m
-     where m.grupo = r.grupo and m.generico_id is not null order by m.prioridad, m.ref limit 1;
+     where m.grupo = r.grupo and m.generico_id is not null order by (select not g.activo from public.genericos g where g.id = m.generico_id), m.prioridad, m.ref limit 1;
     continue when r.generico_id = v_destino;
     -- ya fusionado en una carga anterior (el código del catálogo maestro sigue apuntando al genérico viejo)
     if exists (select 1 from public.genericos g where g.id = r.generico_id and not g.activo)
@@ -672,18 +678,29 @@ begin
   select case m.fuente when 'INV-COC-001' then 'INVENTARIO' else 'RECEPCION' end, m.ref, d.generico_id
     from _miembros m
     join lateral (select x.generico_id from _miembros x where x.grupo = m.grupo and x.generico_id is not null
-                   order by x.prioridad, x.ref limit 1) d on true
+                   order by (select not g.activo from public.genericos g where g.id = x.generico_id), x.prioridad, x.ref limit 1) d on true
    where m.generico_id is null and m.fuente <> 'CATALOGO_MAESTRO'
   on conflict do nothing;
   get diagnostics v_alias = row_count;
 
-  -- 4. clase ABC del genérico a todos sus productos
+  -- 4. categoría y cadena de frío que trae la recepción, solo donde está vacío (no pisa lo corregido en la app)
+  update public.genericos g
+     set categoria = coalesce(g.categoria, (select c.codigo from public.categorias c where c.codigo = d.categoria and c.area = g.area)),
+         conservacion = coalesce(g.conservacion, d.conservacion),
+         temp_max_llegada = coalesce(g.temp_max_llegada, d.tmax)
+    from _datos d join (select distinct grupo, generico_id from _miembros where generico_id is not null) m on m.grupo = d.grupo
+   where g.id = m.generico_id
+     and ((g.categoria is null and d.categoria is not null) or (g.conservacion is null and d.conservacion is not null)
+          or (g.temp_max_llegada is null and d.tmax is not null));
+  get diagnostics v_datos = row_count;
+
+  -- 5. clase ABC del genérico a todos sus productos
   update public.productos p set clase_abc = a.clase, abc_calculado_en = ${lit(CORTE)}::date
     from _abc a join (select distinct grupo, generico_id from _miembros where generico_id is not null) m on m.grupo = a.grupo
    where p.generico_id = m.generico_id;
 
   perform privado.bitacora('CATÁLOGO UNIFICADO', 'productos', null,
-    jsonb_build_object('corte', ${lit(CORTE)}, 'fusiones', v_fusiones, 'provisionales', v_nuevos, 'alias_nuevos', v_alias,
+    jsonb_build_object('corte', ${lit(CORTE)}, 'fusiones', v_fusiones, 'provisionales', v_nuevos, 'alias_nuevos', v_alias, 'datos_completados', v_datos,
                        'sin_ubicar', (select count(*) from _miembros where generico_id is null)));
   raise notice 'catálogo unificado: % fusiones, % provisionales nuevos', v_fusiones, v_nuevos;
 end $$;
@@ -692,9 +709,9 @@ end $$;
 insert into public.revision_catalogo (id, area, tipo, parecido, propuesta, motivo, a_fuente, a_nombre, a_generico_id,
                                       b_fuente, b_nombre, b_generico_id)
 select p.id, p.area, p.tipo, p.parecido, p.propuesta, p.motivo, p.a_fuente, p.a_nombre,
-       (select m.generico_id from _miembros m where m.grupo = p.a_grupo and m.generico_id is not null order by m.prioridad, m.ref limit 1),
+       (select m.generico_id from _miembros m where m.grupo = p.a_grupo and m.generico_id is not null order by (select not g.activo from public.genericos g where g.id = m.generico_id), m.prioridad, m.ref limit 1),
        p.b_fuente, p.b_nombre,
-       (select m.generico_id from _miembros m where m.grupo = p.b_grupo and m.generico_id is not null order by m.prioridad, m.ref limit 1)
+       (select m.generico_id from _miembros m where m.grupo = p.b_grupo and m.generico_id is not null order by (select not g.activo from public.genericos g where g.id = m.generico_id), m.prioridad, m.ref limit 1)
   from _pares p
 on conflict (id) do nothing;
 `;
