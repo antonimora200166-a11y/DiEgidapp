@@ -69,6 +69,7 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
 
       {valida.length > 0 && (
         <>
+          <p className="aviso">Antes de validar, revisa los <Link href="/catalogo/revision">posibles duplicados</Link>: muchos provisionales de la migración son el mismo insumo con otro nombre.</p>
           <h2>Provisionales por validar ({totalProv ?? provisionales.length})</h2>
           {(totalProv ?? 0) > provisionales.length && (
             <p className="suave">Se muestran los {provisionales.length} más recientes. Usa el buscador para encontrar uno en particular.</p>

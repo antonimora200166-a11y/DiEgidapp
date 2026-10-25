@@ -87,7 +87,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .segmentos input:focus-visible + span { outline: 2px solid var(--marca); outline-offset: 2px; }
 
 .lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
-.lista li { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 10px; padding: .7rem .85rem; }
+.lista > li { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 10px; padding: .7rem .85rem; }
 .lista .linea { display: flex; justify-content: space-between; gap: .75rem; align-items: center; }
 .cod { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; color: var(--suave); }
 .etiqueta { display: inline-block; font-size: .75rem; font-weight: 700; padding: .1rem .5rem; border-radius: 999px; border: 1px solid currentColor; }

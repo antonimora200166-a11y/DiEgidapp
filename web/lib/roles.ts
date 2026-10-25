@@ -33,6 +33,7 @@ export function menuDe(p: Perfil): Opcion[] {
   const m: Opcion[] = [];
   if (p.rol !== 'servicio') m.push({ ruta: '/catalogo', titulo: 'Catálogo', detalle: 'Buscar productos y validar los provisionales' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/catalogo/nuevo', titulo: 'Crear producto', detalle: 'Alta provisional, con búsqueda de parecidos' });
+  if (areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/catalogo/revision', titulo: 'Revisar duplicados', detalle: 'Decidir si dos productos son el mismo y unirlos' });
   if (p.rol === 'admin') m.push({ ruta: '/admin/usuarios', titulo: 'Usuarios', detalle: 'Crear usuarios y asignar roles' });
   return m;
 }
