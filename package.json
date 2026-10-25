@@ -7,9 +7,11 @@
     "test:db": "node supabase/tests/run-pglite.mjs",
     "migracion:bar": "node scripts/migracion/extraer.mjs",
     "migracion:cocina": "node scripts/migracion/extraer_cocina.mjs",
-    "migracion:unificar": "node scripts/migracion/unificar.mjs"
+    "migracion:unificar": "node scripts/migracion/unificar.mjs",
+    "bd:instalar": "node scripts/instalar_bd.mjs"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.8"
+    "@electric-sql/pglite": "0.5.8",
+    "pg": "8.23.1"
   }
 }

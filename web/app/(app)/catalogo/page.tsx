@@ -27,11 +27,11 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
 
   // provisionales de las áreas que este usuario valida
   const valida = areas.filter((a) => editaArea(perfil, a));
-  const { data: prov } = valida.length
+  const { data: prov, count: totalProv } = valida.length
     ? await supabase.from('productos')
-        .select('id, codigo, marca, presentacion, creado_en, nota, genericos!inner(nombre, area, estado, unidad_base), creador:perfiles!productos_creado_por_fkey(nombre)')
+        .select('id, codigo, marca, presentacion, creado_en, nota, genericos!inner(nombre, area, estado, unidad_base), creador:perfiles!productos_creado_por_fkey(nombre)', { count: 'exact' })
         .eq('estado', 'PROVISIONAL').in('genericos.area', valida).order('creado_en', { ascending: false }).limit(100)
-    : { data: [] };
+    : { data: [], count: 0 };
   const provisionales = (prov ?? []) as unknown as Provisional[];
 
   return (
@@ -69,7 +69,10 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
 
       {valida.length > 0 && (
         <>
-          <h2>Provisionales por validar ({provisionales.length})</h2>
+          <h2>Provisionales por validar ({totalProv ?? provisionales.length})</h2>
+          {(totalProv ?? 0) > provisionales.length && (
+            <p className="suave">Se muestran los {provisionales.length} más recientes. Usa el buscador para encontrar uno en particular.</p>
+          )}
           {provisionales.length ? (
             <ul className="lista">
               {provisionales.map((p) => (

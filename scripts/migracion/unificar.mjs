@@ -563,13 +563,15 @@ console.log(`✔ unificado: ${registros.length} registros → ${unificados.lengt
 console.log(`  revisión: ${pares.length} pares (${pendientes.length} sin decisión) en scripts/migracion/revision_catalogo.csv`);
 
 // =====================================================================================
-// SQL de carga (solo con todo decidido)
+// SQL de carga. Lo decidido en el CSV se aplica; los pares sin decisión no frenan la carga:
+// sus dos lados entran separados (lo nuevo, PROVISIONAL) y el par queda en
+// public.revision_catalogo para decidirlo desde la app.
 // =====================================================================================
 if (!CARGAR) process.exit(0);
-if (pendientes.length) {
-  console.error(`✘ No se escribe el SQL: faltan ${pendientes.length} decisiones en revision_catalogo.csv.`);
-  process.exit(1);
-}
+const grupoDe = new Map();
+for (const g of unificados) for (const r of g.registros) grupoDe.set(r.id, g.clave);
+const filasPares = pendientes.map((p) => `(${[p.id, p.a.area, p.tipo, Math.round(p.parecido * 1000) / 1000, p.propuesta, p.motivo || null,
+  p.a.fuente, p.a.nombre, grupoDe.get(p.a.id), p.b.fuente, p.b.nombre, grupoDe.get(p.b.id)].map(lit).join(', ')})`);
 const filasMiembros = [], filasNuevos = [], filasAbc = [];
 for (const g of unificados) {
   for (const r of g.registros) {
@@ -585,7 +587,8 @@ const bloque = (tabla, cols, filas) => (filas.length ? `insert into ${tabla} (${
 const sql = `-- =====================================================================================
 -- SGI Di Égida · Catálogo unificado (fusiones decididas, provisionales nuevos y clase ABC)
 -- Generado por scripts/migracion/unificar.mjs --cargar (${CORTE}). NO editar a mano: corregir
--- scripts/migracion/revision_catalogo.csv y volver a generar.
+-- scripts/migracion/revision_catalogo.csv y volver a generar. Los pares sin decisión van a
+-- public.revision_catalogo y se deciden en la app.
 -- Ejecutar después de historico_bar.sql e historico_cocina.sql (es idempotente):
 --   psql "$DATABASE_URL" -1 -f supabase/datos/catalogo_unificado.sql
 -- =====================================================================================
@@ -595,8 +598,11 @@ create temp table _nuevos (grupo text, area public.area_app, nombre text, tipo p
                            unidad_base public.unidad_base, marca text, presentacion text, unidad_compra text,
                            contenido numeric, variable boolean, activo boolean) on commit drop;
 create temp table _abc (grupo text, clase public.clase_abc) on commit drop;
+create temp table _pares (id text, area public.area_app, tipo text, parecido numeric, propuesta text, motivo text,
+                          a_fuente text, a_nombre text, a_grupo text, b_fuente text, b_nombre text, b_grupo text) on commit drop;
 
 ${bloque('_miembros', 'grupo, area, fuente, ref, prioridad', filasMiembros)}
+${bloque('_pares', 'id, area, tipo, parecido, propuesta, motivo, a_fuente, a_nombre, a_grupo, b_fuente, b_nombre, b_grupo', filasPares)}
 ${bloque('_nuevos', 'grupo, area, nombre, tipo, categoria, unidad_base, marca, presentacion, unidad_compra, contenido, variable, activo', filasNuevos)}
 ${bloque('_abc', 'grupo, clase', filasAbc)}
 -- ubicar cada fuente en lo que ya cargaron los históricos
@@ -681,6 +687,16 @@ begin
                        'sin_ubicar', (select count(*) from _miembros where generico_id is null)));
   raise notice 'catálogo unificado: % fusiones, % provisionales nuevos', v_fusiones, v_nuevos;
 end $$;
+
+-- 5. pares sin decisión: se deciden en la app (una carga posterior no pisa lo ya decidido)
+insert into public.revision_catalogo (id, area, tipo, parecido, propuesta, motivo, a_fuente, a_nombre, a_generico_id,
+                                      b_fuente, b_nombre, b_generico_id)
+select p.id, p.area, p.tipo, p.parecido, p.propuesta, p.motivo, p.a_fuente, p.a_nombre,
+       (select m.generico_id from _miembros m where m.grupo = p.a_grupo and m.generico_id is not null order by m.prioridad, m.ref limit 1),
+       p.b_fuente, p.b_nombre,
+       (select m.generico_id from _miembros m where m.grupo = p.b_grupo and m.generico_id is not null order by m.prioridad, m.ref limit 1)
+  from _pares p
+on conflict (id) do nothing;
 `;
 writeFileSync(join(raiz, 'supabase', 'datos', 'catalogo_unificado.sql'), sql);
-console.log('✔ supabase/datos/catalogo_unificado.sql');
+console.log(`✔ supabase/datos/catalogo_unificado.sql (${pendientes.length} pares quedan por decidir en la app)`);
