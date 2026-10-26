@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import RegistrarSW from '@/components/RegistrarSW';
+import ReportarErrores from '@/components/ReportarErrores';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function Raiz({ children }: { children: React.ReactNode }) {
       <body>
         {children}
         <RegistrarSW />
+        <ReportarErrores />
       </body>
     </html>
   );
