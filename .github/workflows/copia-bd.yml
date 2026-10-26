@@ -27,7 +27,13 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
         run: |
-          [ -n "$DATABASE_URL" ] || { echo "::error::Falta el secreto DATABASE_URL"; exit 1; }
+          # del secreto se toma solo la dirección postgresql://…, aunque se haya pegado con otras líneas de .env.local
+          URL=$(printf '%s\n' "$DATABASE_URL" | grep -Eo 'postgres(ql)?://[^[:space:]"]+' | head -1 || true)
+          [ -n "$URL" ] || { echo "::error::El secreto DATABASE_URL no trae una dirección postgresql://…"; exit 1; }
+          case "$URL" in *YOUR-PASSWORD*) echo "::error::DATABASE_URL todavía dice [YOUR-PASSWORD]: falta la contraseña de la base."; exit 1;; esac
+          [ "$URL" = "$DATABASE_URL" ] || echo "::warning::El secreto DATABASE_URL trae más que la dirección de la base; se usa solo la dirección. Conviene dejarlo solo con ella."
+          echo "::add-mask::$URL"
+          echo "URL_BASE=$URL" >> "$GITHUB_ENV"
           [ ${#COPIA_CLAVE} -ge 12 ] || { echo "::error::Falta el secreto COPIA_CLAVE (mínimo 12 caracteres)"; exit 1; }
 
       - name: Instalar cliente de Postgres 17 (igual a la base)
@@ -39,8 +45,6 @@ jobs:
           /usr/lib/postgresql/17/bin/pg_dump --version
 
       - name: Sacar la copia
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
           BIN=/usr/lib/postgresql/17/bin
@@ -48,17 +52,17 @@ jobs:
           echo "FECHA=$FECHA" >> "$GITHUB_ENV"
           mkdir copia
           # 1. tablas, funciones, permisos y RLS del SGI, con sus datos
-          $BIN/pg_dump "$DATABASE_URL" --format=custom --no-owner --schema=public --schema=privado \
+          $BIN/pg_dump "$URL_BASE" --format=custom --no-owner --schema=public --schema=privado \
             --file=copia/sgi.dump
           # 2. los usuarios de la app (sin ellos los perfiles no se pueden restaurar)
-          $BIN/pg_dump "$DATABASE_URL" --format=custom --data-only --table=auth.users --table=auth.identities \
+          $BIN/pg_dump "$URL_BASE" --format=custom --data-only --table=auth.users --table=auth.identities \
             --file=copia/usuarios.dump
           # comprobar que las copias se pueden leer y no vienen vacías
           $BIN/pg_restore --list copia/sgi.dump > copia/contenido_sgi.txt
           $BIN/pg_restore --list copia/usuarios.dump > copia/contenido_usuarios.txt
           grep -q "TABLE DATA public productos" copia/contenido_sgi.txt || { echo "::error::La copia no trae los productos"; exit 1; }
           grep -q "TABLE DATA auth users" copia/contenido_usuarios.txt || { echo "::error::La copia no trae los usuarios"; exit 1; }
-          $BIN/psql "$DATABASE_URL" -At -c "select 'productos: ' || count(*) from public.productos union all
+          $BIN/psql "$URL_BASE" -At -c "select 'productos: ' || count(*) from public.productos union all
                                              select 'genéricos: ' || count(*) from public.genericos union all
                                              select 'movimientos: ' || count(*) from public.movimientos union all
                                              select 'usuarios: ' || count(*) from public.perfiles" > copia/resumen.txt

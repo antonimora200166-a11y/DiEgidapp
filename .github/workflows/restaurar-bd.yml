@@ -29,7 +29,11 @@ jobs:
           COPIA_CLAVE: ${{ secrets.COPIA_CLAVE }}
         run: |
           [ "${{ inputs.confirmar }}" = "RESTAURAR" ] || { echo "::error::No escribiste RESTAURAR: no se hizo nada."; exit 1; }
-          [ -n "$DESTINO_URL" ] || { echo "::error::Falta el secreto DESTINO_URL (el proyecto nuevo)."; exit 1; }
+          # solo la dirección postgresql://…, aunque el secreto traiga otras líneas
+          URL=$(printf '%s\n' "$DESTINO_URL" | grep -Eo 'postgres(ql)?://[^[:space:]"]+' | head -1 || true)
+          [ -n "$URL" ] || { echo "::error::El secreto DESTINO_URL no trae una dirección postgresql://… del proyecto nuevo."; exit 1; }
+          echo "::add-mask::$URL"
+          echo "URL_DESTINO=$URL" >> "$GITHUB_ENV"
           [ -n "$COPIA_CLAVE" ] || { echo "::error::Falta el secreto COPIA_CLAVE."; exit 1; }
 
       - name: Instalar cliente de Postgres 17
@@ -43,7 +47,7 @@ jobs:
         env:
           DESTINO_URL: ${{ secrets.DESTINO_URL }}
         run: |
-          OCUPADO=$(/usr/lib/postgresql/17/bin/psql "$DESTINO_URL" -At -c "select to_regclass('public.perfiles') is not null or to_regnamespace('privado') is not null")
+          OCUPADO=$(/usr/lib/postgresql/17/bin/psql "$URL_DESTINO" -At -c "select to_regclass('public.perfiles') is not null or to_regnamespace('privado') is not null")
           if [ "$OCUPADO" = "t" ]; then
             echo "::error::El destino ya tiene el SGI. Esta tarea solo restaura en un proyecto nuevo y vacío: no se tocó nada."
             exit 1
@@ -74,12 +78,12 @@ jobs:
         run: |
           set -uo pipefail
           BIN=/usr/lib/postgresql/17/bin
-          $BIN/psql "$DESTINO_URL" -v ON_ERROR_STOP=1 -c "create extension if not exists pg_trgm with schema extensions;" || exit 1
+          $BIN/psql "$URL_DESTINO" -v ON_ERROR_STOP=1 -c "create extension if not exists pg_trgm with schema extensions;" || exit 1
           # orden: estructura → datos → usuarios → índices, llaves, disparadores y RLS (las llaves a auth.users
           # necesitan los usuarios ya cargados)
           paso() {
             echo "── $1"
-            $BIN/pg_restore --dbname="$DESTINO_URL" --no-owner "${@:2}" 2> errores.log
+            $BIN/pg_restore --dbname="$URL_DESTINO" --no-owner "${@:2}" 2> errores.log
             # el esquema public ya existe en un proyecto nuevo: ese aviso no cuenta como fallo
             if grep -E "ERROR" errores.log | grep -vq 'schema "public" already exists'; then
               cat errores.log; echo "::error::Falló: $1"; exit 1
@@ -90,7 +94,7 @@ jobs:
           paso "usuarios" copia/usuarios.dump
           paso "llaves, índices, disparadores y RLS" --section=post-data copia/sgi.dump
           echo "── comprobación"
-          $BIN/psql "$DESTINO_URL" -At -c "select 'productos: ' || count(*) from public.productos union all
+          $BIN/psql "$URL_DESTINO" -At -c "select 'productos: ' || count(*) from public.productos union all
                                             select 'genéricos: ' || count(*) from public.genericos union all
                                             select 'movimientos: ' || count(*) from public.movimientos union all
                                             select 'usuarios: ' || count(*) from public.perfiles"
