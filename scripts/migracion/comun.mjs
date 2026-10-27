@@ -38,3 +38,24 @@ export function parecido(a, b) {
   const cubre = corta.length ? corta.filter((w) => larga.has(w) || [...larga].some((l) => l.startsWith(w) || w.startsWith(l))).length / corta.length : 0;
   return (dice + cubre) / 2;
 }
+
+// Histórico de compras línea a línea → supabase/datos/compras_historicas_*.sql.
+// filas: [{id, fecha, prov, doc, nombre, generico (código), producto (uuid|null), base, valor, motivo}]
+// motivo null = computable (alimenta la banda de precio B7). Idempotente por (origen, id_origen).
+export function sqlComprasHistoricas(origen, filas, script, corte) {
+  const out = [`-- =====================================================================================
+-- SGI Di Égida · Compras históricas ${origen} (antes de la app), línea a línea
+-- Generado por ${script} (corte: ${corte}). NO editar a mano.
+-- Solo referencia de precio para la banda B7: no entra al kardex. Idempotente.
+-- Ejecutar después de las migraciones y del histórico del área (npm run bd:instalar).
+-- =====================================================================================`];
+  const sql = filas.map((h) => `(${lit(uuid('compra_historica', `${origen}|${h.id}`))}, ${lit(origen)}, ${lit(String(h.id))}, ${lit(h.fecha)}, `
+    + `${lit(h.prov ? String(h.prov).trim() : null)}, ${lit(h.doc ? String(h.doc).trim() : null)}, ${lit(String(h.nombre).trim())}, `
+    + `${lit(uuid('generico', h.generico))}, ${lit(h.producto)}, ${redondear(h.base, 4)}, ${h.valor}, ${!h.motivo}, ${lit(h.motivo || null)})`);
+  for (let i = 0; i < sql.length; i += 200) {
+    out.push(`\ninsert into public.compras_historicas (id, origen, id_origen, fecha, proveedor, documento, nombre_factura, generico_id, producto_id, cantidad_base, valor_total, computable, motivo_exclusion) values\n  ${sql.slice(i, i + 200).join(',\n  ')}\non conflict do nothing;`);
+  }
+  out.push(`\nselect privado.bitacora('MIGRACIÓN COMPRAS HISTÓRICAS', 'compras_historicas', ${lit(origen)}, jsonb_build_object(
+  'lineas', ${filas.length}, 'computables', ${filas.filter((h) => !h.motivo).length}, 'corte', ${lit(corte)}));`);
+  return out.join('\n') + '\n';
+}

@@ -20,7 +20,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { leerXlsx, fechaExcel } from './xlsx.mjs';
-import { norm, uuid, lit, ent, redondear, parecido } from './comun.mjs';
+import { norm, uuid, lit, ent, redondear, parecido, sqlComprasHistoricas } from './comun.mjs';
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 const raiz = resolve(aqui, '..', '..');
@@ -234,19 +234,34 @@ const REVISION_INVALIDA = /fuera de banda|atipico|sin precio|ambigua|incoherente
 const excluir = (motivo, f) => { (reporte.comprasExcluidas[motivo] ||= []).push(`${f.A} ${f.H}`); };
 const compras = new Map();
 const vistas = new Map();
+const historicas = [];   // compras línea a línea → compras_historicas_cocina.sql
 for (const f of hoja(rec, 'BD_RECEPCIONES', 6).filter((x) => x.A && x.H)) {
   if (norm(f.AG) !== 'activa') { excluir('Línea REVERSADA', f); continue; }
-  if (REVISION_INVALIDA.test(norm(f.AB))) { excluir('Revisión pendiente sobre el precio o la unidad', f); continue; }
   const destino = destinoCompra.get(norm(f.H));
-  if (!destino || destino === 'EXCLUIR') { excluir(destino === 'EXCLUIR' ? 'Producto excluido en los cruces' : 'Producto sin cruce decidido', f); continue; }
-  const g = genPorCodigo.get(destino);
+  const g = destino && destino !== 'EXCLUIR' ? genPorCodigo.get(destino) : null;
   const cant = ent(f.O), valor = ent(f.Q), fecha = fechaExcel(f.C);
+  // toda compra con cruce decidido y cantidad en la unidad base del genérico queda en el histórico;
+  // la compra es del genérico: lleva producto solo si el genérico tiene una sola presentación
+  const anotar = (motivo) => {
+    if (!g || !(cant > 0) || !(valor > 0) || !fecha || ub(f.I) !== g.unidad_base) return null;
+    const lista = productosDe(destino);
+    const h = { id: f.A, fecha, prov: f.D, doc: f.F, nombre: f.H, generico: destino,
+                producto: lista.length === 1 ? lista[0].id : null, base: cant, valor, motivo };
+    historicas.push(h);
+    return h;
+  };
+  if (REVISION_INVALIDA.test(norm(f.AB))) { excluir('Revisión pendiente sobre el precio o la unidad', f); anotar(`Revisión del Sheet: ${String(f.AB).trim()}`); continue; }
+  if (!g) { excluir(destino === 'EXCLUIR' ? 'Producto excluido en los cruces' : 'Producto sin cruce decidido', f); continue; }
   if (!(cant > 0) || !(valor > 0) || !fecha) { excluir('Sin cantidad, valor o fecha', f); continue; }
   if (ub(f.I) !== g.unidad_base) { excluir('Unidad base de la compra distinta a la del genérico', f); continue; }
   const llave = `${fecha}|${destino}|${cant}|${valor}`;
-  if (vistas.has(llave)) { reporte.duplicadas.push(`${f.A} repite ${vistas.get(llave)} (${f.H}, ${fecha}, ${cant} ${g.unidad_base}, $${valor})`); continue; }
+  if (vistas.has(llave)) {
+    reporte.duplicadas.push(`${f.A} repite ${vistas.get(llave)} (${f.H}, ${fecha}, ${cant} ${g.unidad_base}, $${valor})`);
+    anotar(`Repite la línea ${vistas.get(llave)}`);
+    continue;
+  }
   vistas.set(llave, f.A);
-  (compras.get(destino) || compras.set(destino, []).get(destino)).push({ fecha, base: cant, valor });
+  (compras.get(destino) || compras.set(destino, []).get(destino)).push({ fecha, base: cant, valor, h: anotar(null) });
 }
 const costosRef = [];
 const fmtF = (s) => s.split('-').reverse().join('/');
@@ -255,6 +270,7 @@ for (const [codigoGen, cs] of compras) {
   const orden = [...pus].sort((a, b) => a - b);
   const med = orden.length % 2 ? orden[(orden.length - 1) / 2] : (orden[orden.length / 2 - 1] + orden[orden.length / 2]) / 2;
   const quedan = cs.filter((c, i) => !((cs.length >= 3 && (pus[i] > med * 5 || pus[i] < med / 5)) || (cs.length === 2 && orden[1] / orden[0] > 5)));
+  for (const c of cs) if (!quedan.includes(c)) c.h.motivo = 'Precio contradictorio con las demás compras del genérico (error de unidad)';
   if (!quedan.length) continue;
   quedan.sort((a, b) => a.fecha.localeCompare(b.fecha));
   const desde = new Date(Date.parse(CORTE) - VENTANA_DIAS * 86400000).toISOString().slice(0, 10);
@@ -320,6 +336,8 @@ w(`\nselect privado.bitacora('MIGRACIÓN HISTÓRICO COCINA', 'genericos', null, 
   'ubicacion_productos', ${ubicaciones.length}, 'costos_referencia', ${costosRef.length}, 'proveedores', ${proveedores.length}));`);
 mkdirSync(join(raiz, 'supabase', 'datos'), { recursive: true });
 writeFileSync(join(raiz, 'supabase', 'datos', 'historico_cocina.sql'), out.join('\n') + '\n');
+writeFileSync(join(raiz, 'supabase', 'datos', 'compras_historicas_cocina.sql'),
+  sqlComprasHistoricas('REC-COC', historicas, 'scripts/migracion/extraer_cocina.mjs', CORTE));
 
 // =====================================================================================
 // REPORTE

@@ -34,7 +34,7 @@ npm install
 npm run bd:instalar
 ```
 
-Aplica las 7 migraciones y carga el histórico de bar, el de cocina y el catálogo unificado. Al final dice cuántos genéricos, productos, provisionales y pares por revisar quedaron. Si se corta, se puede volver a correr: retoma donde iba.
+Aplica las migraciones y carga el histórico de bar, el de cocina, el catálogo unificado y las compras históricas línea a línea (referencia de precio para la recepción). Al final dice cuántos genéricos, productos, provisionales y pares por revisar quedaron. Si se corta, se puede volver a correr: retoma donde iba.
 
 ## 4. Crear el primer administrador
 

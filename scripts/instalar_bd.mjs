@@ -3,7 +3,8 @@
 //   npm run bd:instalar              — aplica lo que falte
 //   npm run bd:instalar -- --ver     — solo muestra qué falta, no toca nada
 // 1. supabase/migrations/*.sql en orden, cada una una sola vez.
-// 2. supabase/datos: historico_bar.sql, historico_cocina.sql y catalogo_unificado.sql. Son
+// 2. supabase/datos: historico_bar.sql, historico_cocina.sql, catalogo_unificado.sql y las compras
+//    históricas línea a línea (compras_historicas_*.sql, para la banda de precio). Son
 //    idempotentes; se vuelven a correr solo si el archivo cambió desde la última vez.
 // Cada archivo va en su propia transacción: si falla, no queda nada a medias y se detiene.
 // Lo aplicado queda en privado.versiones_bd.
@@ -17,7 +18,8 @@ import pg from 'pg';
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOLO_VER = process.argv.includes('--ver');
-const DATOS = ['historico_bar.sql', 'historico_cocina.sql', 'catalogo_unificado.sql'];
+const DATOS = ['historico_bar.sql', 'historico_cocina.sql', 'catalogo_unificado.sql',
+               'compras_historicas_bar.sql', 'compras_historicas_cocina.sql'];
 
 const envLocal = join(raiz, 'web', '.env.local');
 if (!process.env.DATABASE_URL && existsSync(envLocal)) {

@@ -13,7 +13,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { leerXlsx, fechaExcel } from './xlsx.mjs';
 import * as M from './mapeo.mjs';
-import { norm, uuid, lit, ent, redondear } from './comun.mjs';
+import { norm, uuid, lit, ent, redondear, sqlComprasHistoricas } from './comun.mjs';
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
@@ -240,6 +240,7 @@ function factorBase(prod, unidad) {
 }
 
 const INVALIDAN = ['H02', 'H03', 'H04', 'H09', 'H12'];
+const historicas = [];   // compras línea a línea → compras_historicas_bar.sql
 const compras = new Map();      // producto.id → [{fecha, base, valor}]
 const vistas = new Map();
 const nombresVistos = new Set();
@@ -256,19 +257,31 @@ for (const f of hoja(libroRecep, 'BD_RECEPCION_BAR', 2)) {
   if (r.excluir) { excluir(r.excluir, f); continue; }
   if (!r.prod) { excluir('Producto sin mapear', f); continue; }
   if (String(f.AA) === 'REVERSADA') { excluir('Línea REVERSADA', f); continue; }
-  const hall = INVALIDAN.filter((h) => String(f.AD || '').includes(h));
-  if (hall.length) { excluir(`Hallazgo que invalida el precio (${hall.join(', ')})`, f); continue; }
   const cant = ent(f.M), valor = ent(f.P), fecha = fechaExcel(f.C);
+  const factor = cant > 0 && valor > 0 && fecha ? factorBase(r.prod, f.K) : null;
+  // toda compra con cantidad en unidad base queda en el histórico; motivo = no cuenta para bandas ni costo
+  const anotar = (motivo) => {
+    if (!factor) return null;
+    const h = { id: f.A, fecha, prov: f.D, doc: f.F, nombre: f.G, generico: r.prod.generico, producto: r.prod.id,
+                base: cant * factor, valor, motivo };
+    historicas.push(h);
+    return h;
+  };
+  const hall = INVALIDAN.filter((h) => String(f.AD || '').includes(h));
+  if (hall.length) { excluir(`Hallazgo que invalida el precio (${hall.join(', ')})`, f); anotar(`Hallazgo ${hall.join(', ')}`); continue; }
   if (!(cant > 0) || !(valor > 0) || !fecha) { excluir('Sin cantidad, valor o fecha', f); continue; }
-  const factor = factorBase(r.prod, f.K);
   if (!factor) {
     (reporte.sinFactor[r.prod.codigo] = reporte.sinFactor[r.prod.codigo] || new Set()).add(String(f.K || '(vacía)'));
     excluir('Unidad de compra sin factor a unidad base', f); continue;
   }
   const llave = `${fecha}|${r.prod.id}|${cant}|${valor}`;
-  if (vistas.has(llave)) { reporte.duplicadas.push(`${f.A} repite ${vistas.get(llave)} (${f.G}, ${fecha}, ${cant} ${f.K || ''}, $${valor})`); continue; }
+  if (vistas.has(llave)) {
+    reporte.duplicadas.push(`${f.A} repite ${vistas.get(llave)} (${f.G}, ${fecha}, ${cant} ${f.K || ''}, $${valor})`);
+    anotar(`Repite la línea ${vistas.get(llave)}`);
+    continue;
+  }
   vistas.set(llave, f.A);
-  (compras.get(r.prod.id) || compras.set(r.prod.id, []).get(r.prod.id)).push({ fecha, base: cant * factor, valor, id: f.A });
+  (compras.get(r.prod.id) || compras.set(r.prod.id, []).get(r.prod.id)).push({ fecha, base: cant * factor, valor, id: f.A, h: anotar(null) });
 }
 
 const costosRef = [];
@@ -281,6 +294,7 @@ for (const [pid, cs] of compras) {
   const med = orden.length % 2 ? orden[(orden.length - 1) / 2] : (orden[orden.length / 2 - 1] + orden[orden.length / 2]) / 2;
   const quedan = cs.filter((c, i) => !((cs.length >= 3 && (pus[i] > med * 5 || pus[i] < med / 5))
                                        || (cs.length === 2 && orden[1] / orden[0] > 5)));
+  for (const c of cs) if (!quedan.includes(c)) c.h.motivo = 'Precio contradictorio con las demás compras del producto (error de unidad)';
   if (quedan.length < cs.length) reporte.avisos.push(`${prodPorId.get(pid).codigo}: ${cs.length - quedan.length} compra(s) descartada(s) por precio contradictorio.`);
   if (!quedan.length) continue;
   quedan.sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -428,6 +442,8 @@ w(`\nselect privado.bitacora('MIGRACIÓN HISTÓRICO BAR', 'genericos', null, jso
 
 mkdirSync(join(raiz, 'supabase', 'datos'), { recursive: true });
 writeFileSync(join(raiz, 'supabase', 'datos', 'historico_bar.sql'), out.join('\n') + '\n');
+writeFileSync(join(raiz, 'supabase', 'datos', 'compras_historicas_bar.sql'),
+  sqlComprasHistoricas('REC-BAR', historicas, 'scripts/migracion/extraer.mjs', CORTE));
 
 // =====================================================================================
 // REPORTE
