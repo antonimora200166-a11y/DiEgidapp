@@ -35,6 +35,8 @@ export function menuDe(p: Perfil): Opcion[] {
   const m: Opcion[] = [];
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/recibir', titulo: 'Recibir', detalle: 'Mercancía de proveedores, con foto de la factura' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/producir', titulo: 'Producir', detalle: 'Lotes de siropes, zumos y demás MPI, con su costo' });
+  if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/trasladar', titulo: 'Trasladar', detalle: 'Mover mercancía entre zonas: bodega → barra' });
+  if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/bajas', titulo: 'Bajas', detalle: 'Lo vencido, dañado o derramado' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/conteo', titulo: 'Contar', detalle: 'Conteo por zona (y el conteo inicial)' });
   if (p.rol !== 'servicio') m.push({ ruta: '/existencias', titulo: 'Existencias', detalle: 'Qué hay en cada zona y cuánto vale' });
   if (p.rol !== 'servicio') m.push({ ruta: '/catalogo', titulo: 'Catálogo', detalle: 'Buscar productos y validar los provisionales' });
