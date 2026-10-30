@@ -1,7 +1,7 @@
 // npm --prefix web test — mismos casos que supabase/tests/01_formula_promedio y 13_recepcion_costo.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { costoUnitarioBase, desvioPct, promedioTrasEntrada } from './costo.ts';
+import { costoLote, costoUnitarioBase, desvioPct, promedioTrasEntrada } from './costo.ts';
 
 test('costo por unidad base de una línea de factura', () => {
   assert.equal(costoUnitarioBase(52600, 4, 2500), 5.26);          // 4 bolsas × 2.500 g
@@ -44,4 +44,26 @@ test('desvío frente a la referencia', () => {
   assert.equal(desvioPct(5.5, 5.26), 5);
   assert.equal(desvioPct(4, 5), -20);
   assert.equal(desvioPct(4, null), null);
+});
+
+// mismos casos que supabase/tests/03_lote_y_ficha y 15_hoja_produccion
+test('costo de lote: Σ consumos al promedio / neto', () => {
+  const sirope = costoLote([{ base: 2000, costoPromedio: 5.26, sinCosto: false }, { base: 2000, costoPromedio: null, sinCosto: true }], 3800);
+  assert.equal(sirope.total, 10520);
+  assert.equal(sirope.unitario, 2.768421);
+  assert.equal(sirope.estado, 'COMPLETO');
+  assert.equal(sirope.rendimiento, 0.95);
+  assert.equal(costoLote([{ base: 1000, costoPromedio: 5.26, sinCosto: false }, { base: 1000, costoPromedio: null, sinCosto: true }], 1900).unitario, 2.768421);
+});
+
+test('costo de lote: un insumo sin costo conocido lo deja PARCIAL', () => {
+  const r = costoLote([{ base: 500, costoPromedio: 8, sinCosto: false }, { base: 100, costoPromedio: null, sinCosto: false }], 400);
+  assert.equal(r.estado, 'PARCIAL');
+  assert.equal(r.unitario, null);
+  assert.equal(r.total, 4000);
+});
+
+test('costo de lote: sin neto no hay costo unitario', () => {
+  assert.equal(costoLote([{ base: 500, costoPromedio: 8, sinCosto: false }], null).unitario, null);
+  assert.equal(costoLote([{ base: 500, costoPromedio: 8, sinCosto: false }], 0).rendimiento, null);
 });
