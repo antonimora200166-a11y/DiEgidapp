@@ -4,13 +4,13 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, editaArea, puedeOperar, type Area } from '@/lib/roles';
 import type { Parecido } from '@/lib/catalogo';
-import { validarProducto } from './acciones';
+import ListaCatalogo, { type FilaCatalogo } from './ListaCatalogo';
 
 export const metadata = { title: 'Catálogo' };
-const POR_PAGINA = 50;
+const POR_PAGINA = 120;
 
 type Fila = {
-  id: string; codigo: string; marca: string; presentacion: string; estado: string; clase_abc: string | null;
+  id: string; codigo: string; marca: string; presentacion: string; unidad_compra: string; estado: string; clase_abc: string | null;
   contenido_base: number | null; contenido_variable: boolean; creado_en: string; nota: string | null;
   genericos: { nombre: string; area: Area; estado: string; unidad_base: string; categoria: string | null; conservacion: string | null };
   creador: { nombre: string } | null;
@@ -51,7 +51,7 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
     encontrados = (data ?? []) as Parecido[];
   } else {
     let consulta = supabase.from('productos')
-      .select(`id, codigo, marca, presentacion, estado, clase_abc, contenido_base, contenido_variable, creado_en, nota,
+      .select(`id, codigo, marca, presentacion, unidad_compra, estado, clase_abc, contenido_base, contenido_variable, creado_en, nota,
                genericos!inner(nombre, area, estado, unidad_base, categoria, conservacion),
                creador:perfiles!productos_creado_por_fkey(nombre)`, { count: 'exact' })
       .eq('activo', true).in('genericos.area', area ? [area] : areas)
@@ -75,10 +75,19 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
     !p.genericos.conservacion && FALTAS.frio,
     (p.contenido_variable || !p.contenido_base) && FALTAS.factor,
   ].filter(Boolean) as string[];
+  const tarjetas: FilaCatalogo[] = filas.map((p) => ({
+    id: p.id, codigo: p.codigo, nombre: p.genericos.nombre, marca: p.marca, presentacion: p.presentacion, area: p.genericos.area,
+    estado: p.estado, clase_abc: p.clase_abc, unidad_base: p.genericos.unidad_base, unidad_compra: p.unidad_compra,
+    contenido_base: p.contenido_base === null ? null : Number(p.contenido_base), contenido_variable: p.contenido_variable,
+    creador: p.creador?.nombre ?? null, faltas: faltasDe(p), edita: valida.includes(p.genericos.area),
+  }));
+  const { data: categorias } = valida.length
+    ? await supabase.from('categorias').select('codigo, nombre, area').in('area', valida).eq('activo', true).order('area').order('nombre')
+    : { data: [] };
 
   return (
     <>
-      <h1>Catálogo</h1>
+      <h1 className="pagina-ancha">Catálogo</h1>
       <form className="fila" style={{ gridTemplateColumns: '1fr auto', alignItems: 'end' }}>
         <div>
           <label htmlFor="q">Buscar <span className="ayuda">genérico, marca o nombre de factura</span></label>
@@ -135,42 +144,7 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
             {estado === 'PROVISIONAL' && valida.length > 0 && total > 0 && ' · antes de validar, mira si están en Revisar duplicados'}
           </p>
           {filas.length ? (
-            <ul className="lista">
-              {filas.map((p) => {
-                const faltas = faltasDe(p);
-                const edita = valida.includes(p.genericos.area);
-                return (
-                  <li key={p.id}>
-                    <div className="linea">
-                      <div>
-                        {edita
-                          ? <Link href={`/catalogo/producto/${p.id}`}><strong>{p.genericos.nombre}</strong>{p.marca && ` · ${p.marca}`} · {p.presentacion}</Link>
-                          : <><strong>{p.genericos.nombre}</strong>{p.marca && ` · ${p.marca}`} · {p.presentacion}</>}
-                        <div className="cod">
-                          {p.codigo} · {p.genericos.area} · <span className={`etiqueta ${p.estado.toLowerCase()}`}>{p.estado}</span>
-                          {p.clase_abc && <> · clase {p.clase_abc}</>}
-                          {p.estado === 'PROVISIONAL' && <> · {p.creador?.nombre ?? 'migración'}</>}
-                        </div>
-                        {faltas.length > 0 && <div style={{ fontSize: '.82rem', color: 'var(--aviso)' }}>Falta: {faltas.join(' · ').toLowerCase()}</div>}
-                      </div>
-                      {edita && (
-                        <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                          <Link href={`/catalogo/producto/${p.id}`} className={`boton${p.estado === 'PROVISIONAL' ? '' : ' secundario'}`}>
-                            {p.estado === 'PROVISIONAL' ? 'Revisar' : 'Editar'}
-                          </Link>
-                          {p.estado === 'PROVISIONAL' && (
-                            <form action={validarProducto}>
-                              <input type="hidden" name="id" value={p.id} />
-                              <button type="submit" className="secundario" title="Validar sin cambios">Validar</button>
-                            </form>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <ListaCatalogo filas={tarjetas} categorias={categorias ?? []} />
           ) : <p className="tarjeta">No hay productos con estos filtros. ✔</p>}
           {paginas > 1 && (
             <div className="acciones">

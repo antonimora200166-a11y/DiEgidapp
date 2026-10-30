@@ -107,3 +107,11 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .tabla { width: 100%; border-collapse: collapse; font-size: .92rem; }
 .tabla th, .tabla td { text-align: left; padding: .5rem .4rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
 .desborde { overflow-x: auto; }
+
+/* Pantallas de trabajo en PC (catálogo): más ancho y tarjetas en rejilla de 3 o más columnas */
+.contenido:has(.pagina-ancha) { max-width: 1280px; }
+.rejilla { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); list-style: none; margin: 0; padding: 0; }
+.rejilla > li { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 10px; padding: .7rem .85rem; display: flex; flex-direction: column; gap: .35rem; }
+.rejilla > li.elegido { border-color: var(--marca); box-shadow: 0 0 0 1px var(--marca); }
+.barra-bloque { position: sticky; bottom: 0; z-index: 6; background: var(--tarjeta); border: 1px solid var(--marca); border-radius: var(--radio);
+                padding: .7rem .9rem calc(.7rem + env(safe-area-inset-bottom)); margin-top: 1rem; box-shadow: 0 -4px 16px rgb(0 0 0 / .12); }

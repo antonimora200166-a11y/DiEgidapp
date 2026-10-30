@@ -26,3 +26,14 @@ export async function validarProducto(form: FormData) {
   await supabase.rpc('validar_producto', { p_id: String(form.get('id')) });
   revalidatePath('/catalogo');
 }
+
+export type ResultadoBloque = { ok: number; fallidos: number; detalle: { id: string; codigo: string; ok: boolean; mensajes: string[] }[] };
+
+// Mismo cambio a varios productos: cada uno pasa por las reglas de public.editar_producto (public.editar_productos).
+export async function editarEnBloque(ids: string[], cambios: Record<string, unknown>, validar: boolean): Promise<ResultadoBloque | { error: string }> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('editar_productos', { p_ids: ids, p_cambios: cambios, p_validar: validar });
+  if (error) return { error: error.message };
+  revalidatePath('/catalogo', 'layout');
+  return data as ResultadoBloque;
+}
