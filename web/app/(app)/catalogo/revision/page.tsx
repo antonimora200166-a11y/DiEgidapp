@@ -6,7 +6,7 @@ import { areasDe, editaArea, type Area } from '@/lib/roles';
 import TarjetaPar, { type Par } from './TarjetaPar';
 
 export const metadata = { title: 'Revisar duplicados' };
-const POR_PAGINA = 15;
+const POR_PAGINA = 150;
 
 type GenericoFila = { id: string; codigo: string; nombre: string; unidad_base: string; estado: string; activo: boolean };
 type ParFila = {
@@ -15,11 +15,12 @@ type ParFila = {
   a: GenericoFila | null; b: GenericoFila | null;
 };
 
-export default async function Revision({ searchParams }: { searchParams: Promise<{ area?: string; tipo?: string }> }) {
+export default async function Revision({ searchParams }: { searchParams: Promise<{ area?: string; tipo?: string; pag?: string }> }) {
   const perfil = await perfilActual();
   const valida = areasDe(perfil).filter((a) => editaArea(perfil, a));
   if (!valida.length) redirect('/');
-  const { area: areaParam, tipo } = await searchParams;
+  const { area: areaParam, tipo, pag: pagParam } = await searchParams;
+  const pag = Math.max(1, Number(pagParam) || 1);
   const area = valida.includes(areaParam as Area) ? (areaParam as Area) : null;
   const supabase = await supabaseServidor();
 
@@ -29,7 +30,8 @@ export default async function Revision({ searchParams }: { searchParams: Promise
              b:genericos!revision_catalogo_b_generico_id_fkey(id, codigo, nombre, unidad_base, estado, activo)`, { count: 'exact' })
     .is('decision', null).in('area', area ? [area] : valida)
     // primero lo más seguro: duplicados exactos y los más parecidos
-    .order('tipo', { ascending: false }).order('parecido', { ascending: false }).limit(POR_PAGINA);
+    .order('tipo', { ascending: false }).order('parecido', { ascending: false }).order('id')
+    .range((pag - 1) * POR_PAGINA, pag * POR_PAGINA - 1);
   if (tipo === 'DUPLICADO' || tipo === 'CASI-DUPLICADO') consulta = consulta.eq('tipo', tipo);
   const { data, count } = await consulta;
   const filas = (data ?? []) as unknown as ParFila[];
@@ -39,9 +41,11 @@ export default async function Revision({ searchParams }: { searchParams: Promise
 
   // productos de los genéricos en pantalla
   const ids = [...new Set(filas.flatMap((f) => [f.a?.id, f.b?.id]).filter(Boolean))] as string[];
-  const { data: prods } = ids.length
-    ? await supabase.from('productos').select('codigo, generico_id, marca, presentacion, activo').in('generico_id', ids).order('activo', { ascending: false }).order('codigo')
-    : { data: [] };
+  // por tandas de 100: con 150 pares son hasta 300 genéricos y la dirección de la consulta tiene límite
+  const tandas = await Promise.all(Array.from({ length: Math.ceil(ids.length / 100) }, (_, i) =>
+    supabase.from('productos').select('codigo, generico_id, marca, presentacion, activo')
+      .in('generico_id', ids.slice(i * 100, (i + 1) * 100)).order('activo', { ascending: false }).order('codigo')));
+  const prods = tandas.flatMap((t) => t.data ?? []);
   const productosDe = (id?: string) => (prods ?? []).filter((p) => p.generico_id === id);
 
   const pares: Par[] = filas.map((f) => ({
@@ -89,9 +93,14 @@ export default async function Revision({ searchParams }: { searchParams: Promise
           <ul className="lista" style={{ gap: '1rem' }}>
             {pares.map((p) => <TarjetaPar key={p.id} par={p} />)}
           </ul>
-          {pendientes > pares.length && (
+          {(pag > 1 || pendientes > pag * POR_PAGINA) && (
             <div className="acciones">
-              <Link className="boton secundario" href={enlace({})}>Ver los siguientes ({pendientes - pares.length} más)</Link>
+              {pag > 1 && <Link className="boton secundario" href={enlace({ pag: pag === 2 ? null : String(pag - 1) })}>← Anteriores</Link>}
+              {pendientes > pag * POR_PAGINA && (
+                <Link className="boton secundario" href={enlace({ pag: String(pag + 1) })}>
+                  Ver los siguientes ({Math.min(POR_PAGINA, pendientes - pag * POR_PAGINA)} de {pendientes - pag * POR_PAGINA} más)
+                </Link>
+              )}
             </div>
           )}
         </>
