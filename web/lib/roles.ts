@@ -40,6 +40,7 @@ export function menuDe(p: Perfil): Opcion[] {
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/conteo', titulo: 'Contar', detalle: 'Conteo por zona (y el conteo inicial)' });
   if (p.rol !== 'servicio') m.push({ ruta: '/historial', titulo: 'Historial', detalle: 'Lo registrado, y anular lo que quedó mal' });
   if (p.rol !== 'servicio') m.push({ ruta: '/existencias', titulo: 'Existencias', detalle: 'Qué hay en cada zona y cuánto vale' });
+  if (p.rol !== 'servicio') m.push({ ruta: '/fichas', titulo: 'Fichas técnicas', detalle: 'Recetas de MPI, cócteles y platos: corregirlas y crearlas' });
   if (p.rol !== 'servicio') m.push({ ruta: '/catalogo', titulo: 'Catálogo', detalle: 'Buscar productos y validar los provisionales' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/catalogo/nuevo', titulo: 'Crear producto', detalle: 'Alta provisional, con búsqueda de parecidos' });
   if (areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/catalogo/revision', titulo: 'Revisar duplicados', detalle: 'Decidir si dos productos son el mismo y unirlos' });
