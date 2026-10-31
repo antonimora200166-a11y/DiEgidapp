@@ -19,7 +19,10 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  const { data: { user } } = await supabase.auth.getUser();
+  // getClaims verifica la firma del token aquí mismo (llaves ES256 del proyecto) y lo renueva si venció:
+  // sin ida y vuelta a Supabase Auth en cada petición.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ?? null;
 
   const ruta = request.nextUrl.pathname;
   const publica = PUBLICAS.some((p) => ruta === p || ruta.startsWith(`${p}/`));

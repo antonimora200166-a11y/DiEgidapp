@@ -126,3 +126,11 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .tabla-catalogo .celda-editable:hover { outline: 1px dashed var(--marca); outline-offset: -3px; }
 .tabla-catalogo .cod { white-space: nowrap; }
 .tabla-catalogo td:nth-child(3) { min-width: 160px; }
+
+/* esqueleto mientras carga una pantalla */
+.cargando { animation: aparecer .2s ease .15s both; }
+.hueso { border-radius: var(--radio); background: linear-gradient(90deg, var(--tarjeta) 25%, var(--borde) 50%, var(--tarjeta) 75%);
+         background-size: 200% 100%; animation: brillo 1.2s linear infinite; }
+@keyframes brillo { to { background-position: -200% 0; } }
+@keyframes aparecer { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .hueso { animation: none; } }
