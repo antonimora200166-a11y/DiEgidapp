@@ -115,3 +115,14 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .rejilla > li.elegido { border-color: var(--marca); box-shadow: 0 0 0 1px var(--marca); }
 .barra-bloque { position: sticky; bottom: 0; z-index: 6; background: var(--tarjeta); border: 1px solid var(--marca); border-radius: var(--radio);
                 padding: .7rem .9rem calc(.7rem + env(safe-area-inset-bottom)); margin-top: 1rem; box-shadow: 0 -4px 16px rgb(0 0 0 / .12); }
+
+/* Vista de lista del catálogo */
+.tabla-catalogo { font-size: .9rem; }
+.tabla-catalogo thead th { position: sticky; top: 0; background: var(--tarjeta); z-index: 2; white-space: nowrap; border-bottom: 2px solid var(--borde); }
+.tabla-catalogo td { vertical-align: middle; }
+.tabla-catalogo tr.elegida td { background: color-mix(in srgb, var(--marca) 12%, transparent); }
+.tabla-catalogo tr.fila-grupo td { background: var(--fondo); padding-top: .8rem; }
+.tabla-catalogo .celda-editable { cursor: pointer; }
+.tabla-catalogo .celda-editable:hover { outline: 1px dashed var(--marca); outline-offset: -3px; }
+.tabla-catalogo .cod { white-space: nowrap; }
+.tabla-catalogo td:nth-child(3) { min-width: 160px; }
