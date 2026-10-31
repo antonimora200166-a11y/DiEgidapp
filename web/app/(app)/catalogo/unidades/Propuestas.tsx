@@ -4,13 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { decidirPropuestas } from './acciones';
 
-type Cambios = { unidad_base?: string; unidad_compra?: string; contenido_base?: number; contenido_variable?: boolean; categoria?: string };
-type Actual = { unidad_base?: string; unidad_compra?: string; contenido_base?: number | null; contenido_variable?: boolean; categoria?: string | null };
+type Cambios = { unidad_base?: string; unidad_compra?: string; contenido_base?: number; contenido_variable?: boolean; categoria?: string;
+                 presentacion?: string; conservacion?: string; vida_util_dias?: number };
+type Actual = { unidad_base?: string; unidad_compra?: string; contenido_base?: number | null; contenido_variable?: boolean; categoria?: string | null;
+                presentacion?: string | null; conservacion?: string | null; vida_util_dias?: number | null };
 export type Propuesta = {
   id: string; producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; area: 'BAR' | 'COCINA';
   tipo: string; cambios: Cambios; actual: Actual; categoria_propuesta: string | null; seguridad: 'ALTA' | 'MEDIA' | 'BAJA';
   razon: string | null; estado: 'PENDIENTE' | 'ACEPTADA' | 'CORREGIDA' | 'RECHAZADA'; mensaje: string | null;
-  decidido_por: string | null; decidido_en: string | null;
+  decidido_por: string | null; decidido_en: string | null; fuente: string;
 };
 type Categoria = { codigo: string; nombre: string; area: string };
 
@@ -20,6 +22,8 @@ const QUE: Record<string, { t: string; f: (c: Cambios) => boolean }> = {
   contenido: { t: 'Contenido', f: (c) => c.contenido_base !== undefined },
   variable: { t: 'Se pesa al recibir', f: (c) => !!c.contenido_variable },
   categoria: { t: 'Categoría', f: (c) => !!c.categoria },
+  presentacion: { t: 'Presentación', f: (c) => !!c.presentacion },
+  almacenamiento: { t: 'Almacenamiento', f: (c) => !!c.conservacion || !!c.vida_util_dias },
 };
 const sinTildes = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const cant = (n: number | null | undefined) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CO', { maximumFractionDigits: 3 }));
@@ -38,6 +42,7 @@ export default function Propuestas({ filas, categorias, soloLectura }: { filas: 
   const [seguridad, setSeguridad] = useState<'todas' | 'ALTA' | 'MEDIA' | 'BAJA'>('todas');
   const [area, setArea] = useState<'todas' | 'BAR' | 'COCINA'>('todas');
   const [que, setQue] = useState<'todo' | keyof typeof QUE>('todo');
+  const [fuente, setFuente] = useState<'todas' | 'CLAUDE' | 'REGISTRO-PRODUCCION'>('todas');
   const [q, setQ] = useState('');
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [corrigiendo, setCorrigiendo] = useState<string | null>(null);
@@ -50,7 +55,8 @@ export default function Propuestas({ filas, categorias, soloLectura }: { filas: 
     && (seguridad === 'todas' || p.seguridad === seguridad)
     && (area === 'todas' || p.area === area)
     && (que === 'todo' || QUE[que].f(p.cambios))
-    && (!q.trim() || sinTildes(`${p.generico} ${p.marca} ${p.presentacion} ${p.codigo}`).includes(sinTildes(q.trim())))), [filas, estado, seguridad, area, que, q]);
+    && (fuente === 'todas' || p.fuente === fuente)
+    && (!q.trim() || sinTildes(`${p.generico} ${p.marca} ${p.presentacion} ${p.codigo}`).includes(sinTildes(q.trim())))), [filas, estado, seguridad, area, que, fuente, q]);
   const pendientes = filas.filter((p) => p.estado === 'PENDIENTE');
   const elegibles = visibles.filter((p) => p.estado === 'PENDIENTE');
   const todas = elegibles.length > 0 && elegibles.every((p) => sel.has(p.id));
@@ -79,7 +85,8 @@ export default function Propuestas({ filas, categorias, soloLectura }: { filas: 
                   categoria: p.cambios.categoria ?? categorias.find((c) => c.nombre === p.actual.categoria && c.area === p.area)?.codigo ?? '' });
   }
   function guardarCorreccion(p: Propuesta) {
-    const c: Cambios = {};
+    // lo que el panel no muestra (presentación, conservación, vida útil) se aplica como venía propuesto
+    const c: Cambios = { presentacion: p.cambios.presentacion, conservacion: p.cambios.conservacion, vida_util_dias: p.cambios.vida_util_dias };
     if (borrador.unidad_base && borrador.unidad_base !== p.actual.unidad_base) c.unidad_base = borrador.unidad_base;
     if (borrador.unidad_compra && borrador.unidad_compra.toUpperCase() !== p.actual.unidad_compra) c.unidad_compra = borrador.unidad_compra.toUpperCase();
     if (borrador.contenido_variable) c.contenido_variable = true;
@@ -109,6 +116,7 @@ export default function Propuestas({ filas, categorias, soloLectura }: { filas: 
         <Chips valor={estado} poner={(v) => { setEstado(v); setSel(new Set()); }} opciones={[['PENDIENTE', 'Pendientes'], ['HECHAS', 'Aplicadas'], ['RECHAZADA', 'Rechazadas'], ['todas', 'Todas']]} />
         <Chips valor={seguridad} poner={setSeguridad} opciones={[['todas', 'Toda seguridad'], ['ALTA', 'Alta'], ['MEDIA', 'Media'], ['BAJA', 'Baja (revisar)']]} />
         <Chips valor={area} poner={setArea} opciones={[['todas', 'Bar y cocina'], ['BAR', 'Bar'], ['COCINA', 'Cocina']]} />
+        <Chips valor={fuente} poner={setFuente} opciones={[['todas', 'Toda fuente'], ['CLAUDE', 'Revisión del catálogo'], ['REGISTRO-PRODUCCION', 'Registro de producción']]} />
         <Chips valor={que} poner={setQue} opciones={[['todo', 'Todo cambio'], ...Object.entries(QUE).map(([k, v]) => [k, v.t] as [keyof typeof QUE, string])]} />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar producto o código…" aria-label="Buscar" style={{ maxWidth: 420 }} />
       </div>
@@ -128,7 +136,7 @@ export default function Propuestas({ filas, categorias, soloLectura }: { filas: 
                   <input type="checkbox" aria-label="Seleccionar las visibles" checked={todas} style={{ width: 20, minHeight: 20 }}
                          onChange={() => setSel(todas ? new Set() : new Set(elegibles.map((p) => p.id)))} />
                 )}</th>
-                <th>Producto</th><th>Unidad base</th><th>Compra</th><th>Contenido</th><th>Categoría</th><th>Seguridad</th><th>Por qué</th><th />
+                <th>Producto</th><th>Unidad base</th><th>Presentación</th><th>Compra</th><th>Contenido</th><th>Categoría</th><th>Almacenamiento</th><th>Seguridad</th><th>Por qué</th><th />
               </tr>
             </thead>
             <tbody>
@@ -147,11 +155,15 @@ export default function Propuestas({ filas, categorias, soloLectura }: { filas: 
                       <div className="suave" style={{ fontSize: '.82rem' }}>{p.presentacion} · <span className="cod">{p.codigo}</span></div>
                     </td>
                     <td>{celda(a.unidad_base, c.unidad_base)}</td>
+                    <td>{celda(a.presentacion ?? p.presentacion, c.presentacion)}</td>
                     <td>{celda(a.unidad_compra, c.unidad_compra)}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{celda(contenidoActual, contenidoNuevo)}</td>
                     <td>{celda(a.categoria ?? 'sin categoría', c.categoria ? (p.categoria_propuesta ?? c.categoria) : undefined)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{celda([a.conservacion, a.vida_util_dias && `${a.vida_util_dias} d`].filter(Boolean).join(' · ') || '—',
+                      c.conservacion || c.vida_util_dias ? [c.conservacion ?? a.conservacion, (c.vida_util_dias ?? a.vida_util_dias) && `${c.vida_util_dias ?? a.vida_util_dias} d`].filter(Boolean).join(' · ') : undefined)}</td>
                     <td><span className="etiqueta" style={{ color: COLOR[p.seguridad] }}>{p.seguridad.toLowerCase()}</span></td>
                     <td style={{ fontSize: '.85rem', minWidth: 220 }}>
+                      {p.fuente === 'REGISTRO-PRODUCCION' && <span className="etiqueta validado" style={{ marginRight: '.3rem' }}>registro</span>}
                       {p.razon}
                       {p.mensaje && <div style={{ color: p.estado === 'PENDIENTE' ? 'var(--error)' : 'var(--suave)', marginTop: '.2rem' }}>{p.mensaje}</div>}
                       {p.estado !== 'PENDIENTE' && <div className="suave" style={{ marginTop: '.2rem' }}>{p.estado.toLowerCase()} · {p.decidido_por ?? ''}</div>}
