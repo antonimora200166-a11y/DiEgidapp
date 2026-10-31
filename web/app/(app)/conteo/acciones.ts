@@ -4,8 +4,8 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import type { Resultado } from '@/lib/catalogo';
 
-export type LineaConteo = { producto_id: string; cantidad?: number; unidades_compra?: number; peso_bruto_g?: number };
-export type ResultadoConteo = Resultado & { ajustes?: number; sin_costo?: number };
+export type LineaConteo = { producto_id: string; cantidad?: number; unidades_compra?: number; peso_bruto_g?: number; recontado?: boolean; primer_conteo?: number };
+export type ResultadoConteo = Resultado & { ajustes?: number; sin_costo?: number; recontar?: { producto_id: string; contada: number }[] };
 
 // Fecha operativa en Cali (la base vuelve a validarla: no se cuenta en el futuro).
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());

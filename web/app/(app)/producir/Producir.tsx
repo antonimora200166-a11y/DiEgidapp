@@ -27,6 +27,7 @@ type Consumo = {
   clave: string; generico_id: string; generico: string; unidad_base: UnidadBase; producto_id: string | null;
   cantidad: string; unidad: string; unidad_ficha: string | null; factor_ficha: number | null;
   linea_ficha: number | null; editada: boolean; nota: string;
+  merma?: string;   // lo que se botó de esa cantidad (cáscara, semillas, colado), en la misma unidad
 };
 
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
@@ -140,8 +141,11 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
     const ins = c.producto_id ? insumoPorId.get(c.producto_id) : undefined;
     const q = num(c.cantidad), f = factor(c, c.unidad);
     const base = q !== null && f !== null ? q * f : null;
+    const m = num(c.merma ?? '');
+    const mermaBase = m !== null && f !== null ? m * f : null;
+    const mermaMala = m !== null && (m < 0 || (q !== null && m > q));
     const hay = c.producto_id && zona ? saldo(c.producto_id, zona) : 0;
-    return { c, ins, q, f, base, hay, sinCosto: ins?.tipo === 'SIN_COSTO', falta: !!zona && ins?.tipo !== 'SIN_COSTO' && base !== null && base > hay };
+    return { c, ins, q, f, base, mermaBase, mermaMala, hay, sinCosto: ins?.tipo === 'SIN_COSTO', falta: !!zona && ins?.tipo !== 'SIN_COSTO' && base !== null && base > hay };
   });
   const netoN = num(neto);
   const k = num(tandas) ?? 1;
@@ -152,6 +156,9 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
   const rendFicha = ficha?.neto_esperado && fichaBase ? ficha.neto_esperado / fichaBase : null;
   const incompletas = filas.filter((x) => !x.c.producto_id || x.q === null || x.q <= 0).length;
   const sinConversion = filas.filter((x) => x.q !== null && x.f === null).length;
+  const mermasMalas = filas.filter((x) => x.mermaMala).length;
+  const mermaTotal = filas.reduce((t, x) => t + (x.mermaBase && x.mermaBase > 0 ? x.mermaBase : 0), 0);
+  const desvio = costo.rendimiento !== null && rendFicha ? Math.abs(costo.rendimiento - rendFicha) / rendFicha * 100 : null;
 
   function guardar(conMotivo: boolean) {
     if (!mpi) return;
@@ -162,7 +169,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
         ficha_id: ficha && consumos.some((c) => c.linea_ficha !== null) ? ficha.id : null,
         neto: netoN, unidades: num(unidades), tiempo_min: num(tiempo), observaciones: obs,
         motivo_forzado: conMotivo ? motivo : null,
-        consumos: consumos.map((c) => ({ producto_id: c.producto_id, cantidad: num(c.cantidad), unidad: c.unidad, nota: c.nota || null })),
+        consumos: consumos.map((c) => ({ producto_id: c.producto_id, cantidad: num(c.cantidad), unidad: c.unidad, merma: num(c.merma ?? ''), nota: c.nota || null })),
       });
       setResultado(r);
       if (r.ok) {
@@ -276,7 +283,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
           {/* ------------------------------------------------ ingredientes */}
           <h2>2. Ingredientes {consumos.length > 0 && <span className="suave" style={{ fontWeight: 400 }}>({consumos.length})</span>}</h2>
           <ul className="lista">
-            {filas.map(({ c, ins, q, f, base, hay, sinCosto, falta }) => {
+            {filas.map(({ c, ins, q, f, base, mermaMala, hay, sinCosto, falta }) => {
               const opciones = datos.insumos.filter((i) => i.generico_id === c.generico_id);
               return (
                 <li key={c.clave} style={!c.producto_id || q === null ? { borderColor: 'var(--aviso)', borderWidth: 2 } : undefined}>
@@ -304,9 +311,13 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                       {c.generico} no tiene producto en el catálogo de {area === 'BAR' ? 'bar' : 'cocina'}. Créalo o quita la línea.
                     </p>
                   ) : null}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '.5rem', marginTop: '.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '.5rem', marginTop: '.5rem' }}>
                     <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Cantidad usada
                       <input inputMode="decimal" value={c.cantidad} onChange={(e) => poner(c.clave, { cantidad: e.target.value, editada: true })} />
+                    </label>
+                    <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Merma <span className="ayuda">opcional</span>
+                      <input inputMode="decimal" value={c.merma ?? ''} aria-invalid={mermaMala || undefined} placeholder="lo que se botó"
+                             onChange={(e) => poner(c.clave, { merma: e.target.value })} style={mermaMala ? { borderColor: 'var(--error)' } : undefined} />
                     </label>
                     <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Unidad
                       <select value={c.unidad} onChange={(e) => poner(c.clave, { unidad: e.target.value, editada: true })} style={{ minWidth: 80 }}>
@@ -326,6 +337,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                       : null}
                     {zona && ins && !sinCosto && <> · en la zona hay {fmtCantidad(r4(hay))} {c.unidad_base}</>}
                   </div>
+                  {mermaMala && <div className="error" style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>La merma no puede ser mayor que la cantidad usada.</div>}
                   {falta && (
                     <div className="aviso" style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
                       El kardex no tiene tanto en esta zona. Si lo trajiste de otra, registra el traslado; si no, al guardar te pedirá un motivo.
@@ -370,7 +382,13 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                 Ingredientes: {fmtCantidad(r4(costo.entrada))} g/ml en total · costo <strong>{pesos(costo.total)}</strong>
                 {costo.unitario !== null && <> · <strong>{pesosU(costo.unitario)} por {mpi.unidad_base}</strong></>}
                 {costo.estado === 'PARCIAL' && <> · algún insumo no tiene costo: el lote quedará sin costo completo</>}
+                {mermaTotal > 0 && <><br />Merma: {fmtCantidad(r4(mermaTotal))} g/ml ({Math.round((mermaTotal / costo.entrada) * 1000) / 10} % de lo usado)</>}
                 {costo.rendimiento !== null && <><br />Rendimiento {Math.round(costo.rendimiento * 1000) / 10} %{rendFicha !== null && ` (ficha ${Math.round(rendFicha * 1000) / 10} %)`}</>}
+              </p>
+            )}
+            {desvio !== null && desvio > 15 && (
+              <p className="aviso" style={{ marginBottom: 0 }}>
+                El rendimiento se aparta {Math.round(desvio)} % de la ficha (más del 15 %). Revisa el neto y las cantidades antes de guardar; si está bien, anótalo en observaciones.
               </p>
             )}
           </section>
@@ -399,7 +417,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                 {enviando ? 'Guardando…' : 'Guardar con este motivo'}
               </button>
             ) : (
-              <button type="button" disabled={enviando || !zona || !consumos.length || incompletas > 0 || sinConversion > 0 || !(netoN && netoN > 0)}
+              <button type="button" disabled={enviando || !zona || !consumos.length || incompletas > 0 || sinConversion > 0 || mermasMalas > 0 || !(netoN && netoN > 0)}
                       onClick={() => guardar(false)}>
                 {enviando ? 'Guardando…' : 'Guardar lote'}
               </button>

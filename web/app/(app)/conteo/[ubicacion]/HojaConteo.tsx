@@ -1,13 +1,15 @@
 'use client';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { fmtCantidad } from '@/lib/catalogo';
+import { entenderDictado, type Dictado } from '@/lib/voz';
 import { registrarConteo, type LineaConteo, type ResultadoConteo } from '../acciones';
 
 export type ProductoHoja = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
   unidad_base: 'g' | 'ml' | 'und'; unidad_compra: string; contenido_base: number | null; contenido_variable: boolean;
   tiene_tara: boolean; tiene_kardex: boolean; asignado: boolean; orden: number | null; estado: string;
+  clase_abc: 'A' | 'B' | 'C' | null; ultimo_conteo: string | null; toca: boolean;
 };
 // Lo que se escribe por producto, como texto para no perder lo que la persona teclea
 type Captura = { cerradas: string; suelto: string; peso: string };
@@ -16,6 +18,17 @@ const VACIA: Captura = { cerradas: '', suelto: '', peso: '' };
 const num = (s: string) => { const n = Number(s.replace(',', '.')); return s.trim() === '' || !Number.isFinite(n) ? null : n; };
 // Se cuenta por unidades cerradas cuando la presentación trae un contenido fijo mayor que 1 unidad base
 const porCerradas = (p: ProductoHoja) => !p.contenido_variable && (p.contenido_base ?? 0) > 1;
+const nombreDe = (p: ProductoHoja) => [p.generico, p.marca, p.presentacion].filter(Boolean).join(' · ');
+// reconocimiento de voz del navegador (Chrome en Android y PC); sin él, el botón no aparece
+type Reconocedor = { lang: string; continuous: boolean; interimResults: boolean; start: () => void; stop: () => void;
+  onresult: ((e: { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
+  onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null };
+const crearReconocedor = (): Reconocedor | null => {
+  if (typeof window === 'undefined') return null;
+  const w = window as unknown as { SpeechRecognition?: new () => Reconocedor; webkitSpeechRecognition?: new () => Reconocedor };
+  const C = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+  return C ? new C() : null;
+};
 const cuenta = (c?: Captura) => !!c && (c.cerradas.trim() !== '' || c.suelto.trim() !== '' || c.peso.trim() !== '');
 
 export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubicacion: string; productos: ProductoHoja[]; haceInicial: boolean }) {
@@ -30,6 +43,14 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
   const [obs, setObs] = useState('');
   const [filtro, setFiltro] = useState('');
   const [soloFaltan, setSoloFaltan] = useState(false);
+  const tocan = inicial ? 0 : lista.filter((p) => p.toca).length;
+  const [soloTocan, setSoloTocan] = useState(tocan > 0);
+  // productos que hay que recontar → lo que dio el primer conteo (se guarda con el reconteo)
+  const [recontar, setRecontar] = useState<Record<string, number>>({});
+  const [vozDisponible, setVozDisponible] = useState(false);
+  const [escuchando, setEscuchando] = useState(false);
+  const [oido, setOido] = useState<{ texto: string; d?: Dictado; antes?: Captura; error?: string } | null>(null);
+  const reconocedor = useRef<Reconocedor | null>(null);
   const [resultado, setResultado] = useState<ResultadoConteo | null>(null);
   const [enviando, iniciar] = useTransition();
 
@@ -38,13 +59,15 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
   const [cargadoDe, setCargadoDe] = useState<string | null>(null);
   useEffect(() => {
     try { setCapturas(JSON.parse(localStorage.getItem(clave) || '{}')); } catch { setCapturas({}); }
+    try { setRecontar(JSON.parse(localStorage.getItem(`${clave}:recontar`) || '{}')); } catch { setRecontar({}); }
     setCargadoDe(clave);
     setResultado(null);
   }, [clave]);
   useEffect(() => {
     if (cargadoDe !== clave) return;
-    try { localStorage.setItem(clave, JSON.stringify(capturas)); } catch { /* sin almacenamiento: sigue en memoria */ }
-  }, [clave, cargadoDe, capturas]);
+    try { localStorage.setItem(clave, JSON.stringify(capturas)); localStorage.setItem(`${clave}:recontar`, JSON.stringify(recontar)); } catch { /* sin almacenamiento: sigue en memoria */ }
+  }, [clave, cargadoDe, capturas, recontar]);
+  useEffect(() => { setVozDisponible(!!crearReconocedor()); }, []);
 
   const poner = (id: string, campo: keyof Captura, valor: string) =>
     setCapturas((c) => ({ ...c, [id]: { ...(c[id] ?? VACIA), [campo]: valor } }));
@@ -52,9 +75,9 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
 
   const visibles = useMemo(() => {
     const f = filtro.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-    return lista.filter((p) => (!soloFaltan || !cuenta(capturas[p.producto_id]))
+    return lista.filter((p) => (!soloFaltan || !cuenta(capturas[p.producto_id])) && (!soloTocan || p.toca || p.producto_id in recontar)
       && (!f || `${p.generico} ${p.marca} ${p.presentacion} ${p.codigo}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(f)));
-  }, [lista, filtro, soloFaltan, capturas]);
+  }, [lista, filtro, soloFaltan, soloTocan, capturas, recontar]);
 
   function total(p: ProductoHoja, c?: Captura) {
     if (!c) return null;
@@ -74,6 +97,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
         continue;
       }
       const l: LineaConteo = { producto_id: p.producto_id };
+      if (p.producto_id in recontar) { l.recontado = true; l.primer_conteo = recontar[p.producto_id]; }
       if (cerr !== null && porCerradas(p)) l.unidades_compra = cerr;
       if (sue !== null) l.cantidad = sue;
       if (peso !== null) l.peso_bruto_g = peso;
@@ -91,13 +115,51 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
     iniciar(async () => {
       const r = await registrarConteo(ubicacion, inicial, lineas, obs);
       setResultado(r);
+      if (!r.ok && r.recontar?.length) {
+        // se cuentan otra vez sin ver el primer número: se borra lo escrito de esos productos
+        setRecontar((x) => ({ ...x, ...Object.fromEntries(r.recontar!.map((c) => [c.producto_id, Number(c.contada)])) }));
+        setCapturas((x) => { const n = { ...x }; for (const c of r.recontar!) delete n[c.producto_id]; return n; });
+        setSoloFaltan(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       if (r.ok) {
-        try { localStorage.removeItem(clave); } catch { /* nada */ }
+        try { localStorage.removeItem(clave); localStorage.removeItem(`${clave}:recontar`); } catch { /* nada */ }
         setCapturas({});
+        setRecontar({});
         setObs('');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     });
+  }
+
+  function dictar() {
+    if (escuchando) { reconocedor.current?.stop(); return; }
+    const rec = crearReconocedor();
+    if (!rec) return;
+    rec.lang = 'es-CO'; rec.continuous = true; rec.interimResults = false;
+    rec.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (!e.results[i].isFinal) continue;
+        const texto = e.results[i][0].transcript.trim();
+        const d = entenderDictado(texto, lista.map((p) => ({ id: p.producto_id, nombre: nombreDe(p), cerradas: porCerradas(p), tara: p.tiene_tara })));
+        if ('error' in d) { setOido({ texto, error: d.error }); continue; }
+        setCapturas((x) => {
+          setOido({ texto, d, antes: x[d.id] });
+          return { ...x, [d.id]: { ...(x[d.id] ?? VACIA), [d.campo]: d.valor } };
+        });
+      }
+    };
+    rec.onerror = (e) => setOido({ texto: '', error: e.error === 'not-allowed' ? 'El navegador no dejó usar el micrófono.' : 'No se pudo escuchar. Intenta de nuevo.' });
+    rec.onend = () => setEscuchando(false);
+    reconocedor.current = rec;
+    rec.start();
+    setEscuchando(true);
+  }
+  function deshacerDictado() {
+    if (!oido?.d) return;
+    const { id } = oido.d;
+    setCapturas((x) => { const n = { ...x }; if (oido.antes) n[id] = oido.antes; else delete n[id]; return n; });
+    setOido(null);
   }
 
   if (resultado?.ok) {
@@ -135,6 +197,12 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
         <p className="suave" style={{ fontSize: '.88rem' }}>{sinKardex.length} producto(s) de esta zona aún no tienen kardex: entran en el conteo inicial.</p>
       )}
 
+      {Object.keys(recontar).length > 0 && (
+        <p className="aviso" role="status">
+          <strong>Recuenta {Object.keys(recontar).length} producto(s)</strong> (marcados en rojo): lo contado se aparta mucho de lo esperado.
+          Cuéntalos otra vez con calma, escríbelos y guarda. Lo que salga en el segundo conteo es lo que queda.
+        </p>
+      )}
       {lista.length > 0 && (
         <>
           <div style={{ position: 'sticky', top: 56, zIndex: 5, background: 'var(--fondo)', padding: '.5rem 0' }}>
@@ -145,6 +213,30 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
                 Solo sin contar
               </label>
             </div>
+            {(tocan > 0 || vozDisponible) && (
+              <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '.4rem' }}>
+                {tocan > 0 && (
+                  <label style={{ margin: 0, fontWeight: 400, display: 'flex', gap: '.4rem', alignItems: 'center' }}>
+                    <input type="checkbox" checked={soloTocan} onChange={(e) => setSoloTocan(e.target.checked)} style={{ width: 22, minHeight: 22 }} />
+                    Solo los que toca contar hoy ({tocan})
+                  </label>
+                )}
+                {vozDisponible && (
+                  <button type="button" className={escuchando ? undefined : 'secundario'} onClick={dictar} style={{ minHeight: 38, padding: '.3rem .8rem' }}
+                          aria-pressed={escuchando}>
+                    {escuchando ? '■ Dejar de escuchar' : '🎤 Contar por voz'}
+                  </button>
+                )}
+              </div>
+            )}
+            {escuchando && !oido && <div className="suave" style={{ fontSize: '.85rem', marginTop: '.3rem' }}>Di el producto y la cantidad: «ginebra tres botellas», «limón 1500», «ron pesa 820».</div>}
+            {oido && (
+              <div className={oido.error ? 'aviso' : 'exito'} style={{ margin: '.4rem 0 0', padding: '.4rem .6rem', fontSize: '.88rem' }} role="status">
+                {oido.error ? oido.error : <>✔ {oido.d!.nombre} → {oido.d!.valor} {oido.d!.campo === 'cerradas' ? 'cerradas' : oido.d!.campo === 'peso' ? 'g (peso)' : ''}</>}
+                {oido.texto && <span className="suave"> · oí «{oido.texto}»</span>}
+                {oido.d && <button type="button" className="secundario" onClick={deshacerDictado} style={{ minHeight: 30, padding: '.1rem .6rem', marginLeft: '.5rem' }}>Deshacer</button>}
+              </div>
+            )}
             <div style={{ height: 6, background: 'var(--borde)', borderRadius: 99, overflow: 'hidden', marginTop: '.5rem' }} aria-hidden>
               <div style={{ width: `${Math.round((contados.length / lista.length) * 100)}%`, height: '100%', background: 'var(--ok)' }} />
             </div>
@@ -156,11 +248,17 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
               const c = capturas[p.producto_id];
               const t = total(p, c);
               return (
-                <li key={p.producto_id} style={cuenta(c) ? { borderColor: 'var(--ok)' } : undefined}>
+                <li key={p.producto_id} style={p.producto_id in recontar ? { borderColor: 'var(--error)', borderWidth: 2 } : cuenta(c) ? { borderColor: 'var(--ok)' } : undefined}>
                   <div className="linea" style={{ alignItems: 'flex-start' }}>
                     <div>
                       <strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}
-                      <div className="suave" style={{ fontSize: '.85rem' }}>{p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}</div>
+                      <div className="suave" style={{ fontSize: '.85rem' }}>
+                        {p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}
+                        {!inicial && p.clase_abc && <> · clase {p.clase_abc}</>}
+                        {!inicial && (p.ultimo_conteo ? <> · contado el {new Date(p.ultimo_conteo + 'T12:00:00').toLocaleDateString('es-CO')}</> : p.tiene_kardex && <> · sin contar aquí</>)}
+                      </div>
+                      {p.producto_id in recontar && <div style={{ color: 'var(--error)', fontSize: '.85rem', fontWeight: 600 }}>Recuéntalo</div>}
+                      {!inicial && p.toca && !(p.producto_id in recontar) && <span className="etiqueta provisional" style={{ fontSize: '.75rem' }}>toca hoy</span>}
                     </div>
                     <button type="button" className="secundario" style={{ minHeight: 36, padding: '.3rem .7rem' }}
                             onClick={() => setCapturas((x) => ({ ...x, [p.producto_id]: { cerradas: '', suelto: '0', peso: '' } }))}>
@@ -199,10 +297,10 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
           <label htmlFor="obs">Observaciones <span className="ayuda">opcional</span></label>
           <textarea id="obs" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
 
-          {resultado && !resultado.ok && (
+          {resultado && !resultado.ok && resultado.fatales.some((m) => !m.startsWith('F10')) && (
             <div className="error" role="alert">
               <strong>No se guardó:</strong>
-              <ul>{[...resultado.fatales, ...resultado.bloqueos, ...resultado.avisos].map((m) => <li key={m}>{m}</li>)}</ul>
+              <ul>{[...resultado.fatales.filter((m) => !m.startsWith('F10')), ...resultado.bloqueos, ...resultado.avisos].map((m) => <li key={m}>{m}</li>)}</ul>
             </div>
           )}
           <div className="acciones" style={{ position: 'sticky', bottom: 0, background: 'var(--fondo)', padding: '.6rem 0 calc(.6rem + env(safe-area-inset-bottom))' }}>

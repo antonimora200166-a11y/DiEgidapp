@@ -38,6 +38,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
         </nav>
       )}
       <Producir key={area} area={area} datos={data as DatosProduccion} zonas={zonas ?? []} />
+      <p style={{ marginTop: '1.2rem' }}><Link href="/producir/sin-costo">Lotes sin costo completo y por qué →</Link></p>
       {!!recientes?.length && (
         <>
           <h2>Últimos lotes</h2>
