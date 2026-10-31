@@ -6,6 +6,9 @@ import { costoLote } from '@/lib/costo';
 import type { Area } from '@/lib/roles';
 import { registrarLote, type ResultadoLote } from './acciones';
 import { confirmar } from '@/components/Dialogo';
+import Escaner from '@/components/Escaner';
+import Icono from '@/components/Icono';
+import { leerCodigo } from '@/lib/escaneo';
 
 type UnidadBase = 'g' | 'ml' | 'und';
 export type Mpi = {
@@ -69,6 +72,8 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
   const [buscarInsumo, setBuscarInsumo] = useState('');
   const [resultado, setResultado] = useState<ResultadoLote | null>(null);
   const [enviando, iniciar] = useTransition();
+  const [escaneando, setEscaneando] = useState(false);
+  const [leido, setLeido] = useState<{ ok: boolean; texto: string } | null>(null);
 
   const mpi = mpiId ? datos.mpis.find((m) => m.producto_id === mpiId) ?? null : null;
   const ficha = mpi?.ficha_id ? fichaPorId.get(mpi.ficha_id) ?? null : null;
@@ -161,6 +166,20 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
   const mermaTotal = filas.reduce((t, x) => t + (x.mermaBase && x.mermaBase > 0 ? x.mermaBase : 0), 0);
   const desvio = costo.rendimiento !== null && rendFicha ? Math.abs(costo.rendimiento - rendFicha) / rendFicha * 100 : null;
 
+  // El QR de una etiqueta de lote (o el código de barras de un insumo) agrega ese producto como ingrediente.
+  async function escaneado(texto: string) {
+    setEscaneando(false);
+    const r = await leerCodigo(texto);
+    const id = r.tipo === 'lote' ? r.lote.producto_id : r.tipo === 'producto' ? r.producto.producto_id : null;
+    const ins = id ? insumoPorId.get(id) : undefined;
+    if (r.tipo === 'lote' && r.lote.anulado) { setLeido({ ok: false, texto: `El lote ${r.lote.codigo} está anulado: no lo uses.` }); return; }
+    if (r.tipo === 'lote' && r.lote.vence && r.lote.vence < hoyCali()) { setLeido({ ok: false, texto: `El lote ${r.lote.codigo} de ${r.lote.mpi} venció: no lo uses.` }); return; }
+    if (!ins) { setLeido({ ok: false, texto: r.tipo === 'desconocido' ? 'No conozco ese código. Busca el ingrediente por nombre.' : 'Eso no es un ingrediente de esta área.' }); return; }
+    if (consumos.some((c) => c.producto_id === ins.producto_id)) { setLeido({ ok: true, texto: `${ins.generico} ya está en los ingredientes.` }); return; }
+    agregarInsumo(ins);
+    setLeido({ ok: true, texto: `✔ ${ins.generico}${r.tipo === 'lote' ? ` (lote ${r.lote.codigo})` : ''} agregado: escribe la cantidad.` });
+  }
+
   function guardar(conMotivo: boolean) {
     if (!mpi) return;
     setResultado(null);
@@ -198,7 +217,8 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
         </p>
         {resultado.avisos.length > 0 && <div className="aviso"><ul style={{ margin: 0 }}>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
         <div className="acciones">
-          <button type="button" onClick={empezarDeNuevo}>Producir otro</button>
+          <Link className="boton" href={`/l/${encodeURIComponent(resultado.codigo ?? '')}/etiqueta`}><Icono nombre="qr" /> Imprimir etiquetas</Link>
+          <button type="button" className="secundario" onClick={empezarDeNuevo}>Producir otro</button>
           <Link className="boton secundario" href="/existencias">Ver existencias</Link>
         </div>
       </div>
@@ -348,7 +368,12 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
               );
             })}
           </ul>
-          <label htmlFor="otro">Agregar ingrediente</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '.5rem', marginTop: '.9rem' }}>
+            <label htmlFor="otro" style={{ margin: 0 }}>Agregar ingrediente</label>
+            <button type="button" className="secundario chico" onClick={() => { setLeido(null); setEscaneando(true); }}><Icono nombre="escanear" /> Escanear</button>
+          </div>
+          {leido && <p className={leido.ok ? 'exito' : 'aviso'} style={{ margin: '.4rem 0', padding: '.4rem .6rem' }}>{leido.texto}</p>}
+          {escaneando && <Escaner titulo="Escanear lote o producto" onCerrar={() => setEscaneando(false)} onCodigo={escaneado} />}
           <input id="otro" placeholder="Buscar en el catálogo…" value={buscarInsumo} onChange={(e) => setBuscarInsumo(e.target.value)} />
           {opcionesInsumo.length > 0 && (
             <ul className="lista" style={{ marginTop: '.4rem' }}>

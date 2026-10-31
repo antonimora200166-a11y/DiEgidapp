@@ -3,6 +3,9 @@ import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { fmtCantidad } from '@/lib/catalogo';
 import { entenderDictado, type Dictado } from '@/lib/voz';
+import { asociarCodigo, leerCodigo } from '@/lib/escaneo';
+import Escaner from '@/components/Escaner';
+import Icono from '@/components/Icono';
 import { registrarConteo, type LineaConteo, type ResultadoConteo } from '../acciones';
 import { confirmar } from '@/components/Dialogo';
 
@@ -50,7 +53,10 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
   const [recontar, setRecontar] = useState<Record<string, number>>({});
   const [vozDisponible, setVozDisponible] = useState(false);
   const [escuchando, setEscuchando] = useState(false);
-  const [oido, setOido] = useState<{ texto: string; d?: Dictado; antes?: Captura; error?: string } | null>(null);
+  const [oido, setOido] = useState<{ texto: string; d?: Dictado; antes?: Captura; error?: string; leido?: boolean } | null>(null);
+  const [escaneando, setEscaneando] = useState(false);
+  const [porAsociar, setPorAsociar] = useState<string | null>(null);
+  const [buscarAsociar, setBuscarAsociar] = useState('');
   const reconocedor = useRef<Reconocedor | null>(null);
   const [resultado, setResultado] = useState<ResultadoConteo | null>(null);
   const [enviando, iniciar] = useTransition();
@@ -131,6 +137,37 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     });
+  }
+
+  // Escanear: cada código suma una unidad cerrada del producto (o lo muestra si se cuenta suelto).
+  function sumarUna(p: ProductoHoja, texto: string) {
+    if (!porCerradas(p)) {
+      setFiltro(p.generico); setSoloFaltan(false); setSoloTocan(false);
+      setOido({ texto, leido: true, error: `${nombreDe(p)}: se cuenta en ${p.unidad_base}; escribe la cantidad.` });
+      return;
+    }
+    setCapturas((x) => {
+      const antes = x[p.producto_id];
+      const valor = String((num(antes?.cerradas ?? '') ?? 0) + 1);
+      setOido({ texto, leido: true, antes, d: { id: p.producto_id, campo: 'cerradas', valor, nombre: nombreDe(p) } });
+      return { ...x, [p.producto_id]: { ...(antes ?? VACIA), cerradas: valor } };
+    });
+  }
+  async function escaneado(texto: string) {
+    const r = await leerCodigo(texto);
+    const id = r.tipo === 'producto' ? r.producto.producto_id : r.tipo === 'lote' ? r.lote.producto_id : null;
+    if (r.tipo === 'desconocido') { setEscaneando(false); setPorAsociar(r.codigo); setBuscarAsociar(''); return; }
+    const p = lista.find((x) => x.producto_id === id);
+    if (!p) { setOido({ texto, leido: true, error: `${r.tipo === 'producto' ? r.producto.generico : r.tipo === 'lote' ? r.lote.mpi : 'Ese producto'} no está en la hoja de esta zona.` }); return; }
+    sumarUna(p, texto);
+  }
+  async function asociar(p: ProductoHoja) {
+    if (!porAsociar) return;
+    const r = await asociarCodigo(porAsociar, p.producto_id);
+    if (!r.ok) { setOido({ texto: porAsociar, leido: true, error: r.error }); setPorAsociar(null); return; }
+    const codigo = porAsociar;
+    setPorAsociar(null);
+    sumarUna(p, codigo);
   }
 
   function dictar() {
@@ -214,8 +251,9 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
                 Solo sin contar
               </label>
             </div>
-            {(tocan > 0 || vozDisponible) && (
+            {(
               <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '.4rem' }}>
+                <button type="button" className="secundario chico" onClick={() => { setOido(null); setEscaneando(true); }}><Icono nombre="escanear" /> Escanear</button>
                 {tocan > 0 && (
                   <label style={{ margin: 0, fontWeight: 400, display: 'flex', gap: '.4rem', alignItems: 'center' }}>
                     <input type="checkbox" checked={soloTocan} onChange={(e) => setSoloTocan(e.target.checked)} style={{ width: 22, minHeight: 22 }} />
@@ -234,8 +272,25 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
             {oido && (
               <div className={oido.error ? 'aviso' : 'exito'} style={{ margin: '.4rem 0 0', padding: '.4rem .6rem', fontSize: '.88rem' }} role="status">
                 {oido.error ? oido.error : <>✔ {oido.d!.nombre} → {oido.d!.valor} {oido.d!.campo === 'cerradas' ? 'cerradas' : oido.d!.campo === 'peso' ? 'g (peso)' : ''}</>}
-                {oido.texto && <span className="suave"> · oí «{oido.texto}»</span>}
+                {oido.texto && <span className="suave"> · {oido.leido ? 'leí' : 'oí'} «{oido.texto}»</span>}
                 {oido.d && <button type="button" className="secundario mini" onClick={deshacerDictado} style={{ marginLeft: '.5rem' }}>Deshacer</button>}
+              </div>
+            )}
+            {escaneando && <Escaner continuo titulo="Escanear: cada botella suma una" onCerrar={() => setEscaneando(false)} onCodigo={escaneado} />}
+            {porAsociar && (
+              <div className="tarjeta" style={{ marginTop: '.5rem', padding: '.7rem' }}>
+                <strong>Código nuevo <span className="cod">{porAsociar}</span>: ¿qué producto es?</strong>
+                <div className="suave" style={{ fontSize: '.82rem' }}>Elígelo una vez y la app lo reconoce en adelante.</div>
+                <input autoFocus value={buscarAsociar} onChange={(e) => setBuscarAsociar(e.target.value)} placeholder="Buscar en esta zona…" style={{ marginTop: '.4rem' }} />
+                <div style={{ display: 'grid', gap: '.3rem', marginTop: '.4rem', maxHeight: 220, overflowY: 'auto' }}>
+                  {lista.filter((p) => !buscarAsociar.trim() || nombreDe(p).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+                    .includes(buscarAsociar.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''))).slice(0, 8).map((p) => (
+                    <button key={p.producto_id} type="button" className="secundario chico" style={{ justifyContent: 'flex-start', textAlign: 'left' }} onClick={() => asociar(p)}>
+                      {nombreDe(p)}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="discreto mini" style={{ marginTop: '.4rem' }} onClick={() => setPorAsociar(null)}>Cancelar</button>
               </div>
             )}
             <div style={{ height: 6, background: 'var(--borde)', borderRadius: 99, overflow: 'hidden', marginTop: '.5rem' }} aria-hidden>

@@ -41,6 +41,8 @@ export function menuDe(p: Perfil): Opcion[] {
   if (p.rol !== 'servicio') m.push({ ruta: '/historial', titulo: 'Historial', detalle: 'Lo registrado, y anular lo que quedó mal', icono: 'historial' });
   if (p.rol !== 'servicio') m.push({ ruta: '/existencias', titulo: 'Existencias', detalle: 'Qué hay en cada zona y cuánto vale', icono: 'existencias' });
   if (p.rol !== 'servicio') m.push({ ruta: '/fichas', titulo: 'Fichas técnicas', detalle: 'Recetas de MPI, cócteles y platos: corregirlas y crearlas', icono: 'fichas' });
+  if (areasDe(p).length && p.rol !== 'servicio') m.push({ ruta: '/pedido', titulo: 'Pedido sugerido', detalle: 'Lo que está en el mínimo, por proveedor, listo para mandar', icono: 'pedido' });
+  if (areasDe(p).length && p.rol !== 'servicio') m.push({ ruta: '/carta', titulo: 'Carta y margen', detalle: 'Costo de cada cóctel y plato contra su precio', icono: 'carta' });
   if (p.rol !== 'servicio') m.push({ ruta: '/catalogo', titulo: 'Catálogo', detalle: 'Buscar productos y validar los provisionales', icono: 'catalogo' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/catalogo/nuevo', titulo: 'Crear producto', detalle: 'Alta provisional, con búsqueda de parecidos', icono: 'nuevo' });
   if (areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/catalogo/revision', titulo: 'Revisar duplicados', detalle: 'Decidir si dos productos son el mismo y unirlos', icono: 'revision' });

@@ -17,6 +17,10 @@ const TRAZOS: Record<string, string> = {
   registro: 'M3 12h4l3-7 4 14 3-7h4',
   cuenta: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
   salir: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h11',
+  pedido: 'M3 4h2.5l2.2 10.5h10.6L20.5 7H7M9.5 19.5a1 1 0 1 0 0 .01M17 19.5a1 1 0 1 0 0 .01',
+  carta: 'M6 3h12l-1.5 7a4.5 4.5 0 0 1-9 0zM12 14.5V21M8.5 21h7',
+  qr: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2M14 18h2v2M18 18h2v2h-2',
+  escanear: 'M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10',
   mas: 'M5 5h5v5H5zM14 5h5v5h-5zM5 14h5v5H5zM14 14h5v5h-5z',
 };
 export type NombreIcono = keyof typeof TRAZOS;

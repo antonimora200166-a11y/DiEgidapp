@@ -37,3 +37,12 @@ export async function editarEnBloque(ids: string[], cambios: Record<string, unkn
   revalidatePath('/catalogo', 'layout');
   return data as ResultadoBloque;
 }
+
+// Mínimo y máximo para el pedido sugerido (public.fijar_stock revisa el permiso del área).
+export async function fijarStock(id: string, minimo: number | null, maximo: number | null): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('fijar_stock', { p_producto: id, p_minimo: minimo, p_maximo: maximo });
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/pedido');
+  return data as { ok: boolean; error?: string };
+}

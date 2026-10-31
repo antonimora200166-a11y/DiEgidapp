@@ -8,6 +8,9 @@ import { aUnidadesCompra, origenLinea } from '@/lib/recepcion';
 import type { Area } from '@/lib/roles';
 import { leerFactura, registrarRecepcion, type Candidato } from './acciones';
 import { confirmar } from '@/components/Dialogo';
+import Escaner from '@/components/Escaner';
+import Icono from '@/components/Icono';
+import { asociarCodigo, leerCodigo } from '@/lib/escaneo';
 
 export type ProductoRecepcion = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -115,6 +118,36 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
   }, [clave, cargado, enc, lineas, foto, propuesta, totalFactura, notaIA]);
 
   const poner = (k: string, cambio: Partial<Linea>) => setLineas((ls) => ls.map((l) => (l.clave === k ? { ...l, ...cambio } : l)));
+  const [escaneando, setEscaneando] = useState(false);
+  const [porAsociar, setPorAsociar] = useState<string | null>(null);
+  const [buscarAsociar, setBuscarAsociar] = useState('');
+  const [leido, setLeido] = useState<{ ok: boolean; texto: string } | null>(null);
+
+  // Cada código escaneado suma una unidad de compra a la línea de ese producto (o la crea).
+  function sumarUna(id: string) {
+    const p = porId.get(id);
+    if (!p) return;
+    setLineas((ls) => {
+      const l = ls.find((x) => x.producto_id === id);
+      if (l) return ls.map((x) => (x === l ? { ...x, recibida: String((num(x.recibida) ?? 0) + 1) } : x));
+      return [...ls, { ...nueva(), producto_id: id, recibida: '1' }];
+    });
+    setLeido({ ok: true, texto: `✔ ${nombreDe(p)} +1` });
+  }
+  async function escaneado(texto: string) {
+    const r = await leerCodigo(texto);
+    if (r.tipo === 'desconocido') { setEscaneando(false); setPorAsociar(r.codigo); setBuscarAsociar(''); return; }
+    const id = r.tipo === 'producto' ? r.producto.producto_id : r.lote.producto_id;
+    if (!porId.has(id)) { setLeido({ ok: false, texto: 'Ese producto no se recibe en esta área.' }); return; }
+    sumarUna(id);
+  }
+  async function asociar(p: ProductoRecepcion) {
+    if (!porAsociar) return;
+    const r = await asociarCodigo(porAsociar, p.producto_id);
+    setPorAsociar(null);
+    if (!r.ok) { setLeido({ ok: false, texto: r.error ?? 'No se pudo guardar el código.' }); return; }
+    sumarUna(p.producto_id);
+  }
   const ponerEnc = (cambio: Partial<Encabezado>) => setEnc((e) => ({ ...e, ...cambio }));
 
   // ---------------------------------------------------------------- foto y lectura con IA
@@ -310,7 +343,28 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
       </ul>
       <div className="acciones" style={{ marginTop: '.6rem' }}>
         <button type="button" className="secundario" onClick={() => setLineas((ls) => [...ls, nueva()])}>+ Agregar producto</button>
+        <button type="button" className="secundario" onClick={() => { setLeido(null); setEscaneando(true); }}><Icono nombre="escanear" /> Escanear</button>
       </div>
+      {leido && <p className={leido.ok ? 'exito' : 'aviso'} style={{ margin: '.5rem 0', padding: '.4rem .6rem' }}>{leido.texto}</p>}
+      {escaneando && <Escaner continuo titulo="Escanear: cada unidad suma una" onCerrar={() => setEscaneando(false)} onCodigo={escaneado} />}
+      {porAsociar && (
+        <div className="tarjeta" style={{ marginTop: '.6rem', padding: '.7rem' }}>
+          <strong>Código nuevo <span className="cod">{porAsociar}</span>: ¿qué producto es?</strong>
+          <div className="suave" style={{ fontSize: '.82rem' }}>Elígelo una vez y la app lo reconoce en adelante.</div>
+          <input autoFocus value={buscarAsociar} onChange={(e) => setBuscarAsociar(e.target.value)} placeholder="Buscar en el catálogo…" style={{ marginTop: '.4rem' }} />
+          <div style={{ display: 'grid', gap: '.3rem', marginTop: '.4rem', maxHeight: 220, overflowY: 'auto' }}>
+            {buscarAsociar.trim().length >= 2 && productos.filter((x) => {
+              const t = sinTildes(`${x.generico} ${x.marca} ${x.presentacion} ${x.codigo}`);
+              return sinTildes(buscarAsociar).split(/\s+/).every((w) => t.includes(w));
+            }).slice(0, 8).map((x) => (
+              <button key={x.producto_id} type="button" className="secundario chico" style={{ justifyContent: 'flex-start', textAlign: 'left' }} onClick={() => asociar(x)}>
+                {nombreDe(x)} <span className="suave">· {x.presentacion}</span>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="discreto mini" style={{ marginTop: '.4rem' }} onClick={() => setPorAsociar(null)}>Cancelar</button>
+        </div>
+      )}
       {lineas.length > 0 && (
         <p className="suave" style={{ fontSize: '.9rem' }}>
           Suma de las líneas: <strong>{pesos(sumaLineas)}</strong>

@@ -211,3 +211,36 @@ button.quitar { min-height: 0; padding: 0 .25rem; background: none; border: 0; c
   .nav-inferior a[aria-current='page'] { color: var(--marca); }
   .nav-inferior a[aria-current='page'] .icono { background: color-mix(in srgb, var(--marca) 14%, transparent); border-radius: 999px; padding: .15rem; width: 2.6rem; }
 }
+
+/* Inicio · Hoy: lo que pide atención, de lo urgente a lo informativo */
+.pendientes { list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem; }
+.pendientes a { display: flex; align-items: center; gap: .7rem; padding: .7rem .85rem; border-radius: 10px; text-decoration: none;
+                background: var(--tarjeta); border: 1px solid var(--borde); border-left-width: 4px; }
+.pendientes a > span:nth-of-type(1) { flex: 1; }
+.pendientes a > span:last-child { color: var(--suave); font-size: 1.3rem; line-height: 1; }
+.pendientes .p-urgente a { border-left-color: var(--error); background: color-mix(in srgb, var(--error) 8%, var(--tarjeta)); }
+.pendientes .p-urgente .icono { color: var(--error); }
+.pendientes .p-aviso a { border-left-color: var(--aviso); }
+.pendientes .p-aviso .icono { color: var(--aviso); }
+.pendientes .p-info a { border-left-color: var(--borde); }
+.pendientes .p-info .icono { color: var(--suave); }
+
+/* lector de códigos con la cámara */
+.escaner-visor { position: relative; aspect-ratio: 4 / 3; background: #000; border-radius: 10px; overflow: hidden; display: grid; place-items: center; }
+.escaner-visor video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.escaner-visor span { position: relative; color: #fff; }
+.escaner-marco { position: absolute; inset: 18% 12%; border: 3px solid rgb(255 255 255 / .85); border-radius: 12px; box-shadow: 0 0 0 999px rgb(0 0 0 / .35); }
+
+/* etiqueta de lote para imprimir (62 mm, rollo de etiquetas o media hoja) */
+.etiqueta-lote { width: 62mm; padding: 3mm; border: 1px dashed var(--borde); background: #fff; color: #000; font-size: 9pt; line-height: 1.25; }
+.etiqueta-lote svg { width: 26mm; height: 26mm; float: right; margin: 0 0 1mm 2mm; }
+.etiqueta-lote strong { font-size: 11pt; display: block; }
+@media print {
+  .barra, .nav-inferior, .no-imprimir { display: none !important; }
+  body { background: #fff; }
+  .contenido { padding: 0; max-width: none; }
+  .etiqueta-lote { border: 0; break-inside: avoid; }
+}
+.datos { display: grid; grid-template-columns: auto 1fr; gap: .4rem 1rem; margin: 0; }
+.datos dt { color: var(--suave); }
+.datos dd { margin: 0; }

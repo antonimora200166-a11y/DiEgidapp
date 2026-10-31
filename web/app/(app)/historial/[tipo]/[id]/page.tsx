@@ -52,6 +52,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
     <>
       <p style={{ margin: '0 0 .3rem' }}><Link href="/historial">← Historial</Link></p>
       <h1>{NOMBRE_TIPO[tipo].singular} <span className="cod" style={{ fontSize: '1rem' }}>{s(e.codigo)}</span></h1>
+      {tipo === 'LOTE' && <p style={{ marginTop: '-.5rem' }}><Link href={`/l/${encodeURIComponent(s(e.codigo))}/etiqueta`}>Imprimir etiquetas con QR →</Link></p>}
 
       {anulado && (
         <p className="aviso"><strong>Anulado</strong> por {d.anulacion!.usuario ?? '—'} el {new Date(d.anulacion!.en).toLocaleDateString('es-CO')}: {d.anulacion!.motivo}</p>

@@ -4,6 +4,7 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { editaArea, type Area } from '@/lib/roles';
 import EditarProducto, { type Ficha } from './EditarProducto';
 import EliminarProductos from '@/components/EliminarProductos';
+import StockMinMax from './StockMinMax';
 
 export const metadata = { title: 'Producto' };
 
@@ -12,11 +13,11 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
   const perfil = await perfilActual();
   const supabase = await supabaseServidor();
   const { data } = await supabase.from('productos')
-    .select(`id, codigo, estado, activo, marca, presentacion, unidad_compra, contenido_base, contenido_variable, nota, clase_abc,
+    .select(`id, codigo, estado, activo, marca, presentacion, unidad_compra, contenido_base, contenido_variable, nota, clase_abc, stock_minimo, stock_maximo,
              generico:genericos!inner(id, codigo, nombre, tipo, categoria, unidad_base, conservacion, temp_max_llegada, estado, area)`)
     .eq('id', id).maybeSingle();
   if (!data) notFound();
-  const fila = data as unknown as Ficha & { nota: string | null; clase_abc: string | null; generico: Ficha['generico'] & { id: string; area: Area } };
+  const fila = data as unknown as Ficha & { nota: string | null; clase_abc: string | null; stock_minimo: number | null; stock_maximo: number | null; generico: Ficha['generico'] & { id: string; area: Area } };
   if (!editaArea(perfil, fila.generico.area)) redirect('/catalogo');
 
   // presentaciones del genérico: la unidad base solo cambia si ninguna tiene movimientos (igual que la RPC)
@@ -42,6 +43,9 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
       </p>
       {fila.nota && <p className="suave" style={{ fontSize: '.88rem' }}>{fila.nota}</p>}
       <EditarProducto ficha={fila} categorias={categorias ?? []} ubBloqueada={ubBloqueada} />
+      <h2>Pedido</h2>
+      <p className="suave" style={{ marginTop: 0, fontSize: '.88rem' }}>Cuando lo que hay llega al mínimo, sale en el <a href="/pedido">pedido sugerido</a> con lo que falta para el máximo.</p>
+      <StockMinMax id={fila.id} minimo={fila.stock_minimo === null ? null : Number(fila.stock_minimo)} maximo={fila.stock_maximo === null ? null : Number(fila.stock_maximo)} unidad={fila.unidad_compra || 'und'} />
       {perfil.rol === 'admin' && (
         <>
           <h2>Administración</h2>
