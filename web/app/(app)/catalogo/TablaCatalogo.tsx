@@ -6,6 +6,7 @@ import type { Resultado } from '@/lib/catalogo';
 import { editarEnBloque, editarProducto, validarProducto } from './acciones';
 import BarraBloque, { type Categoria } from './BarraBloque';
 import { faltasDe, type ProductoCatalogo } from './tipos';
+import { confirmar } from '@/components/Dialogo';
 
 // Vista de lista al estilo de Odoo: columnas que se prenden y apagan (quedan recordadas en este
 // equipo), edición en la celda y, si hay filas seleccionadas, el cambio se ofrece para todas.
@@ -81,14 +82,14 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
     setMensaje(null);
   }
 
-  function guardar(p: ProductoCatalogo, c: Col, valor: string) {
+  async function guardar(p: ProductoCatalogo, c: Col, valor: string) {
     setEditando(null);
     if (valor === (c.valor?.(p) ?? '')) return;
     const v: string | number | null = c.edit === 'num' ? (valor.trim() === '' ? null : Number(valor.replace(',', '.')))
       : c.edit === 'mayus' ? valor.trim().toUpperCase() : valor;
     const cambios = { [c.campo![0]]: { [c.campo![1]]: v } };
     const enBloque = c.bloque && sel.has(p.id) && sel.size > 1;
-    if (enBloque && !confirm(`¿Cambiar «${c.t}» en los ${sel.size} productos seleccionados?`)) return;
+    if (enBloque && !(await confirmar(`¿Cambiar «${c.t}» en los ${sel.size} productos seleccionados?`, { aceptar: 'Cambiar' }))) return;
     iniciar(async () => {
       if (enBloque) {
         const r = await editarEnBloque([...sel], cambios, false);
@@ -132,7 +133,7 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
         <span className="suave" style={{ fontSize: '.85rem' }}>
           Toca una celda para corregirla{sel.size > 1 ? `; con ${sel.size} filas seleccionadas, el cambio se ofrece para todas` : ''}. Enter guarda, Esc cancela.
         </span>
-        <button type="button" className="secundario" style={{ minHeight: 36, padding: '.25rem .7rem', whiteSpace: 'nowrap' }} onClick={() => setMenu((m) => !m)}>⚙ Columnas</button>
+        <button type="button" className={menu ? 'herramienta chico activa' : 'herramienta chico'} style={{ whiteSpace: 'nowrap' }} onClick={() => setMenu((m) => !m)}>⚙ Columnas</button>
         {menu && (
           <div className="tarjeta" style={{ position: 'absolute', right: 0, top: '100%', zIndex: 20, minWidth: 230, boxShadow: '0 8px 28px rgb(0 0 0 / .25)' }}>
             {COLUMNAS.map((c) => (
@@ -150,7 +151,7 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
         </div>
       )}
       <div className="desborde tarjeta" style={{ padding: 0 }}>
-        <table className="tabla tabla-catalogo">
+        <table className="tabla tabla-catalogo tabla-movil">
           <thead>
             <tr>
               <th style={{ width: 36 }}>
@@ -172,11 +173,11 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
                   </tr>
                 )}
                 <tr className={sel.has(p.id) ? 'elegida' : undefined}>
-                  <td>{p.edita && <input type="checkbox" aria-label={`Seleccionar ${p.generico}`} checked={sel.has(p.id)} onChange={() => cambia(p.id)} style={{ width: 20, minHeight: 20 }} />}</td>
+                  <td className="celda-sel">{p.edita && <input type="checkbox" aria-label={`Seleccionar ${p.generico}`} checked={sel.has(p.id)} onChange={() => cambia(p.id)} style={{ width: 20, minHeight: 20 }} />}</td>
                   {cols.map((c) => {
                     const puede = p.edita && !!c.edit && !(c.edit === 'tipo' && !['MPe', 'MPI'].includes(p.tipo));
                     return (
-                      <td key={c.k} className={puede ? 'celda-editable' : undefined} style={c.der ? { textAlign: 'right', whiteSpace: 'nowrap' } : undefined}
+                      <td key={c.k} data-t={c.t} className={puede ? 'celda-editable' : undefined} style={c.der ? { textAlign: 'right', whiteSpace: 'nowrap' } : undefined}
                           onClick={() => editando?.id === p.id && editando.k === c.k ? null : abrir(p, c)}
                           title={puede ? (c.bloque && sel.has(p.id) && sel.size > 1 ? `Cambiar en los ${sel.size} seleccionados` : 'Tocar para corregir') : undefined}>
                         {editando?.id === p.id && editando.k === c.k ? editor(p, c) : c.ver(p)}
@@ -188,7 +189,7 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
                     {p.edita && p.estado === 'PROVISIONAL' && p.activo && (
                       <form action={validarProducto} style={{ display: 'inline', marginLeft: '.5rem' }}>
                         <input type="hidden" name="id" value={p.id} />
-                        <button type="submit" className="secundario" style={{ minHeight: 30, padding: '.1rem .5rem', fontSize: '.85rem' }}>Validar</button>
+                        <button type="submit" className="secundario mini">Validar</button>
                       </form>
                     )}
                   </td>

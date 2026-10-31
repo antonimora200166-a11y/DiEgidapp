@@ -7,6 +7,7 @@ import { costoUnitarioBase, desvioPct, promedioTrasEntrada } from '@/lib/costo';
 import { aUnidadesCompra, origenLinea } from '@/lib/recepcion';
 import type { Area } from '@/lib/roles';
 import { leerFactura, registrarRecepcion, type Candidato } from './acciones';
+import { confirmar } from '@/components/Dialogo';
 
 export type ProductoRecepcion = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -336,7 +337,7 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
         </div>
       )}
 
-      <div className="acciones" style={{ position: 'sticky', bottom: 0, background: 'var(--fondo)', padding: '.6rem 0 calc(.6rem + env(safe-area-inset-bottom))' }}>
+      <div className="acciones barra-guardar">
         {bloqueado ? (
           <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>
             {enviando ? 'Guardando…' : 'Guardar con este motivo'}
@@ -349,7 +350,7 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
         )}
         {(lineas.length > 0 || foto) && (
           <button type="button" className="secundario" disabled={enviando}
-                  onClick={() => { if (confirm('¿Descartar esta recepción? Nada se ha guardado todavía.')) empezarDeNuevo(); }}>
+                  onClick={async () => { if (await confirmar('¿Descartar esta recepción? Nada se ha guardado todavía.', { aceptar: 'Descartar', peligro: true })) empezarDeNuevo(); }}>
             Descartar
           </button>
         )}
@@ -412,9 +413,9 @@ function TarjetaLinea({ n, l, c, productos, porId, poner, quitar }: {
           )}
         </div>
         <div style={{ display: 'flex', gap: '.4rem' }}>
-          {p && !eligiendo && <button type="button" className="secundario" style={{ minHeight: 36, padding: '.3rem .7rem' }} onClick={() => setEligiendo(true)}>Cambiar</button>}
-          <button type="button" className="secundario" style={{ minHeight: 36, padding: '.3rem .7rem' }} aria-label={`Quitar línea ${n}`}
-                  onClick={() => { if (!l.ia || confirm('¿Quitar esta línea? Úsalo para lo que no es insumo (domicilio, bolsas).')) quitar(); }}>Quitar</button>
+          {p && !eligiendo && <button type="button" className="secundario chico" onClick={() => setEligiendo(true)}>Cambiar</button>}
+          <button type="button" className="secundario chico" aria-label={`Quitar línea ${n}`}
+                  onClick={async () => { if (!l.ia || await confirmar('¿Quitar esta línea? Úsalo para lo que no es insumo (domicilio, bolsas).', { aceptar: 'Quitar' })) quitar(); }}>Quitar</button>
         </div>
       </div>
 
@@ -423,7 +424,7 @@ function TarjetaLinea({ n, l, c, productos, porId, poner, quitar }: {
           {sugeridos.length > 0 && (
             <div className="segmentos" style={{ marginBottom: '.4rem' }}>
               {sugeridos.map((x) => (
-                <button key={x.producto_id} type="button" className="secundario" style={{ minHeight: 40, padding: '.3rem .7rem', textAlign: 'left' }} onClick={() => elegir(x)}>
+                <button key={x.producto_id} type="button" className="secundario chico" style={{ textAlign: 'left' }} onClick={() => elegir(x)}>
                   {nombreDe(x)} <span className="suave">· {x.presentacion}</span>
                 </button>
               ))}

@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { eliminarProductos, reactivarProductos, type ResultadoEliminar } from '@/lib/productos';
+import { confirmar, pedirTexto } from '@/components/Dialogo';
 
 // Botones de administración para dar de baja (o reactivar) los productos elegidos. Se muestran
 // solo a administración; la base vuelve a revisar el permiso.
@@ -14,18 +15,18 @@ export default function EliminarProductos({ productos, alTerminar, etiqueta }: {
   const activos = productos.filter((p) => p.activo !== false);
   const inactivos = productos.filter((p) => p.activo === false);
 
-  function eliminar() {
-    const motivo = prompt(`Vas a eliminar ${activos.length} producto(s): salen de todas las listas y quedan en la bitácora; se pueden reactivar.\n\n¿Por qué se eliminan?`);
+  async function eliminar() {
+    const motivo = await pedirTexto(`Salen de todas las listas y quedan en la bitácora; se pueden reactivar. ¿Por qué se eliminan?`,
+      { titulo: `Eliminar ${activos.length} producto(s)`, aceptar: 'Eliminar', peligro: true, min: 5, placeholder: 'Ej.: duplicado, ya no se compra' });
     if (motivo === null) return;
-    if (motivo.trim().length < 5) { alert('Escribe el motivo (mínimo 5 caracteres).'); return; }
     iniciar(async () => {
       const r = await eliminarProductos(activos.map((p) => p.id), motivo.trim());
       setResultado(r);
       if (!('error' in r)) { alTerminar?.(); router.refresh(); }
     });
   }
-  function reactivar() {
-    if (!confirm(`¿Reactivar ${inactivos.length} producto(s)? Vuelven a las listas y pantallas de trabajo.`)) return;
+  async function reactivar() {
+    if (!(await confirmar(`Vuelven a las listas y pantallas de trabajo.`, { titulo: `¿Reactivar ${inactivos.length} producto(s)?`, aceptar: 'Reactivar' }))) return;
     iniciar(async () => {
       const r = await reactivarProductos(inactivos.map((p) => p.id));
       setResultado(r);
@@ -36,7 +37,7 @@ export default function EliminarProductos({ productos, alTerminar, etiqueta }: {
   return (
     <>
       {activos.length > 0 && (
-        <button type="button" className="secundario" disabled={enviando} onClick={eliminar} style={{ color: 'var(--error)', borderColor: 'var(--error)' }}>
+        <button type="button" className="secundario peligro" disabled={enviando} onClick={eliminar}>
           {enviando ? 'Eliminando…' : etiqueta ?? `Eliminar (${activos.length})`}
         </button>
       )}

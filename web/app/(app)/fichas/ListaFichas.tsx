@@ -43,7 +43,7 @@ export default function ListaFichas({ filas, variasAreas }: { filas: FilaFicha[]
       </span>;
     } },
     { k: 'lotes', t: 'Lotes', der: true, orden: (f) => f.lotes, ver: (f) => f.lotes || '—' },
-    { k: 'abrir', t: '', ver: (f) => <Link href={`/fichas/${f.generico_id}`} className="boton secundario" style={{ minHeight: 32, padding: '.1rem .6rem' }}>{f.ficha_id ? 'Abrir' : 'Crear ficha'}</Link> },
+    { k: 'abrir', t: '', ver: (f) => <Link href={`/fichas/${f.generico_id}`} className="boton secundario mini">{f.ficha_id ? 'Abrir' : 'Crear ficha'}</Link> },
   ];
   return (
     <VistaFiltrable clave="fichas" filas={filas} id={(f) => f.generico_id} buscar={(f) => `${f.codigo ?? ''} ${f.nombre}`}

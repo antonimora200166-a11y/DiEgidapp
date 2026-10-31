@@ -80,8 +80,8 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
             <Link key={t} href={enlace({ por: t === TAMANOS[0] ? undefined : String(t), pag: undefined })}
                   className={`boton secundario`} style={{ minHeight: 32, padding: '.1rem .55rem', ...(t === por ? { background: 'var(--marca)', color: 'var(--marca-texto)' } : {}) }}>{t}</Link>
           ))}
-          {pag > 1 && <Link className="boton secundario" style={{ minHeight: 32, padding: '.1rem .6rem' }} href={enlace({ pag: String(pag - 1) })} aria-label="Página anterior">‹</Link>}
-          {pag < paginas && <Link className="boton secundario" style={{ minHeight: 32, padding: '.1rem .6rem' }} href={enlace({ pag: String(pag + 1) })} aria-label="Página siguiente">›</Link>}
+          {pag > 1 && <Link className="boton secundario mini" href={enlace({ pag: String(pag - 1) })} aria-label="Página anterior">‹</Link>}
+          {pag < paginas && <Link className="boton secundario mini" href={enlace({ pag: String(pag + 1) })} aria-label="Página siguiente">›</Link>}
         </span>
       </div>
 

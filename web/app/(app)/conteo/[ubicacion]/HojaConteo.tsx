@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { fmtCantidad } from '@/lib/catalogo';
 import { entenderDictado, type Dictado } from '@/lib/voz';
 import { registrarConteo, type LineaConteo, type ResultadoConteo } from '../acciones';
+import { confirmar } from '@/components/Dialogo';
 
 export type ProductoHoja = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -86,7 +87,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
     return (cerr ?? 0) * (porCerradas(p) ? p.contenido_base! : 0) + (sue ?? 0);
   }
 
-  function guardar() {
+  async function guardar() {
     const lineas: LineaConteo[] = [];
     const malos: string[] = [];
     for (const p of contados) {
@@ -111,7 +112,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
     const aviso = inicial
       ? `Vas a abrir el kardex de ${lineas.length} producto(s) en esta zona.${faltan ? ` ${faltan} sin contar quedan para después.` : ''}`
       : `Vas a guardar ${lineas.length} producto(s). Las diferencias con el kardex quedan como ajuste.${faltan ? ` Los ${faltan} que no contaste no cambian.` : ''}`;
-    if (!confirm(`${aviso}\n\n¿Guardar el conteo?`)) return;
+    if (!(await confirmar(aviso, { titulo: '¿Guardar el conteo?', aceptar: 'Guardar' }))) return;
     iniciar(async () => {
       const r = await registrarConteo(ubicacion, inicial, lineas, obs);
       setResultado(r);
@@ -222,7 +223,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
                   </label>
                 )}
                 {vozDisponible && (
-                  <button type="button" className={escuchando ? undefined : 'secundario'} onClick={dictar} style={{ minHeight: 38, padding: '.3rem .8rem' }}
+                  <button type="button" className={escuchando ? 'chico' : 'secundario chico'} onClick={dictar}
                           aria-pressed={escuchando}>
                     {escuchando ? '■ Dejar de escuchar' : '🎤 Contar por voz'}
                   </button>
@@ -234,7 +235,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
               <div className={oido.error ? 'aviso' : 'exito'} style={{ margin: '.4rem 0 0', padding: '.4rem .6rem', fontSize: '.88rem' }} role="status">
                 {oido.error ? oido.error : <>✔ {oido.d!.nombre} → {oido.d!.valor} {oido.d!.campo === 'cerradas' ? 'cerradas' : oido.d!.campo === 'peso' ? 'g (peso)' : ''}</>}
                 {oido.texto && <span className="suave"> · oí «{oido.texto}»</span>}
-                {oido.d && <button type="button" className="secundario" onClick={deshacerDictado} style={{ minHeight: 30, padding: '.1rem .6rem', marginLeft: '.5rem' }}>Deshacer</button>}
+                {oido.d && <button type="button" className="secundario mini" onClick={deshacerDictado} style={{ marginLeft: '.5rem' }}>Deshacer</button>}
               </div>
             )}
             <div style={{ height: 6, background: 'var(--borde)', borderRadius: 99, overflow: 'hidden', marginTop: '.5rem' }} aria-hidden>
@@ -260,7 +261,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
                       {p.producto_id in recontar && <div style={{ color: 'var(--error)', fontSize: '.85rem', fontWeight: 600 }}>Recuéntalo</div>}
                       {!inicial && p.toca && !(p.producto_id in recontar) && <span className="etiqueta provisional" style={{ fontSize: '.75rem' }}>toca hoy</span>}
                     </div>
-                    <button type="button" className="secundario" style={{ minHeight: 36, padding: '.3rem .7rem' }}
+                    <button type="button" className="secundario chico"
                             onClick={() => setCapturas((x) => ({ ...x, [p.producto_id]: { cerradas: '', suelto: '0', peso: '' } }))}>
                       No hay
                     </button>
@@ -303,13 +304,13 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
               <ul>{[...resultado.fatales.filter((m) => !m.startsWith('F10')), ...resultado.bloqueos, ...resultado.avisos].map((m) => <li key={m}>{m}</li>)}</ul>
             </div>
           )}
-          <div className="acciones" style={{ position: 'sticky', bottom: 0, background: 'var(--fondo)', padding: '.6rem 0 calc(.6rem + env(safe-area-inset-bottom))' }}>
+          <div className="acciones barra-guardar">
             <button type="button" onClick={guardar} disabled={enviando || !contados.length}>
               {enviando ? 'Guardando…' : `Guardar conteo (${contados.length})`}
             </button>
             {contados.length > 0 && (
               <button type="button" className="secundario" disabled={enviando}
-                      onClick={() => { if (confirm('¿Borrar todo lo que has contado en esta zona?')) setCapturas({}); }}>
+                      onClick={async () => { if (await confirmar('¿Borrar todo lo que has contado en esta zona?', { aceptar: 'Borrar', peligro: true })) setCapturas({}); }}>
                 Empezar de nuevo
               </button>
             )}

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { perfilActual } from '@/lib/sesion';
 import { areasDe, menuDe } from '@/lib/roles';
+import Icono from '@/components/Icono';
 
 export default async function Inicio() {
   const perfil = await perfilActual();
@@ -14,8 +15,8 @@ export default async function Inicio() {
         <nav className="menu">
           {menu.map((o) => (
             <Link key={o.ruta} href={o.ruta} className="tarjeta">
-              <strong>{o.titulo}</strong>
-              <span>{o.detalle}</span>
+              <Icono nombre={o.icono} className="icono-menu" />
+              <span><strong>{o.titulo}</strong><span>{o.detalle}</span></span>
             </Link>
           ))}
         </nav>

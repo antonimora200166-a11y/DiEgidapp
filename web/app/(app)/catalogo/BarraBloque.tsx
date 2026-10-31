@@ -3,6 +3,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { editarEnBloque, type ResultadoBloque } from './acciones';
 import EliminarProductos from '@/components/EliminarProductos';
+import { confirmar } from '@/components/Dialogo';
 
 export type Categoria = { codigo: string; nombre: string; area: string };
 const NO = '';   // «no cambiar»
@@ -25,7 +26,7 @@ export default function BarraBloque({ elegidos, categorias, setSel, esAdmin }: {
   const [enviando, iniciar] = useTransition();
   const areasSel = [...new Set(elegidos.map((f) => f.area))];
 
-  function aplicar(soloValidar: boolean) {
+  async function aplicar(soloValidar: boolean) {
     const generico: Record<string, string> = {};
     const producto: Record<string, string | number> = {};
     if (!soloValidar) {
@@ -43,7 +44,7 @@ export default function BarraBloque({ elegidos, categorias, setSel, esAdmin }: {
                  num(contenido) !== null && `contenido ${contenido}`].filter(Boolean);
     const texto = soloValidar ? `¿Validar ${elegidos.length} producto(s)?`
       : `¿Aplicar a ${elegidos.length} producto(s): ${que.join(', ') || 'ningún cambio'}${conValidar ? ', y validarlos' : ''}?`;
-    if (!confirm(texto)) return;
+    if (!(await confirmar(texto, { aceptar: soloValidar ? 'Validar' : 'Aplicar' }))) return;
     setResultado(null);
     iniciar(async () => {
       const r = await editarEnBloque(elegidos.map((f) => f.id), cambios, conValidar);

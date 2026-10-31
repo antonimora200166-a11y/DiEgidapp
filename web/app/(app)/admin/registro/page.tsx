@@ -32,6 +32,9 @@ export default async function Registro({ searchParams }: { searchParams: Promise
   const desde = (pag - 1) * POR_PAGINA, hasta = pag * POR_PAGINA - 1;
 
   let eventos: Evento[] = [], errores: ErrorApp[] = [], total = 0;
+  // el conteo de la semana corre a la par de la lista
+  const semana = Promise.resolve(supabase.from('errores_app').select('id', { count: 'exact', head: true })
+    .gte('ocurrido_en', new Date(Date.now() - 7 * 86400000).toISOString()));
   if (ver === 'actividad') {
     let c = supabase.from('bitacora').select('*', { count: 'exact' }).order('id', { ascending: false }).range(desde, hasta);
     // por defecto solo lo que hizo una persona; las cargas de migración y los cambios automáticos, a pedido
@@ -45,8 +48,7 @@ export default async function Registro({ searchParams }: { searchParams: Promise
     errores = (data ?? []) as ErrorApp[];
     total = count ?? 0;
   }
-  const { count: erroresSemana } = await supabase.from('errores_app').select('id', { count: 'exact', head: true })
-    .gte('ocurrido_en', new Date(Date.now() - 7 * 86400000).toISOString());
+  const { count: erroresSemana } = await semana;
 
   // nombres de quienes aparecen
   const ids = [...new Set([...eventos, ...errores].map((x) => x.usuario_id).filter(Boolean))] as string[];

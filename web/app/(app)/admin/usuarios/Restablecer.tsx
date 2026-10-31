@@ -1,9 +1,11 @@
 'use client';
-import { useActionState } from 'react';
+import { useActionState, useRef } from 'react';
 import { restablecerClave, type EstadoRestablecer } from './acciones';
+import { confirmar } from '@/components/Dialogo';
 
 export default function Restablecer({ id, nombre }: { id: string; nombre: string }) {
   const [estado, accion, enviando] = useActionState<EstadoRestablecer, FormData>(restablecerClave, {});
+  const confirmado = useRef(false);
   if (estado.clave) {
     return (
       <div className="aviso" role="status" style={{ margin: 0 }}>
@@ -13,7 +15,14 @@ export default function Restablecer({ id, nombre }: { id: string; nombre: string
     );
   }
   return (
-    <form action={accion} onSubmit={(e) => { if (!confirm(`¿Darle una contraseña temporal a ${nombre}? La actual dejará de servir.`)) e.preventDefault(); }}>
+    <form action={accion} onSubmit={async (e) => {
+      if (confirmado.current) { confirmado.current = false; return; }
+      e.preventDefault();
+      const form = e.currentTarget;
+      if (await confirmar(`¿Darle una contraseña temporal a ${nombre}? La actual dejará de servir.`, { aceptar: 'Restablecer' })) {
+        confirmado.current = true; form.requestSubmit();
+      }
+    }}>
       <input type="hidden" name="id" value={id} />
       <button type="submit" className="secundario" disabled={enviando}>{enviando ? '…' : 'Restablecer contraseña'}</button>
       {estado.error && <div className="error" role="alert">{estado.error}</div>}

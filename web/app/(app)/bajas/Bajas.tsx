@@ -6,6 +6,7 @@ import type { Area } from '@/lib/roles';
 import { registrarBaja } from '@/lib/movimientos';
 import LineasInventario, { baseDe, valorDe, type LineaInv, type ProductoSaldo } from '@/components/LineasInventario';
 import RechazoConMotivo from '@/components/RechazoConMotivo';
+import { confirmar } from '@/components/Dialogo';
 
 const CAUSAS = [
   { v: 'VENCIDO', t: 'Vencido' }, { v: 'DANADO', t: 'Dañado' }, { v: 'DERRAME', t: 'Derrame' },
@@ -101,7 +102,7 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
       {total > 0 && <p className="suave">Valor de la baja: <strong>{pesos(total)}</strong></p>}
 
       <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} ejemplo="Ej.: la botella se rompió antes de registrar su recepción" />
-      <div className="acciones" style={{ position: 'sticky', bottom: 0, background: 'var(--fondo)', padding: '.6rem 0 calc(.6rem + env(safe-area-inset-bottom))' }}>
+      <div className="acciones barra-guardar">
         {bloqueado ? (
           <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
         ) : (
@@ -109,7 +110,7 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
             {enviando ? 'Guardando…' : `Guardar baja (${lineas.length})`}
           </button>
         )}
-        {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={() => { if (confirm('¿Descartar esta baja?')) otra(); }}>Descartar</button>}
+        {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={async () => { if (await confirmar('¿Descartar esta baja?', { aceptar: 'Descartar', peligro: true })) otra(); }}>Descartar</button>}
       </div>
       {lineas.length > 0 && (!zona || !causa || malas > 0 || faltaObs) && (
         <p className="suave" style={{ fontSize: '.85rem' }}>

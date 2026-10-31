@@ -66,7 +66,7 @@ export default function BarraFiltros({ areas, categorias }: { areas: string[]; c
   const chips = grupos.flatMap((g) => valores(g.clave).map((v) => ({ g, v, t: g.opciones.find((o) => o.v === v)?.t ?? v })));
   const agrupar = sp.get('agrupar');
   const vista = sp.get('vista') ?? 'lista';
-  const boton = (activo: boolean) => ({ minHeight: 40, padding: '.35rem .8rem', ...(activo ? { background: 'var(--marca)', color: 'var(--marca-texto)' } : {}) });
+  const boton = (activo: boolean) => (activo ? 'herramienta chico activa' : 'herramienta chico');
 
   return (
     <div ref={caja} style={{ display: 'grid', gap: '.5rem', margin: '.4rem 0 1rem', position: 'relative' }}>
@@ -76,30 +76,30 @@ export default function BarraFiltros({ areas, categorias }: { areas: string[]; c
           <span key={c.g.clave + c.v} className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--marca)' }}>
             <span className="suave" style={{ fontWeight: 400 }}>{c.g.titulo}:</span> {c.t}
             <button type="button" aria-label={`Quitar ${c.t}`} onClick={() => alternar(c.g, c.v)}
-                    style={{ minHeight: 0, padding: '0 .2rem', background: 'none', border: 0, color: 'inherit', fontWeight: 800 }}>×</button>
+                    className="quitar">×</button>
           </span>
         ))}
         {agrupar && (
           <span className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--ok)' }}>
             Agrupado por {AGRUPAR.find((a) => a.v === agrupar)?.t.toLowerCase()}
             <button type="button" aria-label="Quitar agrupación" onClick={() => ir({ agrupar: null })}
-                    style={{ minHeight: 0, padding: '0 .2rem', background: 'none', border: 0, color: 'inherit', fontWeight: 800 }}>×</button>
+                    className="quitar">×</button>
           </span>
         )}
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar genérico, marca, código o nombre de factura…" aria-label="Buscar"
                style={{ flex: '1 1 220px', border: 0, minHeight: 40, background: 'transparent' }} />
         {(chips.length > 0 || agrupar || sp.get('q')) && (
-          <button type="button" className="secundario" style={{ minHeight: 36, padding: '.2rem .6rem' }}
+          <button type="button" className="secundario chico"
                   onClick={() => ir(Object.fromEntries([...sp.keys()].filter((k) => k !== 'vista').map((k) => [k, null])))}>Limpiar</button>
         )}
-        <button type="submit" style={{ minHeight: 40, padding: '.35rem .9rem' }}>Buscar</button>
+        <button className="chico" type="submit" >Buscar</button>
       </form>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem', alignItems: 'center' }}>
-        <button type="button" className="secundario" style={boton(abierto === 'filtros')} onClick={() => setAbierto(abierto === 'filtros' ? null : 'filtros')}>
+        <button type="button" className={boton(abierto === 'filtros')} onClick={() => setAbierto(abierto === 'filtros' ? null : 'filtros')}>
           Filtros{chips.length ? ` (${chips.length})` : ''} ▾
         </button>
-        <button type="button" className="secundario" style={boton(abierto === 'agrupar')} onClick={() => setAbierto(abierto === 'agrupar' ? null : 'agrupar')}>
+        <button type="button" className={boton(abierto === 'agrupar')} onClick={() => setAbierto(abierto === 'agrupar' ? null : 'agrupar')}>
           Agrupar por ▾
         </button>
         <label style={{ margin: 0, display: 'flex', gap: '.35rem', alignItems: 'center', fontWeight: 400 }}>Orden

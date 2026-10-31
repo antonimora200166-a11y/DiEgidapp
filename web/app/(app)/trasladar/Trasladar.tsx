@@ -6,6 +6,7 @@ import type { Area } from '@/lib/roles';
 import { registrarTraslado } from '@/lib/movimientos';
 import LineasInventario, { baseDe, type LineaInv, type ProductoSaldo } from '@/components/LineasInventario';
 import RechazoConMotivo from '@/components/RechazoConMotivo';
+import { confirmar } from '@/components/Dialogo';
 
 type Zona = { codigo: string; nombre: string; area: Area };
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
@@ -41,9 +42,9 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
     try { localStorage.setItem(clave, JSON.stringify({ origen, destino, lineas, obs })); } catch { /* nada */ }
   }, [cargado, origen, destino, lineas, obs]);
 
-  function cambiarOrigen(z: string) {
+  async function cambiarOrigen(z: string) {
     const nueva = zonas.find((x) => x.codigo === z)?.area;
-    if (lineas.length && nueva !== area && !confirm('Esa zona es de otra área: se quitan los productos escritos. ¿Seguir?')) return;
+    if (lineas.length && nueva !== area && !(await confirmar('Esa zona es de otra área: se quitan los productos escritos.', { titulo: '¿Seguir?', aceptar: 'Cambiar de zona' }))) return;
     if (nueva !== area) setLineas([]);
     setOrigen(z);
     if (destino === z) setDestino('');
@@ -113,7 +114,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
       <textarea id="obs" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
 
       <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} ejemplo="Ej.: la mercancía llegó directo a la barra y la recepción se registró en bodega" />
-      <div className="acciones" style={{ position: 'sticky', bottom: 0, background: 'var(--fondo)', padding: '.6rem 0 calc(.6rem + env(safe-area-inset-bottom))' }}>
+      <div className="acciones barra-guardar">
         {bloqueado ? (
           <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
         ) : (
@@ -121,7 +122,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
             {enviando ? 'Guardando…' : `Guardar traslado (${lineas.length})`}
           </button>
         )}
-        {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={() => { if (confirm('¿Descartar este traslado?')) otro(); }}>Descartar</button>}
+        {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={async () => { if (await confirmar('¿Descartar este traslado?', { aceptar: 'Descartar', peligro: true })) otro(); }}>Descartar</button>}
       </div>
       {lineas.length > 0 && (!destino || malas > 0) && (
         <p className="suave" style={{ fontSize: '.85rem' }}>{!destino ? 'Elige a qué zona llega. ' : ''}{malas > 0 ? `Falta la cantidad en ${malas} producto(s).` : ''}</p>

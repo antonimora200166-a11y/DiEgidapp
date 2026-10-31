@@ -5,6 +5,7 @@ import { fmtCantidad } from '@/lib/catalogo';
 import { costoLote } from '@/lib/costo';
 import type { Area } from '@/lib/roles';
 import { registrarLote, type ResultadoLote } from './acciones';
+import { confirmar } from '@/components/Dialogo';
 
 type UnidadBase = 'g' | 'ml' | 'und';
 export type Mpi = {
@@ -231,8 +232,8 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                 {mpi.costo_promedio !== null && ` · hoy cuesta ${pesosU(mpi.costo_promedio)}/${mpi.unidad_base}`}
               </div>
             </div>
-            <button type="button" className="secundario" style={{ minHeight: 36, padding: '.3rem .7rem' }}
-                    onClick={() => { if (!consumos.length || confirm('¿Cambiar de producto? Se pierden los ingredientes escritos.')) { setMpiId(null); setConsumos([]); } }}>
+            <button type="button" className="secundario chico"
+                    onClick={async () => { if (!consumos.length || await confirmar('¿Cambiar de producto? Se pierden los ingredientes escritos.', { aceptar: 'Cambiar' })) { setMpiId(null); setConsumos([]); } }}>
               Cambiar
             </button>
           </div>
@@ -293,7 +294,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                       {c.linea_ficha !== null && <span className="suave" style={{ fontSize: '.8rem' }}> · línea {c.linea_ficha} de la ficha</span>}
                       {c.nota && <div className="suave" style={{ fontSize: '.82rem' }}>{c.nota}</div>}
                     </div>
-                    <button type="button" className="secundario" style={{ minHeight: 36, padding: '.3rem .7rem' }} aria-label={`Quitar ${c.generico}`}
+                    <button type="button" className="secundario chico" aria-label={`Quitar ${c.generico}`}
                             onClick={() => setConsumos((cs) => cs.filter((x) => x.clave !== c.clave))}>Quitar</button>
                   </div>
                   {opciones.length > 1 ? (
@@ -411,7 +412,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
             </div>
           )}
 
-          <div className="acciones" style={{ position: 'sticky', bottom: 0, background: 'var(--fondo)', padding: '.6rem 0 calc(.6rem + env(safe-area-inset-bottom))' }}>
+          <div className="acciones barra-guardar">
             {bloqueado ? (
               <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>
                 {enviando ? 'Guardando…' : 'Guardar con este motivo'}
@@ -423,7 +424,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
               </button>
             )}
             <button type="button" className="secundario" disabled={enviando}
-                    onClick={() => { if (confirm('¿Descartar este lote? Nada se ha guardado todavía.')) empezarDeNuevo(); }}>
+                    onClick={async () => { if (await confirmar('¿Descartar este lote? Nada se ha guardado todavía.', { aceptar: 'Descartar', peligro: true })) empezarDeNuevo(); }}>
               Descartar
             </button>
           </div>

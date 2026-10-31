@@ -66,7 +66,7 @@ export default function LineasInventario({ productos, zona, lineas, setLineas, o
                   <strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}
                   <div className="suave" style={{ fontSize: '.85rem' }}>{p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}</div>
                 </div>
-                <button type="button" className="secundario" style={{ minHeight: 36, padding: '.3rem .7rem' }} aria-label={`Quitar ${p.generico}`}
+                <button type="button" className="secundario chico" aria-label={`Quitar ${p.generico}`}
                         onClick={() => setLineas((ls) => ls.filter((x) => x.clave !== l.clave))}>Quitar</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '.5rem', marginTop: '.5rem', alignItems: 'end' }}>
@@ -85,7 +85,7 @@ export default function LineasInventario({ productos, zona, lineas, setLineas, o
                 {zona ? <>en la zona hay {fmtCantidad(hay)} {p.unidad_base}</> : 'elige la zona para ver el saldo'}
                 {v !== null && <> · vale {pesos(v)}</>}
                 {ofrecerTodo && hay > 0 && (
-                  <> · <button type="button" className="secundario" style={{ minHeight: 0, padding: '.1rem .5rem', fontSize: '.82rem' }}
+                  <> · <button type="button" className="secundario mini"
                                onClick={() => poner(l.clave, { cantidad: String(hay), modo: 'base' })}>todo</button></>
                 )}
               </div>

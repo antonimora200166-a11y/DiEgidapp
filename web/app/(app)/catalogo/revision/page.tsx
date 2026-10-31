@@ -33,11 +33,11 @@ export default async function Revision({ searchParams }: { searchParams: Promise
     .order('tipo', { ascending: false }).order('parecido', { ascending: false }).order('id')
     .range((pag - 1) * POR_PAGINA, pag * POR_PAGINA - 1);
   if (tipo === 'DUPLICADO' || tipo === 'CASI-DUPLICADO') consulta = consulta.eq('tipo', tipo);
-  const { data, count } = await consulta;
+  const [{ data, count }, { count: decididos }] = await Promise.all([
+    consulta,
+    supabase.from('revision_catalogo').select('id', { count: 'exact', head: true }).not('decision', 'is', null).in('area', area ? [area] : valida),
+  ]);
   const filas = (data ?? []) as unknown as ParFila[];
-
-  const { count: decididos } = await supabase.from('revision_catalogo').select('id', { count: 'exact', head: true })
-    .not('decision', 'is', null).in('area', area ? [area] : valida);
 
   // productos de los genéricos en pantalla
   const ids = [...new Set(filas.flatMap((f) => [f.a?.id, f.b?.id]).filter(Boolean))] as string[];

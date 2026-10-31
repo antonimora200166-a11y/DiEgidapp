@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/components/VistaFiltrable';
 import { decidirPropuestas } from './acciones';
 import EliminarProductos from '@/components/EliminarProductos';
+import { confirmar } from '@/components/Dialogo';
 
 type Cambios = { unidad_base?: string; unidad_compra?: string; contenido_base?: number; contenido_variable?: boolean; categoria?: string;
                  presentacion?: string; conservacion?: string; vida_util_dias?: number };
@@ -46,9 +47,10 @@ export default function Propuestas({ filas, categorias, soloLectura, esAdmin }: 
   const [enviando, iniciar] = useTransition();
   const pendientes = filas.filter((p) => p.estado === 'PENDIENTE');
 
-  function decidir(ids: string[], decision: 'ACEPTAR' | 'RECHAZAR', correccion: Cambios | null = null, limpiar?: () => void) {
+  async function decidir(ids: string[], decision: 'ACEPTAR' | 'RECHAZAR', correccion: Cambios | null = null, limpiar?: () => void) {
     if (!ids.length) return;
-    if (ids.length > 1 && !confirm(`¿${decision === 'ACEPTAR' ? 'Aceptar' : 'Rechazar'} ${ids.length} propuesta(s)?`)) return;
+    if (ids.length > 1 && !(await confirmar(`¿${decision === 'ACEPTAR' ? 'Aceptar' : 'Rechazar'} ${ids.length} propuesta(s)?`,
+      { aceptar: decision === 'ACEPTAR' ? 'Aceptar' : 'Rechazar', peligro: decision === 'RECHAZAR' }))) return;
     setMensaje(null);
     iniciar(async () => {
       const r = await decidirPropuestas(ids, decision, correccion);
@@ -163,9 +165,9 @@ export default function Propuestas({ filas, categorias, soloLectura, esAdmin }: 
       </div>) },
     { k: 'acciones', t: '', ver: (p) => (!soloLectura && p.estado === 'PENDIENTE' && corrigiendo !== p.id ? (
       <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
-        <button type="button" disabled={enviando} style={{ minHeight: 32, padding: '.1rem .6rem' }} onClick={() => decidir([p.id], 'ACEPTAR')}>Aceptar</button>
-        <button type="button" className="secundario" disabled={enviando} style={{ minHeight: 32, padding: '.1rem .6rem' }} onClick={() => abrirCorreccion(p)}>Corregir</button>
-        <button type="button" className="secundario" disabled={enviando} style={{ minHeight: 32, padding: '.1rem .6rem' }} onClick={() => decidir([p.id], 'RECHAZAR')}>Rechazar</button>
+        <button className="mini" type="button" disabled={enviando} onClick={() => decidir([p.id], 'ACEPTAR')}>Aceptar</button>
+        <button type="button" className="secundario mini" disabled={enviando} onClick={() => abrirCorreccion(p)}>Corregir</button>
+        <button type="button" className="secundario mini" disabled={enviando} onClick={() => decidir([p.id], 'RECHAZAR')}>Rechazar</button>
       </div>) : null) },
   ];
 

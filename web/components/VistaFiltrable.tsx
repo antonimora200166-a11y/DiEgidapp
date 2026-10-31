@@ -100,7 +100,7 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
   const elegibles = visibles.filter((f) => seleccionable?.(f));
   const elegidas = filas.filter((f) => sel.has(id(f)));
   const todas = elegibles.length > 0 && elegibles.slice(0, mostrar).every((f) => sel.has(id(f)));
-  const boton = (activo: boolean) => ({ minHeight: 40, padding: '.35rem .8rem', ...(activo ? { background: 'var(--marca)', color: 'var(--marca-texto)' } : {}) });
+  const boton = (activo: boolean) => (activo ? 'herramienta chico activa' : 'herramienta chico');
   const panel = { position: 'absolute' as const, top: '100%', zIndex: 20, boxShadow: '0 8px 28px rgb(0 0 0 / .25)', maxHeight: '70vh', overflow: 'auto' };
   const enPantalla = visibles.slice(0, mostrar);
 
@@ -111,25 +111,25 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
           {chips.map((c) => (
             <span key={c.g.clave + c.v} className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--marca)' }}>
               <span className="suave" style={{ fontWeight: 400 }}>{c.g.titulo}:</span> {c.t}
-              <button type="button" aria-label={`Quitar ${c.t}`} onClick={() => alternar(c.g, c.v)} style={{ minHeight: 0, padding: '0 .2rem', background: 'none', border: 0, color: 'inherit', fontWeight: 800 }}>×</button>
+              <button type="button" aria-label={`Quitar ${c.t}`} onClick={() => alternar(c.g, c.v)} className="quitar">×</button>
             </span>
           ))}
           {ag && (
             <span className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--ok)' }}>
               Agrupado por {ag.t.toLowerCase()}
-              <button type="button" aria-label="Quitar agrupación" onClick={() => setE((x) => ({ ...x, agrupar: null }))} style={{ minHeight: 0, padding: '0 .2rem', background: 'none', border: 0, color: 'inherit', fontWeight: 800 }}>×</button>
+              <button type="button" aria-label="Quitar agrupación" onClick={() => setE((x) => ({ ...x, agrupar: null }))} className="quitar">×</button>
             </span>
           )}
           <input value={e.q} onChange={(ev) => setE((x) => ({ ...x, q: ev.target.value }))} placeholder="Buscar…" aria-label="Buscar"
                  style={{ flex: '1 1 200px', border: 0, minHeight: 40, background: 'transparent' }} />
           {(chips.length > 0 || ag || e.q) && (
-            <button type="button" className="secundario" style={{ minHeight: 36, padding: '.2rem .6rem' }} onClick={() => setE((x) => ({ ...x, f: {}, q: '', agrupar: null }))}>Limpiar</button>
+            <button type="button" className="secundario chico" onClick={() => setE((x) => ({ ...x, f: {}, q: '', agrupar: null }))}>Limpiar</button>
           )}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem', alignItems: 'center' }}>
-          <button type="button" className="secundario" style={boton(menu === 'filtros')} onClick={() => setMenu(menu === 'filtros' ? null : 'filtros')}>Filtros{chips.length ? ` (${chips.length})` : ''} ▾</button>
-          {agrupar.length > 0 && <button type="button" className="secundario" style={boton(menu === 'agrupar')} onClick={() => setMenu(menu === 'agrupar' ? null : 'agrupar')}>Agrupar por ▾</button>}
-          <button type="button" className="secundario" style={boton(menu === 'columnas')} onClick={() => setMenu(menu === 'columnas' ? null : 'columnas')}>⚙ Columnas</button>
+          <button type="button" className={boton(menu === 'filtros')} onClick={() => setMenu(menu === 'filtros' ? null : 'filtros')}>Filtros{chips.length ? ` (${chips.length})` : ''} ▾</button>
+          {agrupar.length > 0 && <button type="button" className={boton(menu === 'agrupar')} onClick={() => setMenu(menu === 'agrupar' ? null : 'agrupar')}>Agrupar por ▾</button>}
+          <button type="button" className={boton(menu === 'columnas')} onClick={() => setMenu(menu === 'columnas' ? null : 'columnas')}>⚙ Columnas</button>
           <span className="suave" style={{ marginLeft: 'auto' }}>{visibles.length} de {filas.length}</span>
         </div>
         {menu === 'filtros' && (
@@ -175,7 +175,7 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
 
       {visibles.length ? (
         <div className="desborde tarjeta" style={{ padding: 0 }}>
-          <table className="tabla tabla-catalogo">
+          <table className="tabla tabla-catalogo tabla-movil">
             <thead>
               <tr>
                 {seleccionable && (
@@ -203,10 +203,10 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
                     )}
                     <tr className={sel.has(id(f)) ? 'elegida' : undefined}>
                       {seleccionable && (
-                        <td>{seleccionable(f) && <input type="checkbox" aria-label="Seleccionar" checked={sel.has(id(f))} style={{ width: 20, minHeight: 20 }}
+                        <td className="celda-sel">{seleccionable(f) && <input type="checkbox" aria-label="Seleccionar" checked={sel.has(id(f))} style={{ width: 20, minHeight: 20 }}
                                                        onChange={() => setSel((s) => { const n = new Set(s); if (n.has(id(f))) n.delete(id(f)); else n.add(id(f)); return n; })} />}</td>
                       )}
-                      {cols.map((c) => <td key={c.k} style={c.der ? { textAlign: 'right', whiteSpace: 'nowrap' } : undefined}>{c.ver(f)}</td>)}
+                      {cols.map((c) => <td key={c.k} data-t={c.t} style={c.der ? { textAlign: 'right', whiteSpace: 'nowrap' } : undefined}>{c.ver(f)}</td>)}
                     </tr>
                   </Fragment>
                 );

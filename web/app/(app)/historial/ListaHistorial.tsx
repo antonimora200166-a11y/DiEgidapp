@@ -33,7 +33,7 @@ export default function ListaHistorial({ filas, variasAreas }: { filas: FilaHist
     { k: 'usuario', t: 'Registró', orden: (f) => f.usuario, ver: (f) => f.usuario ?? '—' },
     { k: 'estado', t: 'Estado', orden: estado, ver: (f) => (f.anulado ? <span className="etiqueta inactivo">anulado</span>
       : f.forzado ? <span className="etiqueta provisional">forzado</span> : <span className="suave">—</span>) },
-    { k: 'abrir', t: '', ver: (f) => <Link href={`/historial/${f.tipo.toLowerCase()}/${f.id}`} className="boton secundario" style={{ minHeight: 32, padding: '.1rem .6rem' }}>Abrir</Link> },
+    { k: 'abrir', t: '', ver: (f) => <Link href={`/historial/${f.tipo.toLowerCase()}/${f.id}`} className="boton secundario mini">Abrir</Link> },
   ];
   return (
     <VistaFiltrable clave="historial" filas={filas} id={(f) => f.tipo + f.id} buscar={(f) => `${f.codigo} ${f.detalle} ${f.usuario ?? ''}`}

@@ -49,13 +49,13 @@ export default function ListaCatalogo({ filas, categorias, esAdmin }: { filas: P
               {faltas.length > 0 && <div style={{ fontSize: '.82rem', color: 'var(--aviso)' }}>Falta: {faltas.join(' · ')}</div>}
               {p.edita && (
                 <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '.3rem' }}>
-                  <Link href={`/catalogo/producto/${p.id}`} className={`boton${p.estado === 'PROVISIONAL' ? '' : ' secundario'}`} style={{ minHeight: 38, padding: '.3rem .8rem' }}>
+                  <Link href={`/catalogo/producto/${p.id}`} className={`boton chico${p.estado === 'PROVISIONAL' ? '' : ' secundario'}`}>
                     {p.estado === 'PROVISIONAL' ? 'Revisar' : 'Editar'}
                   </Link>
                   {p.estado === 'PROVISIONAL' && (
                     <form action={validarProducto}>
                       <input type="hidden" name="id" value={p.id} />
-                      <button type="submit" className="secundario" style={{ minHeight: 38, padding: '.3rem .8rem' }} title="Validar sin cambios">Validar</button>
+                      <button type="submit" className="secundario chico" title="Validar sin cambios">Validar</button>
                     </form>
                   )}
                 </div>

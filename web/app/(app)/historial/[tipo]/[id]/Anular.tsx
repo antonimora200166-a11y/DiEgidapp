@@ -3,6 +3,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Resultado } from '@/lib/catalogo';
 import { anularDocumento } from '../../acciones';
+import { confirmar } from '@/components/Dialogo';
 
 // Anular el documento completo o, en una recepción, una sola línea. Pide el motivo y confirma:
 // la anulación reversa los movimientos en el kardex y no se puede deshacer.
@@ -17,14 +18,15 @@ export default function Anular({ tipo, id, lineaId, etiqueta, pequeno }: {
 
   if (!abierto) {
     return (
-      <button type="button" className="secundario" style={pequeno ? { minHeight: 34, padding: '.2rem .6rem', fontSize: '.85rem' } : undefined}
+      <button type="button" className={pequeno ? 'secundario peligro mini' : 'secundario peligro'}
               onClick={() => setAbierto(true)}>
         {etiqueta}
       </button>
     );
   }
-  function anular() {
-    if (!confirm(`${etiqueta}: sus movimientos se reversan en el kardex. Queda en el historial y no se puede deshacer. ¿Seguir?`)) return;
+  async function anular() {
+    if (!(await confirmar(`${etiqueta}: sus movimientos se reversan en el kardex. Queda en el historial y no se puede deshacer.`,
+      { titulo: '¿Seguir?', aceptar: etiqueta, peligro: true }))) return;
     iniciar(async () => {
       const r = await anularDocumento(tipo, id, motivo, lineaId ?? null);
       setResultado(r);

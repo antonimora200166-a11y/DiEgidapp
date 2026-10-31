@@ -11,11 +11,13 @@ export default async function ConteoZona({ params }: { params: Promise<{ ubicaci
   const { ubicacion } = await params;
   const perfil = await perfilActual();
   const supabase = await supabaseServidor();
+  // la hoja se pide a la par: si la zona no existe o no se puede contar, la RPC falla y no se usa
+  const hoja = Promise.resolve(supabase.rpc('hoja_conteo', { p_ubicacion: ubicacion }));   // Promise.resolve la arranca ya
   const { data: zona } = await supabase.from('ubicaciones').select('codigo, nombre, area').eq('codigo', ubicacion).eq('activo', true).maybeSingle();
   if (!zona) notFound();
   const area = zona.area as Area;
   if (!puedeOperar(perfil, area) || !areasDe(perfil).includes(area)) redirect('/conteo');
-  const { data, error } = await supabase.rpc('hoja_conteo', { p_ubicacion: ubicacion });
+  const { data, error } = await hoja;
   if (error) throw new Error(error.message);
   // el conteo inicial lo hace administración o el jefe del área (igual que la base)
   const haceInicial = perfil.rol === 'admin' || (area === 'BAR' && perfil.rol === 'jefe_bar') || (area === 'COCINA' && perfil.rol === 'chef');

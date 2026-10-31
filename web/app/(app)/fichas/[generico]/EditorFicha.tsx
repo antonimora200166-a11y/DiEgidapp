@@ -110,9 +110,9 @@ export default function EditorFicha({ datos }: { datos: DatosFicha }) {
                 </div>
                 {!lee && (
                   <div style={{ display: 'flex', gap: '.3rem' }}>
-                    <button type="button" className="secundario" style={{ minHeight: 34, padding: '.2rem .55rem' }} disabled={idx === 0} onClick={() => mover(idx, -1)} aria-label="Subir">↑</button>
-                    <button type="button" className="secundario" style={{ minHeight: 34, padding: '.2rem .55rem' }} disabled={idx === lineas.length - 1} onClick={() => mover(idx, 1)} aria-label="Bajar">↓</button>
-                    <button type="button" className="secundario" style={{ minHeight: 34, padding: '.2rem .6rem' }} onClick={() => setLineas((ls) => ls.filter((x) => x.clave !== l.clave))}>Quitar</button>
+                    <button type="button" className="secundario chico" disabled={idx === 0} onClick={() => mover(idx, -1)} aria-label="Subir">↑</button>
+                    <button type="button" className="secundario chico" disabled={idx === lineas.length - 1} onClick={() => mover(idx, 1)} aria-label="Bajar">↓</button>
+                    <button type="button" className="secundario chico" onClick={() => setLineas((ls) => ls.filter((x) => x.clave !== l.clave))}>Quitar</button>
                   </div>
                 )}
               </div>
@@ -170,7 +170,7 @@ export default function EditorFicha({ datos }: { datos: DatosFicha }) {
               ? <div className="exito" role="status"><strong>Ficha guardada.</strong>{resultado.avisos.length > 0 && <ul>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul>}</div>
               : <div className="error" role="alert"><strong>No se guardó:</strong><ul>{[...resultado.fatales, ...resultado.avisos].map((m) => <li key={m}>{m}</li>)}</ul></div>
           )}
-          <div className="acciones" style={{ position: 'sticky', bottom: 0, background: 'var(--fondo)', padding: '.6rem 0 calc(.6rem + env(safe-area-inset-bottom))' }}>
+          <div className="acciones barra-guardar">
             <button type="button" disabled={enviando || !codigo.trim() || !lineas.length} onClick={guardar}>
               {enviando ? 'Guardando…' : datos.ficha ? 'Guardar cambios' : 'Crear ficha'}
             </button>
