@@ -3,6 +3,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { editaArea, type Area } from '@/lib/roles';
 import EditarProducto, { type Ficha } from './EditarProducto';
+import EliminarProductos from '@/components/EliminarProductos';
 
 export const metadata = { title: 'Producto' };
 
@@ -41,6 +42,16 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
       </p>
       {fila.nota && <p className="suave" style={{ fontSize: '.88rem' }}>{fila.nota}</p>}
       <EditarProducto ficha={fila} categorias={categorias ?? []} ubBloqueada={ubBloqueada} />
+      {perfil.rol === 'admin' && (
+        <>
+          <h2>Administración</h2>
+          <p className="suave" style={{ marginTop: 0, fontSize: '.88rem' }}>
+            Eliminar lo saca de todas las listas y pantallas; queda en la bitácora con el motivo y se puede reactivar.
+            No se puede si tiene saldo en el kardex o si su genérico está en una ficha vigente.
+          </p>
+          <div className="acciones"><EliminarProductos productos={[{ id: fila.id, activo: fila.activo }]} etiqueta="Eliminar producto" /></div>
+        </>
+      )}
       {(alias?.length ?? 0) > 0 && (
         <>
           <h2>Nombres con que aparece</h2>

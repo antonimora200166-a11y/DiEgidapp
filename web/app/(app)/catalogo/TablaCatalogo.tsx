@@ -44,7 +44,7 @@ const COLUMNAS: Col[] = [
 ];
 const CLAVE_COLUMNAS = 'sgi-catalogo-columnas';
 
-export default function TablaCatalogo({ filas, categorias }: { filas: ProductoCatalogo[]; categorias: Categoria[] }) {
+export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: ProductoCatalogo[]; categorias: Categoria[]; esAdmin?: boolean }) {
   const router = useRouter();
   const [visibles, setVisibles] = useState<string[]>(COLUMNAS.filter((c) => c.def).map((c) => c.k));
   const [menu, setMenu] = useState(false);
@@ -198,7 +198,7 @@ export default function TablaCatalogo({ filas, categorias }: { filas: ProductoCa
           </tbody>
         </table>
       </div>
-      <BarraBloque elegidos={filas.filter((f) => sel.has(f.id))} categorias={categorias} setSel={setSel} />
+      <BarraBloque elegidos={filas.filter((f) => sel.has(f.id))} categorias={categorias} setSel={setSel} esAdmin={esAdmin} />
     </>
   );
 }

@@ -18,7 +18,7 @@ export default async function Ficha({ params }: { params: Promise<{ generico: st
 
   return (
     <>
-      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href={`/fichas?area=${d.resultado.area}`}>← Fichas técnicas</Link></p>
+      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href="/fichas">← Fichas técnicas</Link></p>
       <h1>{d.ficha ? `${d.ficha.codigo} · ` : ''}{d.resultado.nombre}</h1>
       <p className="suave" style={{ marginTop: '-.6rem' }}>
         {d.resultado.codigo} · resultado en {d.resultado.unidad_base}

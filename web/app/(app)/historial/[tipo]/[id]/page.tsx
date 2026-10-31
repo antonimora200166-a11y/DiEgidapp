@@ -50,7 +50,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
 
   return (
     <>
-      <p style={{ margin: '0 0 .3rem' }}><Link href={`/historial?area=${d.area}`}>← Historial</Link></p>
+      <p style={{ margin: '0 0 .3rem' }}><Link href="/historial">← Historial</Link></p>
       <h1>{NOMBRE_TIPO[tipo].singular} <span className="cod" style={{ fontSize: '1rem' }}>{s(e.codigo)}</span></h1>
 
       {anulado && (

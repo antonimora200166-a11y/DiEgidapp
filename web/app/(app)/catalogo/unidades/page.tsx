@@ -29,7 +29,7 @@ export default async function Unidades() {
         bien, corrige las que no y rechaza las que sobren. Conviene terminar antes del conteo inicial: después, la unidad de un
         producto con kardex ya no se puede cambiar.
       </p>
-      <Propuestas filas={filas} categorias={categorias ?? []} soloLectura={perfil.rol === 'auditor'} />
+      <Propuestas filas={filas} categorias={categorias ?? []} soloLectura={perfil.rol === 'auditor'} esAdmin={perfil.rol === 'admin'} />
     </>
   );
 }

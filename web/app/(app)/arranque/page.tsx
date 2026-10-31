@@ -16,7 +16,7 @@ function enlace(clave: string, area: Area, admin: boolean): { href: string; text
     case 'conteo_inicial': return { href: '/conteo', texto: 'Ir a Contar' };
     case 'provisionales': return { href: `/catalogo?area=${area}&estado=PROVISIONAL`, texto: 'Ver provisionales' };
     case 'pares': return { href: '/catalogo/revision', texto: 'Revisar duplicados' };
-    case 'fichas': return { href: `/fichas?area=${area}`, texto: 'Corregir fichas' };
+    case 'fichas': return { href: '/fichas', texto: 'Corregir fichas' };
     case 'frio': return { href: `/catalogo?area=${area}&estado=todos&falta=frio`, texto: 'Ver en el catálogo' };
     default: return null;
   }

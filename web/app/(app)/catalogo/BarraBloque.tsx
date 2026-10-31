@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { editarEnBloque, type ResultadoBloque } from './acciones';
+import EliminarProductos from '@/components/EliminarProductos';
 
 export type Categoria = { codigo: string; nombre: string; area: string };
 const NO = '';   // «no cambiar»
@@ -9,8 +10,8 @@ const num = (s: string) => { const n = Number(s.replace(',', '.')); return s.tri
 
 // Barra de acciones para los productos seleccionados (vista de lista y de tarjetas): validar de
 // corrido o aplicar el mismo cambio a todos con public.editar_productos.
-export default function BarraBloque({ elegidos, categorias, setSel }: {
-  elegidos: { id: string; area: string }[]; categorias: Categoria[]; setSel: (s: Set<string>) => void;
+export default function BarraBloque({ elegidos, categorias, setSel, esAdmin }: {
+  elegidos: { id: string; area: string; activo?: boolean }[]; categorias: Categoria[]; setSel: (s: Set<string>) => void; esAdmin?: boolean;
 }) {
   const router = useRouter();
   const [panel, setPanel] = useState(false);
@@ -75,6 +76,7 @@ export default function BarraBloque({ elegidos, categorias, setSel }: {
             <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
               <button type="button" disabled={enviando} onClick={() => aplicar(true)}>{enviando ? 'Aplicando…' : `Validar (${elegidos.length})`}</button>
               <button type="button" className="secundario" disabled={enviando} onClick={() => setPanel((x) => !x)}>{panel ? 'Ocultar cambios' : 'Cambiar…'}</button>
+              {esAdmin && <EliminarProductos productos={elegidos} alTerminar={() => setSel(new Set())} />}
               <button type="button" className="secundario" disabled={enviando} onClick={() => { setSel(new Set()); setResultado(null); }}>Quitar selección</button>
             </div>
           </div>

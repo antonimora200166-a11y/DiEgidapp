@@ -87,8 +87,8 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
 
       {filas.length ? (
         vista === 'lista'
-          ? <TablaCatalogo filas={filas} categorias={categorias ?? []} />
-          : <ListaCatalogo filas={filas} categorias={categorias ?? []} />
+          ? <TablaCatalogo filas={filas} categorias={categorias ?? []} esAdmin={perfil.rol === 'admin'} />
+          : <ListaCatalogo filas={filas} categorias={categorias ?? []} esAdmin={perfil.rol === 'admin'} />
       ) : <p className="tarjeta">No hay productos con estos filtros.</p>}
 
       {paginas > 1 && (

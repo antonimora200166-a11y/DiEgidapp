@@ -6,7 +6,7 @@ import BarraBloque, { type Categoria } from './BarraBloque';
 import { faltasDe, type ProductoCatalogo } from './tipos';
 
 // Vista de tarjetas: cómoda en el celular. La de lista (TablaCatalogo) es la de trabajo en el PC.
-export default function ListaCatalogo({ filas, categorias }: { filas: ProductoCatalogo[]; categorias: Categoria[] }) {
+export default function ListaCatalogo({ filas, categorias, esAdmin }: { filas: ProductoCatalogo[]; categorias: Categoria[]; esAdmin?: boolean }) {
   const [sel, setSel] = useState<Set<string>>(new Set());
   const editables = filas.filter((f) => f.edita);
   const cambia = (id: string) => setSel((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -64,7 +64,7 @@ export default function ListaCatalogo({ filas, categorias }: { filas: ProductoCa
           );
         })}
       </ul>
-      <BarraBloque elegidos={filas.filter((f) => sel.has(f.id))} categorias={categorias} setSel={setSel} />
+      <BarraBloque elegidos={filas.filter((f) => sel.has(f.id))} categorias={categorias} setSel={setSel} esAdmin={esAdmin} />
     </>
   );
 }
