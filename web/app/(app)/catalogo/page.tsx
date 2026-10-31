@@ -66,6 +66,7 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
       <h1 className="pagina-ancha">Catálogo</h1>
       <p style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '0 0 .4rem' }}>
         {areas.some((a) => puedeOperar(perfil, a)) && <Link href="/catalogo/nuevo">¿No está? Crear producto →</Link>}
+        {valida.length > 0 && <Link href="/catalogo/unidades">Revisar unidades →</Link>}
         {valida.length > 0 && <Link href="/catalogo/revision">Revisar duplicados →</Link>}
         <Link href="/fichas">Fichas técnicas →</Link>
       </p>
