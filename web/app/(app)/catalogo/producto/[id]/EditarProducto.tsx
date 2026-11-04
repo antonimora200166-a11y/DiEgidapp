@@ -1,14 +1,15 @@
 'use client';
 import { useState, useTransition } from 'react';
+import { TIPOS_INSUMO, aTipoInsumo, deTipoInsumo, type Clase, type TipoInsumo } from '@/lib/clases';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Resultado } from '@/lib/catalogo';
-import { editarProducto } from '../../acciones';
+import { editarProducto, fijarClase } from '../../acciones';
 
 export type Ficha = {
   id: string; codigo: string; estado: 'PROVISIONAL' | 'VALIDADO'; activo: boolean;
   marca: string; presentacion: string; unidad_compra: string; contenido_base: number | null; contenido_variable: boolean;
-  generico: { codigo: string; nombre: string; tipo: string; categoria: string | null; unidad_base: 'g' | 'ml' | 'und';
+  generico: { id: string; codigo: string; nombre: string; tipo: string; clase: Clase; categoria: string | null; unidad_base: 'g' | 'ml' | 'und';
               conservacion: string | null; temp_max_llegada: number | null; estado: string };
 };
 
@@ -18,7 +19,7 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
   const g = ficha.generico;
   const router = useRouter();
   const [nombre, setNombre] = useState(g.nombre);
-  const [tipo, setTipo] = useState(g.tipo);
+  const [tipo, setTipo] = useState<string>(aTipoInsumo(g.tipo, g.clase));
   const [ub, setUb] = useState(g.unidad_base);
   const [categoria, setCategoria] = useState(g.categoria ?? '');
   const [conservacion, setConservacion] = useState(g.conservacion ?? '');
@@ -35,11 +36,16 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
   function guardar(validar: boolean) {
     const datos = {
       id: ficha.id, validar,
-      generico: { nombre, tipo, unidad_base: ub, categoria, conservacion, temp_max_llegada: tmax.replace(',', '.') },
+      generico: { nombre, tipo: esInsumo ? deTipoInsumo(tipo as TipoInsumo).tipo : tipo, unidad_base: ub, categoria, conservacion, temp_max_llegada: tmax.replace(',', '.') },
       producto: { marca, presentacion, unidad_compra: ucompra, contenido_base: variable ? '' : contenido.replace(',', '.'), contenido_variable: variable },
     };
     iniciar(async () => {
       const r = await editarProducto(datos);
+      const clase = esInsumo ? deTipoInsumo(tipo as TipoInsumo).clase : g.clase;
+      if (r.ok && clase !== g.clase) {
+        const aviso = await fijarClase([g.id], clase);
+        if (aviso) r.avisos = [...(r.avisos ?? []), `La clase no cambió: ${aviso}`];
+      }
       setResultado(r);
       if (r.ok) router.refresh();
     });
@@ -56,9 +62,10 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
           <div>
             <label htmlFor="tipo">Tipo</label>
             <select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} disabled={!esInsumo}>
-              {esInsumo ? <><option value="MPe">Se compra (MPe)</option><option value="MPI">Se produce aquí (MPI)</option></>
+              {esInsumo ? TIPOS_INSUMO.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)
                         : <option value={tipo}>{tipo}</option>}
             </select>
+            {esInsumo && <span className="ayuda">{TIPOS_INSUMO.find((o) => o.v === tipo)?.ayuda}</span>}
           </div>
           <div>
             <label htmlFor="ub">Unidad base {ubBloqueada && <span className="ayuda">{ubBloqueada}</span>}</label>

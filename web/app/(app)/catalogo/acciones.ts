@@ -2,14 +2,32 @@
 import { revalidatePath } from 'next/cache';
 import { supabaseServidor } from '@/lib/supabase/server';
 import type { Resultado } from '@/lib/catalogo';
+import type { Clase } from '@/lib/clases';
 
 // Todas las reglas (permisos, duplicados, parecidos, código) las aplica public.crear_producto.
-export async function crearProducto(datos: Record<string, unknown>): Promise<Resultado> {
+// clase: desechable, aseo, menaje o herramienta (public.fijar_clase); materia prima no hace nada más.
+export async function crearProducto(datos: Record<string, unknown>, clase: Clase = 'MATERIA_PRIMA'): Promise<Resultado> {
   const supabase = await supabaseServidor();
   const { data, error } = await supabase.rpc('crear_producto', { p: datos });
   if (error) return { ok: false, id: null, codigo: null, fatales: [error.message], bloqueos: [], avisos: [] };
-  if ((data as Resultado).ok) revalidatePath('/catalogo');
-  return data as Resultado;
+  const r = data as Resultado;
+  if (r.ok && r.id && clase !== 'MATERIA_PRIMA') {
+    const { data: p } = await supabase.from('productos').select('generico_id').eq('id', r.id).maybeSingle();
+    const aviso = p ? await fijarClase([p.generico_id as string], clase) : 'No se encontró el producto creado.';
+    if (aviso) r.avisos = [...(r.avisos ?? []), aviso];
+  }
+  if (r.ok) revalidatePath('/catalogo');
+  return r;
+}
+
+// Devuelve null si quedó, o el motivo si no se pudo.
+export async function fijarClase(genericos: string[], clase: Clase): Promise<string | null> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('fijar_clase', { p_genericos: genericos, p_clase: clase });
+  if (error) return error.message;
+  const r = data as { ok: number; detalle: { ok: boolean; mensaje?: string }[] };
+  revalidatePath('/catalogo', 'layout');
+  return r.ok === genericos.length ? null : r.detalle.filter((d) => !d.ok).map((d) => d.mensaje).join(' ');
 }
 
 // Corrige genérico y presentación; con validar: true también lo valida (public.editar_producto).

@@ -7,7 +7,7 @@ import type { ProductoSaldo } from '@/components/LineasInventario';
 import Bajas from './Bajas';
 
 export const metadata = { title: 'Bajas' };
-const CAUSAS: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro' };
+const CAUSAS: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado / roto', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro' };
 
 export default async function PaginaBajas({ searchParams }: { searchParams: Promise<{ area?: string }> }) {
   const perfil = await perfilActual();

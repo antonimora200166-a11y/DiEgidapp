@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState, useTransition } from 'react';
+import { TIPOS_INSUMO, deTipoInsumo, type TipoInsumo } from '@/lib/clases';
 import Link from 'next/link';
 import { supabaseNavegador } from '@/lib/supabase/navegador';
 import { ENVASES, UMBRAL_BLOQUEO, UNIDADES_CONTENIDO, fmtCantidad, type Parecido, type Resultado } from '@/lib/catalogo';
@@ -19,7 +20,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
 
   // genérico nuevo
   const [nombre, setNombre] = useState('');
-  const [tipo, setTipo] = useState<'MPe' | 'MPI'>('MPe');
+  const [tipo, setTipo] = useState<TipoInsumo>('MPe');
   const [ubNueva, setUbNueva] = useState<Ub>('g');
   const [categoria, setCategoria] = useState('');
   // producto
@@ -82,8 +83,8 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
       motivo_forzado: motivo.trim() || null,
     };
     if (generico) datos.generico_id = generico.id;
-    else datos.generico = { nombre: nombre.trim() || busqueda.trim(), tipo, unidad_base: ubNueva, categoria: categoria || null };
-    iniciar(async () => setResultado(await crearProducto(datos)));
+    else datos.generico = { nombre: nombre.trim() || busqueda.trim(), tipo: deTipoInsumo(tipo).tipo, unidad_base: ubNueva, categoria: categoria || null };
+    iniciar(async () => setResultado(await crearProducto(datos, generico ? 'MATERIA_PRIMA' : deTipoInsumo(tipo).clase)));
   }
 
   if (resultado?.ok) {
@@ -163,10 +164,10 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
               <div className="fila">
                 <div>
                   <label htmlFor="tipo">Tipo</label>
-                  <select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value as 'MPe' | 'MPI')}>
-                    <option value="MPe">Se compra (MPe)</option>
-                    <option value="MPI">Se produce aquí (MPI)</option>
+                  <select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value as TipoInsumo)}>
+                    {TIPOS_INSUMO.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
                   </select>
+                  <span className="ayuda">{TIPOS_INSUMO.find((o) => o.v === tipo)?.ayuda}</span>
                 </div>
                 <div>
                   <label htmlFor="ub">Unidad base <span className="ayuda">en qué se cuenta y costea</span></label>

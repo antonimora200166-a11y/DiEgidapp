@@ -14,7 +14,7 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
   const supabase = await supabaseServidor();
   const { data } = await supabase.from('productos')
     .select(`id, codigo, estado, activo, marca, presentacion, unidad_compra, contenido_base, contenido_variable, nota, clase_abc, stock_minimo, stock_maximo,
-             generico:genericos!inner(id, codigo, nombre, tipo, categoria, unidad_base, conservacion, temp_max_llegada, estado, area)`)
+             generico:genericos!inner(id, codigo, nombre, tipo, clase, categoria, unidad_base, conservacion, temp_max_llegada, estado, area)`)
     .eq('id', id).maybeSingle();
   if (!data) notFound();
   const fila = data as unknown as Ficha & { nota: string | null; clase_abc: string | null; stock_minimo: number | null; stock_maximo: number | null; generico: Ficha['generico'] & { id: string; area: Area } };

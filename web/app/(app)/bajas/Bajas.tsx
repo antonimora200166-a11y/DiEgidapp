@@ -9,7 +9,7 @@ import RechazoConMotivo from '@/components/RechazoConMotivo';
 import { confirmar } from '@/components/Dialogo';
 
 const CAUSAS = [
-  { v: 'VENCIDO', t: 'Vencido' }, { v: 'DANADO', t: 'Dañado' }, { v: 'DERRAME', t: 'Derrame' },
+  { v: 'VENCIDO', t: 'Vencido' }, { v: 'DANADO', t: 'Dañado / roto' }, { v: 'DERRAME', t: 'Derrame' },
   { v: 'MAL_ESTADO', t: 'Mal estado' }, { v: 'OTRO', t: 'Otro' }] as const;
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
 const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });

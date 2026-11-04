@@ -3,13 +3,14 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/components/VistaFiltrable';
+import { NOMBRE_CLASE, type Clase } from '@/lib/clases';
 import { corregirYVerificar, fijarCosto, marcarParecido, quitarRepetido, unir, verificar, type Correccion } from './acciones';
 
 type Parecido = { generico_id: string; nombre: string; unidad_base: string; parecido: number };
 type Hermano = { producto_id: string; codigo: string; marca: string; presentacion: string };
 export type Fila = {
   producto_id: string; codigo: string; generico_id: string; generico: string; marca: string; presentacion: string;
-  area: 'BAR' | 'COCINA'; tipo: 'MPe' | 'MPI'; categoria: string | null; clase_abc: 'A' | 'B' | 'C' | null;
+  area: 'BAR' | 'COCINA'; tipo: 'MPe' | 'MPI'; clase: Clase; categoria: string | null; clase_abc: 'A' | 'B' | 'C' | null;
   unidad_base: 'g' | 'ml' | 'und'; unidad_compra: string; contenido_base: number | null; contenido_variable: boolean;
   valor_compras: number | null; n_compras: number; ult_fecha: string | null; ult_proveedor: string | null; ult_nombre: string | null;
   ult_valor: number | null; ult_cantidad_base: number | null; costo_base: number | null; costo_fuente: string | null;
@@ -55,7 +56,7 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
     | { tipo: 'repetido'; id: string; queda: string }
     | null>(null);
 
-  const ab = filas.filter((f) => f.tipo === 'MPe' && (f.clase_abc === 'A' || f.clase_abc === 'B'));
+  const ab = filas.filter((f) => f.tipo === 'MPe' && f.clase === 'MATERIA_PRIMA' && (f.clase_abc === 'A' || f.clase_abc === 'B'));
   const abHechos = ab.filter((f) => f.verificado_en).length;
 
   function correr(fn: () => Promise<{ ok: true; avisos?: string[] } | { ok: false; error: string }>, exito: string, despues?: () => void) {
@@ -120,6 +121,8 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
     { clave: 'estado', titulo: 'Verificación', valor: (f) => (f.verificado_en ? 'Verificado' : 'Pendiente'), opciones: [{ v: 'Pendiente', t: 'Pendiente' }, { v: 'Verificado', t: 'Verificado' }] },
     { clave: 'clase', titulo: 'Clase ABC', valor: (f) => f.clase_abc ?? 'SIN', opciones: [{ v: 'A', t: 'A · 80 % de la compra' }, { v: 'B', t: 'B · 15 %' }, { v: 'C', t: 'C · 5 %' }, { v: 'SIN', t: 'Sin clase' }] },
     { clave: 'area', titulo: 'Área', valor: (f) => f.area, opciones: [{ v: 'BAR', t: 'Bar' }, { v: 'COCINA', t: 'Cocina' }] },
+    { clave: 'claseInsumo', titulo: 'Qué es', valor: (f) => f.clase,
+      opciones: (Object.keys(NOMBRE_CLASE) as Clase[]).map((v) => ({ v, t: NOMBRE_CLASE[v] })) },
     { clave: 'tipo', titulo: 'Tipo', valor: (f) => f.tipo, opciones: [{ v: 'MPe', t: 'MPe · se compra' }, { v: 'MPI', t: 'MPI · se produce' }] },
     { clave: 'alerta', titulo: 'Alertas', valor: (f) => (f.alertas.length ? f.alertas : ['NINGUNA']),
       opciones: [...Object.entries(ALERTA).map(([v, a]) => ({ v, t: a.t })), { v: 'NINGUNA', t: 'Sin alertas' }] },
@@ -139,6 +142,7 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
         <div className="suave" style={{ fontSize: '.82rem' }}>
           {f.presentacion} · <span className="cod">{f.codigo}</span>
           {f.clase_abc && <> · <span className="etiqueta">clase {f.clase_abc}</span></>}
+          {f.clase && f.clase !== 'MATERIA_PRIMA' && <> · <span className="etiqueta">{(NOMBRE_CLASE[f.clase] ?? f.clase).toLowerCase()}</span></>}
         </div>
         {f.hermanos.length > 0 && (
           <div style={{ fontSize: '.8rem', marginTop: '.2rem' }}>
@@ -318,7 +322,7 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
       <VistaFiltrable clave="verificar-ab" filas={filas} id={(f) => f.producto_id}
                       buscar={(f) => `${f.generico} ${f.marca} ${f.presentacion} ${f.codigo} ${f.ult_nombre ?? ''} ${f.ult_proveedor ?? ''}`}
                       grupos={grupos} columnas={columnas} agrupar={agrupar}
-                      filtrosIniciales={{ estado: ['Pendiente'], clase: ['A', 'B'], tipo: ['MPe'] }}
+                      filtrosIniciales={{ estado: ['Pendiente'], clase: ['A', 'B'], tipo: ['MPe'], claseInsumo: ['MATERIA_PRIMA'] }}
                       seleccionable={soloLectura ? undefined : (f) => !f.verificado_en}
                       vacio="Nada pendiente con estos filtros. ✔"
                       acciones={(elegidas, limpiar) => (
