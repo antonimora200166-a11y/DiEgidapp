@@ -7,7 +7,7 @@ import type { Resultado } from '@/lib/catalogo';
 import { emparejarConIA, leerFacturaConIA, type PropuestaFactura, type SugerenciaIA } from '@/lib/factura-ia';
 import type { ProductoRecepcion } from './Recibir';
 
-export type Candidato = { producto_id: string; parecido: number };
+export type Candidato = { producto_id: string; parecido: number; area: Area };
 export type ProveedorNuevo = { id: string; nombre: string; creado: boolean; activo: boolean };
 export type LineaLeida = PropuestaFactura['lineas'][number] & { candidatos: Candidato[]; sugerencia_ia: Omit<SugerenciaIA, 'n'> | null };
 export type Lectura =
@@ -40,10 +40,16 @@ export async function leerFactura(ruta: string, area: Area): Promise<Lectura> {
   if (!r.ok) return r;
   const p = r.propuesta;
 
-  const [{ data: proveedores }, { data: pares }] = await Promise.all([
+  // se busca en el área de la recepción y en la otra donde la persona recibe: un fruver trae para las dos
+  const otra: Area | null = area === 'BAR' ? 'COCINA' : 'BAR';
+  const areasBusqueda: Area[] = puedeOperar(perfil, otra) ? [area, otra] : [area];
+  const textos = p.lineas.map((l) => l.descripcion);
+  const [{ data: proveedores }, ...emparejados] = await Promise.all([
     supabase.from('proveedores').select('id, nombre, nit').eq('activo', true),
-    supabase.rpc('emparejar_factura', { p_area: area, p_textos: p.lineas.map((l) => l.descripcion) }),
+    ...areasBusqueda.map((a) => supabase.rpc('emparejar_factura', { p_area: a, p_textos: textos })),
   ]);
+  const pares = emparejados.flatMap((e, i) => ((e.data ?? []) as { n: number; producto_id: string; parecido: number }[])
+    .map((x) => ({ ...x, area: areasBusqueda[i] })));
   const nombre = norm(p.proveedor ?? '');
   const nit = soloDigitos(p.nit);
   const prov = (proveedores ?? []).find((x) => nit.length >= 6 && soloDigitos(x.nit) === nit)
@@ -64,17 +70,20 @@ export async function leerFactura(ruta: string, area: Area): Promise<Lectura> {
   }
 
   const porLinea = new Map<number, Candidato[]>();
-  for (const x of (pares ?? []) as { n: number; producto_id: string; parecido: number }[]) {
-    porLinea.set(x.n, [...(porLinea.get(x.n) ?? []), { producto_id: x.producto_id, parecido: Number(x.parecido) }]);
+  for (const x of pares) {
+    porLinea.set(x.n, [...(porLinea.get(x.n) ?? []), { producto_id: x.producto_id, parecido: Number(x.parecido), area: x.area }]);
   }
+  // el más parecido primero; si empatan, el del área de la recepción (el limón está en las dos)
+  for (const [n, cs] of porLinea) porLinea.set(n, cs.sort((a, b) => b.parecido - a.parecido || Number(b.area === area) - Number(a.area === area)));
   // lo que la búsqueda por nombre no emparejó con seguridad se lo pregunta a la IA por significado
   const dudosas = p.lineas.map((l, i) => ({ n: i + 1, descripcion: l.descripcion }))
     .filter((l) => !(porLinea.get(l.n) ?? []).some((c) => c.parecido >= 0.75));
   let sugerencias: SugerenciaIA[] = [];
   if (dudosas.length) {
-    const { data: catalogo } = await supabase.rpc('productos_recepcion', { p_area: area });
-    sugerencias = await emparejarConIA(dudosas, ((catalogo ?? []) as ProductoRecepcion[])
-      .map((x) => ({ producto_id: x.producto_id, generico: x.generico, presentacion: x.presentacion, categoria: x.categoria })));
+    const catalogos = await Promise.all(areasBusqueda.map((a) => supabase.rpc('productos_recepcion', { p_area: a })));
+    sugerencias = await emparejarConIA(dudosas, catalogos.flatMap((c, i) => ((c.data ?? []) as ProductoRecepcion[])
+      .map((x) => ({ producto_id: x.producto_id, generico: x.generico, presentacion: x.presentacion,
+                     categoria: `${x.categoria} · ${areasBusqueda[i] === 'BAR' ? 'bar' : 'cocina'}` }))));
   }
   const lineas = p.lineas.map((l, i): LineaLeida => {
     const s = sugerencias.find((x) => x.n === i + 1);
@@ -83,6 +92,16 @@ export async function leerFactura(ruta: string, area: Area): Promise<Lectura> {
   });
   return { ok: true, propuesta: p, proveedor_id: prov?.id ?? (nuevo?.activo ? nuevo.id : null), proveedor_nuevo: nuevo,
            proveedor_sugeridos: sugeridos, lineas };
+}
+
+// La recepción de la otra área necesita la foto en su carpeta (la base lo exige): se copia.
+export async function copiarFoto(ruta: string, hacia: Area): Promise<{ ok: true; ruta: string } | { ok: false; error: string }> {
+  const perfil = await perfilActual();
+  if (!puedeOperar(perfil, hacia) || !RUTA.test(ruta)) return { ok: false, error: 'No se pudo preparar la foto para la otra área.' };
+  const nueva = ruta.replace(/^(BAR|COCINA)\/(\d{4})\/[0-9a-f-]{36}/, `${hacia}/$2/${crypto.randomUUID()}`);
+  const supabase = await supabaseServidor();
+  const { error } = await supabase.storage.from('facturas').copy(ruta, nueva);
+  return error ? { ok: false, error: `No se pudo copiar la foto: ${error.message}` } : { ok: true, ruta: nueva };
 }
 
 // Proveedor nuevo desde la pantalla (el que leyó la IA o uno escrito a mano).

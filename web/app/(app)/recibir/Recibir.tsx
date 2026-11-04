@@ -6,7 +6,7 @@ import { fmtCantidad, type Resultado } from '@/lib/catalogo';
 import { costoUnitarioBase, desvioPct, promedioTrasEntrada } from '@/lib/costo';
 import { aUnidadesCompra, origenLinea } from '@/lib/recepcion';
 import type { Area } from '@/lib/roles';
-import { crearProductoRapido, crearProveedor, leerFactura, registrarRecepcion, type Candidato } from './acciones';
+import { copiarFoto, crearProductoRapido, crearProveedor, leerFactura, registrarRecepcion, type Candidato } from './acciones';
 import { confirmar, pedirTexto } from '@/components/Dialogo';
 import Escaner from '@/components/Escaner';
 import Icono from '@/components/Icono';
@@ -17,6 +17,7 @@ export type ProductoRecepcion = {
   unidad_base: 'g' | 'ml' | 'und'; unidad_compra: string; contenido_base: number | null; contenido_variable: boolean;
   exige_sello: boolean; es_perecedero: boolean; conservacion: string | null; temp_max: number | null;
   costo_promedio: number | null; saldo: number; estado: string;
+  area?: Area;   // la pantalla lo pone: productos de la recepción y de la otra área
 };
 type Condicion = 'OK' | 'DANADO' | 'INCOMPLETO' | 'NO_LLEGO';
 type Propuesto = { producto_id: string | null; cantidad: number | null; valor_total: number | null };
@@ -30,8 +31,10 @@ type Linea = {
   pesar?: boolean;   // llegó por pieza y se lleva en g o ml: el peso total es obligatorio
   // lo que propuso la IA por significado cuando el nombre no coincidía (cimarrón → cilantro cimarrón)
   ia_sugerido?: { producto_id: string | null; confianza: 'alta' | 'media' | 'baja'; razon: string } | null;
+  zona?: string;   // a qué zona entra este artículo; vacío = la zona por defecto de su área
 };
-type Encabezado = { ubicacion: string; proveedor_id: string; fecha: string; tipo_soporte: string; documento: string; obs: string };
+type Encabezado = { ubicacion: string; proveedor_id: string; fecha: string; tipo_soporte: string; documento: string; obs: string;
+                    ubicacion_otra?: string };   // zona de la otra área, si la factura trae productos de las dos
 type Foto = { ruta: string; tipo: string };
 
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
@@ -71,7 +74,8 @@ function calcular(l: Linea, porId: Map<string, ProductoRecepcion>) {
   // pesado a granel (contenido fijo de 1 g / 1 ml): lo que llegó es el peso, en unidades de compra
   if (p && l.pesar && !p.contenido_variable && p.contenido_base && tb !== null && tb > 0) rec = Math.round((tb / p.contenido_base) * 1e4) / 1e4;
   const contenido = p ? (p.contenido_variable ? (tb !== null && rec ? tb / rec : null) : p.contenido_base) : null;
-  const cu = costoUnitarioBase(val, rec, contenido);
+  // sin el peso de lo que llegó por pieza todavía no hay costo por gramo
+  const cu = p && l.pesar && !(tb !== null && tb > 0) ? null : costoUnitarioBase(val, rec, contenido);
   const base = rec !== null && contenido ? rec * contenido : null;
   const nuevoProm = p && cu !== null && base ? promedioTrasEntrada(p.saldo, p.costo_promedio, base, cu) : null;
   const temp = num(l.temperatura);
@@ -82,12 +86,22 @@ function calcular(l: Linea, porId: Map<string, ProductoRecepcion>) {
            diferencia: ped !== null && rec !== null && ped !== rec ? rec - ped : null };
 }
 
-export default function Recibir({ area, proveedores, zonas, productos }: {
+type Otra = { area: Area; productos: ProductoRecepcion[]; zonas: { codigo: string; nombre: string }[] };
+const nombreArea = (a: Area) => (a === 'BAR' ? 'bar' : 'cocina');
+
+export default function Recibir({ area, proveedores, zonas, productos, otra, zonaDe }: {
   area: Area; proveedores: { id: string; nombre: string }[]; zonas: { codigo: string; nombre: string }[]; productos: ProductoRecepcion[];
+  otra: Otra | null; zonaDe: Record<string, string>;
 }) {
+  // líneas marcadas para mandarlas juntas a una zona
+  const [elegidas, setElegidas] = useState<Set<string>>(new Set());
+  const [zonaGrupo, setZonaGrupo] = useState('');
   // los creados desde una línea de la factura se suman a la lista sin recargar la página
   const [extras, setExtras] = useState<ProductoRecepcion[]>([]);
-  const todos = useMemo(() => [...productos, ...extras.filter((e) => !productos.some((p) => p.producto_id === e.producto_id))], [productos, extras]);
+  const todos = useMemo(() => {
+    const base = [...productos.map((p) => ({ ...p, area })), ...(otra?.productos ?? []).map((p) => ({ ...p, area: otra!.area }))];
+    return [...base, ...extras.filter((e) => !base.some((p) => p.producto_id === e.producto_id))];
+  }, [productos, otra, extras, area]);
   const porId = useMemo(() => new Map(todos.map((p) => [p.producto_id, p])), [todos]);
   const vacio: Encabezado = { ubicacion: zonas.length === 1 ? zonas[0].codigo : '', proveedor_id: '', fecha: hoyCali(),
                               tipo_soporte: 'FACTURA', documento: '', obs: '' };
@@ -142,7 +156,7 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
     setLineas((ls) => {
       const l = ls.find((x) => x.producto_id === id);
       if (l) return ls.map((x) => (x === l ? { ...x, recibida: String((num(x.recibida) ?? 0) + 1) } : x));
-      return [...ls, { ...nueva(), producto_id: id, recibida: '1' }];
+      return [...ls, { ...nueva(), producto_id: id, recibida: '1', zona: zonaDe[id] ?? '' }];
     });
     setLeido({ ok: true, texto: `✔ ${nombreDe(p)} +1` });
   }
@@ -215,12 +229,13 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
         // queda elegido (la persona igual confirma la línea); si no, queda como primera sugerencia
         const ia = l.sugerencia_ia && l.sugerencia_ia.producto_id && porId.has(l.sugerencia_ia.producto_id) ? l.sugerencia_ia : null;
         const prod = mejor ? porId.get(mejor.producto_id)! : ia && ia.confianza === 'alta' ? porId.get(ia.producto_id!)! : null;
-        const candidatos = [...(ia ? [{ producto_id: ia.producto_id!, parecido: 1 }] : []),
+        const candidatos: Candidato[] = [...(ia ? [{ producto_id: ia.producto_id!, parecido: 1, area: porId.get(ia.producto_id!)?.area ?? area }] : []),
                             ...l.candidatos.filter((c) => porId.has(c.producto_id) && c.producto_id !== ia?.producto_id)];
         const conv = prod ? aUnidadesCompra(l.cantidad, l.unidad, prod, l.descripcion) : { cantidad: l.cantidad, total_base: null, nota: null, pesar: false };
         return {
           ...nueva(), producto_id: prod?.producto_id ?? null, nombre_factura: l.descripcion, cantidad_factura: l.cantidad, unidad_factura: l.unidad,
           nota: conv.nota, pesar: !!conv.pesar, confirmada: false, candidatos, ia_sugerido: mejor ? null : l.sugerencia_ia,
+          zona: prod ? zonaDe[prod.producto_id] ?? '' : '',
           ia: { producto_id: prod?.producto_id ?? null, cantidad: conv.cantidad, valor_total: l.valor_total },
           recibida: conv.cantidad === null ? '' : String(conv.cantidad),
           total_base: conv.total_base === null ? '' : String(conv.total_base),
@@ -237,6 +252,12 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
   }
 
   const calculo = (l: Linea) => calcular(l, porId);
+  // el área de una línea es la de su producto; sin producto todavía, la de la pantalla
+  const areaDe = (l: Linea): Area => (l.producto_id ? porId.get(l.producto_id)?.area : undefined) ?? area;
+  const deLaOtra = otra ? lineas.filter((l) => l.producto_id && areaDe(l) === otra.area).length : 0;
+  // falta la zona por defecto de un área si alguno de sus artículos no tiene zona propia
+  const faltaZona = lineas.some((l) => !l.zona && areaDe(l) === area) && !enc.ubicacion;
+  const faltaZonaOtra = !!otra && lineas.some((l) => l.producto_id && !l.zona && areaDe(l) === otra.area) && !enc.ubicacion_otra;
 
   const sinConfirmar = lineas.filter((l) => !l.confirmada).length;
   const sinProducto = lineas.filter((l) => !l.producto_id).length;
@@ -244,15 +265,17 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
   const sumaLineas = lineas.reduce((t, l) => t + (num(l.valor) ?? 0), 0);
   const descuadre = totalFactura && sumaLineas ? Math.abs(sumaLineas - totalFactura) / totalFactura > 0.01 : false;
 
-  function payload(conMotivo: boolean) {
+  function payload(conMotivo: boolean, g: Area, ruta: string | null) {
     return {
-      area, ubicacion: enc.ubicacion, fecha: enc.fecha, proveedor_id: enc.proveedor_id, tipo_soporte: enc.tipo_soporte,
-      documento: enc.documento, observaciones: enc.obs, soporte_ruta: foto?.ruta ?? null, propuesta_ia: propuesta,
+      // el encabezado lleva la zona por defecto; si no la hay, la del primer artículo del grupo
+      area: g, ubicacion: (g === area ? enc.ubicacion : enc.ubicacion_otra) || lineas.find((l) => areaDe(l) === g && l.zona)?.zona || '',
+      fecha: enc.fecha, proveedor_id: enc.proveedor_id,
+      tipo_soporte: enc.tipo_soporte, documento: enc.documento, observaciones: enc.obs, soporte_ruta: ruta, propuesta_ia: propuesta,
       motivo_forzado: conMotivo ? motivo : null,
-      lineas: lineas.map((l) => {
+      lineas: lineas.filter((l) => areaDe(l) === g).map((l) => {
         const c = calculo(l);
         return {
-          producto_id: l.producto_id, cantidad_pedida: c.ped, cantidad_recibida: c.rec, valor_total: c.val,
+          producto_id: l.producto_id, ubicacion: l.zona || undefined, cantidad_pedida: c.ped, cantidad_recibida: c.rec, valor_total: c.val,
           contenido_base: c.p?.contenido_variable ? c.contenido : undefined,
           condicion: l.condicion, sello: l.sello || null, temperatura: num(l.temperatura), vencimiento: l.vencimiento || null,
           lote_proveedor: l.lote || null, observaciones: l.obs, nombre_factura: l.nombre_factura,
@@ -262,15 +285,33 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
     };
   }
 
+  // Una factura con productos de las dos áreas se guarda como dos recepciones (mismo número y foto).
+  // Primero la del área de la pantalla; las líneas que ya quedaron guardadas salen de la lista.
   function guardar(conMotivo: boolean) {
     setResultado(null);
     iniciar(async () => {
-      const r = await registrarRecepcion(payload(conMotivo));
-      setResultado(r);
-      if (r.ok) {
-        try { localStorage.removeItem(clave); } catch { /* nada */ }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+      const grupos = [...new Set(lineas.map(areaDe))].sort((a, b) => Number(b === area) - Number(a === area));
+      const codigos: string[] = [];
+      const avisos: string[] = [];
+      for (const g of grupos) {
+        let ruta = foto?.ruta ?? null;
+        if (ruta && g !== area) {
+          const c = await copiarFoto(ruta, g);
+          if (!c.ok) { setResultado({ ok: false, id: null, codigo: null, fatales: [c.error], bloqueos: [], avisos: [] }); return; }
+          ruta = c.ruta;
+        }
+        const r = await registrarRecepcion(payload(conMotivo, g, ruta));
+        if (!r.ok) {
+          setResultado({ ...r, avisos: [...(codigos.length ? [`Ya quedó guardada: ${codigos.join(', ')}. Falta la de ${nombreArea(g)}.`] : []), ...r.avisos] });
+          return;
+        }
+        codigos.push(r.codigo!);
+        avisos.push(...r.avisos);
+        setLineas((ls) => ls.filter((l) => areaDe(l) !== g));
       }
+      try { localStorage.removeItem(clave); } catch { /* nada */ }
+      setResultado({ ok: true, id: null, codigo: codigos.join(' y '), fatales: [], bloqueos: [], avisos });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 
@@ -283,7 +324,7 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
     return (
       <div className="tarjeta">
         <p className="exito" role="status" style={{ marginTop: 0 }}>
-          <strong>Recepción guardada: {resultado.codigo}</strong><br />
+          <strong>{resultado.codigo?.includes(' y ') ? 'Recepciones guardadas' : 'Recepción guardada'}: {resultado.codigo}</strong><br />
           Las existencias y el costo promedio de cada producto ya se actualizaron.
         </p>
         {resultado.avisos.length > 0 && <div className="aviso"><ul style={{ margin: 0 }}>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
@@ -369,13 +410,24 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
             <input id="fecha" type="date" max={hoyCali()} value={enc.fecha} onChange={(e) => ponerEnc({ fecha: e.target.value })} />
           </div>
           <div>
-            <label htmlFor="zona">Entra a</label>
+            <label htmlFor="zona">Zona por defecto <span className="ayuda">cada artículo puede ir a otra</span></label>
             <select id="zona" value={enc.ubicacion} onChange={(e) => ponerEnc({ ubicacion: e.target.value })}>
               <option value="">— Zona —</option>
               {zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}</option>)}
             </select>
           </div>
         </div>
+        {otra && deLaOtra > 0 && (
+          <div className="aviso" style={{ marginBottom: 0 }}>
+            <strong>Esta factura trae {deLaOtra} producto(s) de {nombreArea(otra.area)}.</strong> Al guardar se registran dos recepciones,
+            una por área, con la misma foto y el mismo número.
+            <label htmlFor="zona-otra" style={{ marginTop: '.5rem' }}>Zona por defecto de lo de {nombreArea(otra.area)}</label>
+            <select id="zona-otra" value={enc.ubicacion_otra ?? ''} onChange={(e) => ponerEnc({ ubicacion_otra: e.target.value })}>
+              <option value="">— Zona de {nombreArea(otra.area)} —</option>
+              {otra.zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}</option>)}
+            </select>
+          </div>
+        )}
       </section>
 
       {/* ------------------------------------------------ líneas */}
@@ -385,12 +437,35 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
       )}
       <ul className="lista">
         {lineas.map((l, i) => (
-          <TarjetaLinea key={l.clave} n={i + 1} l={l} c={calculo(l)} productos={todos} porId={porId} area={area}
+          <TarjetaLinea key={l.clave} n={i + 1} l={l} c={calculo(l)} productos={todos} porId={porId} area={area} otraArea={otra?.area ?? null}
+                        zonas={areaDe(l) === area ? zonas : otra?.zonas ?? []} zonaDefecto={areaDe(l) === area ? enc.ubicacion : enc.ubicacion_otra ?? ''}
+                        zonaDe={zonaDe} elegida={elegidas.has(l.clave)}
+                        marcar={() => setElegidas((s) => { const x = new Set(s); if (x.has(l.clave)) x.delete(l.clave); else x.add(l.clave); return x; })}
                         creado={(x) => setExtras((xs) => [...xs, x])}
                         poner={(cambio) => poner(l.clave, cambio)}
                         quitar={() => setLineas((ls) => ls.filter((x) => x.clave !== l.clave))} />
         ))}
       </ul>
+      {elegidas.size > 0 && (
+        <div className="barra-bloque" style={{ marginTop: '.6rem' }}>
+          <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <strong>{elegidas.size} marcado(s) →</strong>
+            <select value={zonaGrupo} onChange={(e) => setZonaGrupo(e.target.value)} style={{ flex: '1 1 180px', minHeight: 40 }} aria-label="Zona para los marcados">
+              <option value="">— Guardar en… —</option>
+              <optgroup label={`Zonas de ${nombreArea(area)}`}>{zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}</option>)}</optgroup>
+              {otra && <optgroup label={`Zonas de ${nombreArea(otra.area)}`}>{otra.zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}</option>)}</optgroup>}
+            </select>
+            <button type="button" className="chico" disabled={!zonaGrupo} onClick={() => {
+              // la zona solo se aplica a los artículos de su misma área
+              const areaZona: Area = zonas.some((z) => z.codigo === zonaGrupo) ? area : otra!.area;
+              setLineas((ls) => ls.map((l) => (elegidas.has(l.clave) && areaDe(l) === areaZona ? { ...l, zona: zonaGrupo } : l)));
+              setElegidas(new Set()); setZonaGrupo('');
+            }}>Aplicar</button>
+            <button type="button" className="discreto chico" onClick={() => setElegidas(new Set())}>Quitar marcas</button>
+          </div>
+          {otra && <span className="ayuda">Una zona de {nombreArea(area)} solo se aplica a lo de {nombreArea(area)}, y una de {nombreArea(otra.area)} a lo suyo.</span>}
+        </div>
+      )}
       <div className="acciones" style={{ marginTop: '.6rem' }}>
         <button type="button" className="secundario" onClick={() => setLineas((ls) => [...ls, nueva()])}>+ Agregar producto</button>
         <button type="button" className="secundario" onClick={() => { setLeido(null); setEscaneando(true); }}><Icono nombre="escanear" /> Escanear</button>
@@ -447,7 +522,7 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
             {enviando ? 'Guardando…' : 'Guardar con este motivo'}
           </button>
         ) : (
-          <button type="button" disabled={enviando || !!estadoFoto || !lineas.length || sinConfirmar > 0 || sinProducto > 0 || sinPeso > 0}
+          <button type="button" disabled={enviando || !!estadoFoto || !lineas.length || sinConfirmar > 0 || sinProducto > 0 || sinPeso > 0 || faltaZona || faltaZonaOtra}
                   onClick={() => guardar(false)}>
             {enviando ? 'Guardando…' : `Guardar recepción (${lineas.length})`}
           </button>
@@ -459,11 +534,13 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
           </button>
         )}
       </div>
-      {(sinProducto > 0 || sinConfirmar > 0 || sinPeso > 0) && lineas.length > 0 && (
+      {(sinProducto > 0 || sinConfirmar > 0 || sinPeso > 0 || faltaZona || faltaZonaOtra) && lineas.length > 0 && (
         <p className="suave" style={{ fontSize: '.85rem' }}>
           {sinProducto > 0 ? `Falta elegir el producto en ${sinProducto} línea(s), o quitarla si no es un insumo. ` : ''}
           {sinConfirmar > 0 ? `Falta confirmar ${sinConfirmar} línea(s) propuesta(s) por la IA. ` : ''}
-          {sinPeso > 0 ? `Falta pesar ${sinPeso} línea(s) que llegaron por unidad.` : ''}
+          {sinPeso > 0 ? `Falta pesar ${sinPeso} línea(s) que llegaron por unidad. ` : ''}
+          {faltaZona ? 'Falta la zona por defecto (o la zona de cada artículo). ' : ''}
+          {otra && faltaZonaOtra ? `Falta la zona de lo de ${nombreArea(otra.area)}.` : ''}
         </p>
       )}
     </>
@@ -473,8 +550,9 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
 // ==================================================================== una línea
 type Calculo = ReturnType<typeof calcular>;
 
-function TarjetaLinea({ n, l, c, productos, porId, area, creado, poner, quitar }: {
-  n: number; l: Linea; c: Calculo; productos: ProductoRecepcion[]; porId: Map<string, ProductoRecepcion>; area: Area;
+function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDefecto, zonaDe, elegida, marcar, creado, poner, quitar }: {
+  n: number; l: Linea; c: Calculo; productos: ProductoRecepcion[]; porId: Map<string, ProductoRecepcion>; area: Area; otraArea: Area | null;
+  zonas: { codigo: string; nombre: string }[]; zonaDefecto: string; zonaDe: Record<string, string>; elegida: boolean; marcar: () => void;
   creado: (p: ProductoRecepcion) => void; poner: (cambio: Partial<Linea>) => void; quitar: () => void;
 }) {
   const [creando, setCreando] = useState(false);
@@ -491,7 +569,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, creado, poner, quitar }
 
   function elegir(x: ProductoRecepcion) {
     // la cantidad de la factura se vuelve a convertir a la presentación elegida
-    const cambio: Partial<Linea> = { producto_id: x.producto_id, sello: '', temperatura: '' };
+    const cambio: Partial<Linea> = { producto_id: x.producto_id, sello: '', temperatura: '', zona: zonaDe[x.producto_id] ?? '' };
     if (l.cantidad_factura !== null) {
       const conv = aUnidadesCompra(l.cantidad_factura, l.unidad_factura, x, l.nombre_factura);
       Object.assign(cambio, { recibida: conv.cantidad === null ? '' : String(conv.cantidad), nota: conv.nota, pesar: !!conv.pesar,
@@ -509,7 +587,10 @@ function TarjetaLinea({ n, l, c, productos, porId, area, creado, poner, quitar }
     <li style={borde ? { borderColor: borde, borderWidth: 2 } : undefined}>
       <div className="linea" style={{ alignItems: 'flex-start' }}>
         <div style={{ minWidth: 0 }}>
-          <span className="suave" style={{ fontSize: '.8rem' }}>Línea {n}{l.ia ? ' · leída por la IA' : ''}</span>
+          <label style={{ display: 'inline-flex', gap: '.35rem', alignItems: 'center', margin: 0, fontWeight: 400 }}>
+            <input type="checkbox" checked={elegida} onChange={marcar} style={{ width: 20, minHeight: 20 }} aria-label={`Marcar la línea ${n}`} />
+            <span className="suave" style={{ fontSize: '.8rem' }}>Línea {n}{l.ia ? ' · leída por la IA' : ''}</span>
+          </label>
           {l.nombre_factura && <div className="suave" style={{ fontSize: '.85rem' }}>Factura: «{l.nombre_factura}»</div>}
           {p && !eligiendo && l.ia_sugerido?.producto_id === p.producto_id && (
             <div className="suave" style={{ fontSize: '.82rem', color: 'var(--marca)' }}>Elegido por la IA: {l.ia_sugerido.razon} Revísalo.</div>
@@ -517,6 +598,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, creado, poner, quitar }
           {p && !eligiendo && (
             <div>
               <strong>{nombreDe(p)}</strong>
+              {p.area && p.area !== area && <span className="etiqueta provisional" style={{ marginLeft: '.4rem' }}>va a {nombreArea(p.area)}</span>}
               <div className="suave" style={{ fontSize: '.85rem' }}>{p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}</div>
             </div>
           )}
@@ -532,7 +614,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, creado, poner, quitar }
         <div style={{ marginTop: '.5rem' }}>
           {!p && l.nombre_factura && !creando && (
             <div className="aviso" style={{ margin: '0 0 .5rem', padding: '.5rem .7rem', fontSize: '.9rem' }}>
-              <strong>«{l.nombre_factura}» no está con ese nombre en el catálogo de {area === 'BAR' ? 'bar' : 'cocina'}.</strong>{' '}
+              <strong>«{l.nombre_factura}» no está con ese nombre en el catálogo{otraArea ? '' : ` de ${nombreArea(area)}`}.</strong>{' '}
               {l.ia_sugerido?.producto_id && porId.get(l.ia_sugerido.producto_id) ? (
                 <span style={{ display: 'block', marginTop: '.3rem' }}>
                   La IA cree que es <strong>{nombreDe(porId.get(l.ia_sugerido.producto_id)!)}</strong>
@@ -552,13 +634,13 @@ function TarjetaLinea({ n, l, c, productos, porId, area, creado, poner, quitar }
               </div>
             </div>
           )}
-          {creando && <CrearRapido area={area} l={l} cancelar={() => setCreando(false)}
+          {creando && <CrearRapido area={area} otraArea={otraArea} l={l} cancelar={() => setCreando(false)}
                                    listo={(x) => { creado(x); setCreando(false); elegir(x); }} />}
           {sugeridos.length > 0 && (
             <div className="segmentos" style={{ marginBottom: '.4rem' }}>
               {sugeridos.map((x) => (
                 <button key={x.producto_id} type="button" className="secundario chico" style={{ textAlign: 'left' }} onClick={() => elegir(x)}>
-                  {nombreDe(x)} <span className="suave">· {x.presentacion}</span>
+                  {nombreDe(x)} <span className="suave">· {x.presentacion}{x.area && x.area !== area ? ` · ${nombreArea(x.area)}` : ''}</span>
                 </button>
               ))}
             </div>
@@ -569,7 +651,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, creado, poner, quitar }
               {opciones.map((x) => (
                 <li key={x.producto_id} style={{ padding: 0 }}>
                   <button type="button" className="secundario" style={{ width: '100%', textAlign: 'left', border: 0, color: 'inherit' }} onClick={() => elegir(x)}>
-                    <strong>{nombreDe(x)}</strong> <span className="suave">· {x.presentacion}</span>
+                    <strong>{nombreDe(x)}</strong> <span className="suave">· {x.presentacion}{x.area && x.area !== area ? ` · ${nombreArea(x.area)}` : ''}</span>
                   </button>
                 </li>
               ))}
@@ -596,6 +678,12 @@ function TarjetaLinea({ n, l, c, productos, porId, area, creado, poner, quitar }
               <input inputMode="decimal" value={l.valor} onChange={(e) => poner({ valor: e.target.value })} />
             </label>
           </div>
+          <label style={{ ...campo, marginTop: '.5rem' }}>Se guarda en
+            <select value={l.zona ?? ''} onChange={(e) => poner({ zona: e.target.value })}>
+              <option value="">{zonaDefecto ? `${zonas.find((z) => z.codigo === zonaDefecto)?.nombre ?? zonaDefecto} (la zona por defecto)` : '— la zona por defecto —'}</option>
+              {zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}{zonaDe[p.producto_id] === z.codigo ? ' · su lugar habitual' : ''}</option>)}
+            </select>
+          </label>
           {(p.contenido_variable || l.pesar) && (
             <label style={{ ...campo, marginTop: '.5rem' }}>
               {l.pesar ? <strong style={{ color: c.faltaPeso ? 'var(--aviso)' : undefined }}>Pésalo: peso total que llegó ({p.unidad_base}) *</strong>
@@ -689,7 +777,8 @@ function nombreSugerido(t: string) {
 
 // Alta de un producto que no existe, desde la línea: provisional, a granel en g/ml/und (lo que se pesa
 // o se cuenta al recibir). Lo valida después quien edita el área.
-function CrearRapido({ area, l, listo, cancelar }: { area: Area; l: Linea; listo: (p: ProductoRecepcion) => void; cancelar: () => void }) {
+function CrearRapido({ area, otraArea, l, listo, cancelar }: { area: Area; otraArea: Area | null; l: Linea; listo: (p: ProductoRecepcion) => void; cancelar: () => void }) {
+  const [para, setPara] = useState<Area>(area);
   const u = (l.unidad_factura ?? '').toUpperCase().replace(/[^A-Z]/g, '');
   const ubInicial: 'g' | 'ml' | 'und' = ['L', 'LT', 'LTS', 'LITRO', 'LITROS', 'ML', 'CC'].includes(u) ? 'ml' : 'g';
   const [nombre, setNombre] = useState(nombreSugerido(l.nombre_factura ?? ''));
@@ -701,11 +790,11 @@ function CrearRapido({ area, l, listo, cancelar }: { area: Area; l: Linea; listo
 
   function crear() {
     iniciar(async () => {
-      const r = await crearProductoRapido(area, {
+      const r = await crearProductoRapido(para, {
         nombre: nombre.trim(), unidad_base: ub, presentacion: 'Granel', unidad_compra: ub === 'g' ? 'GR' : ub === 'ml' ? 'ML' : 'UND',
         contenido_base: 1, contenido_variable: false, categoria: null, motivo: motivo.trim() || null, factura: l.nombre_factura,
       });
-      if (r.ok) listo(r.producto); else setError({ fatales: r.fatales, bloqueos: r.bloqueos });
+      if (r.ok) listo({ ...r.producto, area: para }); else setError({ fatales: r.fatales, bloqueos: r.bloqueos });
     });
   }
   const bloqueado = !!error && !error.fatales.length && error.bloqueos.length > 0;
@@ -724,6 +813,13 @@ function CrearRapido({ area, l, listo, cancelar }: { area: Area; l: Linea; listo
           </select>
         </label>
       </div>
+      {otraArea && (
+        <div className="segmentos" role="radiogroup" aria-label="Área del producto" style={{ marginTop: '.5rem' }}>
+          {[area, otraArea].map((a) => (
+            <label key={a}><input type="radio" checked={para === a} onChange={() => setPara(a)} /><span>Para {nombreArea(a)}</span></label>
+          ))}
+        </div>
+      )}
       {error && (
         <div className={bloqueado ? 'aviso' : 'error'} style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
           <ul style={{ margin: 0 }}>{[...error.fatales, ...error.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul>

@@ -25,6 +25,19 @@ export default async function PaginaRecibir({ searchParams }: { searchParams: Pr
       .order('registrado_en', { ascending: false }).limit(5),
   ]);
   if (error) throw new Error(error.message);
+  // una factura de fruver puede traer lo de cocina y lo de bar: el catálogo y las zonas de la otra área
+  // en la que la persona recibe, para separar la factura en dos recepciones
+  const otraArea = areas.find((a) => a !== area);
+  const [otraProd, otraZonas] = otraArea ? await Promise.all([
+    supabase.rpc('productos_recepcion', { p_area: otraArea }),
+    supabase.from('ubicaciones').select('codigo, nombre').eq('area', otraArea).eq('activo', true).order('nombre'),
+  ]) : [null, null];
+  const otra = otraArea && otraProd?.data ? { area: otraArea, productos: otraProd.data as ProductoRecepcion[], zonas: otraZonas?.data ?? [] } : null;
+  // dónde se guarda cada producto (la matriz de ubicaciones): la zona que la línea propone por defecto
+  const { data: asignados } = await supabase.from('ubicacion_productos').select('producto_id, ubicacion, orden').eq('activo', true)
+    .order('orden', { ascending: true, nullsFirst: false });
+  const zonaDe: Record<string, string> = {};
+  for (const x of asignados ?? []) if (!zonaDe[x.producto_id]) zonaDe[x.producto_id] = x.ubicacion;
 
   return (
     <>
@@ -41,7 +54,7 @@ export default async function PaginaRecibir({ searchParams }: { searchParams: Pr
         </nav>
       )}
       <Recibir key={area} area={area} proveedores={proveedores ?? []} zonas={zonas ?? []}
-               productos={(productos ?? []) as ProductoRecepcion[]} />
+               productos={(productos ?? []) as ProductoRecepcion[]} otra={otra} zonaDe={zonaDe} />
       {!!recientes?.length && (
         <>
           <h2>Últimas recepciones</h2>
