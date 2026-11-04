@@ -48,6 +48,7 @@ export function menuDe(p: Perfil): Opcion[] {
   if (areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/catalogo/revision', titulo: 'Revisar duplicados', detalle: 'Decidir si dos productos son el mismo y unirlos', icono: 'revision' });
   if (p.rol === 'admin' || p.rol === 'auditor' || areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/arranque', titulo: '¿Listo para arrancar?', detalle: 'Lo que falta para operar con la app', icono: 'arranque' });
   if (p.rol === 'admin') m.push({ ruta: '/admin/usuarios', titulo: 'Usuarios', detalle: 'Crear usuarios y asignar roles', icono: 'usuarios' });
+  if (p.rol === 'admin') m.push({ ruta: '/admin/ia', titulo: 'IA de facturas', detalle: 'Revisar la clave de Anthropic y el crédito', icono: 'escanear' });
   if (p.rol === 'admin' || p.rol === 'auditor') m.push({ ruta: '/admin/registro', titulo: 'Registro', detalle: 'Quién hizo qué, y los errores de la app', icono: 'registro' });
   return m;
 }

@@ -102,3 +102,34 @@ export async function leerFacturaConIA(datos: Uint8Array, tipo: string): Promise
     throw e;
   }
 }
+
+export type EstadoIA = { variable: boolean; final: string | null; clave: 'ok' | 'invalida' | 'error' | null; modelo: string;
+                         prueba: 'ok' | 'sin-credito' | 'error' | null; detalle: string | null };
+
+// Para la página de administración: si Vercel tiene la clave y Anthropic la acepta. Consultar el
+// modelo no cuesta; la prueba opcional manda un mensaje de una palabra (fracciones de centavo) y es
+// lo único que confirma que la cuenta tiene crédito.
+export async function estadoIA(probar: boolean): Promise<EstadoIA> {
+  const k = process.env.ANTHROPIC_API_KEY?.trim();
+  const e: EstadoIA = { variable: !!k, final: k ? k.slice(-4) : null, clave: null, modelo: MODELO, prueba: null, detalle: null };
+  if (!k) return e;
+  const cliente = new Anthropic({ timeout: 20_000, maxRetries: 0 });
+  try {
+    await cliente.models.retrieve(MODELO);
+    e.clave = 'ok';
+  } catch (x) {
+    e.clave = x instanceof Anthropic.AuthenticationError || x instanceof Anthropic.PermissionDeniedError ? 'invalida' : 'error';
+    e.detalle = x instanceof Anthropic.APIError ? `${x.status ?? ''} ${x.message}`.trim() : String(x);
+    return e;
+  }
+  if (!probar) return e;
+  try {
+    await cliente.messages.create({ model: MODELO, max_tokens: 5, messages: [{ role: 'user', content: 'Responde: ok' }] });
+    e.prueba = 'ok';
+  } catch (x) {
+    const m = x instanceof Anthropic.APIError ? x.message : String(x);
+    e.prueba = /credit|balance|billing/i.test(m) ? 'sin-credito' : 'error';
+    e.detalle = x instanceof Anthropic.APIError ? `${x.status ?? ''} ${m}`.trim() : m;
+  }
+  return e;
+}
