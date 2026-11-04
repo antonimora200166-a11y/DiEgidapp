@@ -44,3 +44,24 @@ test('origen de la línea', () => {
   assert.equal(origenLinea(ia, { ...ia, cantidad: 3 }), 'IA_CORREGIDA');
   assert.equal(origenLinea(ia, { ...ia, producto_id: 'b' }), 'IA_CORREGIDA');
 });
+
+test('lo que llega por pieza y se lleva en gramos se manda a pesar', () => {
+  const repollo: PresentacionCompra = { unidad_base: 'g', unidad_compra: 'UNIDAD', contenido_base: null, contenido_variable: true };
+  const sandiaGranel: PresentacionCompra = { unidad_base: 'g', unidad_compra: 'GR', contenido_base: 1, contenido_variable: false };
+  const azucar: PresentacionCompra = { unidad_base: 'g', unidad_compra: 'PAQ', contenido_base: 2500, contenido_variable: false };
+  assert.equal(aUnidadesCompra(4, 'UNIDAD', repollo).pesar, true);
+  assert.equal(aUnidadesCompra(1, 'UNIDAD', sandiaGranel).pesar, true);
+  assert.equal(aUnidadesCompra(4, 'PAQUETE', azucar).pesar, undefined);   // misma pieza con contenido fijo
+  assert.equal(aUnidadesCompra(4, 'LIBRA', repollo).pesar, undefined);    // viene en peso: 2.000 g
+  const cilantro: PresentacionCompra = { unidad_base: 'g', unidad_compra: 'UNIDAD', contenido_base: 109, contenido_variable: false };
+  assert.equal(aUnidadesCompra(4, 'UNIDAD', cilantro).pesar, true);       // 109 g es un promedio
+});
+
+test('media libra y el peso escrito en la descripción', () => {
+  const habichuela: PresentacionCompra = { unidad_base: 'g', unidad_compra: 'GR', contenido_base: 1, contenido_variable: false };
+  const naranja: PresentacionCompra = { unidad_base: 'g', unidad_compra: 'BOLSA', contenido_base: 4000, contenido_variable: false };
+  assert.equal(aUnidadesCompra(4, 'MEDIA LIBRA', habichuela).cantidad, 1000);
+  const r = aUnidadesCompra(1, 'MALLA', naranja, 'NARANJA COMUN 2,5KG');
+  assert.equal(r.cantidad, 0.625);   // 2.500 g de 4.000 g por bolsa
+  assert.equal(r.pesar, undefined);
+});

@@ -54,11 +54,11 @@ export type PropuestaFactura = z.infer<typeof Propuesta>;
 const INSTRUCCIONES = `Lees fotos de facturas y remisiones de proveedores de un restaurante en Cali, Colombia, para que el personal no tenga que digitarlas. Una persona revisará y corregirá todo lo que propongas, así que es mejor dejar un campo en null que adivinarlo.
 
 Devuelve:
-- proveedor: la razón social o el nombre comercial del que vende (no el del restaurante que compra, Di Égida / Tosca Bistró).
+- proveedor: el nombre completo del que vende, tal como está impreso en el encabezado, sin abreviarlo ni quitarle palabras (p. ej. «AGRO FRUVERS GUABAL», no «Fruvers»). Si hay razón social y nombre comercial, el que esté más grande arriba. Nunca el del restaurante que compra (Di Égida / Tosca Bistró).
 - nit: el NIT del proveedor, solo dígitos y guion, si aparece.
 - documento: el número de la factura o remisión, tal como está impreso (con su prefijo, p. ej. «FE-12345»).
 - fecha: la fecha de emisión en formato AAAA-MM-DD.
-- lineas: una por producto, en el orden de la factura. descripcion es el texto del producto como está impreso. cantidad y unidad son las de la factura («2» y «KG», «6» y «UND», «1» y «CJA»). valor_total es lo que se cobra por esa línea en pesos, con el IVA incluido si la factura lo suma por línea.
+- lineas: una por producto, en el orden de la factura. descripcion es el texto del producto como está impreso. cantidad y unidad son las de la factura, con la unidad escrita como aparece («2» y «KG», «6» y «UNIDAD», «4» y «MEDIA LIBRA», «1» y «MALLA»). En los tiquetes de fruver la línea de abajo dice la unidad y el precio unitario («LIBRA X $ 1.600»): esa es la unidad. Lo escrito a mano (como «domicilio» o los chulos de revisión) no es una línea. valor_total es lo que se cobra por esa línea en pesos, con el IVA incluido si la factura lo suma por línea.
 - total_factura: el total a pagar.
 - notas: en una frase, lo que la persona deba revisar (IVA solo en el total, descuentos globales, una línea ilegible, ítems que no son insumos como domicilio o bolsas). null si no hay nada.
 - legible: false si la imagen no es una factura o no se puede leer; en ese caso deja lineas vacía.
@@ -132,4 +132,79 @@ export async function estadoIA(probar: boolean): Promise<EstadoIA> {
     e.detalle = x instanceof Anthropic.APIError ? `${x.status ?? ''} ${m}`.trim() : m;
   }
   return e;
+}
+
+// ---------------------------------------------------------------- emparejar por significado
+// La búsqueda por letras no sabe que «CIMARRÓN» es el cilantro cimarrón ni que «MANGO TOMMY» es mango.
+// Para las líneas que la base no emparejó con seguridad, la IA lee la descripción y el catálogo del
+// área y propone el producto equivalente, con la razón. Solo propone: la persona confirma.
+export type SugerenciaIA = { n: number; producto_id: string | null; confianza: 'alta' | 'media' | 'baja'; razon: string };
+export type ProductoCatalogoIA = { producto_id: string; generico: string; presentacion: string; categoria: string };
+
+const ESQUEMA_EMPAREJAR = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['lineas'],
+  properties: {
+    lineas: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['n', 'producto', 'confianza', 'razon'],
+        properties: {
+          n: { type: 'integer' },
+          producto: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+          confianza: { type: 'string', enum: ['alta', 'media', 'baja'] },
+          razon: { type: 'string' },
+        },
+      },
+    },
+  },
+} as const;
+
+const Emparejado = z.object({ lineas: z.array(z.object({
+  n: z.number().int(), producto: z.number().int().nullable(), confianza: z.enum(['alta', 'media', 'baja']), razon: z.string(),
+})) });
+
+const INSTRUCCIONES_EMPAREJAR = `Ayudas a quien recibe mercancía en la cocina o el bar de un restaurante en Cali, Colombia. Te paso líneas de una factura de proveedor que no se encontraron por nombre en el catálogo, y el catálogo de productos que se compran en esa área (un número por producto).
+
+Para cada línea, di qué producto del catálogo es el mismo artículo aunque el nombre sea distinto: sinónimos y nombres regionales de Colombia («cimarrón» es cilantro cimarrón, «habichuela» es judía verde o vainita, «ahuyama» es zapallo), variedades o calibres del mismo producto («mango tommy» es mango, «sandía baby» es sandía), marcas o empaques que el catálogo no distingue («crema de coco Santa Elena» es crema de coco) y errores de escritura.
+
+Responde una entrada por línea, con su mismo número n:
+- producto: el número del producto del catálogo, o null si ninguno es el mismo artículo. Un producto parecido pero distinto no sirve: la pulpa no es la fruta entera, lo seco no es lo fresco, una salsa no es su ingrediente, un plato preparado no es la materia prima. Ante la duda entre dos, el que se compra tal cual llega en la factura.
+- confianza: «alta» si es claramente el mismo artículo; «media» si es probable pero conviene que la persona lo mire; «baja» si es una suposición.
+- razon: una frase corta en español para quien recibe, por ejemplo «Cimarrón es otro nombre del cilantro cimarrón». Si es null, di qué es y que no está en el catálogo.`;
+
+export async function emparejarConIA(lineas: { n: number; descripcion: string }[], catalogo: ProductoCatalogoIA[]): Promise<SugerenciaIA[]> {
+  if (!process.env.ANTHROPIC_API_KEY || !lineas.length || !catalogo.length) return [];
+  const lista = catalogo.map((p, i) => `${i + 1}. ${p.generico}${p.presentacion ? ` · ${p.presentacion}` : ''} [${p.categoria}]`).join('\n');
+  const cliente = new Anthropic({ timeout: 60_000, maxRetries: 1 });
+  try {
+    const respuesta = await cliente.beta.messages.create({
+      model: MODELO,
+      max_tokens: 8000,
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: ESQUEMA_EMPAREJAR } },
+      // el catálogo cambia poco: va en caché para las facturas que se leen seguidas
+      system: [
+        { type: 'text', text: INSTRUCCIONES_EMPAREJAR },
+        { type: 'text', text: `Catálogo:\n${lista}`, cache_control: { type: 'ephemeral' } },
+      ],
+      messages: [{ role: 'user', content: `Líneas de la factura:\n${lineas.map((l) => `${l.n}. ${l.descripcion}`).join('\n')}` }],
+    });
+    if (respuesta.stop_reason !== 'end_turn') return [];
+    const json = respuesta.content.find((b) => b.type === 'text')?.text;
+    const r = Emparejado.safeParse(json ? JSON.parse(json) : null);
+    if (!r.success) return [];
+    return r.data.lineas
+      .filter((x) => lineas.some((l) => l.n === x.n))
+      .map((x) => ({ n: x.n, confianza: x.confianza, razon: x.razon,
+                     producto_id: x.producto !== null && x.producto >= 1 && x.producto <= catalogo.length ? catalogo[x.producto - 1].producto_id : null }));
+  } catch (e) {
+    // sin sugerencia de la IA la pantalla sigue con los parecidos por nombre
+    if (e instanceof Anthropic.APIError || e instanceof SyntaxError) return [];
+    throw e;
+  }
 }

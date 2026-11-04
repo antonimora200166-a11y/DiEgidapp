@@ -6,8 +6,8 @@ import { fmtCantidad, type Resultado } from '@/lib/catalogo';
 import { costoUnitarioBase, desvioPct, promedioTrasEntrada } from '@/lib/costo';
 import { aUnidadesCompra, origenLinea } from '@/lib/recepcion';
 import type { Area } from '@/lib/roles';
-import { leerFactura, registrarRecepcion, type Candidato } from './acciones';
-import { confirmar } from '@/components/Dialogo';
+import { crearProductoRapido, crearProveedor, leerFactura, registrarRecepcion, type Candidato } from './acciones';
+import { confirmar, pedirTexto } from '@/components/Dialogo';
 import Escaner from '@/components/Escaner';
 import Icono from '@/components/Icono';
 import { asociarCodigo, leerCodigo } from '@/lib/escaneo';
@@ -27,6 +27,9 @@ type Linea = {
   ia: Propuesto | null; confirmada: boolean; candidatos: Candidato[];
   pedida: string; recibida: string; total_base: string; valor: string;
   condicion: Condicion; sello: '' | 'SI' | 'NO' | 'NA'; temperatura: string; vencimiento: string; lote: string; obs: string;
+  pesar?: boolean;   // llegó por pieza y se lleva en g o ml: el peso total es obligatorio
+  // lo que propuso la IA por significado cuando el nombre no coincidía (cimarrón → cilantro cimarrón)
+  ia_sugerido?: { producto_id: string | null; confianza: 'alta' | 'media' | 'baja'; razon: string } | null;
 };
 type Encabezado = { ubicacion: string; proveedor_id: string; fecha: string; tipo_soporte: string; documento: string; obs: string };
 type Foto = { ruta: string; tipo: string };
@@ -63,14 +66,17 @@ async function reducir(archivo: File): Promise<{ blob: Blob; tipo: string; ext: 
 // Costo por unidad base, promedio que queda, desvío, temperatura y diferencia de una línea
 function calcular(l: Linea, porId: Map<string, ProductoRecepcion>) {
   const p = l.producto_id ? porId.get(l.producto_id) : undefined;
-  const rec = num(l.recibida), val = num(l.valor), ped = num(l.pedida), tb = num(l.total_base);
+  const val = num(l.valor), ped = num(l.pedida), tb = num(l.total_base);
+  let rec = num(l.recibida);
+  // pesado a granel (contenido fijo de 1 g / 1 ml): lo que llegó es el peso, en unidades de compra
+  if (p && l.pesar && !p.contenido_variable && p.contenido_base && tb !== null && tb > 0) rec = Math.round((tb / p.contenido_base) * 1e4) / 1e4;
   const contenido = p ? (p.contenido_variable ? (tb !== null && rec ? tb / rec : null) : p.contenido_base) : null;
   const cu = costoUnitarioBase(val, rec, contenido);
   const base = rec !== null && contenido ? rec * contenido : null;
   const nuevoProm = p && cu !== null && base ? promedioTrasEntrada(p.saldo, p.costo_promedio, base, cu) : null;
   const temp = num(l.temperatura);
   const frio = !!p && (p.conservacion === 'Refrigerado' || p.conservacion === 'Congelado');
-  return { p, rec, val, ped, contenido, cu, base, nuevoProm, frio,
+  return { p, rec, val, ped, contenido, cu, base, nuevoProm, frio, faltaPeso: !!p && !!l.pesar && !(tb !== null && tb > 0),
            desvio: cu !== null && p ? desvioPct(cu, p.costo_promedio) : null,
            caliente: frio && temp !== null && p!.temp_max !== null && temp > p!.temp_max,
            diferencia: ped !== null && rec !== null && ped !== rec ? rec - ped : null };
@@ -79,7 +85,10 @@ function calcular(l: Linea, porId: Map<string, ProductoRecepcion>) {
 export default function Recibir({ area, proveedores, zonas, productos }: {
   area: Area; proveedores: { id: string; nombre: string }[]; zonas: { codigo: string; nombre: string }[]; productos: ProductoRecepcion[];
 }) {
-  const porId = useMemo(() => new Map(productos.map((p) => [p.producto_id, p])), [productos]);
+  // los creados desde una línea de la factura se suman a la lista sin recargar la página
+  const [extras, setExtras] = useState<ProductoRecepcion[]>([]);
+  const todos = useMemo(() => [...productos, ...extras.filter((e) => !productos.some((p) => p.producto_id === e.producto_id))], [productos, extras]);
+  const porId = useMemo(() => new Map(todos.map((p) => [p.producto_id, p])), [todos]);
   const vacio: Encabezado = { ubicacion: zonas.length === 1 ? zonas[0].codigo : '', proveedor_id: '', fecha: hoyCali(),
                               tipo_soporte: 'FACTURA', documento: '', obs: '' };
   const [enc, setEnc] = useState<Encabezado>(vacio);
@@ -92,6 +101,9 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
   // los que la lectura de una factura creó en esta pantalla, hasta que la página se recargue
   const [creados, setCreados] = useState<{ id: string; nombre: string }[]>([]);
   const [notaProveedor, setNotaProveedor] = useState<string | null>(null);
+  // proveedor leído que se parece a otros de la lista: la persona elige o lo crea
+  const [provLeido, setProvLeido] = useState<{ nombre: string; nit: string | null; sugeridos: { id: string; nombre: string }[] } | null>(null);
+  const [creandoProv, setCreandoProv] = useState(false);
   const listaProv = useMemo(() => [...proveedores, ...creados.filter((c) => !proveedores.some((p) => p.id === c.id))]
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [proveedores, creados]);
   const [estadoFoto, setEstadoFoto] = useState<'' | 'subiendo' | 'leyendo'>('');
@@ -150,6 +162,21 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
   }
   const ponerEnc = (cambio: Partial<Encabezado>) => setEnc((e) => ({ ...e, ...cambio }));
 
+  async function nuevoProveedor(nombre: string | null, nit: string | null) {
+    const n = nombre ?? await pedirTexto('Nombre del proveedor, como aparece en la factura.', { titulo: 'Proveedor nuevo', aceptar: 'Crear', min: 3 });
+    if (!n) return;
+    setCreandoProv(true);
+    const r = await crearProveedor(area, n, nit);
+    setCreandoProv(false);
+    if (!r.ok) { setNotaProveedor(r.error); return; }
+    const pr = r.proveedor;
+    if (!pr.activo) { setNotaProveedor(`«${pr.nombre}» está inactivo en la lista de proveedores. Pídele a administración que lo reactive.`); return; }
+    setCreados((cs) => (cs.some((c) => c.id === pr.id) ? cs : [...cs, { id: pr.id, nombre: pr.nombre }]));
+    ponerEnc({ proveedor_id: pr.id });
+    setProvLeido(null);
+    setNotaProveedor(pr.creado ? `Proveedor nuevo: «${pr.nombre}». Si el nombre quedó mal, administración lo corrige.` : `Ya existía: «${pr.nombre}».`);
+  }
+
   // ---------------------------------------------------------------- foto y lectura con IA
   async function tomarFoto(archivo: File | undefined) {
     if (!archivo) return;
@@ -169,6 +196,7 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
       setPropuesta(p as unknown as Record<string, unknown>);
       setTotalFactura(p.total_factura);
       setNotaIA(p.legible ? p.notas : 'La IA no reconoció una factura en la foto. Revisa la imagen o registra las líneas a mano.');
+      setProvLeido(p.proveedor && !r.proveedor_id ? { nombre: p.proveedor, nit: p.nit, sugeridos: r.proveedor_sugeridos } : null);
       const n = r.proveedor_nuevo;
       if (n?.creado) setCreados((cs) => [...cs, { id: n.id, nombre: n.nombre }]);
       setNotaProveedor(!n ? null
@@ -181,12 +209,18 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
         fecha: p.fecha && /^\d{4}-\d{2}-\d{2}$/.test(p.fecha) && p.fecha <= hoyCali() ? p.fecha : e.fecha,
       }));
       const leidas = r.lineas.map((l): Linea => {
-        const mejor = l.candidatos.find((c) => porId.has(c.producto_id) && c.parecido >= 0.45);
-        const prod = mejor ? porId.get(mejor.producto_id)! : null;
-        const conv = prod ? aUnidadesCompra(l.cantidad, l.unidad, prod) : { cantidad: l.cantidad, total_base: null, nota: null };
+        // solo se elige solo si el parecido es alto (emparejar_factura: 1 = mismo nombre o alias aprendido)
+        const mejor = l.candidatos.find((c) => porId.has(c.producto_id) && c.parecido >= 0.75);
+        // si el nombre no coincide, la IA puede reconocer el producto por significado: con confianza alta
+        // queda elegido (la persona igual confirma la línea); si no, queda como primera sugerencia
+        const ia = l.sugerencia_ia && l.sugerencia_ia.producto_id && porId.has(l.sugerencia_ia.producto_id) ? l.sugerencia_ia : null;
+        const prod = mejor ? porId.get(mejor.producto_id)! : ia && ia.confianza === 'alta' ? porId.get(ia.producto_id!)! : null;
+        const candidatos = [...(ia ? [{ producto_id: ia.producto_id!, parecido: 1 }] : []),
+                            ...l.candidatos.filter((c) => porId.has(c.producto_id) && c.producto_id !== ia?.producto_id)];
+        const conv = prod ? aUnidadesCompra(l.cantidad, l.unidad, prod, l.descripcion) : { cantidad: l.cantidad, total_base: null, nota: null, pesar: false };
         return {
           ...nueva(), producto_id: prod?.producto_id ?? null, nombre_factura: l.descripcion, cantidad_factura: l.cantidad, unidad_factura: l.unidad,
-          nota: conv.nota, confirmada: false, candidatos: l.candidatos.filter((c) => porId.has(c.producto_id)),
+          nota: conv.nota, pesar: !!conv.pesar, confirmada: false, candidatos, ia_sugerido: mejor ? null : l.sugerencia_ia,
           ia: { producto_id: prod?.producto_id ?? null, cantidad: conv.cantidad, valor_total: l.valor_total },
           recibida: conv.cantidad === null ? '' : String(conv.cantidad),
           total_base: conv.total_base === null ? '' : String(conv.total_base),
@@ -206,6 +240,7 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
 
   const sinConfirmar = lineas.filter((l) => !l.confirmada).length;
   const sinProducto = lineas.filter((l) => !l.producto_id).length;
+  const sinPeso = lineas.filter((l) => calculo(l).faltaPeso).length;
   const sumaLineas = lineas.reduce((t, l) => t + (num(l.valor) ?? 0), 0);
   const descuadre = totalFactura && sumaLineas ? Math.abs(sumaLineas - totalFactura) / totalFactura > 0.01 : false;
 
@@ -241,7 +276,7 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
 
   function empezarDeNuevo() {
     setEnc(vacio); setLineas([]); setFoto(null); setVista(null); setPropuesta(null); setTotalFactura(null);
-    setNotaIA(null); setNotaProveedor(null); setMotivo(''); setResultado(null); setErrorFoto(null);
+    setNotaIA(null); setNotaProveedor(null); setProvLeido(null); setMotivo(''); setResultado(null); setErrorFoto(null);
   }
 
   if (resultado?.ok) {
@@ -297,8 +332,22 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
           {listaProv.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
         {notaProveedor && <span className="ayuda" role="status">{notaProveedor}</span>}
-        {!enc.proveedor_id && !notaProveedor && typeof propuesta?.proveedor === 'string' && (
-          <span className="ayuda">La factura dice «{propuesta.proveedor}», pero no se pudo crear. Elígelo de la lista.</span>
+        {!enc.proveedor_id && provLeido && (
+          <div className="aviso" style={{ margin: '.5rem 0 0' }}>
+            La factura dice <strong>«{provLeido.nombre}»</strong> y no está en la lista.
+            {provLeido.sugeridos.length > 0 && <> ¿Es alguno de estos?</>}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem', marginTop: '.5rem' }}>
+              {provLeido.sugeridos.map((x) => (
+                <button key={x.id} type="button" className="secundario chico" onClick={() => { ponerEnc({ proveedor_id: x.id }); setProvLeido(null); }}>{x.nombre}</button>
+              ))}
+              <button type="button" className="chico" disabled={creandoProv} onClick={() => nuevoProveedor(provLeido.nombre, provLeido.nit)}>
+                {creandoProv ? 'Creando…' : `Crear «${provLeido.nombre}»`}
+              </button>
+            </div>
+          </div>
+        )}
+        {!enc.proveedor_id && !provLeido && (
+          <button type="button" className="discreto mini" style={{ marginTop: '.3rem' }} disabled={creandoProv} onClick={() => nuevoProveedor(null, null)}>+ Proveedor nuevo</button>
         )}
         <div className="fila">
           <div>
@@ -336,7 +385,8 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
       )}
       <ul className="lista">
         {lineas.map((l, i) => (
-          <TarjetaLinea key={l.clave} n={i + 1} l={l} c={calculo(l)} productos={productos} porId={porId}
+          <TarjetaLinea key={l.clave} n={i + 1} l={l} c={calculo(l)} productos={todos} porId={porId} area={area}
+                        creado={(x) => setExtras((xs) => [...xs, x])}
                         poner={(cambio) => poner(l.clave, cambio)}
                         quitar={() => setLineas((ls) => ls.filter((x) => x.clave !== l.clave))} />
         ))}
@@ -397,7 +447,7 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
             {enviando ? 'Guardando…' : 'Guardar con este motivo'}
           </button>
         ) : (
-          <button type="button" disabled={enviando || !!estadoFoto || !lineas.length || sinConfirmar > 0 || sinProducto > 0}
+          <button type="button" disabled={enviando || !!estadoFoto || !lineas.length || sinConfirmar > 0 || sinProducto > 0 || sinPeso > 0}
                   onClick={() => guardar(false)}>
             {enviando ? 'Guardando…' : `Guardar recepción (${lineas.length})`}
           </button>
@@ -409,10 +459,11 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
           </button>
         )}
       </div>
-      {(sinProducto > 0 || sinConfirmar > 0) && lineas.length > 0 && (
+      {(sinProducto > 0 || sinConfirmar > 0 || sinPeso > 0) && lineas.length > 0 && (
         <p className="suave" style={{ fontSize: '.85rem' }}>
           {sinProducto > 0 ? `Falta elegir el producto en ${sinProducto} línea(s), o quitarla si no es un insumo. ` : ''}
-          {sinConfirmar > 0 ? `Falta confirmar ${sinConfirmar} línea(s) propuesta(s) por la IA.` : ''}
+          {sinConfirmar > 0 ? `Falta confirmar ${sinConfirmar} línea(s) propuesta(s) por la IA. ` : ''}
+          {sinPeso > 0 ? `Falta pesar ${sinPeso} línea(s) que llegaron por unidad.` : ''}
         </p>
       )}
     </>
@@ -422,10 +473,11 @@ export default function Recibir({ area, proveedores, zonas, productos }: {
 // ==================================================================== una línea
 type Calculo = ReturnType<typeof calcular>;
 
-function TarjetaLinea({ n, l, c, productos, porId, poner, quitar }: {
-  n: number; l: Linea; c: Calculo; productos: ProductoRecepcion[]; porId: Map<string, ProductoRecepcion>;
-  poner: (cambio: Partial<Linea>) => void; quitar: () => void;
+function TarjetaLinea({ n, l, c, productos, porId, area, creado, poner, quitar }: {
+  n: number; l: Linea; c: Calculo; productos: ProductoRecepcion[]; porId: Map<string, ProductoRecepcion>; area: Area;
+  creado: (p: ProductoRecepcion) => void; poner: (cambio: Partial<Linea>) => void; quitar: () => void;
 }) {
+  const [creando, setCreando] = useState(false);
   const [buscar, setBuscar] = useState('');
   const [eligiendo, setEligiendo] = useState(!l.producto_id);
   const p = c.p;
@@ -441,8 +493,8 @@ function TarjetaLinea({ n, l, c, productos, porId, poner, quitar }: {
     // la cantidad de la factura se vuelve a convertir a la presentación elegida
     const cambio: Partial<Linea> = { producto_id: x.producto_id, sello: '', temperatura: '' };
     if (l.cantidad_factura !== null) {
-      const conv = aUnidadesCompra(l.cantidad_factura, l.unidad_factura, x);
-      Object.assign(cambio, { recibida: conv.cantidad === null ? '' : String(conv.cantidad), nota: conv.nota,
+      const conv = aUnidadesCompra(l.cantidad_factura, l.unidad_factura, x, l.nombre_factura);
+      Object.assign(cambio, { recibida: conv.cantidad === null ? '' : String(conv.cantidad), nota: conv.nota, pesar: !!conv.pesar,
                               total_base: conv.total_base === null ? '' : String(conv.total_base) });
     }
     poner(cambio);
@@ -459,6 +511,9 @@ function TarjetaLinea({ n, l, c, productos, porId, poner, quitar }: {
         <div style={{ minWidth: 0 }}>
           <span className="suave" style={{ fontSize: '.8rem' }}>Línea {n}{l.ia ? ' · leída por la IA' : ''}</span>
           {l.nombre_factura && <div className="suave" style={{ fontSize: '.85rem' }}>Factura: «{l.nombre_factura}»</div>}
+          {p && !eligiendo && l.ia_sugerido?.producto_id === p.producto_id && (
+            <div className="suave" style={{ fontSize: '.82rem', color: 'var(--marca)' }}>Elegido por la IA: {l.ia_sugerido.razon} Revísalo.</div>
+          )}
           {p && !eligiendo && (
             <div>
               <strong>{nombreDe(p)}</strong>
@@ -475,6 +530,30 @@ function TarjetaLinea({ n, l, c, productos, porId, poner, quitar }: {
 
       {(eligiendo || !p) && (
         <div style={{ marginTop: '.5rem' }}>
+          {!p && l.nombre_factura && !creando && (
+            <div className="aviso" style={{ margin: '0 0 .5rem', padding: '.5rem .7rem', fontSize: '.9rem' }}>
+              <strong>«{l.nombre_factura}» no está con ese nombre en el catálogo de {area === 'BAR' ? 'bar' : 'cocina'}.</strong>{' '}
+              {l.ia_sugerido?.producto_id && porId.get(l.ia_sugerido.producto_id) ? (
+                <span style={{ display: 'block', marginTop: '.3rem' }}>
+                  La IA cree que es <strong>{nombreDe(porId.get(l.ia_sugerido.producto_id)!)}</strong>
+                  {l.ia_sugerido.confianza !== 'alta' && ' (no está segura)'}: {l.ia_sugerido.razon}{' '}
+                  <button type="button" className="chico" style={{ marginTop: '.3rem' }} onClick={() => elegir(porId.get(l.ia_sugerido!.producto_id!)!)}>
+                    Sí, es {porId.get(l.ia_sugerido.producto_id)!.generico}
+                  </button>
+                </span>
+              ) : l.ia_sugerido ? (
+                <span style={{ display: 'block', marginTop: '.3rem' }}>La IA: {l.ia_sugerido.razon}</span>
+              ) : null}
+              <span style={{ display: 'block', marginTop: '.3rem' }}>
+                {sugeridos.length ? 'Otros parecidos están abajo; si ninguno es, créalo.' : 'No se parece a ningún producto: créalo o búscalo con otro nombre.'}
+              </span>
+              <div style={{ marginTop: '.4rem' }}>
+                <button type="button" className="chico" onClick={() => setCreando(true)}>+ Crear «{nombreSugerido(l.nombre_factura)}»</button>
+              </div>
+            </div>
+          )}
+          {creando && <CrearRapido area={area} l={l} cancelar={() => setCreando(false)}
+                                   listo={(x) => { creado(x); setCreando(false); elegir(x); }} />}
           {sugeridos.length > 0 && (
             <div className="segmentos" style={{ marginBottom: '.4rem' }}>
               {sugeridos.map((x) => (
@@ -497,7 +576,8 @@ function TarjetaLinea({ n, l, c, productos, porId, poner, quitar }: {
             </ul>
           )}
           {buscar.trim().length >= 2 && !opciones.length && (
-            <p className="suave" style={{ fontSize: '.85rem' }}>No está en el catálogo. <Link href="/catalogo/nuevo">Créalo como provisional</Link> y vuelve: esta recepción queda guardada en el equipo.</p>
+            <p className="suave" style={{ fontSize: '.85rem' }}>No está en el catálogo.{' '}
+              <button type="button" className="discreto mini" onClick={() => setCreando(true)}>Crear «{nombreSugerido(buscar)}»</button></p>
           )}
           {p && <button type="button" className="secundario" style={{ marginTop: '.4rem', minHeight: 36 }} onClick={() => setEligiendo(false)}>Dejar {nombreDe(p)}</button>}
         </div>
@@ -516,9 +596,14 @@ function TarjetaLinea({ n, l, c, productos, porId, poner, quitar }: {
               <input inputMode="decimal" value={l.valor} onChange={(e) => poner({ valor: e.target.value })} />
             </label>
           </div>
-          {p.contenido_variable && (
-            <label style={{ ...campo, marginTop: '.5rem' }}>Peso o volumen total que llegó ({p.unidad_base})
-              <input inputMode="decimal" value={l.total_base} onChange={(e) => poner({ total_base: e.target.value })} />
+          {(p.contenido_variable || l.pesar) && (
+            <label style={{ ...campo, marginTop: '.5rem' }}>
+              {l.pesar ? <strong style={{ color: c.faltaPeso ? 'var(--aviso)' : undefined }}>Pésalo: peso total que llegó ({p.unidad_base}) *</strong>
+                : <>Peso o volumen total que llegó ({p.unidad_base})</>}
+              <input inputMode="decimal" value={l.total_base} onChange={(e) => poner({ total_base: e.target.value })}
+                     style={c.faltaPeso ? { borderColor: 'var(--aviso)', borderWidth: 2 } : undefined}
+                     placeholder={l.pesar ? 'en la balanza, sin la bolsa' : undefined} />
+              {l.pesar && !p.contenido_variable && c.rec !== null && !c.faltaPeso && <span className="ayuda">= {fmtCantidad(c.rec)} {p.unidad_compra.toLowerCase()}</span>}
             </label>
           )}
           {l.nota && <div className="suave" style={{ fontSize: '.8rem', marginTop: '.3rem' }}>{l.nota}</div>}
@@ -590,5 +675,71 @@ function TarjetaLinea({ n, l, c, productos, porId, poner, quitar }: {
         </div>
       )}
     </li>
+  );
+}
+
+// «NARANJA COMUN 2,5KG» → «Naranja»: el nombre del producto sin cantidades ni relleno de factura
+const RELLENO = new Set(['comun', 'corriente', 'tarrina', 'malla', 'unidad', 'und', 'libra', 'media', 'x', 'bolsa', 'paquete', 'nacional', 'premium', 'extra', 'tipo', 'kilo']);
+function nombreSugerido(t: string) {
+  const ws = t.replace(/\d+([.,]\d+)?\s*(kg|kgs|g|gr|grs|lb|ml|l|lt|cc|und|oz)\b/gi, ' ').replace(/\d+([.,]\d+)?/g, ' ')
+    .split(/\s+/).filter((w) => w && !RELLENO.has(sinTildes(w)));
+  const n = ws.join(' ').toLowerCase().trim();
+  return n ? n[0].toUpperCase() + n.slice(1) : t.trim();
+}
+
+// Alta de un producto que no existe, desde la línea: provisional, a granel en g/ml/und (lo que se pesa
+// o se cuenta al recibir). Lo valida después quien edita el área.
+function CrearRapido({ area, l, listo, cancelar }: { area: Area; l: Linea; listo: (p: ProductoRecepcion) => void; cancelar: () => void }) {
+  const u = (l.unidad_factura ?? '').toUpperCase().replace(/[^A-Z]/g, '');
+  const ubInicial: 'g' | 'ml' | 'und' = ['L', 'LT', 'LTS', 'LITRO', 'LITROS', 'ML', 'CC'].includes(u) ? 'ml' : 'g';
+  const [nombre, setNombre] = useState(nombreSugerido(l.nombre_factura ?? ''));
+  const [ub, setUb] = useState<'g' | 'ml' | 'und'>(ubInicial);
+  const [motivo, setMotivo] = useState('');
+  const [error, setError] = useState<{ fatales: string[]; bloqueos: string[] } | null>(null);
+  const [enviando, iniciar] = useTransition();
+  const campo = { margin: 0, fontWeight: 400, fontSize: '.85rem' } as const;
+
+  function crear() {
+    iniciar(async () => {
+      const r = await crearProductoRapido(area, {
+        nombre: nombre.trim(), unidad_base: ub, presentacion: 'Granel', unidad_compra: ub === 'g' ? 'GR' : ub === 'ml' ? 'ML' : 'UND',
+        contenido_base: 1, contenido_variable: false, categoria: null, motivo: motivo.trim() || null, factura: l.nombre_factura,
+      });
+      if (r.ok) listo(r.producto); else setError({ fatales: r.fatales, bloqueos: r.bloqueos });
+    });
+  }
+  const bloqueado = !!error && !error.fatales.length && error.bloqueos.length > 0;
+
+  return (
+    <div className="tarjeta" style={{ padding: '.7rem', margin: '0 0 .5rem' }}>
+      <strong>Producto nuevo</strong>
+      <span className="ayuda">Queda provisional hasta que lo valide el jefe del área. Se recibe a granel: se cuenta o se pesa al llegar.</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '.5rem', marginTop: '.5rem' }}>
+        <label style={campo}>Nombre
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus />
+        </label>
+        <label style={campo}>Se lleva en
+          <select value={ub} onChange={(e) => setUb(e.target.value as 'g' | 'ml' | 'und')}>
+            <option value="g">gramos</option><option value="ml">mililitros</option><option value="und">unidades</option>
+          </select>
+        </label>
+      </div>
+      {error && (
+        <div className={bloqueado ? 'aviso' : 'error'} style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
+          <ul style={{ margin: 0 }}>{[...error.fatales, ...error.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul>
+          {bloqueado && (
+            <label style={{ ...campo, marginTop: '.4rem' }}>Si no es ninguno de esos, escribe por qué (mínimo 15 caracteres)
+              <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej.: es la fruta fresca, no la pulpa" />
+            </label>
+          )}
+        </div>
+      )}
+      <div className="acciones" style={{ marginTop: '.6rem' }}>
+        <button type="button" className="chico" disabled={enviando || nombre.trim().length < 3 || (bloqueado && motivo.trim().length < 15)} onClick={crear}>
+          {enviando ? 'Creando…' : bloqueado ? 'Crear con este motivo' : 'Crear y usar'}
+        </button>
+        <button type="button" className="discreto chico" onClick={cancelar}>Cancelar</button>
+      </div>
+    </div>
   );
 }

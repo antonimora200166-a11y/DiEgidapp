@@ -13,7 +13,8 @@
   --error: #a3261d;
   --error-fondo: #fde8e6;
   --radio: 12px;
-  --alto-nav: 0px;   /* alto de la barra inferior (solo en el celular) */
+  --alto-nav: 0px;   /* alto de los botones de la barra inferior (solo en el celular) */
+  --tapa-nav: 0px;   /* lo que tapa la barra inferior: sus botones más la franja del iPhone (safe area) */
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -54,7 +55,7 @@ h2 { font-size: 1.1rem; margin: 1.5rem 0 .75rem; }
 .barra .quien { display: flex; align-items: center; gap: .55rem; font-size: .85rem; text-align: right; line-height: 1.25; }
 .barra .quien small { opacity: .85; font-weight: 500; }
 .barra .quien .icono { width: 1.9rem; height: 1.9rem; padding: .3rem; border: 1px solid currentColor; border-radius: 999px; }
-.contenido { max-width: 760px; margin: 0 auto; padding: 1rem; padding-bottom: calc(2rem + var(--alto-nav) + env(safe-area-inset-bottom)); }
+.contenido { max-width: 760px; margin: 0 auto; padding: 1rem; padding-bottom: calc(2rem + max(var(--tapa-nav), env(safe-area-inset-bottom))); }
 
 .tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: var(--radio); padding: 1rem; }
 .menu { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
@@ -138,7 +139,7 @@ button.quitar { min-height: 0; padding: 0 .25rem; background: none; border: 0; c
 .rejilla { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); list-style: none; margin: 0; padding: 0; }
 .rejilla > li { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 10px; padding: .7rem .85rem; display: flex; flex-direction: column; gap: .35rem; }
 .rejilla > li.elegido { border-color: var(--marca); box-shadow: 0 0 0 1px var(--marca); }
-.barra-bloque { position: sticky; bottom: var(--alto-nav); z-index: 6; background: var(--tarjeta); border: 1px solid var(--marca); border-radius: var(--radio);
+.barra-bloque { position: sticky; bottom: var(--tapa-nav); z-index: 6; background: var(--tarjeta); border: 1px solid var(--marca); border-radius: var(--radio);
                 padding: .7rem .9rem calc(.7rem + env(safe-area-inset-bottom)); margin-top: 1rem; box-shadow: 0 -4px 16px rgb(0 0 0 / .12); }
 
 /* Vista de lista del catálogo */
@@ -196,12 +197,12 @@ button.quitar { min-height: 0; padding: 0 .25rem; background: none; border: 0; c
 }
 
 /* barra de guardar al pie de los formularios: queda sobre la barra inferior */
-.barra-guardar { position: sticky; bottom: var(--alto-nav); z-index: 5; background: var(--fondo); padding: .6rem 0 calc(.6rem + env(safe-area-inset-bottom)); }
+.barra-guardar { position: sticky; bottom: var(--tapa-nav); z-index: 5; background: var(--fondo); padding: .6rem 0 calc(.6rem + env(safe-area-inset-bottom)); }
 
 /* barra inferior: solo en celular y tableta vertical */
 .nav-inferior { display: none; }
 @media (max-width: 900px) {
-  :root { --alto-nav: 62px; }
+  :root { --alto-nav: 62px; --tapa-nav: calc(62px + env(safe-area-inset-bottom)); }
   .barra-guardar { padding-bottom: .6rem; }
   .nav-inferior { display: flex; position: fixed; inset: auto 0 0 0; z-index: 20; background: var(--tarjeta);
                   border-top: 1px solid var(--borde); padding: 0 .25rem env(safe-area-inset-bottom); box-shadow: 0 -2px 12px rgb(0 0 0 / .08); }
