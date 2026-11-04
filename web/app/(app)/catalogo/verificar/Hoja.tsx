@@ -3,9 +3,10 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/components/VistaFiltrable';
-import { corregirYVerificar, marcarParecido, verificar, type Correccion } from './acciones';
+import { corregirYVerificar, fijarCosto, marcarParecido, quitarRepetido, unir, verificar, type Correccion } from './acciones';
 
 type Parecido = { generico_id: string; nombre: string; unidad_base: string; parecido: number };
+type Hermano = { producto_id: string; codigo: string; marca: string; presentacion: string };
 export type Fila = {
   producto_id: string; codigo: string; generico_id: string; generico: string; marca: string; presentacion: string;
   area: 'BAR' | 'COCINA'; tipo: 'MPe' | 'MPI'; categoria: string | null; clase_abc: 'A' | 'B' | 'C' | null;
@@ -13,7 +14,7 @@ export type Fila = {
   valor_compras: number | null; n_compras: number; ult_fecha: string | null; ult_proveedor: string | null; ult_nombre: string | null;
   ult_valor: number | null; ult_cantidad_base: number | null; costo_base: number | null; costo_fuente: string | null;
   costo_min: number | null; costo_max: number | null; tiene_ficha: boolean; tiene_kardex: boolean;
-  parecidos: Parecido[]; alertas: string[]; verificado_en: string | null; verificado_por: string | null;
+  parecidos: Parecido[]; hermanos: Hermano[]; alertas: string[]; verificado_en: string | null; verificado_por: string | null;
 };
 
 const ALERTA: Record<string, { t: string; d: string }> = {
@@ -25,11 +26,18 @@ const ALERTA: Record<string, { t: string; d: string }> = {
   PRECIOS_DISPARES: { t: 'Precios muy distintos', d: 'Entre una compra y otra el costo por unidad base cambia más del doble.' },
   PARECIDO: { t: 'Posible duplicado', d: 'Hay otro genérico con un nombre muy parecido.' },
   MPI_SIN_FICHA: { t: 'MPI sin ficha', d: 'Sin ficha técnica no tiene costo.' },
+  VARIAS_PRESENTACIONES: { t: 'Varias presentaciones', d: 'El genérico tiene otra presentación activa: si es la misma, quita la repetida.' },
 };
 const GRAVES = ['PRESENTACION', 'CONTENIDO', 'PRECIO_RARO', 'UNIDAD_TEXTO'];
 
 const pesos = (n: number | null | undefined) => (n == null ? '—' : `$${Number(n).toLocaleString('es-CO', { maximumFractionDigits: Math.abs(Number(n)) < 10 ? 2 : 0 })}`);
 const cant = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString('es-CO', { maximumFractionDigits: 3 }));
+// «2.500» = 2500 · «0,75» = 0.75 · «$ 20.000» = 20000 · «20000.5» = 20000.5
+const numero = (t: string) => {
+  const x = t.replace(/[$\s]/g, '');
+  if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(x)) return Number(x.replace(/\./g, '').replace(',', '.'));
+  return Number(x.replace(',', '.'));
+};
 const fecha = (s: string | null) => (s ? new Date(s).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'UTC' }) : '');
 
 export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectura: boolean }) {
@@ -39,6 +47,13 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
   const [corrigiendo, setCorrigiendo] = useState<string | null>(null);
   const [b, setB] = useState<{ unidad_base: string; unidad_compra: string; contenido: string; variable: boolean; presentacion: string }>(
     { unidad_base: 'g', unidad_compra: '', contenido: '', variable: false, presentacion: '' });
+
+  // un solo panel abierto a la vez: poner precio, unir con un parecido o quitar una presentación repetida
+  const [panel, setPanel] = useState<
+    | { tipo: 'precio'; id: string; valor: string; por: 'COMPRA' | 'KILO' | 'BASE'; otras: boolean }
+    | { tipo: 'unir'; id: string; otro: string; queda: 'ESTE' | 'OTRO'; factor: string }
+    | { tipo: 'repetido'; id: string; queda: string }
+    | null>(null);
 
   const ab = filas.filter((f) => f.tipo === 'MPe' && (f.clase_abc === 'A' || f.clase_abc === 'B'));
   const abHechos = ab.filter((f) => f.verificado_en).length;
@@ -74,6 +89,33 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
     correr(() => corregirYVerificar(f.producto_id, c), `${f.generico}: corregido y verificado.`, () => setCorrigiendo(null));
   }
 
+  function costoEscrito(f: Fila, valor: string, por: 'COMPRA' | 'KILO' | 'BASE') {
+    const v = numero(valor);
+    if (!(v > 0)) return null;
+    if (por === 'COMPRA') return f.contenido_variable || !f.contenido_base ? null : v / Number(f.contenido_base);
+    return por === 'KILO' ? v / 1000 : v;
+  }
+  function guardarPrecio(f: Fila) {
+    if (panel?.tipo !== 'precio') return;
+    const v = numero(panel.valor);
+    if (!(v > 0)) { setMensaje({ ok: false, texto: 'Escribe el precio en pesos, mayor que cero.' }); return; }
+    const { por, otras } = panel;
+    correr(() => fijarCosto(f.producto_id, v, por, otras), `${f.generico}: precio guardado.`, () => setPanel(null));
+  }
+  function guardarUnion(f: Fila, p: Parecido) {
+    if (panel?.tipo !== 'unir') return;
+    const este = panel.queda === 'ESTE';
+    const [queda, va, ubQueda, ubVa] = este ? [f.generico_id, p.generico_id, f.unidad_base, p.unidad_base]
+                                            : [p.generico_id, f.generico_id, p.unidad_base, f.unidad_base];
+    let factor: number | null = null;
+    if (ubQueda !== ubVa) {
+      factor = numero(panel.factor);
+      if (!(factor > 0)) { setMensaje({ ok: false, texto: `Di cuántos ${ubQueda} son 1 ${ubVa}.` }); return; }
+    }
+    const nombre = este ? f.generico : p.nombre;
+    correr(() => unir(queda, va, factor), `Unidos en «${nombre}».`, () => setPanel(null));
+  }
+
   const grupos: Grupo<Fila>[] = [
     { clave: 'estado', titulo: 'Verificación', valor: (f) => (f.verificado_en ? 'Verificado' : 'Pendiente'), opciones: [{ v: 'Pendiente', t: 'Pendiente' }, { v: 'Verificado', t: 'Verificado' }] },
     { clave: 'clase', titulo: 'Clase ABC', valor: (f) => f.clase_abc ?? 'SIN', opciones: [{ v: 'A', t: 'A · 80 % de la compra' }, { v: 'B', t: 'B · 15 %' }, { v: 'C', t: 'C · 5 %' }, { v: 'SIN', t: 'Sin clase' }] },
@@ -98,6 +140,29 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
           {f.presentacion} · <span className="cod">{f.codigo}</span>
           {f.clase_abc && <> · <span className="etiqueta">clase {f.clase_abc}</span></>}
         </div>
+        {f.hermanos.length > 0 && (
+          <div style={{ fontSize: '.8rem', marginTop: '.2rem' }}>
+            <span className="suave">También: {f.hermanos.map((h) => [h.marca, h.presentacion].filter(Boolean).join(' · ')).join(' / ')}</span>
+            {!soloLectura && (panel?.tipo === 'repetido' && panel.id === f.producto_id ? (
+              <div className="tarjeta" style={{ display: 'grid', gap: '.35rem', marginTop: '.3rem' }}>
+                <label style={{ margin: 0 }}>Esta presentación está repetida de:
+                  <select value={panel.queda} onChange={(e) => setPanel({ ...panel, queda: e.target.value })}>
+                    {f.hermanos.map((h) => <option key={h.producto_id} value={h.producto_id}>{[h.marca, h.presentacion].filter(Boolean).join(' · ')} ({h.codigo})</option>)}
+                  </select>
+                </label>
+                <span className="suave">Esta («{f.presentacion}») queda inactiva; sus nombres de factura y su costo pasan a la otra.</span>
+                <div style={{ display: 'flex', gap: '.3rem' }}>
+                  <button type="button" className="mini" disabled={enviando}
+                          onClick={() => { const q = panel.queda; correr(() => quitarRepetido(f.producto_id, q), 'Presentación repetida quitada.', () => setPanel(null)); }}>Quitar esta</button>
+                  <button type="button" className="secundario mini" onClick={() => setPanel(null)}>Cancelar</button>
+                </div>
+              </div>
+            ) : (
+              <div><button type="button" className="secundario mini" style={{ marginTop: '.2rem' }}
+                           onClick={() => setPanel({ tipo: 'repetido', id: f.producto_id, queda: f.hermanos[0].producto_id })}>Esta está repetida</button></div>
+            ))}
+          </div>
+        )}
         {f.verificado_en && <div style={{ color: 'var(--ok)', fontSize: '.82rem' }}>✓ verificado{f.verificado_por ? ` · ${f.verificado_por}` : ''} · {fecha(f.verificado_en)}</div>}
       </div>) },
     { k: 'unidad', t: 'Unidad y contenido', orden: (f) => f.unidad_base, ver: (f) => (
@@ -136,9 +201,32 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
             {!soloLectura && (
               <div style={{ display: 'flex', gap: '.25rem', marginTop: '.15rem' }}>
                 <button type="button" className="secundario mini" disabled={enviando}
-                        onClick={() => correr(() => marcarParecido(f.generico_id, p.generico_id, 'REVISAR'), `«${f.generico}» y «${p.nombre}» quedaron en Revisar duplicados.`)}>Es el mismo</button>
+                        onClick={() => setPanel({ tipo: 'unir', id: f.producto_id, otro: p.generico_id, queda: 'ESTE', factor: '' })}>Es el mismo: unir</button>
                 <button type="button" className="secundario mini" disabled={enviando}
                         onClick={() => correr(() => marcarParecido(f.generico_id, p.generico_id, 'SEPARAR'), `«${p.nombre}» ya no sale como parecido de «${f.generico}».`)}>No es</button>
+              </div>
+            )}
+            {panel?.tipo === 'unir' && panel.id === f.producto_id && panel.otro === p.generico_id && (
+              <div className="tarjeta" style={{ display: 'grid', gap: '.35rem', marginTop: '.3rem' }}>
+                <strong>¿Cuál nombre se queda?</strong>
+                {(['ESTE', 'OTRO'] as const).map((k) => (
+                  <label key={k} style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400 }}>
+                    <input type="radio" name={`queda-${f.producto_id}-${p.generico_id}`} checked={panel.queda === k} style={{ width: 18, minHeight: 18 }}
+                           onChange={() => setPanel({ ...panel, queda: k })} />
+                    {k === 'ESTE' ? `${f.generico} (${f.unidad_base})` : `${p.nombre} (${p.unidad_base})`}
+                  </label>
+                ))}
+                {p.unidad_base !== f.unidad_base && (
+                  <label style={{ margin: 0 }}>
+                    Van en unidades distintas: 1 {panel.queda === 'ESTE' ? p.unidad_base : f.unidad_base} = ¿cuántos {panel.queda === 'ESTE' ? f.unidad_base : p.unidad_base}?
+                    <input inputMode="decimal" value={panel.factor} onChange={(e) => setPanel({ ...panel, factor: e.target.value })} />
+                  </label>
+                )}
+                <span className="suave">El otro queda inactivo; sus presentaciones, nombres de factura y compras pasan al que se queda.</span>
+                <div style={{ display: 'flex', gap: '.3rem' }}>
+                  <button type="button" className="mini" disabled={enviando} onClick={() => guardarUnion(f, p)}>{enviando ? 'Uniendo…' : 'Unir'}</button>
+                  <button type="button" className="secundario mini" onClick={() => setPanel(null)}>Cancelar</button>
+                </div>
               </div>
             )}
           </div>
@@ -178,6 +266,44 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
           ? <button type="button" className="secundario mini" disabled={enviando} onClick={() => correr(() => verificar([f.producto_id], false), `${f.generico}: vuelve a pendiente.`)}>Quitar ✓</button>
           : <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => verificar([f.producto_id]), `${f.generico}: verificado.`)}>Verificado</button>}
         <button type="button" className="secundario mini" disabled={enviando} onClick={() => abrir(f)}>Corregir</button>
+        {f.tipo === 'MPe' && !f.tiene_kardex && (
+          <button type="button" className="secundario mini" disabled={enviando}
+                  onClick={() => setPanel({ tipo: 'precio', id: f.producto_id, valor: '', otras: true,
+                                            por: !f.contenido_variable && f.contenido_base ? 'COMPRA' : f.unidad_base === 'und' ? 'BASE' : 'KILO' })}>
+            {f.costo_base == null ? 'Poner precio' : 'Cambiar precio'}
+          </button>
+        )}
+        {panel?.tipo === 'precio' && panel.id === f.producto_id && (() => {
+          const cu = costoEscrito(f, panel.valor, panel.por);
+          const opciones: { v: 'COMPRA' | 'KILO' | 'BASE'; t: string }[] = [
+            ...(!f.contenido_variable && f.contenido_base ? [{ v: 'COMPRA' as const, t: `1 ${f.unidad_compra} (${cant(f.contenido_base)} ${f.unidad_base})` }] : []),
+            ...(f.unidad_base !== 'und' ? [{ v: 'KILO' as const, t: f.unidad_base === 'g' ? '1 kg' : '1 litro' }] : []),
+            { v: 'BASE' as const, t: `1 ${f.unidad_base}` },
+          ];
+          return (
+            <div className="tarjeta" style={{ display: 'grid', gap: '.4rem', minWidth: 220, width: '100%' }}>
+              <label style={{ margin: 0 }}>Precio en pesos
+                <input inputMode="decimal" autoFocus placeholder="Ej.: 20.000" value={panel.valor} onChange={(e) => setPanel({ ...panel, valor: e.target.value })} />
+              </label>
+              <label style={{ margin: 0 }}>Por
+                <select value={panel.por} onChange={(e) => setPanel({ ...panel, por: e.target.value as 'COMPRA' | 'KILO' | 'BASE' })}>
+                  {opciones.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
+                </select>
+              </label>
+              {cu != null && <span className="suave">= {pesos(cu)} por {f.unidad_base}</span>}
+              {f.hermanos.length > 0 && (
+                <label style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400 }}>
+                  <input type="checkbox" checked={panel.otras} style={{ width: 20, minHeight: 20 }} onChange={(e) => setPanel({ ...panel, otras: e.target.checked })} />
+                  También a sus otras presentaciones sin precio propio
+                </label>
+              )}
+              <div style={{ display: 'flex', gap: '.4rem' }}>
+                <button type="button" disabled={enviando} onClick={() => guardarPrecio(f)}>{enviando ? 'Guardando…' : 'Guardar precio'}</button>
+                <button type="button" className="secundario" onClick={() => setPanel(null)}>Cancelar</button>
+              </div>
+            </div>
+          );
+        })()}
       </div>)) },
   ];
 

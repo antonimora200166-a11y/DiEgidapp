@@ -39,3 +39,35 @@ export async function corregirYVerificar(id: string, c: Correccion): Promise<Res
   revalidatePath('/catalogo', 'layout');
   return { ok: true, avisos: r.avisos };
 }
+
+type ResultadoBD = { ok: boolean; fatales?: string[]; avisos?: string[] };
+const deBD = (data: unknown, error: { message: string } | null, exito?: string): Resultado => {
+  if (error) return { ok: false, error: error.message };
+  const r = data as ResultadoBD;
+  if (!r.ok) return { ok: false, error: (r.fatales ?? []).join(' ') || 'No se pudo.' };
+  return { ok: true, avisos: [exito, ...(r.avisos ?? [])].filter(Boolean) as string[] };
+};
+
+// Une dos genéricos desde la hoja (public.unir_genericos → public.decidir_par y sus reglas).
+export async function unir(queda: string, va: string, factor: number | null): Promise<Resultado> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('unir_genericos', { p_queda: queda, p_va: va, p_factor: factor });
+  revalidatePath('/catalogo', 'layout');
+  return deBD(data, error);
+}
+
+// Precio conocido → costo de referencia «a mano». por: COMPRA (1 unidad de compra) · KILO · BASE.
+export async function fijarCosto(producto: string, valor: number, por: 'COMPRA' | 'KILO' | 'BASE', otras: boolean): Promise<Resultado> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('fijar_costo', { p_producto: producto, p_valor: valor, p_por: por, p_otras: otras });
+  revalidatePath('/catalogo', 'layout');
+  return deBD(data, error);
+}
+
+// Presentación repetida del mismo genérico: queda inactiva y sus nombres de factura pasan a la otra.
+export async function quitarRepetido(repetido: string, queda: string): Promise<Resultado> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('quitar_repetido', { p_repetido: repetido, p_queda: queda });
+  revalidatePath('/catalogo', 'layout');
+  return deBD(data, error);
+}
