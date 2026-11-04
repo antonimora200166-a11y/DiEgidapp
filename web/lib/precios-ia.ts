@@ -13,11 +13,12 @@ const texto = { anyOf: [{ type: 'string' }, { type: 'null' }] };
 const ESQUEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['legible', 'tipo_documento', 'proveedor', 'documento', 'fecha', 'lineas', 'notas'],
+  required: ['legible', 'tipo_documento', 'proveedor', 'nit', 'documento', 'fecha', 'lineas', 'notas'],
   properties: {
     legible: { type: 'boolean' },
     tipo_documento: { type: 'string', enum: ['factura', 'tiquete', 'lista_precios', 'cotizacion', 'empaque', 'otro'] },
     proveedor: texto,
+    nit: texto,
     documento: texto,
     fecha: texto,
     notas: texto,
@@ -26,9 +27,9 @@ const ESQUEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['descripcion', 'cantidad', 'unidad', 'presentacion', 'valor_total', 'precio_unitario'],
+        required: ['descripcion', 'nombre_generico', 'marca', 'cantidad', 'unidad', 'presentacion', 'valor_total', 'precio_unitario'],
         properties: {
-          descripcion: { type: 'string' }, cantidad: numero, unidad: texto, presentacion: texto,
+          descripcion: { type: 'string' }, nombre_generico: texto, marca: texto, cantidad: numero, unidad: texto, presentacion: texto,
           valor_total: numero, precio_unitario: numero,
         },
       },
@@ -40,11 +41,14 @@ const Lectura = z.object({
   legible: z.boolean(),
   tipo_documento: z.enum(['factura', 'tiquete', 'lista_precios', 'cotizacion', 'empaque', 'otro']),
   proveedor: z.string().nullable(),
+  nit: z.string().nullable(),
   documento: z.string().nullable(),
   fecha: z.string().nullable(),
   notas: z.string().nullable(),
   lineas: z.array(z.object({
     descripcion: z.string(),
+    nombre_generico: z.string().nullable(),
+    marca: z.string().nullable(),
     cantidad: z.number().nullable(),
     unidad: z.string().nullable(),
     presentacion: z.string().nullable(),
@@ -59,10 +63,13 @@ const INSTRUCCIONES = `Lees fotos que muestran precios de lo que compra un resta
 Devuelve:
 - tipo_documento: qué es la foto.
 - proveedor: quien vende, tal como está impreso (nunca el restaurante que compra: Di Égida / Tosca Bistró). null si no aparece.
+- nit: el NIT del proveedor, solo dígitos y guion, si aparece.
 - documento: número de factura, tiquete o cotización si lo hay.
 - fecha: la fecha del documento en formato AAAA-MM-DD, si aparece.
 - lineas: una por producto con precio, en el orden de la foto.
   - descripcion: el texto del producto como está impreso.
+  - nombre_generico: cómo se llamaría el producto en el catálogo, sin marca, tamaño ni empaque, con mayúscula inicial y tildes correctas («AZUCAR MANUELITA 2500G» → «Azúcar blanca»; «GIN TANQUERAY LONDON DRY 700ML» → «Ginebra»; «CHAMPIÑON PARIS BANDEJA» → «Champiñón París»). Conserva lo que distingue un producto de otro (variedad, corte, calibre: «Camarón 36/40», «Lomo de cerdo», «Tomate cherry»).
+  - marca: la marca comercial si aparece («Manuelita», «Tanqueray London Dry», «Alpina»); null en productos a granel o sin marca (frutas, verduras, carnes del proveedor).
   - cantidad y unidad: cuánto se compró o a qué cantidad corresponde el precio, con la unidad escrita como aparece («2» y «KG», «6» y «UNIDAD», «1» y «LIBRA», «1» y «CAJA»). En una lista de precios sin cantidad, la cantidad es 1 y la unidad la que indique el precio («$ 8.500 / kg» → 1 y «KG»).
   - presentacion: el tamaño del empaque si se ve («Bolsa 1000 g», «Botella 750 ml», «Caja x 12 und», «Galón 3,78 L»). null si no se dice.
   - valor_total: lo que vale esa línea en pesos (cantidad × precio unitario), con el IVA incluido si se suma por línea.

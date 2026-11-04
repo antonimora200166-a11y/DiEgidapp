@@ -68,6 +68,7 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
         {areas.some((a) => puedeOperar(perfil, a)) && <Link href="/catalogo/nuevo">¿No está? Crear producto →</Link>}
         {valida.length > 0 && <Link href="/catalogo/verificar"><strong>Verificar A/B →</strong></Link>}
         {valida.length > 0 && <Link href="/catalogo/precios"><strong>📷 Precios desde fotos →</strong></Link>}
+        {valida.length > 0 && <Link href="/catalogo/proveedores">Compras por proveedor →</Link>}
         {valida.length > 0 && <Link href="/catalogo/clases">Clasificar desechables, aseo y menaje →</Link>}
         {valida.length > 0 && <Link href="/catalogo/unidades">Revisar unidades →</Link>}
         {valida.length > 0 && <Link href="/catalogo/revision">Revisar duplicados →</Link>}

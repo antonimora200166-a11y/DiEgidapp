@@ -7,14 +7,20 @@ import { leerPreciosConIA, type LecturaPrecios } from '@/lib/precios-ia';
 import { emparejarConIA, type SugerenciaIA } from '@/lib/factura-ia';
 
 // Precios desde fotos: leer y guardar. No usa nada de la recepción (no crea proveedores, no
-// registra recepciones, no toca el kardex).
+// registra recepciones, no toca el kardex). Reconoce al proveedor y lo que ya se le compra.
 
 const RUTA = /^(BAR|COCINA)\/\d{4}\/[0-9a-f-]{36}\.(jpg|png|webp|pdf)$/;
 const TIPOS: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf' };
 
-export type CandidatoPrecio = { producto_id: string; parecido: number };
+export type CandidatoPrecio = { producto_id: string; parecido: number; del_proveedor?: boolean };
 export type LineaPrecio = LecturaPrecios['lineas'][number] & { candidatos: CandidatoPrecio[]; sugerencia_ia: Omit<SugerenciaIA, 'n'> | null };
-export type LecturaFoto = { ok: true; lectura: LecturaPrecios; lineas: LineaPrecio[] } | { ok: false; error: string };
+export type LecturaFoto = { ok: true; lectura: LecturaPrecios; lineas: LineaPrecio[]; proveedor_id: string | null;
+                            proveedor_sugeridos: string[]; del_proveedor: string[] } | { ok: false; error: string };
+
+const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const soloDigitos = (s: string | null) => (s ?? '').replace(/\D/g, '').slice(0, 9);   // NIT sin dígito de verificación
+const GENERICAS = new Set(['sas', 'ltda', 'sa', 'cia', 'y', 'de', 'del', 'la', 'el', 'los', 'las', 'distribuidora', 'comercializadora', 'inversiones', 'grupo']);
+const palabras = (s: string) => norm(s).split(' ').filter((w) => w.length >= 4 && !GENERICAS.has(w));
 
 export async function leerPrecios(ruta: string, area: Area): Promise<LecturaFoto> {
   const perfil = await perfilActual();
@@ -27,7 +33,22 @@ export async function leerPrecios(ruta: string, area: Area): Promise<LecturaFoto
   const r = await leerPreciosConIA(new Uint8Array(await archivo.arrayBuffer()), TIPOS[ruta.split('.').pop()!]);
   if (!r.ok) return r;
   const l = r.lectura;
-  if (!l.lineas.length) return { ok: true, lectura: l, lineas: [] };
+
+  // proveedor: por NIT o por nombre igual; si no, los que comparten una palabra que distingue
+  const { data: proveedores } = await supabase.from('proveedores').select('id, nombre, nit').eq('activo', true);
+  const nit = soloDigitos(l.nit);
+  const prov = (proveedores ?? []).find((x) => nit.length >= 6 && soloDigitos(x.nit) === nit)
+    ?? (proveedores ?? []).find((x) => l.proveedor && norm(x.nombre) === norm(l.proveedor));
+  const leidas = palabras(l.proveedor ?? '');
+  const sugeridos = prov ? [] : (proveedores ?? []).filter((x) => palabras(x.nombre).some((w) =>
+    leidas.some((y) => y === w || (Math.min(y.length, w.length) >= 5 && (y.startsWith(w) || w.startsWith(y)))))).slice(0, 4).map((x) => x.id as string);
+  // lo que ya se le compra a ese proveedor, con el nombre de su factura
+  const { data: suyos } = prov
+    ? await supabase.from('proveedor_productos').select('producto_id, nombre_factura').eq('proveedor_id', prov.id)
+    : { data: [] as { producto_id: string; nombre_factura: string | null }[] };
+  const delProveedor = (suyos ?? []).map((x) => x.producto_id as string);
+  const porNombreProveedor = new Map((suyos ?? []).filter((x) => x.nombre_factura).map((x) => [norm(x.nombre_factura as string), x.producto_id as string]));
+  if (!l.lineas.length) return { ok: true, lectura: l, lineas: [], proveedor_id: prov?.id ?? null, proveedor_sugeridos: sugeridos, del_proveedor: delProveedor };
 
   // por nombre (la misma búsqueda de Recibir) y, lo que quede dudoso, por significado con la IA
   const { data: pares } = await supabase.rpc('emparejar_factura', { p_area: area, p_textos: l.lineas.map((x) => x.descripcion) });
@@ -35,7 +56,15 @@ export async function leerPrecios(ruta: string, area: Area): Promise<LecturaFoto
   for (const x of (pares ?? []) as { n: number; producto_id: string; parecido: number }[]) {
     porLinea.set(x.n, [...(porLinea.get(x.n) ?? []), { producto_id: x.producto_id, parecido: Number(x.parecido) }]);
   }
-  for (const [n, cs] of porLinea) porLinea.set(n, cs.sort((a, b) => b.parecido - a.parecido));
+  // el nombre con que ese proveedor ya lo facturó gana; lo que ya se le compra va primero ante un empate
+  l.lineas.forEach((x, i) => {
+    const id = porNombreProveedor.get(norm(x.descripcion));
+    if (id) porLinea.set(i + 1, [{ producto_id: id, parecido: 1, del_proveedor: true }, ...(porLinea.get(i + 1) ?? []).filter((c) => c.producto_id !== id)]);
+  });
+  for (const [n, cs] of porLinea) {
+    porLinea.set(n, cs.map((c) => ({ ...c, del_proveedor: c.del_proveedor || delProveedor.includes(c.producto_id) }))
+      .sort((a, b) => b.parecido - a.parecido || Number(!!b.del_proveedor) - Number(!!a.del_proveedor)));
+  }
   const dudosas = l.lineas.map((x, i) => ({ n: i + 1, descripcion: x.descripcion }))
     .filter((x) => !(porLinea.get(x.n) ?? []).some((c) => c.parecido >= 0.75));
   let sugerencias: SugerenciaIA[] = [];
@@ -48,7 +77,7 @@ export async function leerPrecios(ruta: string, area: Area): Promise<LecturaFoto
     const s = sugerencias.find((y) => y.n === i + 1);
     return { ...x, candidatos: porLinea.get(i + 1) ?? [], sugerencia_ia: s ? { producto_id: s.producto_id, confianza: s.confianza, razon: s.razon } : null };
   });
-  return { ok: true, lectura: l, lineas };
+  return { ok: true, lectura: l, lineas, proveedor_id: prov?.id ?? null, proveedor_sugeridos: sugeridos, del_proveedor: delProveedor };
 }
 
 export type ResultadoGuardar = { ok: number; fallidos: number; detalle: { n: number; ok: boolean; mensaje: string }[] } | { error: string };

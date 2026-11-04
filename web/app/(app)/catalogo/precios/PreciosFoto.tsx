@@ -20,14 +20,17 @@ const UNIDADES: { v: Unidad; t: string }[] = [
 ];
 
 type Pres = { presentacion: string; unidad_compra: string; contenido: string; variable: boolean };
+// nombre genérico y marca que sugiere la IA desde el nombre de la factura
+type Renombre = { nombre: string; marca: string; cambiarNombre: boolean; cambiarMarca: boolean };
 type Linea = {
   n: number; descripcion: string; leida: LineaPrecio; producto_id: string | null; buscar: string;
-  cantidad: string; unidad: Unidad; valor: string; fijar: boolean; ignorar: boolean; corregir: boolean; pres: Pres;
+  cantidad: string; unidad: Unidad; valor: string; fijar: boolean; ignorar: boolean; corregir: boolean; pres: Pres; ren: Renombre;
   resultado: { ok: boolean; mensaje: string } | null;
 };
 type Foto = {
   id: string; ruta: string | null; vista: string | null; estado: 'subiendo' | 'leyendo' | 'listo' | 'error' | 'guardado';
-  error: string | null; tipo: string | null; notas: string | null; proveedor: string; documento: string; fecha: string; lineas: Linea[];
+  error: string | null; tipo: string | null; notas: string | null; proveedor: string; proveedor_id: string; sugeridos: string[];
+  del_proveedor: string[]; documento: string; fecha: string; lineas: Linea[];
 };
 
 const normal = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
@@ -96,7 +99,7 @@ function aBase(l: Linea, p: ProductoPrecio | undefined): { base: number | null; 
   }
 }
 
-export default function PreciosFoto({ areas, productos }: { areas: Area[]; productos: ProductoPrecio[] }) {
+export default function PreciosFoto({ areas, productos, proveedores }: { areas: Area[]; productos: ProductoPrecio[]; proveedores: { id: string; nombre: string }[] }) {
   const router = useRouter();
   const [area, setArea] = useState<Area>(areas[0]);
   const [fotos, setFotos] = useState<Foto[]>([]);
@@ -112,11 +115,14 @@ export default function PreciosFoto({ areas, productos }: { areas: Area[]; produ
     return { presentacion: leida.presentacion ?? p?.presentacion ?? '', unidad_compra: p?.unidad_compra ?? '',
              contenido: p?.contenido_base == null ? '' : String(p.contenido_base), variable: !!p?.contenido_variable };
   }
+  function renDe(p: ProductoPrecio | undefined, leida: LineaPrecio): Renombre {
+    return { nombre: leida.nombre_generico ?? p?.generico ?? '', marca: leida.marca ?? p?.marca ?? '', cambiarNombre: false, cambiarMarca: false };
+  }
   function elegir(id: string, n: number, producto_id: string | null) {
     cambiarLinea(id, n, (l) => {
       const p = producto_id ? porId.get(producto_id) : undefined;
       const u = unidadLeida(l.leida.unidad, p);
-      return { ...l, producto_id, buscar: '', pres: presDe(p, l.leida), unidad: l.unidad === 'empaque' || !p ? u.unidad : l.unidad };
+      return { ...l, producto_id, buscar: '', pres: presDe(p, l.leida), ren: renDe(p, l.leida), unidad: l.unidad === 'empaque' || !p ? u.unidad : l.unidad };
     });
   }
 
@@ -125,7 +131,7 @@ export default function PreciosFoto({ areas, productos }: { areas: Area[]; produ
     for (const archivo of Array.from(archivos)) {
       const id = crypto.randomUUID();
       const base: Foto = { id, ruta: null, vista: null, estado: 'subiendo', error: null, tipo: null, notas: null,
-                           proveedor: '', documento: '', fecha: '', lineas: [] };
+                           proveedor: '', proveedor_id: '', sugeridos: [], del_proveedor: [], documento: '', fecha: '', lineas: [] };
       setFotos((xs) => [base, ...xs]);
       try {
         const { blob, tipo, ext } = await reducir(archivo);
@@ -146,9 +152,10 @@ export default function PreciosFoto({ areas, productos }: { areas: Area[]; produ
           return { n: i + 1, descripcion: x.descripcion, leida: x, producto_id: sugerido, buscar: '',
                    cantidad: String(Math.round(c * u.factor * 1000) / 1000), unidad: u.unidad,
                    valor: x.valor_total != null ? String(x.valor_total) : x.precio_unitario != null ? String(x.precio_unitario * c) : '',
-                   fijar: true, ignorar: false, corregir: false, pres: presDe(p, x), resultado: null };
+                   fijar: true, ignorar: false, corregir: false, pres: presDe(p, x), ren: renDe(p, x), resultado: null };
         });
         cambiarFoto(id, (x) => ({ ...x, estado: 'listo', tipo: l.tipo_documento, notas: l.notas, proveedor: l.proveedor ?? '',
+                                  proveedor_id: r.proveedor_id ?? '', sugeridos: r.proveedor_sugeridos, del_proveedor: r.del_proveedor,
                                   documento: l.documento ?? '', fecha: l.fecha ?? '', lineas,
                                   error: l.legible ? (lineas.length ? null : 'No se encontraron precios en esta foto.') : 'La foto no se puede leer o no muestra precios.' }));
       } catch (e) {
@@ -168,11 +175,16 @@ export default function PreciosFoto({ areas, productos }: { areas: Area[]; produ
         presentacion: l.pres.presentacion.trim(), unidad_compra: l.pres.unidad_compra.trim().toUpperCase(),
         contenido_variable: l.pres.variable, contenido_base: l.pres.variable ? null : numero(l.pres.contenido),
       } : undefined;
-      return [{ n: l.n, producto_id: p.producto_id, descripcion: l.descripcion, cantidad_base: base, valor_total: valor, fijar_costo: l.fijar, presentacion }];
+      const renombrar = l.ren.cambiarNombre || l.ren.cambiarMarca ? {
+        ...(l.ren.cambiarNombre && l.ren.nombre.trim() ? { nombre: l.ren.nombre.trim() } : {}),
+        ...(l.ren.cambiarMarca ? { marca: l.ren.marca.trim() } : {}),
+      } : undefined;
+      return [{ n: l.n, producto_id: p.producto_id, descripcion: l.descripcion, cantidad_base: base, valor_total: valor, fijar_costo: l.fijar, presentacion, renombrar }];
     });
     if (!lineas.length) { cambiarFoto(f.id, (x) => ({ ...x, error: 'No hay líneas listas para guardar: revisa producto, cantidad y valor.' })); return; }
     setGuardando(f.id);
-    const r = await guardarPrecios({ area, ruta: f.ruta, proveedor: f.proveedor || null, documento: f.documento || null, fecha: f.fecha || null, lineas });
+    const r = await guardarPrecios({ area, ruta: f.ruta, proveedor_id: f.proveedor_id || null, proveedor: f.proveedor || null,
+                                     documento: f.documento || null, fecha: f.fecha || null, lineas });
     setGuardando(null);
     if ('error' in r) { cambiarFoto(f.id, (x) => ({ ...x, error: r.error })); return; }
     cambiarFoto(f.id, (x) => ({
@@ -214,7 +226,16 @@ export default function PreciosFoto({ areas, productos }: { areas: Area[]; produ
               {f.error && <p className="aviso" role="status">{f.error}</p>}
               {(f.estado === 'listo' || f.estado === 'guardado') && (
                 <div className="fila">
-                  <label style={{ margin: 0 }}>Proveedor<input value={f.proveedor} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, proveedor: e.target.value }))} /></label>
+                  <label style={{ margin: 0 }}>Proveedor
+                    <select value={f.proveedor_id} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, proveedor_id: e.target.value }))}>
+                      <option value="">{f.proveedor ? `No está en la lista («${f.proveedor}»)` : '— sin proveedor —'}</option>
+                      {f.sugeridos.length > 0 && <optgroup label="Parecidos al de la foto">
+                        {f.sugeridos.map((id) => <option key={id} value={id}>{proveedores.find((x) => x.id === id)?.nombre}</option>)}
+                      </optgroup>}
+                      <optgroup label="Todos">{proveedores.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</optgroup>
+                    </select>
+                    {!f.proveedor_id && f.proveedor && <span className="ayuda">Se guarda con el nombre de la foto. Para que quede en la lista, créalo en Recibir o pídeselo a administración.</span>}
+                  </label>
                   <label style={{ margin: 0 }}>Fecha<input type="date" value={f.fecha} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, fecha: e.target.value }))} /></label>
                   <label style={{ margin: 0 }}>N° documento<input value={f.documento} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, documento: e.target.value }))} /></label>
                 </div>
@@ -255,6 +276,36 @@ export default function PreciosFoto({ areas, productos }: { areas: Area[]; produ
                       </select>
                     </label>
                     {l.leida.sugerencia_ia?.razon && <span className="suave" style={{ fontSize: '.8rem' }}>IA: {l.leida.sugerencia_ia.razon}</span>}
+                    {p && f.del_proveedor.includes(p.producto_id) && <span style={{ fontSize: '.8rem', color: 'var(--ok)' }}>✓ Ya se le compra este producto a este proveedor.</span>}
+                    {p && (() => {
+                      const otroNombre = l.leida.nombre_generico && normal(l.leida.nombre_generico) !== normal(p.generico);
+                      const otraMarca = l.leida.marca && normal(l.leida.marca) !== normal(p.marca);
+                      if (!otroNombre && !otraMarca && !l.ren.cambiarNombre && !l.ren.cambiarMarca) return null;
+                      return (
+                        <div className="tarjeta" style={{ display: 'grid', gap: '.35rem', padding: '.5rem' }}>
+                          <span style={{ fontSize: '.85rem' }}>Según la factura, la IA sugiere:</span>
+                          {(otroNombre || l.ren.cambiarNombre) && (
+                            <label style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400, flexWrap: 'wrap' }}>
+                              <input type="checkbox" checked={l.ren.cambiarNombre} style={{ width: 18, minHeight: 18 }}
+                                     onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, ren: { ...x.ren, cambiarNombre: e.target.checked } }))} />
+                              Cambiar el nombre «{p.generico}» a
+                              <input value={l.ren.nombre} style={{ flex: 1, minWidth: 140 }} disabled={!l.ren.cambiarNombre}
+                                     onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, ren: { ...x.ren, nombre: e.target.value } }))} />
+                            </label>
+                          )}
+                          {(otraMarca || l.ren.cambiarMarca) && (
+                            <label style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400, flexWrap: 'wrap' }}>
+                              <input type="checkbox" checked={l.ren.cambiarMarca} style={{ width: 18, minHeight: 18 }}
+                                     onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, ren: { ...x.ren, cambiarMarca: e.target.checked } }))} />
+                              {p.marca ? <>Cambiar la marca «{p.marca}» a</> : <>Ponerle marca</>}
+                              <input value={l.ren.marca} style={{ flex: 1, minWidth: 140 }} disabled={!l.ren.cambiarMarca}
+                                     onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, ren: { ...x.ren, marca: e.target.value } }))} />
+                            </label>
+                          )}
+                          <span className="suave" style={{ fontSize: '.78rem' }}>El nombre aplica a todas las presentaciones del genérico; la marca, solo a esta.</span>
+                        </div>
+                      );
+                    })()}
                     <input placeholder="¿No está? Busca otro producto…" value={l.buscar}
                            onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, buscar: e.target.value }))} />
                     {encontrados.length > 0 && (
