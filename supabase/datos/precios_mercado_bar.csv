@@ -1,0 +1,81 @@
+﻿codigo;insumo;unidad_base;referencia;precio_referencia;costo_por_unidad_base;fuente;otras_fuentes;confianza;nota
+BAR_MPe_0101;Amaretto Disaronno;ml;Botella 750 ml;148500;198,0000;Dislicores;Olímpica $148.900 · Éxito $165.000 (con copa);alta;
+BAR_MPe_0099;Aperol;ml;Botella 750 ml;97990;130,6533;Dislicores;Makro $92.890 · Licores Medellín $108.900;alta;
+BAR_MPe_0102;Baileys;ml;Botella 1000 ml;108000;108,0000;Éxito;Carulla $108.000 · Dislicores $108.000 · Olímpica $107.990;alta;
+BAR_MPe_0104;Cachaça Jamel;ml;Botella 1000 ml;90000;90,0000;Mercado Libre;rango $80.000–105.000;baja;No está en Dislicores, Éxito ni Carulla: confírmalo con tu proveedor
+BAR_MPe_0100;Cointreau;ml;Botella 700 ml;159700;228,1429;Carulla;Licores Medellín $161.900 · Mercado Libre $161.500;alta;
+BAR_MPe_0108;Ginebra Beefeater Pink;ml;Botella 700 ml;169900;242,7143;Éxito;Dislicores $171.500 · Olímpica $169.750 · Carulla $209.600;alta;
+BAR_MPe_0028;Licor de café Coloma;ml;Botella 750 ml;74990;99,9867;Dislicores;Olímpica $79.900;media;Tu catálogo dice 700 ml; en tiendas viene de 750 ml (el costo por ml no cambia)
+BAR_MPe_0095;Licor de chile Ancho Reyes;ml;Botella 750 ml;159900;213,2000;Mercado Libre;hasta $209.900 · Dislicores agotado;media;
+BAR_MPe_0096;Licor de durazno Convier;ml;Botella 750 ml;58000;77,3333;Dislicores;;alta;
+BAR_MPe_0097;Limoncello Villa Massa;ml;Botella 700 ml;154000;220,0000;Dislicores (precio regular);Dislicores en oferta $117.991 · Mercado Libre $155.200;alta;
+BAR_MPe_0106;Mezcal Montelobos;ml;Botella 750 ml;262800;350,4000;Carulla;Olímpica $259.900;alta;
+BAR_MPe_0092;Ron Bacardí Añejo;ml;Botella 750 ml;60990;81,3200;Dislicores;Licores Medellín $55.900 · Carulla 700 ml $62.400;alta;
+BAR_MPe_0105;Pisco Demonio de los Andes;ml;Botella 700 ml (quebranta);149600;213,7143;Éxito;Carulla $154.500 · ofertas desde $127.160;alta;
+BAR_MPe_0093;Ron La Hechicera Banano;ml;Botella 700 ml;344900;492,7143;Dislicores;Éxito $355.900 · Olímpica $355.900;alta;
+BAR_MPe_0098;Soho (licor de lychee);ml;Botella 700 ml;80990;115,7000;Dislicores;Mercado Libre $92.000–116.990;alta;
+BAR_MPe_0086;Tequila Olmeca Reposado;ml;Botella 700 ml;100900;144,1429;Carulla;Olímpica $99.900 · Makro $87.300 · Falabella $98.000;alta;
+BAR_MPe_0089;Triple sec azul Convier (curazao);ml;Botella 750 ml;67800;90,4000;Dislicores;Éxito $70.500 · Olímpica $78.050 · Carulla $83.700;alta;
+BAR_MPe_0091;Vermouth extra dry Cinzano;ml;Botella 750 ml;75000;100,0000;Mercado Libre;otro vendedor $65.000;media;No apareció en Dislicores, Éxito ni Carulla
+BAR_MPe_0063;Vermouth rosso (Cinzano);ml;Botella 1000 ml;76800;76,8000;Carulla (oferta $70.500);Mercado Libre $74.900–81.900;alta;
+BAR_MPe_0107;Whisky Bulleit Bourbon;ml;Botella 750 ml;173000;230,6667;Éxito;;alta;
+BAR_MPe_0130;Angostura bitters;ml;Botella 200 ml;145490;727,4500;Mercado Libre;hasta $174.990;baja;Solo en Mercado Libre; tu presentación está «por confirmar»
+BAR_MPe_0131;Orange bitters;ml;Botella 4 oz (Angostura Orange);147900;1253,3898;Mercado Libre;Fee Brothers 5 oz ~$132.000;baja;Solo en Mercado Libre; presentación por confirmar
+BAR_MPe_0110;Espumante Barón de Rothberg;ml;Botella 750 ml;42250;56,3333;Éxito;Dislicores $39.990 · Carulla $46.250 · Makro $44.290;alta;
+BAR_MPe_0109;Prosecco;ml;Botella 750 ml (Mionetto Brut);88990;118,6533;Dislicores;Éxito $96.900 · Carulla $101.800;alta;Tienes también Piccini; tomé Mionetto
+BAR_MPe_0113;Vino Rosaleda Merlot;ml;Botella 750 ml;21500;28,6667;Dislicores;;alta;
+BAR_MPe_0112;Vino Rosaleda Sauvignon Blanc;ml;Botella 750 ml;21500;28,6667;Dislicores;Licores Medellín $21.900;alta;
+BAR_MPe_0120;JP Chenet fizzy rosé (lata);und;Lata 250 ml;10800;10800,0000;Éxito;Dislicores $10.990 · Carulla $12.000 · Makro $8.700;alta;
+BAR_MPe_0119;Soda Hatsu frambuesa-rosas;und;Lata 310 ml;3210;3210,0000;Éxito;Olímpica $3.700;alta;
+BAR_MPe_0117;Tónica Mil976 Ocean;und;Lata 207 ml (pack x4 $23.990);5998;5998,0000;Dislicores;;media;Tu catálogo dice botella 330 ml; en tiendas solo apareció la lata de 207 ml
+BAR_MPe_0122;Cerveza BBC Roja;und;Botella 330 ml;4270;4270,0000;Éxito;Dislicores x4 $18.100;alta;
+BAR_MPe_0121;Cerveza BBC Rosé;und;Lata 269 ml (pack x4 $17.200);4300;4300,0000;Olímpica;Makro x4 $16.300;media;Precio por unidad sacado del pack de 4
+BAR_MPe_0002;Albahaca;g;1 g;23.53;23,5300;Tus compras (cocina);;alta;Precio de cocina: Albahaca fresca
+BAR_MPe_0004;Arroz blanco;g;1 g;3.91;3,9100;Tus compras (cocina);;alta;Precio de cocina: Arroz Diana
+BAR_MPe_0029;Limón lima;g;1 g;6.13;6,1300;Tus compras (cocina);;media;Tomé el Limón Tahití de cocina (Gepri, 05/11)
+BAR_MPe_0034;Mango;g;1 g;6;6,0000;Tus compras (cocina);;alta;Mango Tommy, Agro Fruvers 03/11
+BAR_MPe_0057;Sal marina;g;1 g;2.56;2,5600;Tus compras (cocina);;alta;Carulla La María 01/10
+BAR_MPe_0067;Vinagre de vino;ml;1 ml;30.92;30,9200;Tus compras (cocina);;alta;Vinagre de vino tinto Colavita
+BAR_MPe_0016;Crema de leche;g;1 g;18.6;18,6000;Tus compras (cocina);;media;Cocina la lleva en ml; tomé 1 ml ≈ 1 g
+BAR_MPe_0027;Leche entera;ml;1 ml;5.7;5,7000;Tus compras (cocina);;alta;Leche entera UHT, Carulla La María
+BAR_MPe_0123;Lychee en almíbar (lata);g;Lata 565 g;18550;32,8319;Tus compras (cocina);;media;Cocina: $18.550 la lata; supuse lata de 565 g
+BAR_MPe_0023;Huevo;und;Panal x30;16500;550,0000;Tus compras (cocina);;media;Cocina tiene $16.500 «por unidad»: parece ser el panal de 30, revísalo
+BAR_MPe_0003;Arándano congelado;g;Bolsa 500 g;16646;33,2920;Carulla;Éxito $19.200–24.000 · importado $14.280;alta;
+BAR_MPe_0018;Eneldo;g;Bolsa 50 g;5120;102,4000;Carulla;oferta $3.584;media;
+BAR_MPe_0033;Mandarina;g;1 kg;10220;10,2200;Éxito;Olímpica $5.980–9.980 · Carulla importada $12.964;alta;
+BAR_MPe_0048;Naranja importada;g;1 kg;9120;9,1200;Éxito;Olímpica $10.200–14.680;media;
+BAR_MPe_0050;Pera;g;1 kg (importada);12230;12,2300;Éxito;Olímpica $12.900–14.400;alta;
+BAR_MPe_0125;Sandía;g;1 kg;4508;4,5080;Makro;Éxito $28.480 la unidad;media;
+BAR_MPe_0060;Tamarindo;g;Pulpa 500 g;8880;17,7600;Olímpica;Éxito pulpa 250 g $10.340;media;Es pulpa; no encontré tamarindo en vaina
+BAR_MPe_0061;Uchuva;g;Tarrina 400 g sin capacho;6540;16,3500;Éxito;Carulla $7.378;alta;
+BAR_MPe_0124;Aceituna verde deshuesada;g;Frasco 250 g (Al'fresco);8050;32,2000;Olímpica;Makro Aro 250 g $7.300 · Éxito 140 g $9.040;alta;
+BAR_MPe_0006;Azúcar glass;g;Bolsa 500 g (Manuelita);3970;7,9400;Éxito;Colombina $5.280 · Riopaila $5.050;alta;
+BAR_MPe_0010;Canela cassia;g;Bolsa 500 g (Aro);87312;174,6240;Makro;Éxito 40 g $7.690;alta;
+BAR_MPe_0011;Cardamomo;g;Bolsa 250 g;47120;188,4800;Mercado Libre;50 g $10.540;media;
+BAR_MPe_0013;Ciruela pasa;g;Bolsa 400 g (Frescampo);14690;36,7250;Carulla;Olímpica 200 g $7.990;alta;
+BAR_MPe_0014;Clavos de olor;g;Sobre 9 g (El Rey);1620;180,0000;Éxito;Carulla $1.800;alta;
+BAR_MPe_0015;Colorante comestible verde;ml;Frasco 78 ml (Prodia);22900;293,5897;Mercado Libre;10 ml $7.900;media;
+BAR_MPe_0017;Durazno en almíbar;g;Lata 470 g;10550;22,4468;Éxito;Olímpica 425 g $5.990–9.400 · Makro 820 g $10.992;alta;
+BAR_MPe_0019;Extracto de vainilla;ml;Frasco 155 ml (Frescampo);3900;25,1613;Éxito;Carulla $3.150;media;Es esencia, no extracto puro; si usas extracto puro es mucho más caro
+BAR_MPe_0020;Flor de Jamaica;g;Bolsa 50 g;8330;166,6000;Éxito;Mercado Libre 500 g $44.800;alta;
+BAR_MPe_0038;Manzanilla (flor);g;Flor entera 500 g;42900;85,8000;Mercado Libre;250 g $22.900;media;
+BAR_MPe_0043;Miel de abejas;g;Frasco 500 g (El Edén);23950;47,9000;Éxito;Carulla $25.900 · Olímpica $29.900;alta;
+BAR_MPe_0044;Miel de agave;ml;Frasco 330 g (≈254 ml);32500;127,9528;Carulla;;media;Viene en gramos: lo pasé a ml con densidad 1,3
+BAR_MPe_0052;Pimienta gorda (dulce);g;Bolsa 250 g en grano;26900;107,6000;Mercado Libre;1 kg $88.900;media;
+BAR_MPe_0126;Pimienta rosada;g;Bolsa 50 g;34550;691,0000;Mercado Libre;Éxito 10 g $9.600;media;
+BAR_MPe_0055;Polvillo dorado comestible;g;Frasco 15 g;11600;773,3333;Mercado Libre;7 g $8.990–10.900;media;
+BAR_MPe_0127;Sal rosada;g;Bolsa 500 g (Natusal);19950;39,9000;Olímpica;Éxito Refisal 400 g $21.950;alta;
+BAR_MPe_0062;Vainilla (vaina);und;Paquete x10 vainas;85000;8500,0000;Mercado Libre;suelta $7.000–9.800;media;
+BAR_MPe_0064;Vinagre balsámico;ml;Botella 500 ml (Roland);35750;71,5000;Éxito;Carulla $37.600;alta;
+BAR_MPe_0065;Vinagre de frutas;ml;Botella 500 ml (Medalla de Oro);1990;3,9800;Olímpica;;media;
+BAR_MPe_0066;Vinagre de manzana;ml;Botella 500 ml (Barrentos);4420;8,8400;Éxito;Mckondo $4.590 · Colavita $27.100;alta;
+BAR_MPe_0128;Helado de macadamia;g;Cubeta 600 g (Popsy);45200;75,3333;Carulla;Éxito $46.000 · Olímpica $44.150;alta;
+BAR_MPe_0026;Leche condensada;g;Lata 395 g (Medalla de Oro);7890;19,9747;Olímpica;Makro 380 g $7.830;alta;
+BAR_MPe_0059;Tabaco (habano);und;Habano unidad (Montecristo No. 4);34900;34900,0000;Mercado Libre;rango $30.000–60.000;baja;Depende de la marca que uses
+BAR_MPe_0129;Bala de CO2;und;Caja x10 (iSi 8,4 g);41900;4190,0000;Mercado Libre;genéricas $38.610–43.900;media;
+BAR_MPe_0008;Bala de N2O (sifón);und;Caja x10;54700;5470,0000;Mercado Libre;caja x50 ≈ $3.390 c/u;media;
+BAR_MPe_0042;Menta francesa;und;;;;;Éxito bolsa 50 g $1.280 (empresas);pendiente;Va en «und» con caja de contenido variable: define qué es 1 und (hoja, rama, caja)
+BAR_MPe_0045;Mix Triple Blend (PriceSmart);g;;;;;;pendiente;PriceSmart no publica el precio en línea: tómalo de tu factura
+BAR_MPe_0009;Café de máquina;ml;;;;;café en grano 500 g $40.390–62.700;pendiente;Va en ml: hay que definir cuántos g de café lleva cada ml
+BAR_MPe_0051;Pimienta (por definir);g;;;;;;pendiente;Primero hay que definir qué pimienta es
+BAR_MPe_0053;Pimienta de Timut;g;;;;;;pendiente;No se consigue en tiendas colombianas en línea
