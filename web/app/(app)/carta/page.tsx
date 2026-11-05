@@ -37,6 +37,7 @@ export default async function Carta({ searchParams }: { searchParams: Promise<{ 
       <p className="suave">
         Costo de la receta vigente de cada {area === 'BAR' ? 'cóctel' : 'plato'} con los costos de hoy, contra su precio de carta.
         El % de costo se calcula sobre el precio sin impoconsumo. Si un ingrediente no tiene costo todavía, el % no sale.
+        Mientras no haya kardex, el costo es <strong>estimado</strong>: precios de referencia y la receta de cada MPI.
       </p>
       {(data ?? []).length ? (
         <ListaCarta filas={(data ?? []) as PlatoCarta[]} meta={Number(meta?.valor ?? 25)} puedePrecio={editaArea(perfil, area)} />

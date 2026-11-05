@@ -9,6 +9,7 @@ export type PlatoCarta = {
   generico_id: string; nombre: string; tipo: 'BEBIDA' | 'PLATO'; carta: string | null; ficha_codigo: string | null;
   lineas: number; lineas_con_costo: number; faltantes: string[]; costo: number | null;
   precio: number | null; precio_desde: string | null; pct_costo: number | null; margen: number | null;
+  estimado?: boolean;   // algún ingrediente sin kardex: costo de referencia o de la receta de su MPI
 };
 const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 const num = (s: string) => { const n = Number(s.replace(/[.$\s]/g, '').replace(',', '.')); return s.trim() === '' || !Number.isFinite(n) ? null : n; };
@@ -72,7 +73,9 @@ export default function ListaCarta({ filas, meta, puedePrecio }: { filas: PlatoC
         {f.carta && <div className="suave" style={{ fontSize: '.8rem' }}>{f.carta}</div>}</div>) },
     { k: 'costo', t: 'Costo receta', der: true, orden: (f) => f.costo, ver: (f) => (
       !f.lineas ? <span className="suave">sin receta</span>
-        : <span>{pesos(Number(f.costo ?? 0))}{f.lineas_con_costo < f.lineas && <div style={{ color: 'var(--aviso)', fontSize: '.8rem' }}>{f.lineas_con_costo} de {f.lineas} con costo</div>}</span>) },
+        : <span>{pesos(Number(f.costo ?? 0))}
+                {f.estimado && <div className="suave" style={{ fontSize: '.78rem' }} title="Sin kardex todavía: usa precios de referencia y las recetas de las MPI">estimado</div>}
+                {f.lineas_con_costo < f.lineas && <div style={{ color: 'var(--aviso)', fontSize: '.8rem' }}>{f.lineas_con_costo} de {f.lineas} con costo</div>}</span>) },
     { k: 'precio', t: 'Precio carta', der: true, orden: (f) => f.precio, ver: (f) => <Precio f={f} puede={puedePrecio} /> },
     { k: 'pct', t: '% costo', der: true, orden: (f) => f.pct_costo, ver: (f) => (
       f.pct_costo === null ? <span className="suave">—</span>
