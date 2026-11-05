@@ -107,10 +107,12 @@ export default function EditorFicha({ datos }: { datos: DatosFicha }) {
               <div className="linea" style={{ alignItems: 'flex-start' }}>
                 <div style={{ minWidth: 0 }}>
                   <span className="suave" style={{ fontSize: '.8rem' }}>{idx + 1}. </span>
-                  {/* una MPI tiene su propia ficha: el nombre lleva a ella */}
+                  {/* una MPI lleva a su propia ficha; un insumo que se compra, a su producto en el catálogo (precio, presentación) */}
                   {(i?.tipo ?? original?.tipo) === 'MPI'
                     ? <Link href={`/fichas/${l.generico_id}`} title={`Ver la ficha técnica de ${nombre}`}><strong>{nombre}</strong> ↗</Link>
-                    : <strong>{nombre}</strong>}
+                    : (i?.tipo ?? original?.tipo) === 'MPe' && datos.puede_editar
+                      ? <Link href={`/catalogo/generico/${l.generico_id}`} title={`Ver ${nombre} en el catálogo`}><strong>{nombre}</strong> ↗</Link>
+                      : <strong>{nombre}</strong>}
                   {i && <span className="suave" style={{ fontSize: '.82rem' }}> · {i.tipo === 'SIN_COSTO' ? 'sin costo' : i.tipo} · base {i.unidad_base}</span>}
                 </div>
                 {!lee && (
