@@ -38,7 +38,7 @@ type Linea = {
 type Foto = {
   id: string; ruta: string | null; vista: string | null; estado: 'subiendo' | 'leyendo' | 'listo' | 'error' | 'guardado';
   error: string | null; tipo: string | null; notas: string | null; proveedor: string; proveedor_id: string; sugeridos: string[];
-  del_proveedor: string[]; documento: string; fecha: string; lineas: Linea[];
+  del_proveedor: string[]; proveedor_razon: string | null; documento: string; fecha: string; lineas: Linea[];
 };
 
 const normal = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
@@ -174,7 +174,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
     for (const archivo of Array.from(archivos)) {
       const id = crypto.randomUUID();
       const base: Foto = { id, ruta: null, vista: null, estado: 'subiendo', error: null, tipo: null, notas: null,
-                           proveedor: '', proveedor_id: '', sugeridos: [], del_proveedor: [], documento: '', fecha: '', lineas: [] };
+                           proveedor: '', proveedor_id: '', sugeridos: [], del_proveedor: [], proveedor_razon: null, documento: '', fecha: '', lineas: [] };
       setFotos((xs) => [base, ...xs]);
       try {
         const { blob, tipo, ext } = await reducir(archivo);
@@ -201,7 +201,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                    fijar: true, ignorar: false, corregir: false, pres: presDe(p, x), ren: renDe(p, x), nuevo: null, resultado: null };
         });
         cambiarFoto(id, (x) => ({ ...x, estado: 'listo', tipo: l.tipo_documento, notas: l.notas, proveedor: l.proveedor ?? '',
-                                  proveedor_id: r.proveedor_id ?? '', sugeridos: r.proveedor_sugeridos, del_proveedor: r.del_proveedor,
+                                  proveedor_id: r.proveedor_id ?? '', sugeridos: r.proveedor_sugeridos, del_proveedor: r.del_proveedor, proveedor_razon: r.proveedor_razon,
                                   documento: l.documento ?? '', fecha: l.fecha ?? '', lineas,
                                   error: l.legible ? (lineas.length ? null : 'No se encontraron precios en esta foto.') : 'La foto no se puede leer o no muestra precios.' }));
       } catch (e) {
@@ -321,6 +321,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                       </optgroup>}
                       <optgroup label="Todos">{proveedores.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</optgroup>
                     </select>
+                    {f.proveedor_razon && <span className="ayuda">{f.proveedor_razon}{f.proveedor ? ` (en la foto: «${f.proveedor}»)` : ''}</span>}
                     {!f.proveedor_id && f.proveedor && <span className="ayuda">Se guarda con el nombre de la foto. Para que quede en la lista, créalo en Recibir o pídeselo a administración.</span>}
                   </label>
                   <label style={{ margin: 0 }}>Fecha<input type="date" value={f.fecha} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, fecha: e.target.value }))} /></label>

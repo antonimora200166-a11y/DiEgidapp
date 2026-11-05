@@ -6,6 +6,7 @@ import { editaArea, type Area } from '@/lib/roles';
 import { leerPreciosConIA, type LecturaPrecios } from '@/lib/precios-ia';
 import { emparejarConIA, type SugerenciaIA } from '@/lib/factura-ia';
 import { deTipoInsumo, type TipoInsumo } from '@/lib/clases';
+import { elegirProveedorConIA } from '@/lib/proveedores-ia';
 import type { Resultado } from '@/lib/catalogo';
 
 // Precios desde fotos: leer y guardar. No usa nada de la recepción (no crea proveedores, no
@@ -17,7 +18,7 @@ const TIPOS: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', web
 export type CandidatoPrecio = { producto_id: string; parecido: number; del_proveedor?: boolean };
 export type LineaPrecio = LecturaPrecios['lineas'][number] & { candidatos: CandidatoPrecio[]; sugerencia_ia: Omit<SugerenciaIA, 'n'> | null };
 export type LecturaFoto = { ok: true; lectura: LecturaPrecios; lineas: LineaPrecio[]; proveedor_id: string | null;
-                            proveedor_sugeridos: string[]; del_proveedor: string[] } | { ok: false; error: string };
+                            proveedor_sugeridos: string[]; del_proveedor: string[]; proveedor_razon: string | null } | { ok: false; error: string };
 
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const soloDigitos = (s: string | null) => (s ?? '').replace(/\D/g, '').slice(0, 9);   // NIT sin dígito de verificación
@@ -37,10 +38,24 @@ export async function leerPrecios(ruta: string, area: Area): Promise<LecturaFoto
   const l = r.lectura;
 
   // proveedor: por NIT o por nombre igual; si no, los que comparten una palabra que distingue
-  const { data: proveedores } = await supabase.from('proveedores').select('id, nombre, nit').eq('activo', true);
+  const [{ data: proveedores }, { data: alias }] = await Promise.all([
+    supabase.from('proveedores').select('id, nombre, nit').eq('activo', true),
+    supabase.from('proveedor_alias').select('proveedor_id, alias'),
+  ]);
   const nit = soloDigitos(l.nit);
-  const prov = (proveedores ?? []).find((x) => nit.length >= 6 && soloDigitos(x.nit) === nit)
-    ?? (proveedores ?? []).find((x) => l.proveedor && norm(x.nombre) === norm(l.proveedor));
+  const aliasDe = (id: string) => (alias ?? []).filter((a) => a.proveedor_id === id).map((a) => a.alias as string);
+  // por NIT, por nombre o por un nombre con que ya se unió a otro; si no, la IA lo busca por significado
+  let prov = (proveedores ?? []).find((x) => nit.length >= 6 && soloDigitos(x.nit) === nit)
+    ?? (proveedores ?? []).find((x) => l.proveedor && (norm(x.nombre) === norm(l.proveedor) || aliasDe(x.id).some((a) => norm(a) === norm(l.proveedor!))));
+  let proveedorRazon: string | null = null;
+  if (!prov && l.proveedor && (proveedores ?? []).length) {
+    const ia = await elegirProveedorConIA({ nombre: l.proveedor, nit: l.nit },
+      (proveedores ?? []).map((x) => ({ id: x.id as string, nombre: x.nombre as string, alias: aliasDe(x.id) })));
+    if (ia?.proveedor_id && ia.confianza !== 'baja') {
+      prov = (proveedores ?? []).find((x) => x.id === ia.proveedor_id);
+      proveedorRazon = `La IA cree que es «${prov?.nombre}»: ${ia.razon}`;
+    } else if (ia) proveedorRazon = ia.razon;
+  }
   const leidas = palabras(l.proveedor ?? '');
   const sugeridos = prov ? [] : (proveedores ?? []).filter((x) => palabras(x.nombre).some((w) =>
     leidas.some((y) => y === w || (Math.min(y.length, w.length) >= 5 && (y.startsWith(w) || w.startsWith(y)))))).slice(0, 4).map((x) => x.id as string);
@@ -50,7 +65,7 @@ export async function leerPrecios(ruta: string, area: Area): Promise<LecturaFoto
     : { data: [] as { producto_id: string; nombre_factura: string | null }[] };
   const delProveedor = (suyos ?? []).map((x) => x.producto_id as string);
   const porNombreProveedor = new Map((suyos ?? []).filter((x) => x.nombre_factura).map((x) => [norm(x.nombre_factura as string), x.producto_id as string]));
-  if (!l.lineas.length) return { ok: true, lectura: l, lineas: [], proveedor_id: prov?.id ?? null, proveedor_sugeridos: sugeridos, del_proveedor: delProveedor };
+  if (!l.lineas.length) return { ok: true, lectura: l, lineas: [], proveedor_id: prov?.id ?? null, proveedor_sugeridos: sugeridos, del_proveedor: delProveedor, proveedor_razon: proveedorRazon };
 
   // por nombre (la misma búsqueda de Recibir) y, lo que quede dudoso, por significado con la IA
   const { data: pares } = await supabase.rpc('emparejar_factura', { p_area: area, p_textos: l.lineas.map((x) => x.descripcion) });
@@ -79,7 +94,7 @@ export async function leerPrecios(ruta: string, area: Area): Promise<LecturaFoto
     const s = sugerencias.find((y) => y.n === i + 1);
     return { ...x, candidatos: porLinea.get(i + 1) ?? [], sugerencia_ia: s ? { producto_id: s.producto_id, confianza: s.confianza, razon: s.razon } : null };
   });
-  return { ok: true, lectura: l, lineas, proveedor_id: prov?.id ?? null, proveedor_sugeridos: sugeridos, del_proveedor: delProveedor };
+  return { ok: true, lectura: l, lineas, proveedor_id: prov?.id ?? null, proveedor_sugeridos: sugeridos, del_proveedor: delProveedor, proveedor_razon: proveedorRazon };
 }
 
 export type ResultadoGuardar = { ok: number; fallidos: number; detalle: { n: number; ok: boolean; mensaje: string }[] } | { error: string };

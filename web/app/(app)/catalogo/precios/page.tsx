@@ -54,7 +54,7 @@ export default async function Precios() {
         producto; tú corriges lo que haga falta y guardas. <strong>No es una recepción:</strong> no entra nada al inventario ni al
         kardex. El precio queda como referencia de compra y, si lo marcas, como costo del producto.
       </p>
-      <p className="pagina-ancha" style={{ margin: '.2rem 0 .6rem' }}><Link href="/catalogo/proveedores">Ver lo que le compramos a cada proveedor →</Link></p>
+      <p className="pagina-ancha" style={{ margin: '.2rem 0 .6rem' }}><Link href="/catalogo/proveedores#compras">Ver lo que le compramos a cada proveedor →</Link></p>
       <PreciosFoto areas={areas} productos={productos} proveedores={(proveedores ?? []) as { id: string; nombre: string }[]}
                    categorias={(categorias ?? []) as { codigo: string; nombre: string; area: Area }[]} />
     </>
