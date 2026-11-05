@@ -16,7 +16,7 @@ export default async function Precios() {
   const productos: ProductoPrecio[] = [];
   catalogos.forEach((c, i) => {
     if (c.error) throw new Error(c.error.message);
-    for (const p of (c.data ?? []) as Omit<ProductoPrecio, 'area' | 'costo_ref'>[]) productos.push({ ...p, area: areas[i], costo_ref: null });
+    for (const p of (c.data ?? []) as Omit<ProductoPrecio, 'area' | 'costo_ref' | 'peso_und'>[]) productos.push({ ...p, area: areas[i], costo_ref: null, peso_und: null });
   });
   // costo de referencia actual, para comparar con el precio de la foto
   const porId = new Map(productos.map((p) => [p.producto_id, p]));
@@ -26,6 +26,17 @@ export default async function Precios() {
     for (const c of data ?? []) {
       const p = porId.get(c.producto_id as string);
       if (p) p.costo_ref = Number(c.costo_unitario_base);
+    }
+    // cuánto pesa 1 unidad, si el genérico ya lo sabe (para las líneas que vienen «por unidad»)
+    const { data: gens } = await supabase.from('productos').select('id, generico_id').in('id', ids.slice(i, i + 300));
+    const genDe = new Map((gens ?? []).map((g) => [g.generico_id as string, g.id as string]));
+    const { data: convs } = genDe.size
+      ? await supabase.from('conversiones').select('generico_id, factor_a_base').eq('unidad', 'und').in('generico_id', [...genDe.keys()])
+      : { data: [] as { generico_id: string; factor_a_base: number }[] };
+    const pesoGen = new Map((convs ?? []).map((c) => [c.generico_id as string, Number(c.factor_a_base)]));
+    for (const g of gens ?? []) {
+      const p = porId.get(g.id as string);
+      if (p && pesoGen.has(g.generico_id as string)) p.peso_und = pesoGen.get(g.generico_id as string)!;
     }
   }
 

@@ -11,6 +11,7 @@ export type ProductoPrecio = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
   unidad_base: 'g' | 'ml' | 'und'; unidad_compra: string; contenido_base: number | null; contenido_variable: boolean;
   costo_promedio: number | null; area: Area; costo_ref: number | null;
+  peso_und: number | null;   // cuánto pesa 1 und, si el genérico ya lo sabe (conversión)
 };
 
 // en qué viene la cantidad de la foto
@@ -31,7 +32,7 @@ type Nuevo = {
 };
 type Linea = {
   n: number; descripcion: string; leida: LineaPrecio; producto_id: string | null; buscar: string;
-  cantidad: string; unidad: Unidad; valor: string; fijar: boolean; ignorar: boolean; corregir: boolean; pres: Pres; ren: Renombre; nuevo: Nuevo | null;
+  cantidad: string; unidad: Unidad; peso: string; valor: string; fijar: boolean; ignorar: boolean; corregir: boolean; pres: Pres; ren: Renombre; nuevo: Nuevo | null;
   resultado: { ok: boolean; mensaje: string } | null;
 };
 type Foto = {
@@ -83,6 +84,15 @@ function unidadLeida(texto: string | null, p: ProductoPrecio | undefined): { uni
   return { unidad: 'und', factor: 1 };
 }
 
+// «2,5KG», «1000 g», «750 ml» en la línea: lo que pesa o mide cada unidad comprada
+function cantidadEscrita(t: string | null): { n: number; unidad: Unidad } | null {
+  const m = /(\d+(?:[.,]\d+)?)\s*(kg|kilo|kilos|g|gr|grs|ml|cc|l|lt|litro|litros)\b/i.exec(t ?? '');
+  if (!m) return null;
+  const n = Number(m[1].replace(',', '.')), u = m[2].toLowerCase();
+  if (!(n > 0)) return null;
+  return { n, unidad: /^(kg|kilo)/.test(u) ? 'kg' : /^(g|gr)/.test(u) ? 'g' : /^(ml|cc)/.test(u) ? 'ml' : 'L' };
+}
+
 // cantidad en la unidad base del producto, o el motivo por el que no se puede
 function aBase(l: Linea, p: ProductoPrecio | undefined): { base: number | null; problema: string | null } {
   const c = numero(l.cantidad);
@@ -96,9 +106,12 @@ function aBase(l: Linea, p: ProductoPrecio | undefined): { base: number | null; 
     case 'ml': case 'L':
       return ub === 'ml' ? { base: c * (l.unidad === 'L' ? 1000 : 1), problema: null }
         : { base: null, problema: `${p.generico} va en ${ub}: la cantidad no puede ir en volumen.` };
-    case 'und':
-      return ub === 'und' ? { base: c, problema: null }
-        : { base: null, problema: `${p.generico} va en ${ub}: di cuánto pesa o mide, o usa «empaque del producto».` };
+    case 'und': {
+      if (ub === 'und') return { base: c, problema: null };
+      const peso = l.peso.trim() ? numero(l.peso) : Number(p.peso_und);
+      return peso > 0 ? { base: c * peso, problema: null }
+        : { base: null, problema: `${p.generico} va en ${ub}: escribe cuánto pesa cada unidad (aprox.).` };
+    }
     case 'empaque': {
       const cont = l.corregir && !l.pres.variable ? numero(l.pres.contenido) : p.contenido_variable ? NaN : Number(p.contenido_base);
       return cont > 0 ? { base: c * cont, problema: null } : { base: null, problema: 'El empaque de este producto no tiene contenido fijo: usa kg, g, litro o ml.' };
@@ -177,9 +190,12 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
             : x.sugerencia_ia?.producto_id && x.sugerencia_ia.confianza !== 'baja' ? x.sugerencia_ia.producto_id
             : x.candidatos[0]?.producto_id ?? null;
           const p = sugerido ? porId.get(sugerido) : undefined;
-          const u = unidadLeida(x.unidad, p);
-          const c = x.cantidad ?? 1;
-          return { n: i + 1, descripcion: x.descripcion, leida: x, producto_id: sugerido, buscar: '',
+          let u = unidadLeida(x.unidad, p);
+          let c = x.cantidad ?? 1;
+          // por unidad, malla o bolsa, pero la línea dice cuánto pesa cada una: se usa ese peso
+          const escrita = ['und', 'empaque'].includes(u.unidad) ? cantidadEscrita(x.presentacion) ?? cantidadEscrita(x.descripcion) : null;
+          if (escrita && (!p || (p.unidad_base === 'g') === ['kg', 'g'].includes(escrita.unidad))) { c = c * escrita.n; u = { unidad: escrita.unidad, factor: 1 }; }
+          return { n: i + 1, descripcion: x.descripcion, leida: x, producto_id: sugerido, buscar: '', peso: '',
                    cantidad: String(Math.round(c * u.factor * 1000) / 1000), unidad: u.unidad,
                    valor: x.valor_total != null ? String(x.valor_total) : x.precio_unitario != null ? String(x.precio_unitario * c) : '',
                    fijar: true, ignorar: false, corregir: false, pres: presDe(p, x), ren: renDe(p, x), nuevo: null, resultado: null };
@@ -217,7 +233,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
       producto_id: r.producto_id, codigo: '(nuevo)', generico: genExistente?.generico ?? nv.nombre.trim(), marca: nv.marca.trim(),
       presentacion: nv.presentacion.trim(), categoria: cat?.nombre ?? genExistente?.categoria ?? 'Sin categoría', unidad_base: ub,
       unidad_compra: nv.unidad_compra.trim().toUpperCase(), contenido_base: cont, contenido_variable: nv.variable,
-      costo_promedio: null, area, costo_ref: null,
+      costo_promedio: null, area, costo_ref: null, peso_und: null,
     };
     setProductos((xs) => [...xs, creado]);
     cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: null, producto_id: creado.producto_id, buscar: '', pres: presDe(creado, x.leida),
@@ -227,11 +243,13 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
 
   async function guardar(f: Foto) {
     if (!f.ruta) return;
+    const sinTerminar = new Map<number, string>();
     const lineas = f.lineas.filter((l) => !l.ignorar).flatMap((l) => {
       const p = l.producto_id ? porId.get(l.producto_id) : undefined;
-      const { base } = aBase(l, p);
+      const { base, problema } = aBase(l, p);
       const valor = numero(l.valor);
-      if (!p || base == null || !(valor > 0)) return [];
+      if (!p || base == null || !(valor > 0)) { sinTerminar.set(l.n, problema ?? 'Falta el valor.'); return []; }
+      const peso_unidad = l.unidad === 'und' && p.unidad_base !== 'und' && l.peso.trim() ? numero(l.peso) : undefined;
       const presentacion = l.corregir ? {
         presentacion: l.pres.presentacion.trim(), unidad_compra: l.pres.unidad_compra.trim().toUpperCase(),
         contenido_variable: l.pres.variable, contenido_base: l.pres.variable ? null : numero(l.pres.contenido),
@@ -240,18 +258,26 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
         ...(l.ren.cambiarNombre && l.ren.nombre.trim() ? { nombre: l.ren.nombre.trim() } : {}),
         ...(l.ren.cambiarMarca ? { marca: l.ren.marca.trim() } : {}),
       } : undefined;
-      return [{ n: l.n, producto_id: p.producto_id, descripcion: l.descripcion, cantidad_base: base, valor_total: valor, fijar_costo: l.fijar, presentacion, renombrar }];
+      return [{ n: l.n, producto_id: p.producto_id, descripcion: l.descripcion, cantidad_base: base, valor_total: valor, fijar_costo: l.fijar,
+                presentacion, renombrar, peso_unidad }];
     });
-    if (!lineas.length) { cambiarFoto(f.id, (x) => ({ ...x, error: 'No hay líneas listas para guardar: revisa producto, cantidad y valor.' })); return; }
+    const marcarSinTerminar = (x: Foto): Foto => ({ ...x, lineas: x.lineas.map((l) => (sinTerminar.has(l.n)
+      ? { ...l, resultado: { ok: false, mensaje: `No se guardó: ${sinTerminar.get(l.n)}` } } : l)) });
+    if (!lineas.length) {
+      cambiarFoto(f.id, (x) => ({ ...marcarSinTerminar(x), error: 'No hay líneas listas para guardar: revisa las marcadas en rojo.' }));
+      return;
+    }
     setGuardando(f.id);
     const r = await guardarPrecios({ area, ruta: f.ruta, proveedor_id: f.proveedor_id || null, proveedor: f.proveedor || null,
                                      documento: f.documento || null, fecha: f.fecha || null, lineas });
     setGuardando(null);
     if ('error' in r) { cambiarFoto(f.id, (x) => ({ ...x, error: r.error })); return; }
+    const pendientes = r.fallidos + sinTerminar.size;
     cambiarFoto(f.id, (x) => ({
-      ...x, error: r.fallidos ? `${r.ok} guardada(s); ${r.fallidos} con problema: revísalas abajo.` : null,
-      estado: r.fallidos ? 'listo' : 'guardado',
-      lineas: x.lineas.map((l) => { const d = r.detalle.find((y) => y.n === l.n); return d ? { ...l, resultado: { ok: d.ok, mensaje: d.mensaje } } : l; }),
+      ...marcarSinTerminar(x),
+      error: pendientes ? `${r.ok} guardada(s); ${pendientes} sin guardar: corrige las marcadas en rojo y vuelve a guardar.` : null,
+      estado: pendientes ? 'listo' : 'guardado',
+      lineas: marcarSinTerminar(x).lineas.map((l) => { const d = r.detalle.find((y) => y.n === l.n); return d ? { ...l, resultado: { ok: d.ok, mensaje: d.mensaje } } : l; }),
     }));
     router.refresh();
   }
@@ -479,6 +505,13 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                         <input inputMode="decimal" value={l.valor} onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, valor: e.target.value }))} />
                       </label>
                     </div>
+                    {p && l.unidad === 'und' && p.unidad_base !== 'und' && (
+                      <label style={{ margin: 0 }}>Cada unidad pesa aprox. ({p.unidad_base})
+                        <input inputMode="decimal" value={l.peso} placeholder={p.peso_und ? String(p.peso_und) : 'Ej.: 1200'}
+                               onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, peso: e.target.value }))} />
+                        <span className="ayuda">{p.peso_und && !l.peso.trim() ? `Se usa el que ya se sabe: ${cant(p.peso_und)} ${p.unidad_base}.` : 'Queda guardado para la próxima vez.'}</span>
+                      </label>
+                    )}
                     <div style={{ fontSize: '.88rem' }}>
                       {problema ? <span style={{ color: 'var(--error)' }}>{problema}</span> : cu != null && p && (
                         <>
@@ -534,8 +567,12 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
           {f.estado === 'listo' && f.lineas.length > 0 && (
             <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.4rem' }}>
               <button type="button" disabled={guardando === f.id} onClick={() => guardar(f)}>
-                {guardando === f.id ? 'Guardando…' : `Guardar precios (${f.lineas.filter((l) => !l.ignorar).length})`}
+                {guardando === f.id ? 'Guardando…' : `Guardar precios (${f.lineas.filter((l) => !l.ignorar && !aBase(l, l.producto_id ? porId.get(l.producto_id) : undefined).problema && numero(l.valor) > 0).length})`}
               </button>
+              {(() => {
+                const n = f.lineas.filter((l) => !l.ignorar && (aBase(l, l.producto_id ? porId.get(l.producto_id) : undefined).problema || !(numero(l.valor) > 0))).length;
+                return n ? <span style={{ color: 'var(--error)', alignSelf: 'center', fontSize: '.88rem' }}>{n} línea(s) sin terminar: no se guardarán hasta corregirlas o marcar «No guardar esta».</span> : null;
+              })()}
               <button type="button" className="secundario" onClick={() => setFotos((xs) => xs.filter((x) => x.id !== f.id))}>Descartar esta foto</button>
             </div>
           )}
