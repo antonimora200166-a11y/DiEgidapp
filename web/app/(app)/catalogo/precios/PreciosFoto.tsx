@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabaseNavegador } from '@/lib/supabase/navegador';
 import type { Area } from '@/lib/roles';
-import { guardarPrecios, leerPrecios, type LineaPrecio } from './acciones';
+import { TIPOS_INSUMO, type TipoInsumo } from '@/lib/clases';
+import { crearDesdeFoto, guardarPrecios, leerPrecios, type LineaPrecio } from './acciones';
 
 export type ProductoPrecio = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -22,9 +23,15 @@ const UNIDADES: { v: Unidad; t: string }[] = [
 type Pres = { presentacion: string; unidad_compra: string; contenido: string; variable: boolean };
 // nombre genérico y marca que sugiere la IA desde el nombre de la factura
 type Renombre = { nombre: string; marca: string; cambiarNombre: boolean; cambiarMarca: boolean };
+// producto nuevo desde la línea: genérico nuevo u otra presentación de uno existente
+type Nuevo = {
+  modo: 'nuevo' | 'presentacion'; generico_id: string; nombre: string; tipo: TipoInsumo; unidad_base: 'g' | 'ml' | 'und';
+  categoria: string; marca: string; presentacion: string; unidad_compra: string; contenido: string; variable: boolean;
+  motivo: string; bloqueos: string[]; error: string | null; enviando: boolean;
+};
 type Linea = {
   n: number; descripcion: string; leida: LineaPrecio; producto_id: string | null; buscar: string;
-  cantidad: string; unidad: Unidad; valor: string; fijar: boolean; ignorar: boolean; corregir: boolean; pres: Pres; ren: Renombre;
+  cantidad: string; unidad: Unidad; valor: string; fijar: boolean; ignorar: boolean; corregir: boolean; pres: Pres; ren: Renombre; nuevo: Nuevo | null;
   resultado: { ok: boolean; mensaje: string } | null;
 };
 type Foto = {
@@ -99,8 +106,31 @@ function aBase(l: Linea, p: ProductoPrecio | undefined): { base: number | null; 
   }
 }
 
-export default function PreciosFoto({ areas, productos, proveedores }: { areas: Area[]; productos: ProductoPrecio[]; proveedores: { id: string; nombre: string }[] }) {
+// lo que dice la foto → valores de partida del producto nuevo
+function nuevoDesde(l: LineaPrecio): Nuevo {
+  const u = normal(l.unidad ?? '');
+  const m = /(\d+(?:[.,]\d+)?)\s*(kg|kilo|g|gr|grs|ml|cc|l|lt|litro)s?\b/i.exec(l.presentacion ?? l.descripcion);
+  let ub: Nuevo['unidad_base'] = /^(kg|kilo|lb|libra|media libra|g|gr)/.test(u) ? 'g' : /^(l|lt|litro|ml|cc|galon)/.test(u) ? 'ml' : 'und';
+  let contenido = '', ucompra = 'UND', variable = false;
+  if (m) {
+    const n = Number(m[1].replace(',', '.')), un = m[2].toLowerCase();
+    ub = /^(kg|kilo|g|gr)/.test(un) ? 'g' : 'ml';
+    contenido = String(Math.round(n * (/^(kg|kilo|l|lt|litro)$/.test(un) ? 1000 : 1) * 1000) / 1000);
+  } else if (/^(kg|kilo)/.test(u)) { ucompra = 'KG'; contenido = '1000'; }
+  else if (/^(lb|libra|media libra)/.test(u)) { ucompra = 'LB'; contenido = '500'; }
+  else if (/^(l|lt|litro)$/.test(u)) { ucompra = 'LT'; contenido = '1000'; }
+  else if (ub === 'und') { contenido = '1'; }
+  else variable = true;
+  return { modo: 'nuevo', generico_id: '', nombre: l.nombre_generico ?? l.descripcion, tipo: 'MPe', unidad_base: ub, categoria: '',
+           marca: l.marca ?? '', presentacion: l.presentacion ?? (ucompra === 'KG' || ucompra === 'LB' ? 'Granel' : ''), unidad_compra: ucompra,
+           contenido, variable, motivo: '', bloqueos: [], error: null, enviando: false };
+}
+
+export default function PreciosFoto({ areas, productos: inicial, proveedores, categorias }: {
+  areas: Area[]; productos: ProductoPrecio[]; proveedores: { id: string; nombre: string }[]; categorias: { codigo: string; nombre: string; area: Area }[];
+}) {
   const router = useRouter();
+  const [productos, setProductos] = useState(inicial);
   const [area, setArea] = useState<Area>(areas[0]);
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [guardando, setGuardando] = useState<string | null>(null);
@@ -152,7 +182,7 @@ export default function PreciosFoto({ areas, productos, proveedores }: { areas: 
           return { n: i + 1, descripcion: x.descripcion, leida: x, producto_id: sugerido, buscar: '',
                    cantidad: String(Math.round(c * u.factor * 1000) / 1000), unidad: u.unidad,
                    valor: x.valor_total != null ? String(x.valor_total) : x.precio_unitario != null ? String(x.precio_unitario * c) : '',
-                   fijar: true, ignorar: false, corregir: false, pres: presDe(p, x), ren: renDe(p, x), resultado: null };
+                   fijar: true, ignorar: false, corregir: false, pres: presDe(p, x), ren: renDe(p, x), nuevo: null, resultado: null };
         });
         cambiarFoto(id, (x) => ({ ...x, estado: 'listo', tipo: l.tipo_documento, notas: l.notas, proveedor: l.proveedor ?? '',
                                   proveedor_id: r.proveedor_id ?? '', sugeridos: r.proveedor_sugeridos, del_proveedor: r.del_proveedor,
@@ -162,6 +192,37 @@ export default function PreciosFoto({ areas, productos, proveedores }: { areas: 
         cambiarFoto(id, (x) => ({ ...x, estado: 'error', error: e instanceof Error ? e.message : String(e) }));
       }
     }
+  }
+
+  async function crear(f: Foto, l: Linea) {
+    const nv = l.nuevo;
+    if (!nv) return;
+    const genExistente = nv.modo === 'presentacion' ? productos.find((x) => x.producto_id === nv.generico_id) : undefined;
+    if (nv.modo === 'presentacion' && !genExistente) { cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, error: 'Elige de qué producto es la presentación.' } })); return; }
+    const ub = genExistente?.unidad_base ?? nv.unidad_base;
+    const cont = nv.variable ? null : numero(nv.contenido);
+    if (!nv.variable && !(cont && cont > 0)) { cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, error: `Di cuánto trae 1 ${nv.unidad_compra || 'unidad'} en ${ub}, o marca «se pesa al recibir».` } })); return; }
+    cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, enviando: true, error: null } }));
+    const r = await crearDesdeFoto(area, {
+      hermano: genExistente?.producto_id ?? null, nombre: nv.nombre, tipo: nv.tipo, unidad_base: ub, categoria: nv.categoria || null, marca: nv.marca,
+      presentacion: nv.presentacion, unidad_compra: nv.unidad_compra, contenido_base: cont, contenido_variable: nv.variable,
+      motivo: nv.motivo || null, factura: l.descripcion,
+    });
+    if (!r.ok) {
+      cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, enviando: false, bloqueos: r.bloqueos, error: r.fatales.join(' ') || (r.bloqueos.length ? null : 'No se pudo crear.') } }));
+      return;
+    }
+    const cat = categorias.find((c) => c.codigo === nv.categoria);
+    const creado: ProductoPrecio = {
+      producto_id: r.producto_id, codigo: '(nuevo)', generico: genExistente?.generico ?? nv.nombre.trim(), marca: nv.marca.trim(),
+      presentacion: nv.presentacion.trim(), categoria: cat?.nombre ?? genExistente?.categoria ?? 'Sin categoría', unidad_base: ub,
+      unidad_compra: nv.unidad_compra.trim().toUpperCase(), contenido_base: cont, contenido_variable: nv.variable,
+      costo_promedio: null, area, costo_ref: null,
+    };
+    setProductos((xs) => [...xs, creado]);
+    cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: null, producto_id: creado.producto_id, buscar: '', pres: presDe(creado, x.leida),
+                                      ren: renDe(creado, x.leida), unidad: unidadLeida(x.leida.unidad, creado).unidad,
+                                      resultado: { ok: true, mensaje: ['Agregado al catálogo (queda provisional hasta validarlo).', ...r.avisos].join(' ') } }));
   }
 
   async function guardar(f: Foto) {
@@ -308,6 +369,98 @@ export default function PreciosFoto({ areas, productos, proveedores }: { areas: 
                     })()}
                     <input placeholder="¿No está? Busca otro producto…" value={l.buscar}
                            onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, buscar: e.target.value }))} />
+                    {!l.nuevo && (
+                      <button type="button" className={!l.producto_id || (!l.leida.candidatos.length && !l.leida.sugerencia_ia?.producto_id) ? 'mini' : 'secundario mini'}
+                              style={{ justifySelf: 'start' }} onClick={() => cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: nuevoDesde(x.leida) }))}>
+                        ➕ No está: agregarlo al catálogo
+                      </button>
+                    )}
+                    {l.nuevo && (() => {
+                      const nv = l.nuevo;
+                      const set = (c: Partial<Nuevo>) => cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: x.nuevo ? { ...x.nuevo, ...c } : x.nuevo }));
+                      const genSel = nv.modo === 'presentacion' ? porId.get(nv.generico_id) : undefined;
+                      const ub = genSel?.unidad_base ?? nv.unidad_base;
+                      const busca = nv.modo === 'presentacion' && !genSel && nv.nombre.trim().length >= 2
+                        ? delArea.filter((x) => normal(x.generico).includes(normal(nv.nombre))).slice(0, 8) : [];
+                      return (
+                        <div className="tarjeta" style={{ display: 'grid', gap: '.4rem' }}>
+                          <strong>Agregar al catálogo</strong>
+                          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            {(['nuevo', 'presentacion'] as const).map((m) => (
+                              <label key={m} style={{ margin: 0, display: 'flex', gap: '.3rem', alignItems: 'center', fontWeight: 400 }}>
+                                <input type="radio" checked={nv.modo === m} style={{ width: 18, minHeight: 18 }} onChange={() => set({ modo: m, generico_id: '' })} />
+                                {m === 'nuevo' ? 'Producto nuevo' : 'Otra marca o presentación de uno que ya existe'}
+                              </label>
+                            ))}
+                          </div>
+                          {nv.modo === 'presentacion' ? (
+                            <>
+                              {genSel ? (
+                                <span>De: <strong>{genSel.generico}</strong> ({genSel.unidad_base}) <button type="button" className="secundario mini" onClick={() => set({ generico_id: '' })}>cambiar</button></span>
+                              ) : (
+                                <label style={{ margin: 0 }}>¿De qué producto es? <input value={nv.nombre} onChange={(e) => set({ nombre: e.target.value })} placeholder="Escribe para buscar…" /></label>
+                              )}
+                              {busca.length > 0 && (
+                                <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
+                                  {[...new Map(busca.map((x) => [x.generico, x])).values()].map((x) => (
+                                    <button key={x.producto_id} type="button" className="secundario mini" onClick={() => set({ generico_id: x.producto_id })}>{x.generico}</button>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="fila">
+                              <label style={{ margin: 0 }}>Nombre genérico <span className="ayuda">sin marca ni tamaño</span>
+                                <input value={nv.nombre} onChange={(e) => set({ nombre: e.target.value })} />
+                              </label>
+                              <label style={{ margin: 0 }}>Tipo
+                                <select value={nv.tipo} onChange={(e) => set({ tipo: e.target.value as TipoInsumo })}>
+                                  {TIPOS_INSUMO.filter((t) => t.v !== 'MPI').map((t) => <option key={t.v} value={t.v}>{t.t}</option>)}
+                                </select>
+                              </label>
+                              <label style={{ margin: 0 }}>Unidad base
+                                <select value={nv.unidad_base} onChange={(e) => set({ unidad_base: e.target.value as Nuevo['unidad_base'] })}>
+                                  <option value="g">gramos (g)</option><option value="ml">mililitros (ml)</option><option value="und">unidades (und)</option>
+                                </select>
+                              </label>
+                              {nv.tipo === 'MPe' && (
+                                <label style={{ margin: 0 }}>Categoría
+                                  <select value={nv.categoria} onChange={(e) => set({ categoria: e.target.value })}>
+                                    <option value="">— sin categoría —</option>
+                                    {categorias.filter((c) => c.area === area).map((c) => <option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
+                                  </select>
+                                </label>
+                              )}
+                            </div>
+                          )}
+                          <div className="fila">
+                            <label style={{ margin: 0 }}>Marca <input value={nv.marca} onChange={(e) => set({ marca: e.target.value })} /></label>
+                            <label style={{ margin: 0 }}>Presentación <input value={nv.presentacion} placeholder="Bolsa 1.000 g, Granel…" onChange={(e) => set({ presentacion: e.target.value })} /></label>
+                            <label style={{ margin: 0 }}>Se compra por <input value={nv.unidad_compra} placeholder="BOLSA, BOT, KG…" onChange={(e) => set({ unidad_compra: e.target.value })} /></label>
+                            {!nv.variable && (
+                              <label style={{ margin: 0 }}>Trae ({ub}) <input inputMode="decimal" value={nv.contenido} onChange={(e) => set({ contenido: e.target.value })} /></label>
+                            )}
+                          </div>
+                          <label style={{ margin: 0, display: 'flex', gap: '.3rem', alignItems: 'center', fontWeight: 400 }}>
+                            <input type="checkbox" checked={nv.variable} style={{ width: 18, minHeight: 18 }} onChange={(e) => set({ variable: e.target.checked })} />
+                            Se pesa al recibir (contenido variable)
+                          </label>
+                          {nv.bloqueos.length > 0 && (
+                            <div className="aviso">
+                              {nv.bloqueos.map((b) => <div key={b}>{b}</div>)}
+                              <label style={{ margin: '.3rem 0 0' }}>Si de verdad es otro producto, di por qué
+                                <input value={nv.motivo} onChange={(e) => set({ motivo: e.target.value })} placeholder="No es el mismo porque…" />
+                              </label>
+                            </div>
+                          )}
+                          {nv.error && <div className="aviso">{nv.error}</div>}
+                          <div style={{ display: 'flex', gap: '.4rem' }}>
+                            <button type="button" disabled={nv.enviando} onClick={() => crear(f, l)}>{nv.enviando ? 'Creando…' : 'Crear y usar en esta línea'}</button>
+                            <button type="button" className="secundario" onClick={() => cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: null }))}>Cancelar</button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {encontrados.length > 0 && (
                       <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
                         {encontrados.map((x) => <button key={x.producto_id} type="button" className="secundario mini" onClick={() => elegir(f.id, l.n, x.producto_id)}>{nombre(x)}</button>)}

@@ -5,6 +5,8 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { editaArea, type Area } from '@/lib/roles';
 import { leerPreciosConIA, type LecturaPrecios } from '@/lib/precios-ia';
 import { emparejarConIA, type SugerenciaIA } from '@/lib/factura-ia';
+import { deTipoInsumo, type TipoInsumo } from '@/lib/clases';
+import type { Resultado } from '@/lib/catalogo';
 
 // Precios desde fotos: leer y guardar. No usa nada de la recepción (no crea proveedores, no
 // registra recepciones, no toca el kardex). Reconoce al proveedor y lo que ya se le compra.
@@ -88,4 +90,48 @@ export async function guardarPrecios(datos: Record<string, unknown>): Promise<Re
   if (error) return { error: error.message };
   revalidatePath('/catalogo', 'layout');
   return data as ResultadoGuardar;
+}
+
+// ---------------------------------------------------------------- agregar al catálogo desde la línea
+// Producto que no está: se crea con public.crear_producto y todas sus reglas (si se parece a
+// otro, pide el motivo). Puede ser un genérico nuevo o otra presentación de uno que ya existe.
+export type NuevoDesdeFoto = {
+  hermano: string | null;   // otra presentación del genérico de este producto
+  nombre: string; tipo: TipoInsumo; unidad_base: 'g' | 'ml' | 'und'; categoria: string | null;
+  marca: string; presentacion: string; unidad_compra: string; contenido_base: number | null; contenido_variable: boolean;
+  motivo: string | null; factura: string;
+};
+export type Creado =
+  | { ok: true; producto_id: string; avisos: string[] }
+  | { ok: false; fatales: string[]; bloqueos: string[] };
+
+export async function crearDesdeFoto(area: Area, d: NuevoDesdeFoto): Promise<Creado> {
+  const perfil = await perfilActual();
+  if (!editaArea(perfil, area)) return { ok: false, fatales: ['Solo el jefe del área o administración agregan productos desde aquí.'], bloqueos: [] };
+  const supabase = await supabaseServidor();
+  const { tipo, clase } = deTipoInsumo(d.tipo);
+  const p: Record<string, unknown> = {
+    area, marca: d.marca.trim(), presentacion: d.presentacion.trim(), unidad_compra: d.unidad_compra.trim().toUpperCase(),
+    contenido_base: d.contenido_variable ? null : d.contenido_base, contenido_variable: d.contenido_variable,
+    motivo_forzado: d.motivo?.trim() || null, nota: `Creado desde Precios desde fotos: «${d.factura}».`,
+  };
+  let genId: string | null = null;
+  if (d.hermano) {
+    const { data: h } = await supabase.from('productos').select('generico_id').eq('id', d.hermano).maybeSingle();
+    if (!h) return { ok: false, fatales: ['No se encontró el producto del que es la presentación.'], bloqueos: [] };
+    genId = h.generico_id as string;
+    p.generico_id = genId;
+  } else p.generico = { nombre: d.nombre.trim(), tipo, unidad_base: d.unidad_base, categoria: d.categoria };
+  const { data, error } = await supabase.rpc('crear_producto', { p });
+  if (error) return { ok: false, fatales: [error.message], bloqueos: [] };
+  const r = data as Resultado;
+  if (!r.ok || !r.id) return { ok: false, fatales: r.fatales ?? [], bloqueos: r.bloqueos ?? [] };
+  const avisos = [...(r.avisos ?? [])];
+  if (!genId && clase !== 'MATERIA_PRIMA') {
+    const { data: prod } = await supabase.from('productos').select('generico_id').eq('id', r.id).maybeSingle();
+    const { data: fc } = prod ? await supabase.rpc('fijar_clase', { p_genericos: [prod.generico_id], p_clase: clase }) : { data: null };
+    if (!fc || (fc as { ok: number }).ok !== 1) avisos.push('Se creó como materia prima: cambia su tipo en el catálogo.');
+  }
+  revalidatePath('/catalogo', 'layout');
+  return { ok: true, producto_id: r.id, avisos };
 }

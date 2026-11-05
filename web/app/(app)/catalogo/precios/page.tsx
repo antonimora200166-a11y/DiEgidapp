@@ -29,7 +29,10 @@ export default async function Precios() {
     }
   }
 
-  const { data: proveedores } = await supabase.from('proveedores').select('id, nombre').eq('activo', true).order('nombre');
+  const [{ data: proveedores }, { data: categorias }] = await Promise.all([
+    supabase.from('proveedores').select('id, nombre').eq('activo', true).order('nombre'),
+    supabase.from('categorias').select('codigo, nombre, area').in('area', areas).eq('activo', true).order('nombre'),
+  ]);
 
   return (
     <>
@@ -41,7 +44,8 @@ export default async function Precios() {
         kardex. El precio queda como referencia de compra y, si lo marcas, como costo del producto.
       </p>
       <p className="pagina-ancha" style={{ margin: '.2rem 0 .6rem' }}><Link href="/catalogo/proveedores">Ver lo que le compramos a cada proveedor →</Link></p>
-      <PreciosFoto areas={areas} productos={productos} proveedores={(proveedores ?? []) as { id: string; nombre: string }[]} />
+      <PreciosFoto areas={areas} productos={productos} proveedores={(proveedores ?? []) as { id: string; nombre: string }[]}
+                   categorias={(categorias ?? []) as { codigo: string; nombre: string; area: Area }[]} />
     </>
   );
 }
