@@ -19,6 +19,8 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
   const { data, error } = await supabase.rpc('produccion_fichas', { p_area: area });
   if (error) throw new Error(error.message);
   const filas = (data ?? []) as FilaProd[];
+  // avance de la validación con el recetario (solo cocina)
+  const avance = area === 'COCINA' ? (await supabase.rpc('validacion_recetario_resumen')).data as { mpi: { total: number; con_ficha: number } } | null : null;
 
   return (
     <>
@@ -41,6 +43,13 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
         La receta de cada MPI: con ella se produce y se calcula el costo estándar. Toca una para ver sus pasos, puntos críticos y vida útil.
         {editaFicha(perfil, area) ? ' Cada cambio que guardes crea una versión nueva.' : ' Las crea y cambia el ' + (area === 'BAR' ? 'jefe de barra' : 'chef') + '.'}
       </p>
+      {avance && avance.mpi.con_ficha < avance.mpi.total && (
+        <Link href="/produccion/validar" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--marca)' }}>
+          <span><strong>Validar MPI con el recetario de cocina</strong><br />
+            <span className="suave">{avance.mpi.con_ficha} de {avance.mpi.total} MPI con ficha. Empareja ingredientes, elige recetas y apruébalas.</span></span>
+          <span className="boton">Continuar</span>
+        </Link>
+      )}
       <ListaFichasProduccion filas={filas} />
     </>
   );

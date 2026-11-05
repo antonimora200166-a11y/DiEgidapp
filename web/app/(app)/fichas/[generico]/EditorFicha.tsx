@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { Resultado } from '@/lib/catalogo';
 import { ALERGENOS, CONSERVACIONES, TIPOS_PUNTO, type Almacenamiento, type Punto, type TipoPunto } from '@/lib/fichas';
 import { guardarFicha } from '../acciones';
+import { aprobarReceta } from '../../produccion/validar/acciones';
 
 type UB = 'g' | 'ml' | 'und';
 type Ingrediente = { id: string; nombre: string; tipo: string; unidad_base: UB; unidades: string[] };
@@ -32,6 +33,11 @@ export type DatosFicha = {
 // Una línea: lo que la persona escribe va como texto
 type Linea = { clave: string; generico_id: string; cantidad: string; unidad: string; nota: string; factor: string };
 type Alm = { conservacion: Almacenamiento['conservacion']; dias: string; nota: string };
+// Propuesta con que abre el editor (receta del recetario): reemplaza lo de la ficha vigente
+export type InicialFicha = {
+  codigo: string; neto: string; tiempo: string; porciones: string; metodo: string; pasos: string[]; puntos: Punto[]; alergenos: string[];
+  descripcion: string; observaciones: string; lineas: { generico_id: string; cantidad: string; unidad: string; nota: string }[];
+};
 
 const EXTRA = ['cda', 'cdta', 'taza', 'gota', 'dash', 'pizca', 'und'];
 const num = (s: string) => { const n = Number(s.replace(',', '.')); return s.trim() === '' || !Number.isFinite(n) ? null : n; };
@@ -51,29 +57,38 @@ function convierte(i: Ingrediente, u: string) {
     || (i.tipo === 'SIN_COSTO' && ['g', 'ml'].includes(u) && i.unidad_base !== 'und');
 }
 
-export default function EditorFicha({ datos }: { datos: DatosFicha }) {
+export default function EditorFicha({ datos, inicial, receta, volverA }: {
+  datos: DatosFicha;
+  inicial?: InicialFicha;                        // abre con esta propuesta en vez de la ficha vigente
+  receta?: { fuente: string; codigo: string };   // al guardar se aprueba esta receta del recetario
+  volverA?: string;
+}) {
   const router = useRouter();
   const f = datos.ficha;
   const esMpi = datos.resultado.tipo === 'MPI';
   const porId = useMemo(() => new Map(datos.ingredientes.map((i) => [i.id, i])), [datos.ingredientes]);
-  const [codigo, setCodigo] = useState(f?.codigo ?? '');
-  const [neto, setNeto] = useState(f?.neto_esperado != null ? String(f.neto_esperado) : '');
-  const [tiempo, setTiempo] = useState(f?.tiempo_min != null ? String(f.tiempo_min) : '');
-  const [porciones, setPorciones] = useState(f?.porciones != null ? String(f.porciones) : '');
-  const [metodo, setMetodo] = useState(f?.metodo ?? '');
-  const [pasos, setPasos] = useState<string[]>(f?.procedimiento.length ? f.procedimiento : ['']);
-  const [puntos, setPuntos] = useState<Punto[]>(datos.puntos);
-  const [alergenos, setAlergenos] = useState<string[]>(f?.alergenos ?? []);
+  const [codigo, setCodigo] = useState(inicial?.codigo ?? f?.codigo ?? '');
+  const [neto, setNeto] = useState(inicial ? inicial.neto : f?.neto_esperado != null ? String(f.neto_esperado) : '');
+  const [tiempo, setTiempo] = useState(inicial ? inicial.tiempo : f?.tiempo_min != null ? String(f.tiempo_min) : '');
+  const [porciones, setPorciones] = useState(inicial ? inicial.porciones : f?.porciones != null ? String(f.porciones) : '');
+  const [metodo, setMetodo] = useState(inicial?.metodo ?? f?.metodo ?? '');
+  const [pasos, setPasos] = useState<string[]>(inicial?.pasos.length ? inicial.pasos : f?.procedimiento.length ? f.procedimiento : ['']);
+  const [puntos, setPuntos] = useState<Punto[]>(inicial?.puntos ?? datos.puntos);
+  const [alergenos, setAlergenos] = useState<string[]>(inicial?.alergenos ?? f?.alergenos ?? []);
   const [alm, setAlm] = useState<Alm[]>(datos.almacenamientos.map((a) => ({ conservacion: a.conservacion, dias: String(a.vida_util_dias), nota: a.nota ?? '' })));
   const [empaque, setEmpaque] = useState(f?.empaque ?? '');
-  const [descripcion, setDescripcion] = useState(f?.descripcion ?? '');
+  const [descripcion, setDescripcion] = useState(inicial?.descripcion ?? f?.descripcion ?? '');
   const [presentacion, setPresentacion] = useState(f?.presentacion ?? '');
-  const [observaciones, setObservaciones] = useState(f?.observaciones ?? '');
+  const [observaciones, setObservaciones] = useState(inicial?.observaciones ?? f?.observaciones ?? '');
   const [nota, setNota] = useState(f?.nota ?? '');
   const [motivo, setMotivo] = useState('');
-  const [lineas, setLineas] = useState<Linea[]>(() => datos.lineas.map((l) => ({
-    clave: crypto.randomUUID(), generico_id: l.generico_id, cantidad: l.cantidad === null ? '' : String(l.cantidad),
-    unidad: l.unidad, nota: l.nota ?? '', factor: '' })));
+  const [lineas, setLineas] = useState<Linea[]>(() => inicial
+    ? inicial.lineas.map((l) => ({ clave: crypto.randomUUID(), ...l, factor: '' }))
+    : datos.lineas.map((l) => ({
+        clave: crypto.randomUUID(), generico_id: l.generico_id, cantidad: l.cantidad === null ? '' : String(l.cantidad),
+        unidad: l.unidad, nota: l.nota ?? '', factor: '' })));
+  const destino = volverA ?? `/fichas/${datos.resultado.id}`;
+  const faltaNeto = !!receta && esMpi && num(neto) === null;
   const [buscar, setBuscar] = useState('');
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [enviando, iniciar] = useTransition();
@@ -112,7 +127,7 @@ export default function EditorFicha({ datos }: { datos: DatosFicha }) {
   function guardar() {
     setResultado(null);
     iniciar(async () => {
-      const r = await guardarFicha({
+      const r = await (receta ? (p: Record<string, unknown>) => aprobarReceta({ ...p, fuente: receta.fuente, receta: receta.codigo }) : guardarFicha)({
         generico_id: datos.resultado.id, codigo, neto_esperado: neto, nota, motivo_cambio: motivo,
         tiempo_min: tiempo, porciones, metodo, empaque, descripcion, presentacion, observaciones,
         procedimiento: pasos, alergenos, puntos,
@@ -120,7 +135,7 @@ export default function EditorFicha({ datos }: { datos: DatosFicha }) {
         lineas: lineas.map((l) => ({ generico_id: l.generico_id, cantidad: l.cantidad, unidad: l.unidad, nota: l.nota, factor: num(l.factor) })),
       });
       setResultado(r);
-      if (r.ok) { router.push(`/fichas/${datos.resultado.id}`); router.refresh(); }
+      if (r.ok) { router.push(receta ? `/fichas/${datos.resultado.id}` : destino); router.refresh(); }
     });
   }
 
@@ -129,7 +144,8 @@ export default function EditorFicha({ datos }: { datos: DatosFicha }) {
   return (
     <>
       <p className="suave" style={{ marginTop: 0 }}>
-        {f ? <>Al guardar nace la <strong>versión {f.version + 1}</strong>; la {f.version} queda tal cual
+        {receta ? <>Revisa la propuesta y apruébala: nace la <strong>versión {(f?.version ?? 0) + 1}</strong> de la ficha, con origen recetario de cocina.</>
+          : f ? <>Al guardar nace la <strong>versión {f.version + 1}</strong>; la {f.version} queda tal cual
           {Number(f.lotes) > 0 ? ` para los ${f.lotes} lote(s) que se hicieron con ella` : ''}.</> : 'Primera versión de esta ficha.'}
       </p>
 
@@ -351,15 +367,16 @@ export default function EditorFicha({ datos }: { datos: DatosFicha }) {
           : <div className="error" role="alert"><strong>No se guardó:</strong><ul>{[...resultado.fatales, ...resultado.avisos].map((m) => <li key={m}>{m}</li>)}</ul></div>
       )}
       <div className="acciones barra-guardar" style={{ alignItems: 'flex-end' }}>
-        {f && (
+        {f && !receta && (
           <label style={{ margin: 0, flex: '1 1 260px' }}>Qué cambiaste
             <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Más azúcar, nuevo proveedor de limón…" maxLength={300} />
           </label>
         )}
-        <Link className="boton secundario" href={`/fichas/${datos.resultado.id}`}>Cancelar</Link>
-        <button type="button" disabled={enviando || !codigo.trim() || !lineas.length || (!!f && !motivo.trim())} onClick={guardar}>
-          {enviando ? 'Guardando…' : f ? `Guardar versión ${f.version + 1}` : 'Crear ficha'}
+        <Link className="boton secundario" href={destino}>Cancelar</Link>
+        <button type="button" disabled={enviando || !codigo.trim() || !lineas.length || (!!f && !receta && !motivo.trim()) || faltaNeto} onClick={guardar}>
+          {enviando ? 'Guardando…' : receta ? 'Aprobar como ficha' : f ? `Guardar versión ${f.version + 1}` : 'Crear ficha'}
         </button>
+        {faltaNeto && <span className="suave" style={{ fontSize: '.85rem', alignSelf: 'center' }}>Falta el neto esperado en {ub}: pesa una tanda terminada.</span>}
         {pendientes > 0 && <span className="suave" style={{ fontSize: '.85rem', alignSelf: 'center' }}>{pendientes} línea(s) por completar: se puede guardar igual.</span>}
       </div>
     </>
