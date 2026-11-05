@@ -4,14 +4,16 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, puedeOperar, type Area } from '@/lib/roles';
 import Producir, { type DatosProduccion } from './Producir';
+import PestanasProduccion from '@/components/PestanasProduccion';
 
 export const metadata = { title: 'Producir' };
 
-export default async function PaginaProducir({ searchParams }: { searchParams: Promise<{ area?: string }> }) {
+export default async function PaginaProducir({ searchParams }: { searchParams: Promise<{ area?: string; generico?: string }> }) {
   const perfil = await perfilActual();
   const areas = areasDe(perfil).filter((a) => puedeOperar(perfil, a));
   if (!areas.length) redirect('/');
-  const pedida = (await searchParams).area as Area | undefined;
+  const sp = await searchParams;
+  const pedida = sp.area as Area | undefined;
   const area: Area = pedida && areas.includes(pedida) ? pedida : areas[0];
 
   const supabase = await supabaseServidor();
@@ -32,6 +34,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
 
   return (
     <>
+      <PestanasProduccion activa="producir" area={area} />
       <h1>Producir</h1>
       {areas.length > 1 && (
         <nav className="segmentos" style={{ marginBottom: '1rem' }}>
@@ -44,7 +47,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
           ))}
         </nav>
       )}
-      <Producir key={area} area={area} datos={data as DatosProduccion} zonas={zonas ?? []} zonaDe={zonaDe} />
+      <Producir key={area} area={area} datos={data as DatosProduccion} zonas={zonas ?? []} zonaDe={zonaDe} generico={sp.generico} />
       <p style={{ marginTop: '1.2rem' }}><Link href="/producir/sin-costo">Lotes sin costo completo y por qué →</Link></p>
       {!!recientes?.length && (
         <>

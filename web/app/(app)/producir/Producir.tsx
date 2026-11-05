@@ -52,9 +52,10 @@ function factor(c: Consumo, u: string): number | null {
 const unidadesDe = (c: Consumo) => [...new Set([c.unidad_ficha, c.unidad_base, c.unidad_base === 'g' ? 'kg' : c.unidad_base === 'ml' ? 'l' : null]
   .filter((u): u is string => !!u))];
 
-export default function Producir({ area, datos, zonas, zonaDe }: {
+export default function Producir({ area, datos, zonas, zonaDe, generico }: {
   area: Area; datos: DatosProduccion; zonas: { codigo: string; nombre: string }[];
   zonaDe: Record<string, string>;   // la zona asignada a cada producto en el mapa del área
+  generico?: string;                // «Producir esta ficha»: llega con la MPI elegida
 }) {
   const insumoPorId = useMemo(() => new Map(datos.insumos.map((i) => [i.producto_id, i])), [datos.insumos]);
   const fichaPorId = useMemo(() => new Map(datos.fichas.map((f) => [f.id, f])), [datos.fichas]);
@@ -141,6 +142,14 @@ export default function Producir({ area, datos, zonas, zonaDe }: {
     const f = m.ficha_id ? fichaPorId.get(m.ficha_id) : null;
     setConsumos(f ? desdeFicha(f, 1) : []);
   }
+
+  // «Producir esta ficha»: elige la MPI que llegó, salvo que el borrador ya sea de esa misma
+  useEffect(() => {
+    if (!cargado || !generico) return;
+    const m = datos.mpis.find((x) => x.generico_id === generico);
+    if (m && (!mpiId || datos.mpis.find((x) => x.producto_id === mpiId)?.generico_id !== generico)) elegirMpi(m);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargado, generico]);
 
   // cambiar las tandas reescala las líneas de la ficha que nadie ha tocado
   function cambiarTandas(t: string) {

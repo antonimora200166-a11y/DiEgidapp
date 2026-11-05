@@ -30,17 +30,21 @@ export const puedeOperar = (p: Perfil, a: Area) =>
 export const editaArea = (p: Perfil, a: Area) =>
   p.rol === 'admin' || (a === 'BAR' && p.rol === 'jefe_bar') || (a === 'COCINA' && ['chef', 'sous_chef'].includes(p.rol));
 
+// privado.edita_ficha: crean y cambian fichas técnicas (cada cambio es una versión nueva)
+export const editaFicha = (p: Perfil, a: Area) =>
+  p.rol === 'admin' || (a === 'BAR' && p.rol === 'jefe_bar') || (a === 'COCINA' && p.rol === 'chef');
+
 export type Opcion = { ruta: string; titulo: string; detalle: string; icono: string };
 export function menuDe(p: Perfil): Opcion[] {
   const m: Opcion[] = [];
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/recibir', titulo: 'Recibir', detalle: 'Mercancía de proveedores, con foto de la factura', icono: 'recibir' });
-  if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/producir', titulo: 'Producir', detalle: 'Lotes de siropes, zumos y demás MPI, con su costo', icono: 'producir' });
+  if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/produccion', titulo: 'Producción', detalle: 'Fichas técnicas, producir lotes y su trazabilidad', icono: 'producir' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/trasladar', titulo: 'Trasladar', detalle: 'Mover mercancía entre zonas: bodega → barra', icono: 'trasladar' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/bajas', titulo: 'Bajas', detalle: 'Lo vencido, dañado o derramado', icono: 'bajas' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/conteo', titulo: 'Contar', detalle: 'Conteo por zona (y el conteo inicial)', icono: 'contar' });
   if (p.rol !== 'servicio') m.push({ ruta: '/historial', titulo: 'Historial', detalle: 'Lo registrado, y anular lo que quedó mal', icono: 'historial' });
   if (p.rol !== 'servicio') m.push({ ruta: '/existencias', titulo: 'Existencias', detalle: 'Qué hay en cada zona y cuánto vale', icono: 'existencias' });
-  if (p.rol !== 'servicio') m.push({ ruta: '/fichas', titulo: 'Fichas técnicas', detalle: 'Recetas de MPI, cócteles y platos: corregirlas y crearlas', icono: 'fichas' });
+  if (p.rol !== 'servicio') m.push({ ruta: '/fichas', titulo: 'Fichas técnicas', detalle: 'Recetas de MPI, cócteles y platos', icono: 'fichas' });
   if (areasDe(p).length && p.rol !== 'servicio') m.push({ ruta: '/pedido', titulo: 'Pedido sugerido', detalle: 'Lo que está en el mínimo, por proveedor, listo para mandar', icono: 'pedido' });
   if (p.rol === 'admin' || p.rol === 'auditor' || areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/proveedores', titulo: 'Proveedores', detalle: 'Dependencia, riesgos, repetidos y qué le compramos a cada uno', icono: 'proveedores' });
   if (areasDe(p).length && p.rol !== 'servicio') m.push({ ruta: '/carta', titulo: 'Carta y margen', detalle: 'Costo de cada cóctel y plato contra su precio', icono: 'carta' });
@@ -54,8 +58,8 @@ export function menuDe(p: Perfil): Opcion[] {
 }
 
 // Barra inferior del celular: Inicio y las cuatro pantallas de más uso que el rol tenga.
-const PRIORIDAD = ['/recibir', '/producir', '/conteo', '/historial', '/existencias', '/catalogo', '/fichas', '/admin/registro'];
-const CORTO: Record<string, string> = { '/conteo': 'Contar', '/fichas': 'Fichas', '/admin/registro': 'Registro' };
+const PRIORIDAD = ['/recibir', '/produccion', '/conteo', '/historial', '/existencias', '/catalogo', '/fichas', '/admin/registro'];
+const CORTO: Record<string, string> = { '/produccion': 'Producir', '/conteo': 'Contar', '/fichas': 'Fichas', '/admin/registro': 'Registro' };
 export function navDe(p: Perfil) {
   const menu = menuDe(p);
   const elegidas = PRIORIDAD.map((r) => menu.find((o) => o.ruta === r)).filter((o): o is Opcion => !!o).slice(0, 4);

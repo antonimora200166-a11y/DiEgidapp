@@ -245,3 +245,40 @@ button.quitar { min-height: 0; padding: 0 .25rem; background: none; border: 0; c
 .datos { display: grid; grid-template-columns: auto 1fr; gap: .4rem 1rem; margin: 0; }
 .datos dt { color: var(--suave); }
 .datos dd { margin: 0; }
+
+/* ---------------------------------------------------------------- Producción (fichas, producir, lotes) */
+.pestanas-prod { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem; background: var(--tarjeta); border: 1px solid var(--borde);
+                 border-radius: 16px; padding: .35rem; margin-bottom: 1rem; }
+.pestanas-prod a { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 56px; border-radius: 11px;
+                   text-decoration: none; font-weight: 650; font-size: 1.02rem; line-height: 1.15; text-align: center; padding: .3rem; }
+.pestanas-prod a small { font-weight: 450; font-size: .78rem; color: var(--suave); }
+.pestanas-prod a[aria-current='page'] { background: var(--marca); color: var(--marca-texto); }
+.pestanas-prod a[aria-current='page'] small { color: inherit; opacity: .85; }
+@media (max-width: 520px) { .pestanas-prod a small { display: none; } }
+.pill { display: inline-flex; align-items: center; gap: .25rem; padding: .1rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.pill.ok { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
+.pill.aviso { background: var(--aviso-fondo); color: var(--aviso); }
+.pill.error { background: var(--error-fondo); color: var(--error); }
+.pill.info { background: color-mix(in srgb, var(--marca) 10%, transparent); color: var(--marca); }
+.pill.gris { background: color-mix(in srgb, var(--suave) 16%, transparent); color: var(--suave); }
+.cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: .55rem; margin-bottom: 1rem; }
+.cifra { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: .55rem .7rem; min-width: 0; }
+.cifra > span { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); }
+.cifra > b { display: block; font-size: 1.4rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.cifra > small { color: var(--suave); font-size: .8rem; }
+.dos-col { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+@media (max-width: 820px) { .dos-col { grid-template-columns: 1fr; } }
+.pila { display: grid; gap: .9rem; align-content: start; }
+.sec-tit { font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--suave); font-weight: 650; margin: 0 0 .5rem; }
+.renglones { list-style: none; margin: 0; padding: 0; }
+.renglones > li { display: flex; gap: .75rem; justify-content: space-between; align-items: baseline; padding: .55rem 0; border-bottom: 1px solid var(--borde); }
+.renglones > li:last-child { border-bottom: 0; }
+.renglones .n { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.pasos-ficha { margin: 0; padding-left: 1.4rem; display: grid; gap: .55rem; }
+.vacio { border: 1px dashed var(--borde); border-radius: 10px; padding: .75rem; color: var(--suave); font-size: .92rem; }
+.punto { display: flex; gap: .7rem; align-items: flex-start; padding: .55rem 0; border-bottom: 1px solid var(--borde); }
+.punto:last-child { border-bottom: 0; }
+.punto .pill { flex: none; min-width: 100px; justify-content: center; margin-top: .1rem; }
+.chips-sel { display: flex; flex-wrap: wrap; gap: .4rem; }
+.chips-sel button { min-height: 40px; border-radius: 999px; padding: 0 .9rem; font-weight: 500; background: var(--tarjeta); color: var(--texto); border: 1px solid var(--borde); }
+.chips-sel button[aria-pressed='true'] { border-color: var(--marca); background: color-mix(in srgb, var(--marca) 12%, var(--tarjeta)); color: var(--marca); font-weight: 650; }
