@@ -5,6 +5,7 @@ import { editaArea, type Area } from '@/lib/roles';
 import EditarProducto, { type Ficha } from './EditarProducto';
 import EliminarProductos from '@/components/EliminarProductos';
 import StockMinMax from './StockMinMax';
+import PrecioProducto from './PrecioProducto';
 
 export const metadata = { title: 'Producto' };
 
@@ -29,6 +30,15 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
     supabase.from('ficha_lineas').select('id', { count: 'exact', head: true }).eq('generico_id', fila.generico.id),
     supabase.from('alias').select('fuente, alias').eq('generico_id', fila.generico.id).order('fuente').limit(20),
   ]);
+  const [{ data: ref }, { data: kardex }, { count: movsPropios }] = await Promise.all([
+    supabase.from('costos_referencia').select('costo_unitario_base, fuente, calculado_en').eq('producto_id', fila.id).maybeSingle(),
+    supabase.from('costos_producto').select('costo_promedio, actualizado_en').eq('producto_id', fila.id).maybeSingle(),
+    supabase.from('movimientos').select('id', { count: 'exact', head: true }).eq('producto_id', fila.id),
+  ]);
+  const fechaCorta = (d: string) => new Date(d).toLocaleDateString('es-CO', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
+  const actual = kardex?.costo_promedio != null
+    ? { cu: Number(kardex.costo_promedio), fuente: '', fecha: fechaCorta(kardex.actualizado_en as string), deKardex: true }
+    : ref ? { cu: Number(ref.costo_unitario_base), fuente: ref.fuente as string, fecha: ref.calculado_en ? fechaCorta(ref.calculado_en as string) : null, deKardex: false } : null;
   const ubBloqueada = (movs ?? 0) > 0 ? 'ya tiene movimientos en el kardex' : (enFicha ?? 0) > 0 ? 'está en una ficha técnica' : null;
   const nPres = idsPres.length || 1;
 
@@ -43,6 +53,14 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
       </p>
       {fila.nota && <p className="suave" style={{ fontSize: '.88rem' }}>{fila.nota}</p>}
       <EditarProducto ficha={fila} categorias={categorias ?? []} ubBloqueada={ubBloqueada} />
+      {fila.generico.tipo === 'MPe' && (
+        <>
+          <h2>Precio</h2>
+          <PrecioProducto id={fila.id} unidadBase={fila.generico.unidad_base} unidadCompra={fila.unidad_compra || 'und'}
+            contenido={fila.contenido_base == null ? null : Number(fila.contenido_base)} variable={!!fila.contenido_variable}
+            hermanos={nPres - 1} actual={actual} conKardex={(movsPropios ?? 0) > 0} />
+        </>
+      )}
       <h2>Pedido</h2>
       <p className="suave" style={{ marginTop: 0, fontSize: '.88rem' }}>Cuando lo que hay llega al mínimo, sale en el <a href="/pedido">pedido sugerido</a> con lo que falta para el máximo.</p>
       <StockMinMax id={fila.id} minimo={fila.stock_minimo === null ? null : Number(fila.stock_minimo)} maximo={fila.stock_maximo === null ? null : Number(fila.stock_maximo)} unidad={fila.unidad_compra || 'und'} />
