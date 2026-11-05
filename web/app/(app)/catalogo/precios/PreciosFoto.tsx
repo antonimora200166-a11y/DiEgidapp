@@ -26,7 +26,7 @@ type Pres = { presentacion: string; unidad_compra: string; contenido: string; va
 type Renombre = { nombre: string; marca: string; cambiarNombre: boolean; cambiarMarca: boolean };
 // producto nuevo desde la línea: genérico nuevo u otra presentación de uno existente
 type Nuevo = {
-  modo: 'nuevo' | 'presentacion'; generico_id: string; nombre: string; tipo: TipoInsumo; unidad_base: 'g' | 'ml' | 'und';
+  area: Area; modo: 'nuevo' | 'presentacion'; generico_id: string; nombre: string; tipo: TipoInsumo; unidad_base: 'g' | 'ml' | 'und';
   categoria: string; marca: string; presentacion: string; unidad_compra: string; contenido: string; variable: boolean;
   motivo: string; bloqueos: string[]; error: string | null; enviando: boolean;
 };
@@ -134,7 +134,7 @@ function nuevoDesde(l: LineaPrecio): Nuevo {
   else if (/^(l|lt|litro)$/.test(u)) { ucompra = 'LT'; contenido = '1000'; }
   else if (ub === 'und') { contenido = '1'; }
   else variable = true;
-  return { modo: 'nuevo', generico_id: '', nombre: l.nombre_generico ?? l.descripcion, tipo: 'MPe', unidad_base: ub, categoria: '',
+  return { area: 'COCINA', modo: 'nuevo', generico_id: '', nombre: l.nombre_generico ?? l.descripcion, tipo: 'MPe', unidad_base: ub, categoria: '',
            marca: l.marca ?? '', presentacion: l.presentacion ?? (ucompra === 'KG' || ucompra === 'LB' ? 'Granel' : ''), unidad_compra: ucompra,
            contenido, variable, motivo: '', bloqueos: [], error: null, enviando: false };
 }
@@ -144,11 +144,15 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
 }) {
   const router = useRouter();
   const [productos, setProductos] = useState(inicial);
-  const [area, setArea] = useState<Area>(areas[0]);
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [guardando, setGuardando] = useState<string | null>(null);
   const porId = useMemo(() => new Map(productos.map((p) => [p.producto_id, p])), [productos]);
-  const delArea = useMemo(() => productos.filter((p) => p.area === area), [productos, area]);
+  // se busca en todas las áreas que la persona edita: una verdura de cocina aparece aunque la foto sea de un licor
+  const delArea = useMemo(() => productos.filter((p) => areas.includes(p.area)), [productos, areas]);
+  const dosAreas = areas.length > 1;
+  const zona = (a: Area) => (a === 'BAR' ? 'bar' : 'cocina');
+  // zona sugerida por la IA → un área que la persona edita
+  const zonaDe = (sug: 'BAR' | 'COCINA' | 'AMBAS' | undefined): Area => (sug && sug !== 'AMBAS' && areas.includes(sug) ? sug : areas.includes('COCINA') && sug !== 'BAR' ? 'COCINA' : areas[0]);
 
   const cambiarFoto = (id: string, f: (x: Foto) => Foto) => setFotos((xs) => xs.map((x) => (x.id === id ? f(x) : x)));
   const cambiarLinea = (id: string, n: number, f: (l: Linea) => Linea) =>
@@ -178,11 +182,11 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
       setFotos((xs) => [base, ...xs]);
       try {
         const { blob, tipo, ext } = await reducir(archivo);
-        const ruta = `${area}/${new Date().getFullYear()}/${crypto.randomUUID()}.${ext}`;
+        const ruta = `${areas[0]}/${new Date().getFullYear()}/${crypto.randomUUID()}.${ext}`;
         const { error } = await supabaseNavegador().storage.from('facturas').upload(ruta, blob, { contentType: tipo, upsert: false });
         if (error) throw new Error(`No se pudo subir la foto: ${error.message}`);
         cambiarFoto(id, (x) => ({ ...x, ruta, vista: tipo === 'application/pdf' ? null : URL.createObjectURL(blob), estado: 'leyendo' }));
-        const r = await leerPrecios(ruta, area);
+        const r = await leerPrecios(ruta);
         if (!r.ok) { cambiarFoto(id, (x) => ({ ...x, estado: 'error', error: r.error })); continue; }
         const l = r.lectura;
         const lineas: Linea[] = r.lineas.map((x, i) => {
@@ -219,7 +223,8 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
     const cont = nv.variable ? null : numero(nv.contenido);
     if (!nv.variable && !(cont && cont > 0)) { cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, error: `Di cuánto trae 1 ${nv.unidad_compra || 'unidad'} en ${ub}, o marca «se pesa al recibir».` } })); return; }
     cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, enviando: true, error: null } }));
-    const r = await crearDesdeFoto(area, {
+    const areaNueva = genExistente?.area ?? nv.area;
+    const r = await crearDesdeFoto(areaNueva, {
       hermano: genExistente?.producto_id ?? null, nombre: nv.nombre, tipo: nv.tipo, unidad_base: ub, categoria: nv.categoria || null, marca: nv.marca,
       presentacion: nv.presentacion, unidad_compra: nv.unidad_compra, contenido_base: cont, contenido_variable: nv.variable,
       motivo: nv.motivo || null, factura: l.descripcion,
@@ -233,7 +238,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
       producto_id: r.producto_id, codigo: '(nuevo)', generico: genExistente?.generico ?? nv.nombre.trim(), marca: nv.marca.trim(),
       presentacion: nv.presentacion.trim(), categoria: cat?.nombre ?? genExistente?.categoria ?? 'Sin categoría', unidad_base: ub,
       unidad_compra: nv.unidad_compra.trim().toUpperCase(), contenido_base: cont, contenido_variable: nv.variable,
-      costo_promedio: null, area, costo_ref: null, peso_und: null,
+      costo_promedio: null, area: areaNueva, costo_ref: null, peso_und: null,
     };
     setProductos((xs) => [...xs, creado]);
     cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: null, producto_id: creado.producto_id, buscar: '', pres: presDe(creado, x.leida),
@@ -268,7 +273,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
       return;
     }
     setGuardando(f.id);
-    const r = await guardarPrecios({ area, ruta: f.ruta, proveedor_id: f.proveedor_id || null, proveedor: f.proveedor || null,
+    const r = await guardarPrecios({ ruta: f.ruta, proveedor_id: f.proveedor_id || null, proveedor: f.proveedor || null,
                                      documento: f.documento || null, fecha: f.fecha || null, lineas });
     setGuardando(null);
     if ('error' in r) { cambiarFoto(f.id, (x) => ({ ...x, error: r.error })); return; }
@@ -285,13 +290,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
   return (
     <>
       <div className="tarjeta pagina-ancha" style={{ display: 'grid', gap: '.6rem' }}>
-        {areas.length > 1 && (
-          <label style={{ margin: 0 }}>Área
-            <select value={area} onChange={(e) => setArea(e.target.value as Area)} disabled={fotos.some((f) => f.estado === 'subiendo' || f.estado === 'leyendo')}>
-              {areas.map((a) => <option key={a} value={a}>{a === 'BAR' ? 'Bar' : 'Cocina'}</option>)}
-            </select>
-          </label>
-        )}
+        {dosAreas && <span className="suave" style={{ fontSize: '.85rem' }}>Se busca en bar y cocina a la vez; la IA sugiere la zona de cada línea.</span>}
         <label className="boton" style={{ margin: 0, textAlign: 'center', cursor: 'pointer' }}>
           📷 Tomar o subir fotos
           <input type="file" accept="image/*,application/pdf" multiple style={{ display: 'none' }}
@@ -344,7 +343,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
             const opciones = [...new Set([l.producto_id, l.leida.sugerencia_ia?.producto_id, ...l.leida.candidatos.map((c) => c.producto_id)].filter(Boolean) as string[])];
             const encontrados = l.buscar.trim().length >= 2
               ? delArea.filter((x) => normal(`${x.generico} ${x.marca} ${x.presentacion} ${x.codigo}`).includes(normal(l.buscar))).slice(0, 8) : [];
-            const nombre = (x: ProductoPrecio) => [x.generico, x.marca, x.presentacion].filter(Boolean).join(' · ');
+            const nombre = (x: ProductoPrecio) => [x.generico, x.marca, x.presentacion].filter(Boolean).join(' · ') + (dosAreas ? ` (${zona(x.area)})` : '');
             return (
               <div key={l.n} style={{ borderTop: '1px solid var(--borde)', padding: '.6rem 0', opacity: l.ignorar ? 0.5 : 1, display: 'grid', gap: '.4rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.5rem', flexWrap: 'wrap' }}>
@@ -363,6 +362,12 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                         {opciones.map((id) => { const x = porId.get(id); return x ? <option key={id} value={id}>{nombre(x)}</option> : null; })}
                       </select>
                     </label>
+                    {dosAreas && l.leida.area_sugerida && (
+                      <span className="suave" style={{ fontSize: '.8rem' }}>
+                        Zona sugerida: <strong>{l.leida.area_sugerida === 'AMBAS' ? 'bar y cocina' : zona(l.leida.area_sugerida)}</strong>
+                        {p && l.leida.area_sugerida !== 'AMBAS' && p.area !== l.leida.area_sugerida && <> · el producto elegido es de {zona(p.area)}</>}
+                      </span>
+                    )}
                     {l.leida.sugerencia_ia?.razon && <span className="suave" style={{ fontSize: '.8rem' }}>IA: {l.leida.sugerencia_ia.razon}</span>}
                     {p && f.del_proveedor.includes(p.producto_id) && <span style={{ fontSize: '.8rem', color: 'var(--ok)' }}>✓ Ya se le compra este producto a este proveedor.</span>}
                     {p && (() => {
@@ -398,7 +403,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                            onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, buscar: e.target.value }))} />
                     {!l.nuevo && (
                       <button type="button" className={!l.producto_id || (!l.leida.candidatos.length && !l.leida.sugerencia_ia?.producto_id) ? 'mini' : 'secundario mini'}
-                              style={{ justifySelf: 'start' }} onClick={() => cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: nuevoDesde(x.leida) }))}>
+                              style={{ justifySelf: 'start' }} onClick={() => cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nuevoDesde(x.leida), area: zonaDe(x.leida.area_sugerida) } }))}>
                         ➕ No está: agregarlo al catálogo
                       </button>
                     )}
@@ -423,14 +428,14 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                           {nv.modo === 'presentacion' ? (
                             <>
                               {genSel ? (
-                                <span>De: <strong>{genSel.generico}</strong> ({genSel.unidad_base}) <button type="button" className="secundario mini" onClick={() => set({ generico_id: '' })}>cambiar</button></span>
+                                <span>De: <strong>{genSel.generico}</strong> ({genSel.unidad_base}{dosAreas ? ` · ${zona(genSel.area)}` : ''}) <button type="button" className="secundario mini" onClick={() => set({ generico_id: '' })}>cambiar</button></span>
                               ) : (
                                 <label style={{ margin: 0 }}>¿De qué producto es? <input value={nv.nombre} onChange={(e) => set({ nombre: e.target.value })} placeholder="Escribe para buscar…" /></label>
                               )}
                               {busca.length > 0 && (
                                 <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
                                   {[...new Map(busca.map((x) => [x.generico, x])).values()].map((x) => (
-                                    <button key={x.producto_id} type="button" className="secundario mini" onClick={() => set({ generico_id: x.producto_id })}>{x.generico}</button>
+                                    <button key={x.producto_id} type="button" className="secundario mini" onClick={() => set({ generico_id: x.producto_id })}>{x.generico}{dosAreas ? ` (${zona(x.area)})` : ''}</button>
                                   ))}
                                 </div>
                               )}
@@ -450,11 +455,18 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                                   <option value="g">gramos (g)</option><option value="ml">mililitros (ml)</option><option value="und">unidades (und)</option>
                                 </select>
                               </label>
+                              {dosAreas && (
+                                <label style={{ margin: 0 }}>Zona
+                                  <select value={nv.area} onChange={(e) => set({ area: e.target.value as Area, categoria: '' })}>
+                                    {areas.map((a) => <option key={a} value={a}>{a === 'BAR' ? 'Bar' : 'Cocina'}{a === zonaDe(l.leida.area_sugerida) ? ' (sugerida)' : ''}</option>)}
+                                  </select>
+                                </label>
+                              )}
                               {nv.tipo === 'MPe' && (
                                 <label style={{ margin: 0 }}>Categoría
                                   <select value={nv.categoria} onChange={(e) => set({ categoria: e.target.value })}>
                                     <option value="">— sin categoría —</option>
-                                    {categorias.filter((c) => c.area === area).map((c) => <option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
+                                    {categorias.filter((c) => c.area === nv.area).map((c) => <option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
                                   </select>
                                 </label>
                               )}

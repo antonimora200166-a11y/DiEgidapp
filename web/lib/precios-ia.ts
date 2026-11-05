@@ -27,9 +27,9 @@ const ESQUEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['descripcion', 'nombre_generico', 'marca', 'cantidad', 'unidad', 'presentacion', 'valor_total', 'precio_unitario'],
+        required: ['descripcion', 'nombre_generico', 'marca', 'area_sugerida', 'cantidad', 'unidad', 'presentacion', 'valor_total', 'precio_unitario'],
         properties: {
-          descripcion: { type: 'string' }, nombre_generico: texto, marca: texto, cantidad: numero, unidad: texto, presentacion: texto,
+          descripcion: { type: 'string' }, nombre_generico: texto, marca: texto, area_sugerida: { type: 'string', enum: ['BAR', 'COCINA', 'AMBAS'] }, cantidad: numero, unidad: texto, presentacion: texto,
           valor_total: numero, precio_unitario: numero,
         },
       },
@@ -49,6 +49,7 @@ const Lectura = z.object({
     descripcion: z.string(),
     nombre_generico: z.string().nullable(),
     marca: z.string().nullable(),
+    area_sugerida: z.enum(['BAR', 'COCINA', 'AMBAS']),
     cantidad: z.number().nullable(),
     unidad: z.string().nullable(),
     presentacion: z.string().nullable(),
@@ -69,6 +70,7 @@ Devuelve:
 - lineas: una por producto con precio, en el orden de la foto.
   - descripcion: el texto del producto como está impreso.
   - nombre_generico: cómo se llamaría el producto en el catálogo, sin marca, tamaño ni empaque, con mayúscula inicial y tildes correctas («AZUCAR MANUELITA 2500G» → «Azúcar blanca»; «GIN TANQUERAY LONDON DRY 700ML» → «Ginebra»; «CHAMPIÑON PARIS BANDEJA» → «Champiñón París»). Conserva lo que distingue un producto de otro (variedad, corte, calibre: «Camarón 36/40», «Lomo de cerdo», «Tomate cherry»).
+  - area_sugerida: a qué zona del restaurante va: «BAR» para licores, vinos, cervezas, mixers, gaseosas, hielo, siropes y frutas o hierbas que se usan sobre todo en coctelería (piña, maracuyá, limón, hierbabuena, frutos rojos para cócteles); «COCINA» para carnes, pescados, verduras, abarrotes, lácteos y lo de aseo de cocina; «AMBAS» si se usa claramente en las dos (limón, naranja, azúcar). Ante la duda, la que más lo usaría.
   - marca: la marca comercial si aparece («Manuelita», «Tanqueray London Dry», «Alpina»); null en productos a granel o sin marca (frutas, verduras, carnes del proveedor).
   - cantidad y unidad: cuánto se compró o a qué cantidad corresponde el precio, con la unidad escrita como aparece («2» y «KG», «6» y «UNIDAD», «1» y «LIBRA», «1» y «CAJA»). En una lista de precios sin cantidad, la cantidad es 1 y la unidad la que indique el precio («$ 8.500 / kg» → 1 y «KG»).
   - presentacion: el tamaño del empaque si se ve («Bolsa 1000 g», «Botella 750 ml», «Caja x 12 und», «Galón 3,78 L»). null si no se dice.

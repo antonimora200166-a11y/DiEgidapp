@@ -15,7 +15,7 @@ import type { Resultado } from '@/lib/catalogo';
 const RUTA = /^(BAR|COCINA)\/\d{4}\/[0-9a-f-]{36}\.(jpg|png|webp|pdf)$/;
 const TIPOS: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf' };
 
-export type CandidatoPrecio = { producto_id: string; parecido: number; del_proveedor?: boolean };
+export type CandidatoPrecio = { producto_id: string; parecido: number; del_proveedor?: boolean; area: Area };
 export type LineaPrecio = LecturaPrecios['lineas'][number] & { candidatos: CandidatoPrecio[]; sugerencia_ia: Omit<SugerenciaIA, 'n'> | null };
 export type LecturaFoto = { ok: true; lectura: LecturaPrecios; lineas: LineaPrecio[]; proveedor_id: string | null;
                             proveedor_sugeridos: string[]; del_proveedor: string[]; proveedor_razon: string | null } | { ok: false; error: string };
@@ -25,10 +25,12 @@ const soloDigitos = (s: string | null) => (s ?? '').replace(/\D/g, '').slice(0, 
 const GENERICAS = new Set(['sas', 'ltda', 'sa', 'cia', 'y', 'de', 'del', 'la', 'el', 'los', 'las', 'distribuidora', 'comercializadora', 'inversiones', 'grupo']);
 const palabras = (s: string) => norm(s).split(' ').filter((w) => w.length >= 4 && !GENERICAS.has(w));
 
-export async function leerPrecios(ruta: string, area: Area): Promise<LecturaFoto> {
+// Busca en todas las áreas que la persona edita (bar y cocina para administración): una factura trae de todo.
+export async function leerPrecios(ruta: string): Promise<LecturaFoto> {
   const perfil = await perfilActual();
-  if (!editaArea(perfil, area)) return { ok: false, error: 'Solo el jefe del área o administración cargan precios.' };
-  if (!RUTA.test(ruta) || !ruta.startsWith(`${area}/`)) return { ok: false, error: 'La foto no corresponde a esta área.' };
+  const areas = (['BAR', 'COCINA'] as Area[]).filter((a) => editaArea(perfil, a));
+  if (!areas.length) return { ok: false, error: 'Solo los jefes de área o administración cargan precios.' };
+  if (!RUTA.test(ruta) || !areas.some((a) => ruta.startsWith(`${a}/`))) return { ok: false, error: 'La foto no se subió en una carpeta válida.' };
   const supabase = await supabaseServidor();
   const { data: archivo, error } = await supabase.storage.from('facturas').download(ruta);
   if (error || !archivo) return { ok: false, error: 'No se pudo abrir la foto subida. Vuelve a subirla.' };
@@ -68,27 +70,38 @@ export async function leerPrecios(ruta: string, area: Area): Promise<LecturaFoto
   if (!l.lineas.length) return { ok: true, lectura: l, lineas: [], proveedor_id: prov?.id ?? null, proveedor_sugeridos: sugeridos, del_proveedor: delProveedor, proveedor_razon: proveedorRazon };
 
   // por nombre (la misma búsqueda de Recibir) y, lo que quede dudoso, por significado con la IA
-  const { data: pares } = await supabase.rpc('emparejar_factura', { p_area: area, p_textos: l.lineas.map((x) => x.descripcion) });
+  const textos = l.lineas.map((x) => x.descripcion);
+  const emparejados = await Promise.all(areas.map((a) => supabase.rpc('emparejar_factura', { p_area: a, p_textos: textos })));
   const porLinea = new Map<number, CandidatoPrecio[]>();
-  for (const x of (pares ?? []) as { n: number; producto_id: string; parecido: number }[]) {
-    porLinea.set(x.n, [...(porLinea.get(x.n) ?? []), { producto_id: x.producto_id, parecido: Number(x.parecido) }]);
-  }
+  emparejados.forEach((e, i) => {
+    for (const x of (e.data ?? []) as { n: number; producto_id: string; parecido: number }[]) {
+      porLinea.set(x.n, [...(porLinea.get(x.n) ?? []), { producto_id: x.producto_id, parecido: Number(x.parecido), area: areas[i] }]);
+    }
+  });
+  const areaDe = new Map<string, Area>();
+  for (const cs of porLinea.values()) for (const c of cs) areaDe.set(c.producto_id, c.area);
   // el nombre con que ese proveedor ya lo facturó gana; lo que ya se le compra va primero ante un empate
   l.lineas.forEach((x, i) => {
     const id = porNombreProveedor.get(norm(x.descripcion));
-    if (id) porLinea.set(i + 1, [{ producto_id: id, parecido: 1, del_proveedor: true }, ...(porLinea.get(i + 1) ?? []).filter((c) => c.producto_id !== id)]);
+    if (id) porLinea.set(i + 1, [{ producto_id: id, parecido: 1, del_proveedor: true, area: areaDe.get(id) ?? areas[0] },
+                                 ...(porLinea.get(i + 1) ?? []).filter((c) => c.producto_id !== id)]);
   });
+  // el más parecido primero; si empatan (el limón está en bar y en cocina): el del proveedor y luego el de la zona que sugiere la IA
   for (const [n, cs] of porLinea) {
+    const zona = l.lineas[n - 1]?.area_sugerida;
+    const enZona = (c: CandidatoPrecio) => Number(zona === 'AMBAS' || c.area === zona);
     porLinea.set(n, cs.map((c) => ({ ...c, del_proveedor: c.del_proveedor || delProveedor.includes(c.producto_id) }))
-      .sort((a, b) => b.parecido - a.parecido || Number(!!b.del_proveedor) - Number(!!a.del_proveedor)));
+      .sort((a, b) => (Math.abs(b.parecido - a.parecido) > 0.05 ? b.parecido - a.parecido : 0)
+        || Number(!!b.del_proveedor) - Number(!!a.del_proveedor) || enZona(b) - enZona(a) || b.parecido - a.parecido));
   }
   const dudosas = l.lineas.map((x, i) => ({ n: i + 1, descripcion: x.descripcion }))
     .filter((x) => !(porLinea.get(x.n) ?? []).some((c) => c.parecido >= 0.75));
   let sugerencias: SugerenciaIA[] = [];
   if (dudosas.length) {
-    const { data: cat } = await supabase.rpc('productos_recepcion', { p_area: area });
-    sugerencias = await emparejarConIA(dudosas, ((cat ?? []) as { producto_id: string; generico: string; presentacion: string; categoria: string }[])
-      .map((p) => ({ producto_id: p.producto_id, generico: p.generico, presentacion: p.presentacion, categoria: p.categoria })));
+    const catalogos = await Promise.all(areas.map((a) => supabase.rpc('productos_recepcion', { p_area: a })));
+    sugerencias = await emparejarConIA(dudosas, catalogos.flatMap((c, i) => ((c.data ?? []) as { producto_id: string; generico: string; presentacion: string; categoria: string }[])
+      .map((p) => ({ producto_id: p.producto_id, generico: p.generico, presentacion: p.presentacion,
+                     categoria: `${p.categoria} · ${areas[i] === 'BAR' ? 'bar' : 'cocina'}` }))));
   }
   const lineas = l.lineas.map((x, i): LineaPrecio => {
     const s = sugerencias.find((y) => y.n === i + 1);
