@@ -32,6 +32,7 @@ type Consumo = {
   cantidad: string; unidad: string; unidad_ficha: string | null; factor_ficha: number | null;
   linea_ficha: number | null; editada: boolean; nota: string;
   merma?: string;   // lo que se botó de esa cantidad (cáscara, semillas, colado), en la misma unidad
+  zona?: string;    // de dónde se cogió (código de ubicación); lo SIN_COSTO no la necesita
 };
 
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
@@ -51,15 +52,26 @@ function factor(c: Consumo, u: string): number | null {
 const unidadesDe = (c: Consumo) => [...new Set([c.unidad_ficha, c.unidad_base, c.unidad_base === 'g' ? 'kg' : c.unidad_base === 'ml' ? 'l' : null]
   .filter((u): u is string => !!u))];
 
-export default function Producir({ area, datos, zonas }: { area: Area; datos: DatosProduccion; zonas: { codigo: string; nombre: string }[] }) {
+export default function Producir({ area, datos, zonas, zonaDe }: {
+  area: Area; datos: DatosProduccion; zonas: { codigo: string; nombre: string }[];
+  zonaDe: Record<string, string>;   // la zona asignada a cada producto en el mapa del área
+}) {
   const insumoPorId = useMemo(() => new Map(datos.insumos.map((i) => [i.producto_id, i])), [datos.insumos]);
   const fichaPorId = useMemo(() => new Map(datos.fichas.map((f) => [f.id, f])), [datos.fichas]);
   const saldo = (producto: string, zona: string) =>
     datos.saldos.filter((s) => s.producto_id === producto && s.ubicacion === zona).reduce((t, s) => t + Number(s.cantidad), 0);
   const saldoTotal = (producto: string) => datos.saldos.filter((s) => s.producto_id === producto).reduce((t, s) => t + Number(s.cantidad), 0);
+  const nombreZona = (z: string) => zonas.find((x) => x.codigo === z)?.nombre ?? z;
+  // De dónde se propone coger un producto: la zona donde el kardex tiene más; si en ninguna hay, la del mapa
+  function proponerZona(producto: string | null): string {
+    if (!producto) return '';
+    const conSaldo = zonas.map((z) => ({ z: z.codigo, q: saldo(producto, z.codigo) })).filter((x) => x.q > 0).sort((a, b) => b.q - a.q);
+    return conSaldo[0]?.z ?? zonaDe[producto] ?? (zonas.length === 1 ? zonas[0].codigo : '');
+  }
 
   const [mpiId, setMpiId] = useState<string | null>(null);
-  const [zona, setZona] = useState(zonas.length === 1 ? zonas[0].codigo : '');
+  const [destino, setDestino] = useState('');      // dónde queda guardado lo producido
+  const [guardado, setGuardado] = useState(false);  // la persona confirma que lo dejó ahí
   const [fecha, setFecha] = useState(hoyCali());
   const [tandas, setTandas] = useState('1');
   const [consumos, setConsumos] = useState<Consumo[]>([]);
@@ -84,32 +96,39 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
   useEffect(() => {
     try {
       const b = JSON.parse(localStorage.getItem(clave) || 'null');
-      if (b) { setMpiId(b.mpiId); setZona(b.zona); setTandas(b.tandas); setConsumos(b.consumos); setNeto(b.neto); setUnidades(b.unidades); setTiempo(b.tiempo); setObs(b.obs); }
-      else { const z = localStorage.getItem(`${clave}:zona`); if (z && zonas.some((x) => x.codigo === z)) setZona(z); }
+      if (b) {
+        const valida = (z?: string) => (z && zonas.some((x) => x.codigo === z) ? z : '');
+        setMpiId(b.mpiId); setTandas(b.tandas); setNeto(b.neto); setUnidades(b.unidades); setTiempo(b.tiempo); setObs(b.obs);
+        // un borrador de antes traía una sola zona para todo: pasa a cada ingrediente
+        setConsumos((b.consumos ?? []).map((c: Consumo) => ({ ...c, zona: valida(c.zona) || valida(b.zona) })));
+        setDestino(valida(b.destino) || (b.mpiId ? valida(zonaDe[b.mpiId]) : ''));
+      }
     } catch { /* borrador dañado: se empieza de cero */ }
     setCargado(true);
-  }, [clave, zonas]);
+  }, [clave, zonas, zonaDe]);
   useEffect(() => {
     if (!cargado) return;
     try {
-      if (mpiId) localStorage.setItem(clave, JSON.stringify({ mpiId, zona, tandas, consumos, neto, unidades, tiempo, obs }));
-      if (zona) localStorage.setItem(`${clave}:zona`, zona);
+      if (mpiId) localStorage.setItem(clave, JSON.stringify({ mpiId, destino, tandas, consumos, neto, unidades, tiempo, obs }));
     } catch { /* sin almacenamiento */ }
-  }, [clave, cargado, mpiId, zona, tandas, consumos, neto, unidades, tiempo, obs]);
+  }, [clave, cargado, mpiId, destino, tandas, consumos, neto, unidades, tiempo, obs]);
 
-  // El producto que se propone para un genérico: el que tiene más saldo en la zona, luego en el área
-  function proponer(generico_id: string, z: string): string | null {
+  // El producto que se propone para un genérico: el que tiene más saldo en el área
+  function proponer(generico_id: string): string | null {
     const lista = datos.insumos.filter((i) => i.generico_id === generico_id);
     if (!lista.length) return null;
-    return [...lista].sort((a, b) => saldo(b.producto_id, z) - saldo(a.producto_id, z) || saldoTotal(b.producto_id) - saldoTotal(a.producto_id))[0].producto_id;
+    return [...lista].sort((a, b) => saldoTotal(b.producto_id) - saldoTotal(a.producto_id))[0].producto_id;
   }
 
-  function desdeFicha(f: Ficha, k: number, z: string): Consumo[] {
-    return f.lineas.map((l) => ({
-      clave: crypto.randomUUID(), generico_id: l.generico_id, generico: l.generico, unidad_base: l.unidad_base,
-      producto_id: proponer(l.generico_id, z), cantidad: l.cantidad === null ? '' : String(r4(l.cantidad * k)),
-      unidad: l.unidad, unidad_ficha: l.unidad, factor_ficha: l.factor, linea_ficha: l.linea, editada: false, nota: l.nota ?? '',
-    }));
+  function desdeFicha(f: Ficha, k: number): Consumo[] {
+    return f.lineas.map((l) => {
+      const producto_id = proponer(l.generico_id);
+      return {
+        clave: crypto.randomUUID(), generico_id: l.generico_id, generico: l.generico, unidad_base: l.unidad_base,
+        producto_id, cantidad: l.cantidad === null ? '' : String(r4(l.cantidad * k)), zona: proponerZona(producto_id),
+        unidad: l.unidad, unidad_ficha: l.unidad, factor_ficha: l.factor, linea_ficha: l.linea, editada: false, nota: l.nota ?? '',
+      };
+    });
   }
 
   function elegirMpi(m: Mpi) {
@@ -117,8 +136,10 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
     setBuscarMpi('');
     setResultado(null);
     setTandas('1');
+    setDestino(zonaDe[m.producto_id] ?? (zonas.length === 1 ? zonas[0].codigo : ''));
+    setGuardado(false);
     const f = m.ficha_id ? fichaPorId.get(m.ficha_id) : null;
-    setConsumos(f ? desdeFicha(f, 1, zona) : []);
+    setConsumos(f ? desdeFicha(f, 1) : []);
   }
 
   // cambiar las tandas reescala las líneas de la ficha que nadie ha tocado
@@ -138,7 +159,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
   function agregarInsumo(i: Insumo) {
     setConsumos((cs) => [...cs, {
       clave: crypto.randomUUID(), generico_id: i.generico_id, generico: i.generico, unidad_base: i.unidad_base, producto_id: i.producto_id,
-      cantidad: '', unidad: i.unidad_base, unidad_ficha: null, factor_ficha: null, linea_ficha: null, editada: true, nota: '' }]);
+      zona: proponerZona(i.producto_id), cantidad: '', unidad: i.unidad_base, unidad_ficha: null, factor_ficha: null, linea_ficha: null, editada: true, nota: '' }]);
     setBuscarInsumo('');
   }
 
@@ -150,8 +171,10 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
     const m = num(c.merma ?? '');
     const mermaBase = m !== null && f !== null ? m * f : null;
     const mermaMala = m !== null && (m < 0 || (q !== null && m > q));
-    const hay = c.producto_id && zona ? saldo(c.producto_id, zona) : 0;
-    return { c, ins, q, f, base, mermaBase, mermaMala, hay, sinCosto: ins?.tipo === 'SIN_COSTO', falta: !!zona && ins?.tipo !== 'SIN_COSTO' && base !== null && base > hay };
+    const sinCosto = ins?.tipo === 'SIN_COSTO';
+    const hay = c.producto_id && c.zona ? saldo(c.producto_id, c.zona) : 0;
+    return { c, ins, q, f, base, mermaBase, mermaMala, hay, sinCosto, sinZona: !!ins && !sinCosto && !c.zona,
+             falta: !!c.zona && !sinCosto && base !== null && base > hay };
   });
   const netoN = num(neto);
   const k = num(tandas) ?? 1;
@@ -163,6 +186,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
   const incompletas = filas.filter((x) => !x.c.producto_id || x.q === null || x.q <= 0).length;
   const sinConversion = filas.filter((x) => x.q !== null && x.f === null).length;
   const mermasMalas = filas.filter((x) => x.mermaMala).length;
+  const sinZona = filas.filter((x) => x.sinZona).length;
   const mermaTotal = filas.reduce((t, x) => t + (x.mermaBase && x.mermaBase > 0 ? x.mermaBase : 0), 0);
   const desvio = costo.rendimiento !== null && rendFicha ? Math.abs(costo.rendimiento - rendFicha) / rendFicha * 100 : null;
 
@@ -185,11 +209,14 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
     setResultado(null);
     iniciar(async () => {
       const r = await registrarLote({
-        area, ubicacion: zona, fecha, producto_id: mpi.producto_id,
+        area, ubicacion: destino, ubicacion_destino: destino, fecha, producto_id: mpi.producto_id,
         ficha_id: ficha && consumos.some((c) => c.linea_ficha !== null) ? ficha.id : null,
         neto: netoN, unidades: num(unidades), tiempo_min: num(tiempo), observaciones: obs,
         motivo_forzado: conMotivo ? motivo : null,
-        consumos: consumos.map((c) => ({ producto_id: c.producto_id, cantidad: num(c.cantidad), unidad: c.unidad, merma: num(c.merma ?? ''), nota: c.nota || null })),
+        consumos: consumos.map((c) => ({
+          producto_id: c.producto_id, cantidad: num(c.cantidad), unidad: c.unidad, merma: num(c.merma ?? ''), nota: c.nota || null,
+          ubicacion: insumoPorId.get(c.producto_id ?? '')?.tipo === 'SIN_COSTO' ? null : c.zona || null,
+        })),
       });
       setResultado(r);
       if (r.ok) {
@@ -201,7 +228,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
 
   function empezarDeNuevo() {
     setMpiId(null); setTandas('1'); setConsumos([]); setNeto(''); setUnidades(''); setTiempo(''); setObs('');
-    setMotivo(''); setResultado(null); setFecha(hoyCali());
+    setMotivo(''); setResultado(null); setFecha(hoyCali()); setDestino(''); setGuardado(false);
     try { localStorage.removeItem(clave); } catch { /* nada */ }
   }
 
@@ -210,7 +237,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
       <div className="tarjeta">
         <p className="exito" role="status" style={{ marginTop: 0 }}>
           <strong>Lote guardado: {resultado.codigo}</strong><br />
-          {mpi.generico}: {fmtCantidad(netoN ?? 0)} {mpi.unidad_base}
+          {mpi.generico}: {fmtCantidad(netoN ?? 0)} {mpi.unidad_base} cargados en <strong>{nombreZona(destino)}</strong>
           {resultado.costo_unitario != null
             ? <> a {pesosU(Number(resultado.costo_unitario))} por {mpi.unidad_base} (lote de {pesos(Number(resultado.costo_total))}).</>
             : <>. Quedó sin costo completo: algún insumo no tenía costo en el kardex.</>}
@@ -276,19 +303,8 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
             </ul>
           </>
         )}
-        <div className="fila">
-          <div>
-            <label htmlFor="zona">Zona donde se produce</label>
-            <select id="zona" value={zona} onChange={(e) => setZona(e.target.value)}>
-              <option value="">— Zona —</option>
-              {zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="fecha">Fecha</label>
-            <input id="fecha" type="date" max={hoyCali()} value={fecha} onChange={(e) => setFecha(e.target.value)} />
-          </div>
-        </div>
+        <label htmlFor="fecha">Fecha</label>
+        <input id="fecha" type="date" max={hoyCali()} value={fecha} onChange={(e) => setFecha(e.target.value)} style={{ maxWidth: 220 }} />
         {ficha && (
           <>
             <label htmlFor="tandas">Tandas de la ficha <span className="ayuda">1 = la receta completa; 0,5 = media</span></label>
@@ -304,10 +320,10 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
           {/* ------------------------------------------------ ingredientes */}
           <h2>2. Ingredientes {consumos.length > 0 && <span className="suave" style={{ fontWeight: 400 }}>({consumos.length})</span>}</h2>
           <ul className="lista">
-            {filas.map(({ c, ins, q, f, base, mermaMala, hay, sinCosto, falta }) => {
+            {filas.map(({ c, ins, q, f, base, mermaMala, hay, sinCosto, sinZona: faltaZona, falta }) => {
               const opciones = datos.insumos.filter((i) => i.generico_id === c.generico_id);
               return (
-                <li key={c.clave} style={!c.producto_id || q === null ? { borderColor: 'var(--aviso)', borderWidth: 2 } : undefined}>
+                <li key={c.clave} style={!c.producto_id || q === null || faltaZona ? { borderColor: 'var(--aviso)', borderWidth: 2 } : undefined}>
                   <div className="linea" style={{ alignItems: 'flex-start' }}>
                     <div style={{ minWidth: 0 }}>
                       <strong>{c.generico}</strong>
@@ -319,10 +335,10 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                   </div>
                   {opciones.length > 1 ? (
                     <label style={{ margin: '.4rem 0 0', fontWeight: 400, fontSize: '.85rem' }}>Producto que se usa
-                      <select value={c.producto_id ?? ''} onChange={(e) => poner(c.clave, { producto_id: e.target.value || null })}>
+                      <select value={c.producto_id ?? ''} onChange={(e) => poner(c.clave, { producto_id: e.target.value || null, zona: proponerZona(e.target.value || null) })}>
                         {opciones.map((o) => (
                           <option key={o.producto_id} value={o.producto_id}>
-                            {[o.marca, o.presentacion].filter(Boolean).join(' · ') || o.codigo}{zona ? ` — hay ${fmtCantidad(saldo(o.producto_id, zona))} ${o.unidad_base}` : ''}
+                            {[o.marca, o.presentacion].filter(Boolean).join(' · ') || o.codigo} — hay {fmtCantidad(saldoTotal(o.producto_id))} {o.unidad_base}
                           </option>
                         ))}
                       </select>
@@ -332,6 +348,18 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                       {c.generico} no tiene producto en el catálogo de {area === 'BAR' ? 'bar' : 'cocina'}. Créalo o quita la línea.
                     </p>
                   ) : null}
+                  {ins && !sinCosto && (
+                    <label style={{ margin: '.4rem 0 0', fontWeight: 400, fontSize: '.85rem' }}>¿De dónde lo cogiste?
+                      <select value={c.zona ?? ''} onChange={(e) => poner(c.clave, { zona: e.target.value })}
+                              aria-invalid={faltaZona || undefined} style={faltaZona ? { borderColor: 'var(--aviso)' } : undefined}>
+                        <option value="">— Zona —</option>
+                        {zonas.map((z) => {
+                          const q2 = saldo(ins.producto_id, z.codigo);
+                          return <option key={z.codigo} value={z.codigo}>{z.nombre}{q2 ? ` — hay ${fmtCantidad(r4(q2))} ${ins.unidad_base}` : ''}{zonaDe[ins.producto_id] === z.codigo ? ' · su lugar' : ''}</option>;
+                        })}
+                      </select>
+                    </label>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '.5rem', marginTop: '.5rem' }}>
                     <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Cantidad usada
                       <input inputMode="decimal" value={c.cantidad} onChange={(e) => poner(c.clave, { cantidad: e.target.value, editada: true })} />
@@ -356,12 +384,12 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                     {sinCosto ? 'sin costo' : ins && base !== null
                       ? ins.costo_promedio !== null ? `${pesos(base * ins.costo_promedio)} (${pesosU(ins.costo_promedio)}/${c.unidad_base})` : 'aún sin costo (falta el conteo inicial o una compra)'
                       : null}
-                    {zona && ins && !sinCosto && <> · en la zona hay {fmtCantidad(r4(hay))} {c.unidad_base}</>}
+                    {c.zona && ins && !sinCosto && <> · allí hay {fmtCantidad(r4(hay))} {c.unidad_base}</>}
                   </div>
                   {mermaMala && <div className="error" style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>La merma no puede ser mayor que la cantidad usada.</div>}
                   {falta && (
                     <div className="aviso" style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
-                      El kardex no tiene tanto en esta zona. Si lo trajiste de otra, registra el traslado; si no, al guardar te pedirá un motivo.
+                      El kardex no tiene tanto en {nombreZona(c.zona ?? '')}. Revisa de dónde lo cogiste; si de verdad salió de ahí, al guardar te pedirá un motivo.
                     </div>
                   )}
                 </li>
@@ -422,6 +450,23 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
           <label htmlFor="obs">Observaciones <span className="ayuda">opcional</span></label>
           <textarea id="obs" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
 
+          {/* ------------------------------------------------ dónde queda */}
+          <h2>4. Dónde lo guardas</h2>
+          <section className="tarjeta">
+            {destino && zonaDe[mpi.producto_id] === destino
+              ? <p style={{ marginTop: 0 }}>Guárdalo en <strong>{nombreZona(destino)}</strong>: es su lugar en el mapa del {area === 'BAR' ? 'bar' : 'cocina'}.</p>
+              : !zonaDe[mpi.producto_id] && <p className="suave" style={{ marginTop: 0 }}>{mpi.generico} todavía no tiene un lugar asignado en el mapa: elige dónde lo dejas.</p>}
+            <label htmlFor="destino" style={{ marginTop: 0 }}>Zona donde queda</label>
+            <select id="destino" value={destino} onChange={(e) => { setDestino(e.target.value); setGuardado(false); }}>
+              <option value="">— Zona —</option>
+              {zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}{zonaDe[mpi.producto_id] === z.codigo ? ' · su lugar' : ''}</option>)}
+            </select>
+            <label style={{ display: 'flex', gap: '.6rem', alignItems: 'center', fontWeight: 400, marginBottom: 0 }}>
+              <input type="checkbox" checked={guardado} disabled={!destino} onChange={(e) => setGuardado(e.target.checked)} style={{ width: 22, height: 22, minHeight: 0 }} />
+              {destino ? <>Ya lo dejé en {nombreZona(destino)}</> : 'Elige primero la zona'}
+            </label>
+          </section>
+
           {resultado && !resultado.ok && (
             <div className={bloqueado ? 'aviso' : 'error'} role="alert">
               <strong>{bloqueado ? 'Para guardar así hace falta un motivo:' : 'No se guardó:'}</strong>
@@ -431,7 +476,7 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
                 <>
                   <label htmlFor="motivo">Corrige lo de arriba, o escribe por qué se produce así</label>
                   <textarea id="motivo" rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)}
-                            placeholder="Ej.: el azúcar se trajo de la bodega y el traslado se registra hoy" />
+                            placeholder="Ej.: el azúcar llegó hoy y la recepción se registra en la tarde" />
                 </>
               )}
             </div>
@@ -439,13 +484,13 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
 
           <div className="acciones barra-guardar">
             {bloqueado ? (
-              <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>
+              <button type="button" disabled={enviando || motivo.trim().length < 15 || !guardado} onClick={() => guardar(true)}>
                 {enviando ? 'Guardando…' : 'Guardar con este motivo'}
               </button>
             ) : (
-              <button type="button" disabled={enviando || !zona || !consumos.length || incompletas > 0 || sinConversion > 0 || mermasMalas > 0 || !(netoN && netoN > 0)}
+              <button type="button" disabled={enviando || !destino || !guardado || !consumos.length || incompletas > 0 || sinZona > 0 || sinConversion > 0 || mermasMalas > 0 || !(netoN && netoN > 0)}
                       onClick={() => guardar(false)}>
-                {enviando ? 'Guardando…' : 'Guardar lote'}
+                {enviando ? 'Guardando…' : destino ? `Cargar el lote en ${nombreZona(destino)}` : 'Guardar lote'}
               </button>
             )}
             <button type="button" className="secundario" disabled={enviando}
@@ -453,10 +498,11 @@ export default function Producir({ area, datos, zonas }: { area: Area; datos: Da
               Descartar
             </button>
           </div>
-          {(!zona || incompletas > 0 || sinConversion > 0 || !(netoN && netoN > 0)) && (
+          {(!destino || !guardado || incompletas > 0 || sinZona > 0 || sinConversion > 0 || !(netoN && netoN > 0)) && (
             <p className="suave" style={{ fontSize: '.85rem' }}>
-              {!zona ? 'Elige la zona. ' : ''}
               {incompletas > 0 ? `Falta la cantidad o el producto en ${incompletas} ingrediente(s); quita los que no usaste. ` : ''}
+              {sinZona > 0 ? `Di de dónde cogiste ${sinZona} ingrediente(s). ` : ''}
+              {!destino ? 'Elige dónde queda guardado. ' : !guardado ? `Confirma que lo dejaste en ${nombreZona(destino)}. ` : ''}
               {sinConversion > 0 ? `${sinConversion} ingrediente(s) en una unidad sin conversión. ` : ''}
               {!(netoN && netoN > 0) ? 'Falta el peso neto final.' : ''}
             </p>

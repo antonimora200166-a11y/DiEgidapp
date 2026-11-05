@@ -22,6 +22,13 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
       .eq('area', area).order('registrado_en', { ascending: false }).limit(5),
   ]);
   if (error) throw new Error(error.message);
+  // dónde se guarda cada producto (la matriz de ubicaciones): de ahí se propone de dónde coger cada
+  // ingrediente y dónde guardar lo producido
+  const codigos = new Set((zonas ?? []).map((z) => z.codigo));
+  const { data: asignados } = await supabase.from('ubicacion_productos').select('producto_id, ubicacion, orden').eq('activo', true)
+    .order('orden', { ascending: true, nullsFirst: false });
+  const zonaDe: Record<string, string> = {};
+  for (const x of asignados ?? []) if (codigos.has(x.ubicacion) && !zonaDe[x.producto_id]) zonaDe[x.producto_id] = x.ubicacion;
 
   return (
     <>
@@ -37,7 +44,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
           ))}
         </nav>
       )}
-      <Producir key={area} area={area} datos={data as DatosProduccion} zonas={zonas ?? []} />
+      <Producir key={area} area={area} datos={data as DatosProduccion} zonas={zonas ?? []} zonaDe={zonaDe} />
       <p style={{ marginTop: '1.2rem' }}><Link href="/producir/sin-costo">Lotes sin costo completo y por qué →</Link></p>
       {!!recientes?.length && (
         <>
