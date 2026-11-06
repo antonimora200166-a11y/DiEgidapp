@@ -38,7 +38,7 @@ select is((select public.registrar_lote(jsonb_build_object(
   'area', 'BAR', 'ubicacion', 'BAR_BODEGA', 'fecha', (privado.hoy() - 1)::text,
   'producto_id', 'c0000000-0000-0000-0000-000000000004', 'responsable_id', 'a0000000-0000-0000-0000-000000000003',
   'consumos', jsonb_build_array(jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000002', 'cantidad', 2000))))
-  -> 'fatales' ->> 0), 'F7 · Falta el PESO NETO FINAL.', 'F7: un lote sin peso neto no se guarda');
+  -> 'fatales' ->> 0), 'F7 · Falta el PESO NETO obtenido (g).', 'F7: un lote sin peso neto no se guarda');
 
 -- Lote 1 · Sirope Simple
 create temp table lote1 as select public.registrar_lote(jsonb_build_object(
@@ -71,14 +71,17 @@ create temp table lote2 as select public.registrar_lote(jsonb_build_object(
 select is((select (r ->> 'costo_total')::numeric from lote2), 9384.2105::numeric, 'cascada: 500 g × $2,768421 + 1.000 g × $8');
 select is((select (r ->> 'costo_unitario')::numeric from lote2), 7.820175::numeric, 'costo por gramo de la limonada');
 
--- Lote 3 · insumo sin ninguna compra: B3 pide motivo y el lote queda PARCIAL
-select is((select public.registrar_lote(jsonb_build_object(
+-- Lote 3 · insumo sin existencia: no se guarda ni con motivo (primero la recepción)
+select ok((select public.registrar_lote(jsonb_build_object(
   'area', 'BAR', 'ubicacion', 'BAR_BODEGA', 'fecha', privado.hoy()::text,
   'producto_id', 'c0000000-0000-0000-0000-000000000004', 'responsable_id', 'a0000000-0000-0000-0000-000000000003', 'neto', 100,
+  'motivo_forzado', 'Cardamomo comprado en efectivo, factura pendiente',
   'consumos', jsonb_build_array(
     jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000006', 'cantidad', 10),
     jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000002', 'cantidad', 100))))
-  ->> 'ok')::boolean, false, 'B3: consumir sin saldo bloquea si no hay motivo');
+  -> 'fatales' ->> 0) like 'F9 ·%Cardamomo%Registra primero%', 'F9: sin existencia no se produce, ni con motivo');
+-- con existencia (conteo inicial sin costo conocido) se guarda y queda PARCIAL
+select privado.registrar_movimiento('SALDO_INICIAL', 'c0000000-0000-0000-0000-000000000006', 'BAR_BODEGA', 50, privado.hoy(), null, 'CONTEO', null);
 create temp table lote3 as select public.registrar_lote(jsonb_build_object(
   'area', 'BAR', 'ubicacion', 'BAR_BODEGA', 'fecha', privado.hoy()::text,
   'producto_id', 'c0000000-0000-0000-0000-000000000004', 'responsable_id', 'a0000000-0000-0000-0000-000000000003', 'neto', 100,
@@ -86,7 +89,7 @@ create temp table lote3 as select public.registrar_lote(jsonb_build_object(
   'consumos', jsonb_build_array(
     jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000006', 'cantidad', 10),
     jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000002', 'cantidad', 100)))) as r;
-select is((select r ->> 'estado_costo' from lote3), 'PARCIAL', 'con motivo se guarda, PARCIAL');
+select is((select r ->> 'estado_costo' from lote3), 'PARCIAL', 'un insumo sin costo deja el lote PARCIAL');
 select is((select costo_promedio from public.costos_producto where producto_id = 'c0000000-0000-0000-0000-000000000004'),
           2.768421::numeric, 'un lote PARCIAL no altera el promedio del MPI');
 

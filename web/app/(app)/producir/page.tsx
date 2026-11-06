@@ -35,7 +35,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
   return (
     <>
       <PestanasProduccion activa="producir" area={area} />
-      <h1>Producir</h1>
+      <h1 className="pagina-ancha">Producir</h1>
       {areas.length > 1 && (
         <nav className="segmentos" style={{ marginBottom: '1rem' }}>
           {areas.map((a) => (
@@ -47,7 +47,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
           ))}
         </nav>
       )}
-      <Producir key={area} area={area} datos={data as DatosProduccion} zonas={zonas ?? []} zonaDe={zonaDe} generico={sp.generico} />
+      <Producir key={area} area={area} datos={data as DatosProduccion} zonas={zonas ?? []} zonaDe={zonaDe} generico={sp.generico} perfilId={perfil.id} />
       <p style={{ marginTop: '1.2rem' }}><Link href="/producir/sin-costo">Lotes sin costo completo y por qué →</Link></p>
       {!!recientes?.length && (
         <>

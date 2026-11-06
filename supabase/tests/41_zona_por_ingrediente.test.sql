@@ -42,10 +42,10 @@ select is((select ubicacion from public.lotes_produccion where id = (select (r -
 select is((select array_agg(coalesce(ubicacion, '—') order by linea) from public.lote_consumos where lote_id = (select (r ->> 'id')::uuid from l1)),
           array['BAR_BODEGA', 'BAR_BARRA', '—'], 'cada línea guarda de dónde salió; el agua no tiene zona');
 
--- azúcar «de la barra», donde no hay: pide motivo y nombra la zona
+-- azúcar «de la barra», donde no hay: no se guarda y nombra la zona
 create temp table l2 as select pg_temp.lote(jsonb_build_array(
   jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000002', 'cantidad', 500, 'unidad', 'g', 'ubicacion', 'BAR_BARRA')), 'BAR_BARRA') as r;
-select ok((select r -> 'bloqueos' ->> 0 like 'B3 ·%en Barra y se usan 500%' from l2), 'si en esa zona no hay, pide motivo y dice qué zona');
+select ok((select r -> 'fatales' ->> 0 like 'F9 ·%en Barra hay 0%se necesitan 500%' from l2), 'si en esa zona no hay, no se guarda y dice qué zona');
 
 -- falta la zona donde se guarda
 select ok((select pg_temp.lote(jsonb_build_array(

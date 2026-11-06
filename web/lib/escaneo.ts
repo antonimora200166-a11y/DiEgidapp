@@ -3,7 +3,8 @@ import { supabaseServidor } from '@/lib/supabase/server';
 
 export type Lote = {
   id: string; codigo: string; area: 'BAR' | 'COCINA'; fecha: string; producto_id: string; mpi: string; unidad: string;
-  neto: number; unidades: number | null; vence: string | null; conservacion: string | null; zona: string; responsable: string;
+  neto: number; neto_g?: number | null; unidades: number | null; vence: string | null; conservacion: string | null;
+  nota_conservacion?: string | null; empaque?: string | null; zona: string; responsable: string;
   costo_unitario: number | null; estado_costo: string; anulado: boolean;
 };
 export type ProductoEscaneado = { producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; area: 'BAR' | 'COCINA' };

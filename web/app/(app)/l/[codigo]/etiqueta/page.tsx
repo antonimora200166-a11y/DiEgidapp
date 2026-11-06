@@ -26,10 +26,10 @@ export default async function Etiqueta({ params, searchParams }: { params: Promi
       <span dangerouslySetInnerHTML={{ __html: svg }} />
       <strong>{l.mpi}</strong>
       <div>Lote {l.codigo}</div>
-      <div>Hecho: {corta(l.fecha)}</div>
-      {l.vence && <div><b>Vence: {corta(l.vence)}</b></div>}
-      {l.conservacion && <div>{l.conservacion}</div>}
-      <div>{Number(l.neto).toLocaleString('es-CO')} {l.unidad}{l.unidades && l.unidades > 1 ? ` (${l.unidades} env.)` : ''}</div>
+      <div>Hecho: {corta(l.fecha)} · {l.responsable}</div>
+      <div><b>Vence: {l.vence ? corta(l.vence) : 'sin fecha'}</b></div>
+      {l.conservacion && <div>{l.conservacion}{l.nota_conservacion ? ` ${l.nota_conservacion}` : ''}</div>}
+      <div>{Number(l.neto_g ?? l.neto).toLocaleString('es-CO')} {l.neto_g ? 'g' : l.unidad}{l.empaque ? ` · ${l.empaque}` : ''}{l.unidades && l.unidades > 1 ? ` (${l.unidades} env.)` : ''}</div>
     </div>
   );
 

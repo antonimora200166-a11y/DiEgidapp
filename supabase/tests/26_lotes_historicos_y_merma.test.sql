@@ -35,7 +35,8 @@ select is((select array[c.merma, c.merma_base, c.cantidad_base] from public.lote
           array[0.1, 100, 1000]::numeric[], 'la línea guarda la merma escrita y en gramos; del kardex sale el kilo completo');
 select is((select (r ->> 'costo_total')::numeric from l1), 5260::numeric, 'la merma no cambia el costo: 1.000 g × $5,26');
 
--- limón sin compra ni conteo: sin costo; el kardex no tiene saldo, se fuerza con motivo
+-- limón contado sin costo conocido: hay existencia pero no costo
+select privado.registrar_movimiento('SALDO_INICIAL', 'c0000000-0000-0000-0000-000000000003', 'BAR_BODEGA', 1000, privado.hoy(), null, 'CONTEO', null);
 create temp table l2 as select pg_temp.lote(jsonb_build_array(
   jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000002', 'cantidad', 500, 'unidad', 'g'),
   jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000003', 'cantidad', 300, 'unidad', 'g')),
