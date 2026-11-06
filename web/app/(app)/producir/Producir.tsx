@@ -34,6 +34,7 @@ export type DatosProduccion = {
 type Consumo = {
   clave: string; generico_id: string; generico: string; unidad_base: UB; producto_id: string | null; zona: string;
   gramos: string; unidades: string; factor: string; esperado_g: number | null; esperado_und: number | null; linea_ficha: number | null; nota: string;
+  lote_origen?: string | null;   // lote escaneado: sale primero de ese lote (trazabilidad)
 };
 type Zona = { codigo: string; nombre: string };
 
@@ -167,11 +168,11 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   const principal = ficha ? [...ficha.lineas].filter((l) => l.base !== null && l.unidad_base !== 'und' && l.tipo !== 'SIN_COSTO').sort((a, b) => b.base! - a.base!)[0] : undefined;
 
   const poner = (k2: string, cambio: Partial<Consumo>) => setConsumos((cs) => cs.map((c) => (c.clave === k2 ? { ...c, ...cambio } : c)));
-  function agregarInsumo(i: Insumo, nota = '') {
+  function agregarInsumo(i: Insumo, nota = '', loteOrigen: string | null = null) {
     setConsumos((cs) => [...cs, { clave: crypto.randomUUID(), generico_id: i.generico_id, generico: i.generico, unidad_base: i.unidad_base, producto_id: i.producto_id,
       zona: i.tipo === 'SIN_COSTO' ? '' : proponerZona(i.producto_id), gramos: '', unidades: '',
       factor: i.unidad_base === 'ml' && i.tipo !== 'SIN_COSTO' && i.factor_g === null && i.densidad ? String(Math.round(1000 / i.densidad) / 1000) : '',
-      esperado_g: null, esperado_und: null, linea_ficha: null, nota }]);
+      esperado_g: null, esperado_und: null, linea_ficha: null, nota, lote_origen: loteOrigen }]);
     setBuscarInsumo('');
   }
   async function escaneado(texto: string) {
@@ -183,9 +184,9 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
     if (r.tipo === 'lote' && r.lote.vence && r.lote.vence < hoyCali()) { setLeido({ ok: false, texto: `El lote ${r.lote.codigo} de ${r.lote.mpi} venció: no lo uses.` }); return; }
     if (!ins) { setLeido({ ok: false, texto: r.tipo === 'desconocido' ? 'No conozco ese código. Busca el ingrediente por nombre.' : 'Eso no es un ingrediente de esta área.' }); return; }
     const ya = consumos.find((c) => c.generico_id === ins.generico_id);
-    if (ya) { poner(ya.clave, { producto_id: ins.producto_id, zona: proponerZona(ins.producto_id), nota: r.tipo === 'lote' ? `lote ${r.lote.codigo}` : ya.nota });
+    if (ya) { poner(ya.clave, { producto_id: ins.producto_id, zona: proponerZona(ins.producto_id), nota: r.tipo === 'lote' ? `lote ${r.lote.codigo}` : ya.nota, lote_origen: r.tipo === 'lote' ? r.lote.id : ya.lote_origen });
               setLeido({ ok: true, texto: `✔ ${ins.generico}: se usa ${r.tipo === 'lote' ? `el lote ${r.lote.codigo}` : 'ese producto'}.` }); return; }
-    agregarInsumo(ins, r.tipo === 'lote' ? `lote ${r.lote.codigo}` : '');
+    agregarInsumo(ins, r.tipo === 'lote' ? `lote ${r.lote.codigo}` : '', r.tipo === 'lote' ? r.lote.id : null);
     setLeido({ ok: true, texto: `✔ ${ins.generico} agregado: pésalo.` });
   }
 
@@ -223,7 +224,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
         ubicacion_destino: destino, conservacion: conservacion || null, tandas: k, neto_g: netoG,
         unidades: num(unidades), neto_factor: num(netoFactor), tiempo_min: num(tiempo), observaciones: obs, motivo_forzado: motivo || null,
         consumos: filas.map(({ c, ins, sinCosto }) => ({ producto_id: c.producto_id, gramos: num(c.gramos), unidades: num(c.unidades),
-          factor: ins?.factor_g === null ? num(c.factor) : null, ubicacion: sinCosto ? null : c.zona || null, nota: c.nota || null })),
+          factor: ins?.factor_g === null ? num(c.factor) : null, ubicacion: sinCosto ? null : c.zona || null, nota: c.nota || null, lote_origen: c.lote_origen ?? null })),
       });
       setResultado(r);
       if (r.ok) { try { localStorage.removeItem(clave); } catch { /* nada */ } setPaso(5); window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -279,7 +280,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
         <div className="pila">
           <Link className="boton" style={{ minHeight: 60, fontSize: '1.1rem' }} href={`/l/${encodeURIComponent(r.codigo ?? '')}/etiqueta`}><Icono nombre="qr" /> Imprimir etiqueta</Link>
           <button type="button" className="secundario" style={{ minHeight: 56 }} onClick={empezarDeNuevo}>Producir otro</button>
-          <Link className="boton secundario" href={`/l/${encodeURIComponent(r.codigo ?? '')}`}>Ver el lote</Link>
+          <Link className="boton secundario" href={`/produccion/lotes/${encodeURIComponent(r.codigo ?? '')}`}>Ver el lote y su trazabilidad</Link>
         </div>
       </div>
     );

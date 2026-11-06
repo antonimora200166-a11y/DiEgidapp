@@ -37,7 +37,7 @@ export default async function Lote({ params }: { params: Promise<{ codigo: strin
       </dl>
       <div className="acciones">
         <Link className="boton" href={`/l/${encodeURIComponent(l.codigo)}/etiqueta`}>Imprimir etiqueta</Link>
-        <Link className="boton secundario" href={`/historial/lote/${l.id}`}>Ver el lote completo</Link>
+        <Link className="boton secundario" href={`/produccion/lotes/${encodeURIComponent(l.codigo)}`}>Ver el lote y su trazabilidad</Link>
         {vencido && <Link className="boton secundario peligro" href="/bajas">Registrar baja</Link>}
       </div>
     </>

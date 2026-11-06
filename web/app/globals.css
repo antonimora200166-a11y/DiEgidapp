@@ -311,3 +311,12 @@ button.quitar { min-height: 0; padding: 0 .25rem; background: none; border: 0; c
 .resp-prod button[aria-pressed='true'] { border-color: var(--marca); background: color-mix(in srgb, var(--marca) 12%, var(--tarjeta)); color: var(--marca); }
 .cifra.alerta { border-color: var(--aviso); background: var(--aviso-fondo); }
 .cifra.alerta > b, .cifra.alerta > span { color: var(--aviso); }
+/* Trazabilidad */
+.traza { display: grid; gap: .35rem; margin-top: .4rem; }
+.nodo-traza { border: 1px solid var(--borde); border-radius: 10px; background: color-mix(in srgb, var(--fondo) 60%, var(--tarjeta)); }
+.enlace-traza { display: flex; justify-content: space-between; gap: .6rem; align-items: center; padding: .5rem .7rem; text-decoration: none; min-height: 48px; cursor: pointer; }
+a.enlace-traza:hover, summary.enlace-traza:hover { background: color-mix(in srgb, var(--marca) 6%, transparent); border-radius: 10px; }
+.enlace-traza .n { white-space: nowrap; font-variant-numeric: tabular-nums; }
+summary.enlace-traza { list-style: none; }
+summary.enlace-traza::-webkit-details-marker { display: none; }
+.hijos-traza { margin: 0 0 .5rem 1.1rem; padding-left: .8rem; border-left: 2px solid var(--borde); }

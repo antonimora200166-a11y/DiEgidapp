@@ -31,3 +31,4 @@ export const cant = (n: number | null | undefined) =>
 export const vidaUtil = (a: Almacenamiento[]) =>
   a.map((x) => `${x.vida_util_dias} d ${x.conservacion === 'Refrigerado' ? 'refrig.' : x.conservacion === 'Congelado' ? 'cong.' : 'amb.'}`).join(' · ');
 export const fechaLarga = (d: string) => new Date(d.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+
