@@ -3,9 +3,10 @@ import { revalidatePath } from 'next/cache';
 import { supabaseServidor } from '@/lib/supabase/server';
 import type { Resultado } from '@/lib/catalogo';
 
-// un archivo 'use server' solo exporta funciones
-const FUENTE = 'RECETARIO COCINA';
+// un archivo 'use server' solo exporta funciones: la fuente llega como texto
 type Ok = { ok: boolean; error?: string; n?: number };
+const FUENTES = ['RECETARIO COCINA', 'CARTA COCTELERÍA'];
+const f = (fuente?: string) => (fuente && FUENTES.includes(fuente) ? fuente : 'RECETARIO COCINA');
 
 async function rpc(nombre: string, args: Record<string, unknown>): Promise<Ok & Record<string, unknown>> {
   const supabase = await supabaseServidor();
@@ -15,18 +16,18 @@ async function rpc(nombre: string, args: Record<string, unknown>): Promise<Ok & 
   return { ok: true, ...(data as object) };
 }
 
-export async function decidirIngredientes(codigos: string[], decision: 'CONFIRMAR' | 'NUEVO' | 'EXCLUIR' | 'PENDIENTE', generico?: string | null) {
-  return rpc('decidir_ingredientes_recetario', { p_fuente: FUENTE, p_codigos: codigos, p_decision: decision, p_generico: generico ?? null });
+export async function decidirIngredientes(codigos: string[], decision: 'CONFIRMAR' | 'NUEVO' | 'EXCLUIR' | 'PENDIENTE', generico?: string | null, fuente?: string) {
+  return rpc('decidir_ingredientes_recetario', { p_fuente: f(fuente), p_codigos: codigos, p_decision: decision, p_generico: generico ?? null });
 }
-export async function elegirReceta(codigo: string, generico: string | null) {
-  return rpc('elegir_receta_mpi', { p_fuente: FUENTE, p_codigo: codigo, p_generico: generico });
+export async function elegirReceta(codigo: string, generico: string | null, fuente?: string) {
+  return rpc('elegir_receta_mpi', { p_fuente: f(fuente), p_codigo: codigo, p_generico: generico });
 }
-export async function marcarMpi(generico: string, estado: 'SIN_RECETA' | 'NO_ES_MPI' | null, nota?: string) {
-  return rpc('marcar_mpi', { p_generico: generico, p_estado: estado, p_nota: nota ?? null, p_fuente: FUENTE });
+export async function marcarMpi(generico: string, estado: 'SIN_RECETA' | 'NO_ES_MPI' | null, nota?: string, fuente?: string) {
+  return rpc('marcar_mpi', { p_generico: generico, p_estado: estado, p_nota: nota ?? null, p_fuente: f(fuente) });
 }
-export async function crearMpi(codigo: string, motivo?: string): Promise<Resultado & { error?: string }> {
+export async function crearMpi(codigo: string, motivo?: string, fuente?: string): Promise<Resultado & { error?: string }> {
   const supabase = await supabaseServidor();
-  const { data, error } = await supabase.rpc('crear_mpi_desde_receta', { p_fuente: FUENTE, p_codigo: codigo, p_motivo: motivo ?? null });
+  const { data, error } = await supabase.rpc('crear_mpi_desde_receta', { p_fuente: f(fuente), p_codigo: codigo, p_motivo: motivo ?? null });
   if (error) return { ok: false, id: null, codigo: null, fatales: [error.message], bloqueos: [], avisos: [] };
   revalidatePath('/produccion/validar', 'layout');
   return data as Resultado;
@@ -38,6 +39,7 @@ export async function aprobarReceta(payload: Record<string, unknown>): Promise<R
   if ((data as Resultado).ok) {
     revalidatePath('/produccion', 'layout');
     revalidatePath('/fichas', 'layout');
+    revalidatePath('/carta');
   }
   return data as Resultado;
 }

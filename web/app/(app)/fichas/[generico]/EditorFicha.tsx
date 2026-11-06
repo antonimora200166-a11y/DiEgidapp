@@ -37,6 +37,7 @@ type Alm = { conservacion: Almacenamiento['conservacion']; dias: string; nota: s
 export type InicialFicha = {
   codigo: string; neto: string; tiempo: string; porciones: string; metodo: string; pasos: string[]; puntos: Punto[]; alergenos: string[];
   descripcion: string; observaciones: string; lineas: { generico_id: string; cantidad: string; unidad: string; nota: string }[];
+  presentacion?: string;
 };
 
 const EXTRA = ['cda', 'cdta', 'taza', 'gota', 'dash', 'pizca', 'und'];
@@ -78,7 +79,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
   const [alm, setAlm] = useState<Alm[]>(datos.almacenamientos.map((a) => ({ conservacion: a.conservacion, dias: String(a.vida_util_dias), nota: a.nota ?? '' })));
   const [empaque, setEmpaque] = useState(f?.empaque ?? '');
   const [descripcion, setDescripcion] = useState(inicial?.descripcion ?? f?.descripcion ?? '');
-  const [presentacion, setPresentacion] = useState(f?.presentacion ?? '');
+  const [presentacion, setPresentacion] = useState(inicial?.presentacion ?? f?.presentacion ?? '');
   const [observaciones, setObservaciones] = useState(inicial?.observaciones ?? f?.observaciones ?? '');
   const [nota, setNota] = useState(f?.nota ?? '');
   const [motivo, setMotivo] = useState('');
@@ -144,7 +145,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
   return (
     <>
       <p className="suave" style={{ marginTop: 0 }}>
-        {receta ? <>Revisa la propuesta y apruébala: nace la <strong>versión {(f?.version ?? 0) + 1}</strong> de la ficha, con origen recetario de cocina.</>
+        {receta ? <>Revisa la propuesta y apruébala: nace la <strong>versión {(f?.version ?? 0) + 1}</strong> de la ficha, con origen {receta.fuente.toLowerCase()}.</>
           : f ? <>Al guardar nace la <strong>versión {f.version + 1}</strong>; la {f.version} queda tal cual
           {Number(f.lotes) > 0 ? ` para los ${f.lotes} lote(s) que se hicieron con ella` : ''}.</> : 'Primera versión de esta ficha.'}
       </p>

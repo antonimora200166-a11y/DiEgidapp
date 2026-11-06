@@ -21,7 +21,7 @@ const SOLO_VER = process.argv.includes('--ver');
 const DATOS = ['historico_bar.sql', 'historico_cocina.sql', 'catalogo_unificado.sql',
                'compras_historicas_bar.sql', 'compras_historicas_cocina.sql', 'propuestas_unidad.sql',
                'propuestas_produccion.sql', 'lotes_historicos_bar.sql', 'zonas_bar.sql', 'catalogo_bar_sectorizacion.sql',
-               'compras_rescatadas_cocina.sql', 'taras_envases_bar.sql', 'recetario_cocina.sql'];
+               'compras_rescatadas_cocina.sql', 'taras_envases_bar.sql', 'recetario_cocina.sql', 'recetario_cocteles.sql'];
 
 const envLocal = join(raiz, 'web', '.env.local');
 if (!process.env.DATABASE_URL && existsSync(envLocal)) {

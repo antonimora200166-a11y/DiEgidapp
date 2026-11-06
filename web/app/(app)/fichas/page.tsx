@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
@@ -16,12 +17,22 @@ export default async function Fichas() {
     if (r.error) throw new Error(r.error.message);
     return ((r.data ?? []) as Omit<FilaFicha, 'area'>[]).map((f) => ({ ...f, area: areas[i] }));
   });
+  // avance de las fichas de cócteles con la carta de coctelería
+  const carta = areas.includes('BAR')
+    ? (await supabase.rpc('validacion_recetario_resumen', { p_fuente: 'CARTA COCTELERÍA' })).data as { mpi: { total: number; aprobadas: number } } | null : null;
 
   return (
     <>
       <h1 className="pagina-ancha">Fichas técnicas</h1>
       <p className="suave">La receta de cada MPI, cóctel y plato: con ella se producen los lotes y se calcula el costo estándar.
         Por defecto se ven las que les falta algo; quita el filtro de estado para verlas todas.</p>
+      {carta && carta.mpi.aprobadas < carta.mpi.total && (
+        <Link href="/produccion/validar?fuente=cocteles" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--marca)' }}>
+          <span><strong>Completar las fichas de cócteles con la carta</strong><br />
+            <span className="suave">{carta.mpi.aprobadas} de {carta.mpi.total} bebidas con procedimiento, presentación y alérgenos de la carta.</span></span>
+          <span className="boton">Continuar</span>
+        </Link>
+      )}
       <ListaFichas filas={filas} variasAreas={areas.length > 1} />
     </>
   );

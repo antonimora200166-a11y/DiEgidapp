@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Columna, type Grupo } from '@/components/VistaFiltrable';
 import { crearMpi, decidirIngredientes, elegirReceta, marcarMpi } from './acciones';
+import { FUENTES, type ClaveFuente } from '@/lib/recetario';
 
 export type Resumen = {
   puede_editar: boolean;
@@ -64,7 +65,12 @@ function Buscador({ opciones, alElegir, placeholder }: { opciones: { id: string;
   );
 }
 
-export default function ValidarRecetario({ tab, datos, puedeEditar, exactos }: { tab: 'ingredientes' | 'mpi' | 'recetas'; datos: Datos; puedeEditar: boolean; exactos: number }) {
+export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, clave }: { tab: 'ingredientes' | 'mpi' | 'recetas'; datos: Datos; puedeEditar: boolean; exactos: number; clave: ClaveFuente }) {
+  const F = FUENTES[clave];
+  const fuente = F.fuente;
+  const urlReceta = (codigo: string) => `/produccion/validar/receta/${encodeURIComponent(codigo)}${clave === 'cocteles' ? '?fuente=cocteles' : ''}`;
+  // hecha: en cocina, la MPI ya tiene ficha; en la carta, la ficha ya se completó con el cóctel
+  const hecha = (m: { ficha_id: string | null; ficha_origen: string | null }) => (F.conIngredientes ? !!m.ficha_id : m.ficha_origen === fuente);
   const router = useRouter();
   const [enviando, iniciar] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -83,8 +89,10 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos }: {
     });
   };
   const gens = useMemo(() => datos.genericos.map((g) => ({ id: g.id, nombre: g.nombre, extra: `${g.tipo === 'SIN_COSTO' ? 'sin costo' : g.tipo} · ${g.unidad_base}` })), [datos.genericos]);
-  const mpisLibres = useMemo(() => datos.mpis.filter((m) => !m.ficha_id || m.ficha_origen !== 'RECETARIO COCINA')
-    .map((m) => ({ id: m.generico_id, nombre: m.nombre, extra: m.receta ? `ya tiene ${m.receta.codigo}` : m.codigo })), [datos.mpis]);
+  const mpisLibres = useMemo(() => datos.mpis.filter((m) => !hecha(m))
+    .map((m) => ({ id: m.generico_id, nombre: m.nombre, extra: m.receta ? `ya tiene ${m.receta.codigo}` : m.codigo })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [datos.mpis]);
 
   const aviso = error && <div className="error" role="alert">{error}</div>;
 
@@ -110,17 +118,17 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos }: {
           {f.estado === 'PENDIENTE' ? 'Por decidir' : f.estado === 'CONFIRMADO' ? 'Confirmado' : f.estado === 'NUEVO' ? 'Nuevo' : 'Excluido'}</span>) },
       ...(puedeEditar ? [{ k: 'acc', t: '', ver: (f: Ing) => abierto === f.codigo
         ? <div style={{ display: 'flex', gap: '.3rem', alignItems: 'flex-start' }}>
-            <Buscador opciones={gens} placeholder="Buscar en el catálogo…" alElegir={(id) => correr(() => decidirIngredientes([f.codigo], 'CONFIRMAR', id))} />
+            <Buscador opciones={gens} placeholder="Buscar en el catálogo…" alElegir={(id) => correr(() => decidirIngredientes([f.codigo], 'CONFIRMAR', id, fuente))} />
             <button type="button" className="secundario mini" onClick={() => setAbierto(null)}>×</button>
           </div>
         : <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {f.estado === 'PENDIENTE' && f.propuesto_id && <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => decidirIngredientes([f.codigo], 'CONFIRMAR'))}>Es este</button>}
+            {f.estado === 'PENDIENTE' && f.propuesto_id && <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => decidirIngredientes([f.codigo], 'CONFIRMAR', null, fuente))}>Es este</button>}
             <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(f.codigo)}>{f.estado === 'CONFIRMADO' ? 'Cambiar' : 'Otro'}</button>
             {f.estado === 'PENDIENTE' && <>
-              <button type="button" className="secundario mini" disabled={enviando} onClick={() => correr(() => decidirIngredientes([f.codigo], 'NUEVO'))} title="No está en el catálogo: hay que crearlo">Nuevo</button>
-              <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => decidirIngredientes([f.codigo], 'EXCLUIR'))}>Excluir</button>
+              <button type="button" className="secundario mini" disabled={enviando} onClick={() => correr(() => decidirIngredientes([f.codigo], 'NUEVO', null, fuente))} title="No está en el catálogo: hay que crearlo">Nuevo</button>
+              <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => decidirIngredientes([f.codigo], 'EXCLUIR', null, fuente))}>Excluir</button>
             </>}
-            {f.estado !== 'PENDIENTE' && <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => decidirIngredientes([f.codigo], 'PENDIENTE'))}>Reabrir</button>}
+            {f.estado !== 'PENDIENTE' && <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => decidirIngredientes([f.codigo], 'PENDIENTE', null, fuente))}>Reabrir</button>}
           </div> }] : []),
     ];
     return (
@@ -130,7 +138,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos }: {
           <div className="aviso" style={{ display: 'flex', gap: '.6rem', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
             <span><strong>{exactos} ingredientes</strong> tienen el mismo nombre en el catálogo.</span>
             <button type="button" disabled={enviando} onClick={() => correr(() => decidirIngredientes(
-              datos.ingredientes.filter((i) => i.estado === 'PENDIENTE' && (i.similitud ?? 0) >= 0.99).map((i) => i.codigo), 'CONFIRMAR'))}>
+              datos.ingredientes.filter((i) => i.estado === 'PENDIENTE' && (i.similitud ?? 0) >= 0.99).map((i) => i.codigo), 'CONFIRMAR', null, fuente))}>
               Confirmar los {exactos} iguales</button>
           </div>
         )}
@@ -139,7 +147,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos }: {
                         grupos={grupos} columnas={columnas} filtrosIniciales={{ estado: ['PENDIENTE'] }}
                         seleccionable={puedeEditar ? (f) => f.estado === 'PENDIENTE' && !!f.propuesto_id : undefined}
                         acciones={(sel, limpiar) => <button type="button" disabled={enviando}
-                          onClick={() => correr(() => decidirIngredientes(sel.map((f) => f.codigo), 'CONFIRMAR'), limpiar)}>Confirmar la propuesta de {sel.length}</button>}
+                          onClick={() => correr(() => decidirIngredientes(sel.map((f) => f.codigo), 'CONFIRMAR', null, fuente), limpiar)}>Confirmar la propuesta de {sel.length}</button>}
                         vacio="No hay ingredientes con estos filtros." />
       </>
     );
@@ -147,23 +155,23 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos }: {
 
   // ---------------------------------------------------------------- 2. MPI
   if (tab === 'mpi') {
-    const estado = (m: Mpi) => m.ficha_id ? 'CON_FICHA' : m.receta ? 'POR_APROBAR' : m.revision ?? (m.candidatas.length ? 'CON_CANDIDATA' : 'SIN_CANDIDATA');
+    const estado = (m: Mpi) => hecha(m) ? 'CON_FICHA' : m.receta ? 'POR_APROBAR' : m.revision ?? (m.candidatas.length ? 'CON_CANDIDATA' : 'SIN_CANDIDATA');
     const ESTADOS: Record<string, { t: string; c: string }> = {
-      CON_FICHA: { t: 'Con ficha', c: 'ok' }, POR_APROBAR: { t: 'Receta elegida', c: 'info' }, CON_CANDIDATA: { t: 'Por revisar', c: 'aviso' },
-      SIN_CANDIDATA: { t: 'Sin receta parecida', c: 'aviso' }, SIN_RECETA: { t: 'Sin receta', c: 'gris' }, NO_ES_MPI: { t: 'No es MPI', c: 'gris' },
+      CON_FICHA: { t: F.conIngredientes ? 'Con ficha' : 'Completada', c: 'ok' }, POR_APROBAR: { t: `${F.receta[0].toUpperCase()}${F.receta.slice(1)} elegido`, c: 'info' }, CON_CANDIDATA: { t: 'Por revisar', c: 'aviso' },
+      SIN_CANDIDATA: { t: `Sin ${F.receta} parecido`, c: 'aviso' }, SIN_RECETA: { t: `Sin ${F.receta}`, c: 'gris' }, NO_ES_MPI: { t: F.conIngredientes ? 'No es MPI' : 'No va en la carta', c: 'gris' },
     };
     const grupos: Grupo<Mpi>[] = [
       { clave: 'estado', titulo: 'Estado', valor: estado, opciones: Object.entries(ESTADOS).map(([v, x]) => ({ v, t: x.t })) },
     ];
     const columnas: Columna<Mpi>[] = [
-      { k: 'nombre', t: 'MPI', orden: (m) => m.nombre, ver: (m) => <>
+      { k: 'nombre', t: F.resultados, orden: (m) => m.nombre, ver: (m) => <>
         <Link href={`/fichas/${m.generico_id}`} style={{ textDecoration: 'none' }}><strong style={{ display: 'block' }}>{m.nombre}</strong></Link>
         <span className="cod">{m.codigo} · {m.unidad_base}{m.estado_catalogo === 'PROVISIONAL' ? ' · provisional' : ''}</span></> },
       { k: 'estado', t: 'Estado', orden: estado, ver: (m) => <>
         <span className={`pill ${ESTADOS[estado(m)].c}`}>{ESTADOS[estado(m)].t}</span>
         {m.nota && <span className="suave" style={{ display: 'block', fontSize: '.78rem' }}>{m.nota}</span>}</> },
-      { k: 'receta', t: 'Receta del recetario', ver: (m) => {
-        if (m.ficha_id) return <span className="suave">{m.ficha_origen === 'RECETARIO COCINA' ? 'Aprobada del recetario' : `Ficha de ${m.ficha_origen}`}</span>;
+      { k: 'receta', t: F.conIngredientes ? 'Receta del recetario' : 'Cóctel de la carta', ver: (m) => {
+        if (hecha(m)) return <span className="suave">{F.conIngredientes && m.ficha_origen !== fuente ? `Ficha de ${m.ficha_origen}` : 'Aprobada'}</span>;
         if (m.receta) return <><strong>{m.receta.nombre}</strong> <span className="cod">{m.receta.codigo}</span><span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{rinde(m.receta)}</span></>;
         if (!m.candidatas.length) return <span className="suave">—</span>;
         const c = m.candidatas[0];
@@ -172,25 +180,25 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos }: {
             o {m.candidatas.slice(1).map((x) => `${x.nombre} (${Math.round(x.similitud * 100)} %)`).join(', ')}</span>}</>;
       } },
       ...(puedeEditar ? [{ k: 'acc', t: '', ver: (m: Mpi) => {
-        if (m.ficha_id && m.ficha_origen === 'RECETARIO COCINA') return null;
+        if (hecha(m)) return null;
         if (m.receta) return <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <Link className="boton mini" href={`/produccion/validar/receta/${m.receta.codigo}`}>Revisar y aprobar</Link>
-          <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => elegirReceta(m.receta!.codigo, null))}>No es esta</button>
+          <Link className="boton mini" href={urlReceta(m.receta.codigo)}>Revisar y aprobar</Link>
+          <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => elegirReceta(m.receta!.codigo, null, fuente))}>No es esta</button>
         </div>;
         if (abierto === m.generico_id) return <div style={{ display: 'flex', gap: '.3rem', alignItems: 'flex-start' }}>
-          <Buscador placeholder="Buscar receta…" alElegir={(cod) => correr(() => elegirReceta(cod, m.generico_id))}
+          <Buscador placeholder={`Buscar ${F.receta}…`} alElegir={(cod) => correr(() => elegirReceta(cod, m.generico_id, fuente))}
                     opciones={datos.recetas.filter((r) => r.estado === 'PENDIENTE' && !r.generico_id).map((r) => ({ id: r.codigo, nombre: r.nombre, extra: `${r.codigo} · ${rinde(r)}` }))} />
           <button type="button" className="secundario mini" onClick={() => setAbierto(null)}>×</button>
         </div>;
         return <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {m.candidatas[0] && !m.revision && <button type="button" className="mini" disabled={enviando}
-            onClick={() => correr(() => elegirReceta(m.candidatas[0].codigo, m.generico_id), () => router.push(`/produccion/validar/receta/${m.candidatas[0].codigo}`))}>Es esta</button>}
-          <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(m.generico_id)}>Otra receta</button>
+            onClick={() => correr(() => elegirReceta(m.candidatas[0].codigo, m.generico_id, fuente), () => router.push(urlReceta(m.candidatas[0].codigo)))}>{F.conIngredientes ? 'Es esta' : 'Es este'}</button>}
+          <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(m.generico_id)}>{F.conIngredientes ? 'Otra receta' : 'Otro cóctel'}</button>
           {m.revision
-            ? <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => marcarMpi(m.generico_id, null))}>Quitar marca</button>
+            ? <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => marcarMpi(m.generico_id, null, undefined, fuente))}>Quitar marca</button>
             : <>
-                <button type="button" className="secundario mini" disabled={enviando} onClick={() => correr(() => marcarMpi(m.generico_id, 'SIN_RECETA'))} title="Existe pero el recetario no la trae: la ficha se escribe después">Sin receta</button>
-                <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => marcarMpi(m.generico_id, 'NO_ES_MPI'))} title="Porción de plato, duplicado u obsoleto: queda propuesta para inactivar">No es MPI</button>
+                <button type="button" className="secundario mini" disabled={enviando} onClick={() => correr(() => marcarMpi(m.generico_id, 'SIN_RECETA', undefined, fuente))} title="Existe pero el documento no la trae: la ficha se completa después">Sin {F.receta}</button>
+                <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => marcarMpi(m.generico_id, 'NO_ES_MPI', undefined, fuente))} title="Duplicado u obsoleto: queda propuesto para inactivar">{F.conIngredientes ? 'No es MPI' : 'No va'}</button>
               </>}
         </div>;
       } }] : []),
@@ -208,35 +216,35 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos }: {
 
   // ---------------------------------------------------------------- 3. recetas
   const estadoR = (r: Receta) => (r.estado === 'APROBADA' ? 'APROBADA' : r.generico_id ? 'CON_MPI' : 'SIN_MPI');
-  const ESTR: Record<string, { t: string; c: string }> = { APROBADA: { t: 'Aprobada', c: 'ok' }, CON_MPI: { t: 'Con MPI, por aprobar', c: 'info' }, SIN_MPI: { t: 'Sin MPI', c: 'aviso' } };
+  const ESTR: Record<string, { t: string; c: string }> = { APROBADA: { t: 'Aprobada', c: 'ok' }, CON_MPI: { t: `Con ${F.resultado}, por aprobar`, c: 'info' }, SIN_MPI: { t: `Sin ${F.resultado}`, c: 'aviso' } };
   const grupos: Grupo<Receta>[] = [{ clave: 'estado', titulo: 'Estado', valor: estadoR, opciones: Object.entries(ESTR).map(([v, x]) => ({ v, t: x.t })) }];
   const columnas: Columna<Receta>[] = [
     { k: 'nombre', t: 'Receta', orden: (r) => r.nombre, ver: (r) => <>
-      <Link href={`/produccion/validar/receta/${r.codigo}`} style={{ textDecoration: 'none' }}><strong style={{ display: 'block' }}>{r.nombre}</strong></Link>
+      <Link href={urlReceta(r.codigo)} style={{ textDecoration: 'none' }}><strong style={{ display: 'block' }}>{r.nombre}</strong></Link>
       <span className="cod">{r.codigo} · {r.componentes} ingredientes · {r.pasos} pasos · {rinde(r)}</span></> },
     { k: 'estado', t: 'Estado', orden: estadoR, ver: (r) => <span className={`pill ${ESTR[estadoR(r)].c}`}>{ESTR[estadoR(r)].t}</span> },
-    { k: 'mpi', t: 'MPI', ver: (r) => r.mpi ? <strong>{r.mpi}</strong>
+    { k: 'mpi', t: F.resultados, ver: (r) => r.mpi ? <strong>{r.mpi}</strong>
         : r.propuesto ? <>{r.propuesto} {pillSim(r.similitud)}</> : <span className="suave">ninguna parecida</span> },
     ...(puedeEditar ? [{ k: 'acc', t: '', ver: (r: Receta) => {
       if (r.estado === 'APROBADA') return null;
-      if (r.generico_id) return <Link className="boton mini" href={`/produccion/validar/receta/${r.codigo}`}>Revisar y aprobar</Link>;
+      if (r.generico_id) return <Link className="boton mini" href={urlReceta(r.codigo)}>Revisar y aprobar</Link>;
       if (abierto === r.codigo) return <div style={{ display: 'grid', gap: '.4rem', minWidth: 240 }}>
-        <Buscador placeholder="Buscar MPI…" opciones={mpisLibres} alElegir={(id) => correr(() => elegirReceta(r.codigo, id))} />
+        <Buscador placeholder={`Buscar ${F.resultado}…`} opciones={mpisLibres} alElegir={(id) => correr(() => elegirReceta(r.codigo, id, fuente))} />
         <button type="button" className="secundario mini" onClick={() => setAbierto(null)}>Cancelar</button>
       </div>;
       return <div style={{ display: 'grid', gap: '.3rem', justifyItems: 'end' }}>
         <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          {r.propuesto_id && <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => elegirReceta(r.codigo, r.propuesto_id))}>Es esta MPI</button>}
-          <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(r.codigo)}>Otra MPI</button>
-          <button type="button" className="secundario mini" disabled={enviando} onClick={() => {
+          {r.propuesto_id && <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => elegirReceta(r.codigo, r.propuesto_id, fuente))}>{F.conIngredientes ? 'Es esta MPI' : 'Es esta bebida'}</button>}
+          <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(r.codigo)}>Otra {F.resultado}</button>
+          {F.conIngredientes && <button type="button" className="secundario mini" disabled={enviando} onClick={() => {
             setError(null); setBloqueo(null);
             iniciar(async () => {
-              const x = await crearMpi(r.codigo, bloqueo?.codigo === r.codigo ? motivo : undefined);
+              const x = await crearMpi(r.codigo, bloqueo?.codigo === r.codigo ? motivo : undefined, fuente);
               if (x.ok) { setBloqueo(null); setMotivo(''); router.refresh(); return; }
               if (x.bloqueos.length) setBloqueo({ codigo: r.codigo, mensajes: x.bloqueos });
               else setError(x.fatales.join(' '));
             });
-          }}>Crear MPI</button>
+          }}>Crear MPI</button>}
         </div>
         {bloqueo?.codigo === r.codigo && <div className="aviso" style={{ margin: 0, fontSize: '.85rem', maxWidth: 360 }}>
           {bloqueo.mensajes.map((m) => <div key={m}>{m}</div>)}
