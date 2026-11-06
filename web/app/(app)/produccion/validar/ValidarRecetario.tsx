@@ -3,7 +3,8 @@ import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Columna, type Grupo } from '@/components/VistaFiltrable';
-import { crearMpi, decidirIngredientes, elegirReceta, marcarMpi } from './acciones';
+import { aprobarComoVienen, crearMpi, decidirIngredientes, elegirReceta, marcarMpi, type ResultadoGrupo } from './acciones';
+import { confirmar } from '@/components/Dialogo';
 import { FUENTES, type ClaveFuente } from '@/lib/recetario';
 
 export type Resumen = {
@@ -77,6 +78,33 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
   const [abierto, setAbierto] = useState<string | null>(null);   // fila con el buscador o el formulario abierto
   const [motivo, setMotivo] = useState('');
   const [bloqueo, setBloqueo] = useState<{ codigo: string; mensajes: string[] } | null>(null);
+  const [grupo, setGrupo] = useState<ResultadoGrupo | null>(null);
+
+  // aprobar varias como vienen: los ingredientes, cantidades y textos de la propuesta, sin pasar por el editor
+  const aprobarGrupo = async (items: { codigo: string; generico_id: string }[], limpiar?: () => void) => {
+    if (!items.length) return;
+    const n = items.length;
+    const ok = await confirmar(`Se aprobarán ${n} ${n === 1 ? 'ficha' : 'fichas'} tal como vienen en la propuesta (cada una nace como versión nueva). Las que tengan algo por corregir quedan aparte para abrirlas una por una.`,
+      { titulo: 'Aprobar como vienen', aceptar: `Aprobar ${n}` });
+    if (!ok) return;
+    setError(null); setGrupo(null);
+    iniciar(async () => {
+      const r = await aprobarComoVienen(items, fuente);
+      setGrupo(r);
+      limpiar?.();
+      router.refresh();
+    });
+  };
+  const resumenGrupo = grupo && (
+    <div className={grupo.fallidas.length ? 'aviso' : 'exito'} role="status">
+      <strong>{grupo.aprobadas.length} aprobadas.</strong>
+      {grupo.fallidas.length > 0 && <> {grupo.fallidas.length} quedaron por revisar una por una:
+        <ul style={{ margin: '.3rem 0 0', paddingLeft: '1.1rem' }}>
+          {grupo.fallidas.map((x) => <li key={x.codigo}><Link href={urlReceta(x.codigo)}>{x.nombre}</Link> <span className="suave">· {x.motivo}</span></li>)}
+        </ul></>}
+      <button type="button" className="discreto mini" style={{ marginLeft: '.5rem' }} onClick={() => setGrupo(null)}>Cerrar</button>
+    </div>
+  );
 
   const correr = (f: () => Promise<{ ok: boolean; error?: string }>, despues?: () => void) => {
     setError(null);
@@ -203,12 +231,27 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
         </div>;
       } }] : []),
     ];
+    // listas para aprobar en grupo: con su receta elegida, o con la del mismo código propuesta
+    const itemMpi = (m: Mpi) => hecha(m) ? null : m.receta ? { codigo: m.receta.codigo, generico_id: m.generico_id }
+      : !m.revision && m.candidatas[0]?.similitud >= 0.99 ? { codigo: m.candidatas[0].codigo, generico_id: m.generico_id } : null;
+    const listas = datos.mpis.map(itemMpi).filter((x): x is { codigo: string; generico_id: string } => !!x);
     return (
       <>
         {aviso}
+        {resumenGrupo}
+        {puedeEditar && listas.length > 0 && (
+          <div className="aviso" style={{ display: 'flex', gap: '.6rem', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <span><strong>{listas.length} {F.resultados.toLowerCase()}</strong> tienen su {F.receta} {F.conIngredientes ? 'elegida o con el mismo código' : 'de la carta con el mismo código'}.
+              Puedes aprobarlas todas como vienen, o marcar solo algunas en la lista.</span>
+            <button type="button" disabled={enviando} onClick={() => aprobarGrupo(listas)}>{enviando ? 'Aprobando…' : `Aprobar las ${listas.length} como vienen`}</button>
+          </div>
+        )}
         <VistaFiltrable clave="validar-mpi" filas={datos.mpis} id={(m) => m.generico_id}
                         buscar={(m) => `${m.codigo} ${m.nombre} ${m.receta?.nombre ?? ''} ${m.candidatas.map((c) => c.nombre).join(' ')}`}
                         grupos={grupos} columnas={columnas} filtrosIniciales={{ estado: ['POR_APROBAR', 'CON_CANDIDATA', 'SIN_CANDIDATA'] }}
+                        seleccionable={puedeEditar ? (m) => !!itemMpi(m) : undefined}
+                        acciones={(sel, limpiar) => <button type="button" disabled={enviando}
+                          onClick={() => aprobarGrupo(sel.map(itemMpi).filter((x): x is { codigo: string; generico_id: string } => !!x), limpiar)}>Aprobar {sel.length} como vienen</button>}
                         vacio="No hay MPI con estos filtros." />
       </>
     );
@@ -254,11 +297,18 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
       </div>;
     } }] : []),
   ];
+  const itemR = (r: Receta) => r.estado === 'APROBADA' ? null : r.generico_id ? { codigo: r.codigo, generico_id: r.generico_id }
+    : r.propuesto_id && (r.similitud ?? 0) >= 0.99 ? { codigo: r.codigo, generico_id: r.propuesto_id } : null;
   return (
     <>
       {aviso}
+      {resumenGrupo}
       <VistaFiltrable clave="validar-recetas" filas={datos.recetas} id={(r) => r.codigo} buscar={(r) => `${r.codigo} ${r.nombre} ${r.mpi ?? ''} ${r.propuesto ?? ''}`}
-                      grupos={grupos} columnas={columnas} filtrosIniciales={{ estado: ['SIN_MPI', 'CON_MPI'] }} vacio="No hay recetas con estos filtros." />
+                      grupos={grupos} columnas={columnas} filtrosIniciales={{ estado: ['SIN_MPI', 'CON_MPI'] }}
+                      seleccionable={puedeEditar ? (r) => !!itemR(r) : undefined}
+                      acciones={(sel, limpiar) => <button type="button" disabled={enviando}
+                        onClick={() => aprobarGrupo(sel.map(itemR).filter((x): x is { codigo: string; generico_id: string } => !!x), limpiar)}>Aprobar {sel.length} como vienen</button>}
+                      vacio="No hay recetas con estos filtros." />
     </>
   );
 }

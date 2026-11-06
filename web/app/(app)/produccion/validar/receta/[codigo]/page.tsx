@@ -2,23 +2,13 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
-import { tipoPunto, type Punto } from '@/lib/fichas';
+import { tipoPunto } from '@/lib/fichas';
 import { FUENTES, claveFuente } from '@/lib/recetario';
 import PestanasProduccion from '@/components/PestanasProduccion';
 import EditorFicha, { type DatosFicha, type InicialFicha } from '../../../../fichas/[generico]/EditorFicha';
+import { inicialDesdePropuesta, type Propuesta } from '@/lib/propuesta-ficha';
 
 export const metadata = { title: 'Aprobar propuesta de ficha' };
-
-type Linea = { tipo: 'ing' | 'sub'; codigo: string; cantidad: number | null; unidad: string | null; nombre: string | null; nota: string | null; estado: string | null;
-               generico_id: string | null; generico: string | null; unidad_base: string | null };
-type Propuesta = {
-  receta: { codigo: string; nombre: string; descripcion: string | null; rendimiento: number | null; unidad: string | null; alergenos: string[];
-            procedimiento: string | null; estado: string; generico_id: string | null; ficha_id: string | null };
-  propuesta: { pasos?: string[]; puntos?: (Punto & { de: string })[]; observaciones?: string[]; metodo?: string | null; presentacion?: string | null;
-               decoracion?: string[]; concepto?: string | null; alergenos_declarados?: string[]; alergenos_sugeridos?: string[];
-               suma_entrada_g?: number | null; suma_completa?: boolean };
-  lineas: Linea[];
-};
 
 // Paso final: la propuesta abre en el editor de fichas; quien decide la corrige y la aprueba.
 export default async function AprobarReceta({ params, searchParams }: { params: Promise<{ codigo: string }>; searchParams: Promise<{ fuente?: string }> }) {
@@ -43,25 +33,7 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
   }
   const sugeridos = pr.alergenos_sugeridos ?? [];
   const faltan = F.conIngredientes ? p.lineas.filter((l) => !l.generico_id) : [];
-  const presentacion = [pr.presentacion, pr.decoracion?.length ? `Decoración: ${pr.decoracion.join(', ')}.` : null].filter(Boolean).join(' ');
-  const inicial: InicialFicha | undefined = datos ? {
-    codigo: datos.ficha?.codigo ?? r.codigo,
-    neto: F.conIngredientes ? (r.unidad === 'g' && r.rendimiento ? String(r.rendimiento) : '') : datos.ficha?.neto_esperado != null ? String(datos.ficha.neto_esperado) : '',
-    tiempo: datos.ficha?.tiempo_min != null ? String(datos.ficha.tiempo_min) : '',
-    porciones: F.conIngredientes ? (r.unidad === 'porciones' || r.unidad === 'und' ? String(r.rendimiento ?? '') : '') : datos.ficha?.porciones != null ? String(datos.ficha.porciones) : '',
-    metodo: pr.metodo ?? datos.ficha?.metodo ?? '',
-    pasos: pr.pasos ?? [],
-    puntos: (pr.puntos ?? []).map((x) => ({ tipo: x.tipo, texto: x.texto })),
-    alergenos: [...new Set([...(datos.ficha?.alergenos ?? []), ...(pr.alergenos_declarados ?? []), ...sugeridos])],
-    descripcion: r.descripcion ?? datos.ficha?.descripcion ?? '',
-    presentacion: presentacion || datos.ficha?.presentacion || '',
-    observaciones: [datos.ficha?.observaciones, ...(pr.observaciones ?? [])].filter(Boolean).join(' '),
-    // cocina: los ingredientes emparejados del recetario; carta: los de la ficha, ya emparejados y costeados
-    lineas: F.conIngredientes
-      ? p.lineas.filter((l) => l.generico_id).map((l) => ({ generico_id: l.generico_id!, cantidad: l.cantidad === null ? '' : String(l.cantidad),
-          unidad: l.unidad === 'porciones' ? 'porcion' : l.unidad ?? l.unidad_base ?? 'g', nota: '' }))
-      : datos.lineas.map((l) => ({ generico_id: l.generico_id, cantidad: l.cantidad === null ? '' : String(l.cantidad), unidad: l.unidad, nota: l.nota ?? '' })),
-  } : undefined;
+  const inicial: InicialFicha | undefined = datos ? inicialDesdePropuesta(p, datos, F.conIngredientes) : undefined;
 
   return (
     <>
