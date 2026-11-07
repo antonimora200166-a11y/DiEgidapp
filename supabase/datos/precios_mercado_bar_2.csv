@@ -1,0 +1,110 @@
+﻿codigo;producto;insumo;unidad_base;referencia;precio_referencia;costo_por_unidad_base;fuente;otras_fuentes;confianza;nota
+BAR_MPe_0133;BAR_MPe_0133-500;Ginebra Monkey 47;ml;Botella 500 ml;272990;545,9800;Dislicores;Carulla $272.900;alta;
+BAR_MPe_0135;BAR_MPe_0135-700;Pisco La Botija Quebranta;ml;Botella 700 ml;110500;157,8571;Dislicores;;alta;
+BAR_MPe_0136;BAR_MPe_0136-700;Ron La Hechicera Original;ml;Botella 700 ml;236990;338,5571;Dislicores;Carulla $236.900 · Cañaveral $244.400 · Dislicores en oferta $189.520;alta;
+BAR_MPe_0137;BAR_MPe_0137-700;Ron Zacapa 23 años;ml;Botella 700 ml;291900;417,0000;Dislicores;Carulla $297.000 · Cañaveral $276.900;alta;
+BAR_MPe_0139;BAR_MPe_0139-750;Tequila Don Julio 1942;ml;Botella 750 ml;1229300;1639,0667;Dislicores;;alta;
+BAR_MPe_0140;BAR_MPe_0140-700;Tequila Don Julio 70;ml;Botella 700 ml;399900;571,2857;Dislicores;Éxito $407.000;alta;
+BAR_MPe_0142;BAR_MPe_0142-375;Tequila José Cuervo Especial;ml;Botella 375 ml;55500;148,0000;Dislicores;Cañaveral $55.500 · Carulla $64.200;alta;
+BAR_MPe_0142;BAR_MPe_0142-750;Tequila José Cuervo Especial;ml;Botella 750 ml;93500;124,6667;Dislicores;Carulla $100.600 (oferta $80.480) · Cañaveral $79.900;alta;
+BAR_MPe_0143;BAR_MPe_0143-700;Vodka Grey Goose;ml;Botella 700 ml;239500;342,1429;Carulla;Dislicores $240.500 · Cañaveral $217.750;alta;
+BAR_MPe_0144;BAR_MPe_0144-750;Whisky Buchanan's Two Souls;ml;Botella 750 ml;196200;261,6000;Dislicores;Cañaveral $220.950;alta;
+BAR_MPe_0146;BAR_MPe_0146-750;Whisky Glenfiddich 18 años;ml;Botella 750 ml;628500;838,0000;Dislicores;Carulla $631.500;alta;
+BAR_MPe_0147;BAR_MPe_0147-700;Whisky Monkey Shoulder;ml;Botella 700 ml;161100;230,1429;Éxito;Dislicores $172.000 · Cañaveral $143.900;alta;
+BAR_MPe_0147;BAR_MPe_0147-1000;Whisky Monkey Shoulder;ml;Botella 1000 ml (por ml de la de 700);161100;230,1429;Éxito;Dislicores $172.000 · Cañaveral $143.900;media;No encontré la de 1 litro: usé el costo por ml de la de 700 ml
+BAR_MPe_0148;BAR_MPe_0148-965;Cachaça 51;ml;Botella 965 ml;109990;113,9793;Dislicores;;alta;
+BAR_MPe_0149;BAR_MPe_0149-750;Jerez Tío Pepe;ml;Botella 750 ml;129500;172,6667;Éxito (precio regular);Éxito en oferta $90.650;alta;
+BAR_MPe_0151;BAR_MPe_0151-750;Convier licor de maracuyá;ml;Botella 750 ml;73400;97,8667;Éxito;;alta;
+BAR_MPe_0153;BAR_MPe_0153-750;Sambuca Luxardo;ml;Botella 750 ml;176990;235,9867;Dislicores;;alta;
+BAR_MPe_0155;BAR_MPe_0155-750;Dubonnet;ml;Botella 750 ml;80300;107,0667;Carulla;Dislicores $74.990 · Cañaveral $85.950;alta;
+BAR_MPe_0156;BAR_MPe_0156-750;Ron Cacique 500;ml;Botella 750 ml;88990;118,6533;Dislicores;;alta;
+BAR_MPe_0157;BAR_MPe_0157-750;Aguardiente Amarillo;ml;Botella 750 ml (Manzanares);56500;75,3333;Éxito;Éxito 1000 ml $70.500 · Antioqueño amarillo 750 ml $39.550;media;«Aguardiente Amarillo» no dice la marca: tomé Amarillo de Manzanares
+BAR_MPe_0157;BAR_MPe_0157-375;Aguardiente Amarillo;ml;Botella 375 ml (por ml de la de 750);56500;75,3333;Éxito;Dislicores Amarillo de Manzanares $26.990;media;Usé el costo por ml de la de 750 ml
+BAR_MPe_0158;BAR_MPe_0158-750;Aguardiente Cumbé Premium;ml;Botella 750 ml;130990;174,6533;Dislicores;;media;En Dislicores sale como «Cumbé»; confirma que es el mismo
+BAR_MPe_0159;BAR_MPe_0159-750;Ron Flor de Caña;ml;Botella 750 ml (7 años);100500;134,0000;Dislicores;Cañaveral $76.950 · 4 años $63.400 · 12 años $152.990;media;El catálogo no dice los años: tomé el de 7
+BAR_MPe_0160;BAR_MPe_0160-750;Vino Diablo Dark Red Blend;ml;Botella 750 ml;99900;133,2000;Éxito (precio regular);Éxito en oferta $74.925;alta;
+BAR_MPe_0161;BAR_MPe_0161-375;Vino Las Moras Malbec;ml;Botella 375 ml (por ml de la de 750);59000;78,6667;Dislicores;Carulla $62.100;media;No encontré la de 375 ml: usé el costo por ml de la de 750 ml
+BAR_MPe_0162;BAR_MPe_0162-750;Vino Marqués de Riscal Reserva;ml;Botella 750 ml;194950;259,9333;Éxito (precio regular);Éxito en oferta $126.912;alta;
+BAR_MPe_0164;BAR_MPe_0164-750;Vino Morandé Cabernet Sauvignon;ml;Botella 750 ml;63400;84,5333;Éxito (precio regular);Carulla $63.600 · ofertas $41.273;media;Sale como Morandé Cabernet; confirma que es la línea Pionero
+BAR_MPe_0168;BAR_MPe_0168-750;Vino Tarapacá Reserva Chardonnay;ml;Botella 750 ml;75500;100,6667;Dislicores;;alta;
+BAR_MPe_0176;BAR_MPe_0176-750;Vino Tarapacá Sauvignon Blanc;ml;Botella 750 ml;69700;92,9333;Carulla (precio regular);Carulla en oferta $48.616;alta;
+BAR_MPe_0169;BAR_MPe_0169-750;Espumante Chandon Extra Brut;ml;Botella 750 ml;90800;121,0667;Cañaveral;Dislicores $89.500 · Carulla $101.000;alta;
+BAR_MPe_0170;BAR_MPe_0170-750;Espumante Chandon Rosé;ml;Botella 750 ml;89500;119,3333;Dislicores;;alta;
+BAR_MPe_0171;BAR_MPe_0171-750;Espumante Piccini Lambrusco;ml;Botella 750 ml;52500;70,0000;Dislicores;Cañaveral $43.350 · Carulla $55.700;alta;
+BAR_MPe_0173;BAR_MPe_0173-750;Champagne Veuve Clicquot Brut;ml;Botella 750 ml;499990;666,6533;Dislicores;Éxito $499.900 · Carulla $504.900;alta;
+BAR_MPe_0174;BAR_MPe_0174-750;Champagne Veuve Clicquot Rosé;ml;Botella 750 ml;707500;943,3333;Éxito (precio regular);Carulla $707.500 · Dislicores (con caja) $634.500;alta;
+BAR_MPe_0177;BAR_MPe_0177-300;Agua Manantial sin gas;und;Botella 300 ml;3520;3520,0000;Éxito (con gas, vidrio);Cañaveral con gas $2.900;media;No encontré la sin gas de 300 ml: tomé la con gas
+BAR_MPe_0178;BAR_MPe_0178-300;Agua Manantial con gas;und;Botella vidrio 300 ml;3520;3520,0000;Éxito;Cañaveral $2.900;alta;
+BAR_MPe_0179;BAR_MPe_0179-330;Cerveza Corona;und;Botella 330 ml (paquete x6);4350;4350,0000;Cañaveral;Éxito $4.710 · Dislicores x6 $25.500;alta;
+BAR_MPe_0180;BAR_MPe_0180-300;Cerveza Club Colombia Dorada;und;Botella (paquete x6 $22.500);3750;3750,0000;Dislicores;Éxito lata $3.800 · Cañaveral lata $3.700;alta;
+BAR_MPe_0181;BAR_MPe_0181-330;Cerveza Delirium Nocturnum;und;Botella 330 ml;29600;29600,0000;Carulla;Dislicores $27.500 · Cañaveral $29.750;alta;
+BAR_MPe_0182;BAR_MPe_0182-330;Cerveza Delirium Tremens;und;Botella 330 ml;29750;29750,0000;Cañaveral;Dislicores $27.500 · Carulla $29.800;alta;
+BAR_MPe_0184;BAR_MPe_0184-330;Cerveza Stella Artois;und;Botella 300 ml (paquete x6);4150;4150,0000;Éxito;Dislicores x6 $24.990 · Cañaveral x6 $19.900;alta;
+BAR_MPe_0185;BAR_MPe_0185-300;Coca-Cola Original;und;Botella 300 ml;3700;3700,0000;Éxito;;alta;
+BAR_MPe_0186;BAR_MPe_0186-300;Coca-Cola Zero;und;Botella 300 ml;4020;4020,0000;Éxito;;alta;
+BAR_MPe_0187;BAR_MPe_0187-L310;Hatsu Sandía Albahaca;und;Lata 310 ml (pack x6 $18.700);3117;3117,0000;Éxito;;alta;
+BAR_MPe_0188;BAR_MPe_0188-300;Soda Schweppes;ml;Botella vidrio 300 ml;2700;9,0000;Éxito (precio regular);Cañaveral $2.750;alta;
+BAR_MPe_0188;BAR_MPe_0188-400;Soda Schweppes;ml;Botella PET 400 ml;2920;7,3000;Éxito (precio regular);;alta;
+BAR_MPe_0189;BAR_MPe_0189-330;Mil976 Tamarindo;ml;Lata 207 ml (pack x4 $24.850);24850;30,0121;Éxito;Dislicores unidad $6.000;media;Tu catálogo dice botella 330 ml; en tiendas solo apareció la lata de 207 ml
+BAR_MPe_0190;BAR_MPe_0190-L250;JP Chenet Fizzy Blanc;und;Lata 250 ml;10850;10850,0000;Éxito (precio regular);Dislicores 4-pack $43.500;alta;
+BAR_MPe_0191;BAR_MPe_0191-L250;JP Chenet Fizzy Rouge;und;Lata 250 ml;11800;11800,0000;Carulla (precio regular);;alta;
+BAR_MPe_0192;BAR_MPe_0192-L250;JP Chenet Fizzy Spritz;und;Lata 250 ml;10850;10850,0000;Éxito (precio de la Fizzy Blanc);;media;No encontré la lata de Spritz: tomé el de las otras Fizzy
+BAR_MPe_0193;BAR_MPe_0193-L250;JP Chenet Fizzy Bellini;und;Lata 250 ml;12000;12000,0000;Carulla (precio regular);;alta;
+BAR_MPe_0194;BAR_MPe_0194-L250;JP Chenet Fizzy Mimosa;und;Lata 250 ml;12100;12100,0000;Carulla (precio regular);Éxito $11.200 · Cañaveral $12.200;alta;
+BAR_MPe_0070;BAR_MPe_0070-GR;Leche de coco;g;Caja 250 g (Antillana);4800;19,2000;Éxito;Carulla $4.800 · Cañaveral $4.150;alta;
+BAR_MPe_0073;BAR_MPe_0073-GR;Banano;g;1 kg a granel;3500;3,5000;Cañaveral;Éxito $440 la unidad;media;
+BAR_MPe_0074;BAR_MPe_0074-GR;Coco;g;1 coco (≈700 g);9950;14,2143;Cañaveral;coco pelado $10.000;baja;Se vende por unidad: supuse 700 g; pesa uno para ajustar
+BAR_MPe_0076;BAR_MPe_0076-GR;Mango deshidratado;g;Bolsa 25 g (Tomacol);5900;236,0000;Carulla;One Peace 100 g $26.150 · Fruci 30 g $6.100;media;
+BAR_MPe_0078;BAR_MPe_0078-GR;Fresa congelada;g;Bolsa 1 kg;13840;13,8400;Éxito;500 g $10.820 · Cañaveral Agroya 500 g $6.900;alta;
+BAR_MPe_0081;BAR_MPe_0081-GR;Mix frutos rojos;g;Bolsa 500 g;11440;22,8800;Éxito;Carulla $11.440;alta;
+BAR_MPe_0082;BAR_MPe_0082-GR;Mora congelada;g;Bolsa 500 g;10740;21,4800;Éxito;Cañaveral Agroya $8.550;alta;
+BAR_MPe_0083;BAR_MPe_0083-GR;Piña congelada;g;Bolsa 500 g (Frutinal);10460;20,9200;Éxito;;alta;
+BAR_MPe_0195;BAR_MPe_0195-GR;Frambuesa;g;Bandeja 125 g;18660;149,2800;Éxito;Carulla $20.080 · Cañaveral $16.000;alta;
+BAR_MPe_0196;BAR_MPe_0196-GR;Hierbabuena;g;Atado (≈25 g);1150;46,0000;Cañaveral;;baja;Se vende por atado: supuse 25 g; pesa uno para ajustar
+BAR_MPe_0204;BAR_MPe_0204-P01;Uva verde sin semilla;g;1 kg a granel;27980;27,9800;Cañaveral;Carulla $30.500;media;
+BAR_MPe_0084;BAR_MPe_0084-ML;Vinagre blanco;ml;Botella 1000 ml (Alfresco);3700;3,7000;Cañaveral;Éxito Frescampo $2.850;alta;«Sin especificar»: tomé vinagre blanco
+BAR_MPe_0085;BAR_MPe_0085-ML;Vinagre de sidra de manzana;ml;Botella 500 ml (Colavita);25850;51,7000;Éxito;Taeq $16.900 · Funat $32.150;media;
+BAR_MPe_0208;BAR_MPe_0208-P01;Tajín clásico;g;Frasco 142 g;15650;110,2113;Cañaveral;Carulla $18.720 · 400 g $31.600;alta;
+BAR_MPe_0209;BAR_MPe_0209-P01;Té Bitaco negro vainilla;g;Caja 20 g;18900;945,0000;Éxito;;alta;
+BAR_MPe_0042;BAR_MPe_0042-CJA;Menta francesa;und;Paquete x25 und;7050;282,0000;Cañaveral;;media;1 und = 1 de las 25 del paquete de Cañaveral (rama/hoja): confírmalo
+BAR_MPe_0150;BAR_MPe_0150-700;Absenta Fleur de Lis;ml;Botella 700 ml;148900;212,7143;Licores Medellín;Mercado Libre $152.991;alta;
+BAR_MPe_0152;BAR_MPe_0152-700;Pastis Ricard;ml;Botella 700 ml;110000;157,1429;Licores Medellín;;media;Solo apareció en Licores Medellín
+BAR_MPe_0104;BAR_MPe_0104-1000;Cachaça Jamel;ml;Botella 1000 ml;90240;90,2400;Mercado Libre;;media;Solo en Mercado Libre (importada)
+BAR_MPe_0138;BAR_MPe_0138-750;Ron Zacapa Ámbar 12;ml;Botella 750 ml;299000;398,6667;Mercado Libre;;media;Agotado en Éxito y Carulla; precio de Mercado Libre
+BAR_MPe_0183;BAR_MPe_0183-330;Cerveza Floris Framboise;und;Botella 330 ml;28500;28500,0000;Mercado Libre;;media;
+BAR_MPe_0205;BAR_MPe_0205-P01;Disaronno Velvet;ml;Botella 700 ml (pack x2 $379.900);189950;271,3571;Mercado Libre;;media;
+BAR_MPe_0130;BAR_MPe_0130-PC;Angostura aromatic bitters;ml;Botella 200 ml;134991;674,9550;Mercado Libre;6,8 oz $154.825–156.632 · 4 oz $99.000;media;Presentación por confirmar en tu catálogo: tomé la de 200 ml
+BAR_MPe_0131;BAR_MPe_0131-PC;Orange bitters (Angostura);ml;Botella 4 oz (118 ml);96000;813,5593;Mercado Libre;pack original + orange $199.000;media;Presentación por confirmar en tu catálogo
+BAR_MPe_0206;BAR_MPe_0206-P01;Licor neutro 80° (alcohol vegetal 96% grado alimenticio);ml;Botella 1 L;27200;27,2000;Mercado Libre;otra marca $25.174;baja;Tomé alcohol de caña 96% grado alimenticio; si compras otro, cámbialo
+BAR_MPe_0080;BAR_MPe_0080-PC;Licor neutro 35° (alcohol 96% rebajado con agua);ml;1 L de alcohol 96% rinde ≈2,74 L a 35°;27200;9,9162;Mercado Libre (cálculo);;baja;Calculado: alcohol 96% diluido a 35°. Si lo compras hecho, cámbialo
+BAR_MPe_0071;BAR_MPe_0071-GR;Ácido ascórbico (vitamina C en polvo);g;Bolsa 500 g (GM Food);34900;69,8000;Mercado Libre;otras $21.900–46.560;media;
+BAR_MPe_0075;BAR_MPe_0075-GR;Durazno deshidratado;g;Bolsa 1 lb (454 g, California);117000;257,7093;Mercado Libre;60 g $87.181;baja;Solo importado en Mercado Libre
+BAR_MPe_0077;BAR_MPe_0077-GR;Flor de clitoria seca;g;Bolsa 51 g;99655;1954,0196;Mercado Libre;10 g $24.000;media;
+BAR_MPe_0207;BAR_MPe_0207-P01;Isomalt granular;g;Bolsa 1 kg;52283;52,2830;Mercado Libre;importado 1 kg $198.990–212.000;media;
+BAR_MPe_0210;BAR_MPe_0210-P01;Salsa inglesa (Worcestershire);ml;Garrafa 3.800 ml (San Jorge);48900;12,8684;Mercado Libre;Lea & Perrins 148 ml $74.691;media;Tomé la nacional San Jorge; Lea & Perrins sale mucho más cara
+BAR_MPe_0211;BAR_MPe_0211-P01;Extracto de malta;ml;Frasco 500 g (Car & Mer);38990;77,9800;Mercado Libre;en polvo 500 g $15.423–20.500;baja;Viene en gramos: tomé 1 g ≈ 1 ml
+BAR_MPe_0212;BAR_MPe_0212-P01;Escarcha diamantina violeta;g;Frasco 5 g;8800;1760,0000;Mercado Libre;;media;
+BAR_MPe_0213;BAR_MPe_0213-P01;Escarcha diamantina azul agua marina;g;Frasco 5 g;8800;1760,0000;Mercado Libre;;media;Mismo precio de la línea Diamantina 5 g
+BAR_MPe_0214;BAR_MPe_0214-P01;Escarcha diamantina azul rey;g;Frasco 5 g;8800;1760,0000;Mercado Libre;;media;Mismo precio de la línea Diamantina 5 g
+BAR_MPe_0215;BAR_MPe_0215-P01;Escarcha diamantina tornasol blanca;g;Frasco 5 g;8800;1760,0000;Mercado Libre;escarcha tornasol 7 g $9.990;media;
+BAR_MPe_0216;BAR_MPe_0216-P01;Escarcha murano tornasol azul;g;Frasco 7 g;9990;1427,1429;Mercado Libre;murano 500 g $26.500;media;
+BAR_MPe_0217;BAR_MPe_0217-P01;Escarcha murano tornasol verde;g;Frasco 7 g;9990;1427,1429;Mercado Libre;murano 500 g $26.500;media;
+BAR_MPe_0218;BAR_MPe_0218-P01;Matizante perlado amarillo;g;Frasco 7 g;10990;1570,0000;Mercado Libre;;media;
+BAR_MPe_0219;BAR_MPe_0219-P01;Matizante perlado azul rey;g;Frasco 7 g;10990;1570,0000;Mercado Libre;;media;
+BAR_MPe_0220;BAR_MPe_0220-P01;Matizante perlado verde esmeralda;g;Frasco 7 g;10990;1570,0000;Mercado Libre;;media;
+BAR_MPe_0221;BAR_MPe_0221-P01;Matizante perlado naranja;g;Frasco 7 g;10990;1570,0000;Mercado Libre;;media;
+BAR_MPe_0222;BAR_MPe_0222-P01;Matizante perlado violeta;g;Frasco 7 g;10990;1570,0000;Mercado Libre;;media;
+BAR_MPe_0223;BAR_MPe_0223-P01;Matizante perlado azul cielo;g;Frasco 7 g;10990;1570,0000;Mercado Libre;;media;
+BAR_MPe_0224;BAR_MPe_0224-P01;Colorante comestible frambuesa;ml;Frasco 10 ml (Prodia);8400;840,0000;Mercado Libre;78 ml $22.900;media;
+BAR_MPe_0225;BAR_MPe_0225-P01;Colorante comestible lila;ml;Frasco 10 ml (Prodia);8400;840,0000;Mercado Libre;78 ml $22.900;media;
+BAR_MPe_0226;BAR_MPe_0226-P01;Colorante comestible azul;ml;Frasco 10 ml (Prodia);8400;840,0000;Mercado Libre;78 ml $22.900;media;
+BAR_MPe_0227;BAR_MPe_0227-P01;Colorante comestible color piel;ml;Frasco 10 ml (Prodia);8400;840,0000;Mercado Libre;78 ml $22.900;media;
+BAR_MPe_0228;BAR_MPe_0228-P01;Colorante comestible rojo;ml;Frasco 10 ml (Prodia);8400;840,0000;Mercado Libre;78 ml $22.900;media;
+BAR_MPe_0053;BAR_MPe_0053-GR;Pimienta de Timut;g;Bolsa 100 g;95000;950,0000;Mercado Libre;;media;
+BAR_MPe_0166;BAR_MPe_0166-750;Vino Trapiche Medalla Malbec Rosé;ml;Botella 750 ml (precio del Medalla Cabernet);159900;213,2000;Mercado Libre;;baja;No encontré el rosé: tomé el Medalla Cabernet
+BAR_MPe_0163;BAR_MPe_0163-750;Vino Marqués de Riscal Gran Reserva;ml;Botella 750 ml;;;;;pendiente;Agotado en Éxito; no apareció en ninguna tienda
+BAR_MPe_0175;BAR_MPe_0175-750;Champagne Veuve Clicquot Rich;ml;Botella 750 ml;;;;;pendiente;Agotado en Carulla; no apareció en ninguna tienda
+BAR_MPe_0167;BAR_MPe_0167-750;Vino Cono Sur Bicicleta Pinot Noir;ml;Botella 750 ml;;;;;pendiente;No apareció en ninguna tienda
+BAR_MPe_0045;BAR_MPe_0045-GR;Mix Triple Blend (PriceSmart);g;;;;;;;pendiente
+BAR_MPe_0051;BAR_MPe_0051-GR;Pimienta (por definir);g;;;;;;;pendiente
+BAR_MPe_0009;BAR_MPe_0009-ML;Café de máquina;ml;;;;;;;pendiente
