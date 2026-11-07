@@ -9,7 +9,7 @@ import type { PropuestaDescripcion } from '@/lib/descripcion-ia';
 import { aprobarReceta } from '../../produccion/validar/acciones';
 
 type UB = 'g' | 'ml' | 'und';
-type Ingrediente = { id: string; nombre: string; tipo: string; unidad_base: UB; unidades: string[] };
+type Ingrediente = { id: string; nombre: string; tipo: string; unidad_base: UB; unidades: string[]; productos?: { id: string; etiqueta: string }[] };
 type LoteViejo = { codigo: string; fecha: string; conservacion: string | null; vida_util_dias: number | null; empaque: string | null;
                    tecnica: string | null; tiempo_min: number | null; observaciones: string | null };
 export type DatosFicha = {
@@ -22,7 +22,7 @@ export type DatosFicha = {
     porciones: number | null; empaque: string | null; alergenos: string[]; observaciones: string | null; origen: string;
     motivo_cambio: string | null; creado_en: string; creado_por: string | null; lotes: number;
   } | null;
-  lineas: { generico_id: string; generico: string; tipo: string; unidad_base: UB; cantidad: number | null; unidad: string; nota: string | null;
+  lineas: { generico_id: string; generico: string; tipo: string; unidad_base: UB; producto_id: string | null; marca: string | null; cantidad: number | null; unidad: string; nota: string | null;
             factor: number | null; cantidad_base: number | null; costo_unitario: number | null; costo: number | null; falta: string | null; estimado: boolean }[];
   puntos: Punto[];
   almacenamientos: Almacenamiento[];
@@ -32,12 +32,13 @@ export type DatosFicha = {
   ingredientes: Ingrediente[];
 };
 // Una línea: lo que la persona escribe va como texto
-type Linea = { clave: string; generico_id: string; cantidad: string; unidad: string; nota: string; factor: string };
+// producto_id: la marca que pide la ficha ('' = cualquiera del genérico)
+type Linea = { clave: string; generico_id: string; producto_id: string; cantidad: string; unidad: string; nota: string; factor: string };
 type Alm = { conservacion: Almacenamiento['conservacion']; dias: string; nota: string };
 // Propuesta con que abre el editor (receta del recetario): reemplaza lo de la ficha vigente
 export type InicialFicha = {
   codigo: string; neto: string; tiempo: string; porciones: string; metodo: string; pasos: string[]; puntos: Punto[]; alergenos: string[];
-  descripcion: string; observaciones: string; lineas: { generico_id: string; cantidad: string; unidad: string; nota: string }[];
+  descripcion: string; observaciones: string; lineas: { generico_id: string; cantidad: string; unidad: string; nota: string; producto_id?: string }[];
   presentacion?: string;
 };
 
@@ -85,9 +86,9 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
   const [nota, setNota] = useState(f?.nota ?? '');
   const [motivo, setMotivo] = useState('');
   const [lineas, setLineas] = useState<Linea[]>(() => inicial
-    ? inicial.lineas.map((l) => ({ clave: crypto.randomUUID(), ...l, factor: '' }))
+    ? inicial.lineas.map((l) => ({ clave: crypto.randomUUID(), ...l, producto_id: l.producto_id ?? '', factor: '' }))
     : datos.lineas.map((l) => ({
-        clave: crypto.randomUUID(), generico_id: l.generico_id, cantidad: l.cantidad === null ? '' : String(l.cantidad),
+        clave: crypto.randomUUID(), generico_id: l.generico_id, producto_id: l.producto_id ?? '', cantidad: l.cantidad === null ? '' : String(l.cantidad),
         unidad: l.unidad, nota: l.nota ?? '', factor: '' })));
   const destino = volverA ?? `/fichas/${datos.resultado.id}`;
   const faltaNeto = !!receta && esMpi && num(neto) === null;
@@ -149,7 +150,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
         tiempo_min: tiempo, porciones, metodo, empaque, descripcion, presentacion, observaciones,
         procedimiento: pasos, alergenos, puntos,
         almacenamientos: alm.map((a) => ({ conservacion: a.conservacion, vida_util_dias: a.dias, nota: a.nota })),
-        lineas: lineas.map((l) => ({ generico_id: l.generico_id, cantidad: l.cantidad, unidad: l.unidad, nota: l.nota, factor: num(l.factor) })),
+        lineas: lineas.map((l) => ({ generico_id: l.generico_id, producto_id: l.producto_id || null, cantidad: l.cantidad, unidad: l.unidad, nota: l.nota, factor: num(l.factor) })),
       });
       setResultado(r);
       if (r.ok) { router.push(receta ? `/fichas/${datos.resultado.id}` : destino); router.refresh(); }
@@ -204,6 +205,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                 const nombre = i?.nombre ?? original?.generico ?? 'Ingrediente inactivo';
                 const unidades = i ? [...new Set([i.unidad_base, i.unidad_base === 'g' ? 'kg' : i.unidad_base === 'ml' ? 'l' : '', ...i.unidades, ...EXTRA, l.unidad].filter(Boolean))] : [l.unidad];
                 const sinConv = !!i && !convierte(i, l.unidad) && !TRAZA.includes(l.unidad);
+                const marcas = i?.productos ?? [];
                 return (
                   <li key={l.clave} style={!i || num(l.cantidad) === null || (sinConv && !(num(l.factor)! > 0)) ? { borderColor: 'var(--aviso)', borderWidth: 2 } : undefined}>
                     <div className="linea" style={{ alignItems: 'flex-start' }}>
@@ -222,6 +224,14 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                         <button type="button" className="secundario chico" onClick={() => setLineas((ls) => ls.filter((x) => x.clave !== l.clave))}>Quitar</button>
                       </div>
                     </div>
+                    {marcas.length > 1 && (
+                      <label style={{ margin: '.45rem 0 0', fontWeight: 400, fontSize: '.85rem' }}>Marca
+                        <select value={l.producto_id} onChange={(e) => poner(l.clave, { producto_id: e.target.value })} aria-label={`Marca de ${nombre}`}>
+                          <option value="">Cualquiera de las {marcas.length}</option>
+                          {marcas.map((p) => <option key={p.id} value={p.id}>{p.etiqueta}</option>)}
+                        </select>
+                      </label>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 2fr)', gap: '.5rem', marginTop: '.45rem', alignItems: 'end' }}>
                       <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Cantidad
                         <input inputMode="decimal" value={l.cantidad} onChange={(e) => poner(l.clave, { cantidad: e.target.value })} />
@@ -260,8 +270,8 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                 {opciones.map((i) => (
                   <li key={i.id} style={{ padding: 0 }}>
                     <button type="button" className="secundario" style={{ width: '100%', textAlign: 'left', justifyContent: 'flex-start', border: 0, color: 'inherit' }}
-                            onClick={() => { setLineas((ls) => [...ls, { clave: crypto.randomUUID(), generico_id: i.id, cantidad: '', unidad: i.unidad_base, nota: '', factor: '' }]); setBuscar(''); }}>
-                      <strong>{i.nombre}</strong> <span className="suave">· {i.tipo === 'SIN_COSTO' ? 'sin costo' : i.tipo} · {i.unidad_base}</span>
+                            onClick={() => { setLineas((ls) => [...ls, { clave: crypto.randomUUID(), generico_id: i.id, producto_id: '', cantidad: '', unidad: i.unidad_base, nota: '', factor: '' }]); setBuscar(''); }}>
+                      <strong>{i.nombre}</strong> <span className="suave">· {i.tipo === 'SIN_COSTO' ? 'sin costo' : i.tipo} · {i.unidad_base}{(i.productos?.length ?? 0) > 1 ? ` · ${i.productos!.length} marcas` : ''}</span>
                     </button>
                   </li>
                 ))}

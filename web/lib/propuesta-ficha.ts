@@ -35,7 +35,7 @@ export function inicialDesdePropuesta(p: Propuesta, datos: DatosFicha, conIngred
     lineas: conIngredientes
       ? p.lineas.filter((l) => l.generico_id).map((l) => ({ generico_id: l.generico_id!, cantidad: l.cantidad === null ? '' : String(l.cantidad),
           unidad: l.unidad === 'porciones' ? 'porcion' : l.unidad ?? l.unidad_base ?? 'g', nota: '' }))
-      : datos.lineas.map((l) => ({ generico_id: l.generico_id, cantidad: l.cantidad === null ? '' : String(l.cantidad), unidad: l.unidad, nota: l.nota ?? '' })),
+      : datos.lineas.map((l) => ({ generico_id: l.generico_id, cantidad: l.cantidad === null ? '' : String(l.cantidad), unidad: l.unidad, nota: l.nota ?? '', producto_id: l.producto_id ?? '' })),
   };
 }
 
@@ -49,6 +49,6 @@ export function payloadSinCambios(datos: DatosFicha, ini: InicialFicha, motivo: 
     procedimiento: ini.pasos.length ? ini.pasos : f?.procedimiento.length ? f.procedimiento : [''],
     alergenos: ini.alergenos, puntos: ini.puntos,
     almacenamientos: datos.almacenamientos.map((a) => ({ conservacion: a.conservacion, vida_util_dias: String(a.vida_util_dias), nota: a.nota ?? '' })),
-    lineas: ini.lineas.map((l) => ({ generico_id: l.generico_id, cantidad: l.cantidad, unidad: l.unidad, nota: l.nota, factor: null })),
+    lineas: ini.lineas.map((l) => ({ generico_id: l.generico_id, cantidad: l.cantidad, unidad: l.unidad, nota: l.nota, producto_id: l.producto_id || null, factor: null })),
   };
 }

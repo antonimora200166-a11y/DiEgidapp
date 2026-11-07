@@ -103,6 +103,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
                         {l.tipo === 'MPI'
                           ? <Link href={`/fichas/${l.generico_id}`}><strong>{l.generico}</strong></Link>
                           : <strong>{l.generico}</strong>}
+                        {l.marca && <span className="suave"> · {l.marca}</span>}
                         {l.nota && <span className="suave" style={{ display: 'block', fontSize: '.82rem' }}>{l.nota}</span>}
                       </span>
                       <span className="n">

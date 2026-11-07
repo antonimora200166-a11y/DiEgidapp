@@ -16,7 +16,7 @@ export type Mpi = {
   producto_id: string; codigo: string; generico_id: string; generico: string; marca: string; presentacion: string; unidad_base: UB;
   costo_promedio: number | null; factor_g: number | null; densidad: number | null; ficha_id: string | null; ficha_codigo: string | null; ultimo_lote: string | null;
 };
-type FichaLinea = { linea: number; generico_id: string; generico: string; tipo: string; unidad_base: UB; cantidad: number | null; unidad: string; nota: string | null; base: number | null };
+type FichaLinea = { linea: number; generico_id: string; generico: string; tipo: string; unidad_base: UB; producto_id?: string | null; cantidad: number | null; unidad: string; nota: string | null; base: number | null };
 type Ficha = {
   id: string; codigo: string; version: number; neto_esperado: number | null; nota: string | null; alergenos: string[]; empaque: string | null;
   tiempo_min: number | null; puntos: Punto[]; almacenamientos: Almacenamiento[]; lineas: FichaLinea[];
@@ -117,7 +117,10 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   }, [clave, cargado, resultado, mpiId, paso, fecha, tandas, consumos, neto, unidades, netoFactor, responsable, destino, conservacion, tiempo, obs]);
 
   // ---------------------------------------------------------------- elegir MPI y escalar la ficha
-  function proponerProducto(generico_id: string): Insumo | null {
+  // la marca que pide la ficha; si no pide ninguna, la que más hay
+  function proponerProducto(generico_id: string, marca?: string | null): Insumo | null {
+    const pedida = marca ? datos.insumos.find((i) => i.producto_id === marca && i.generico_id === generico_id) : undefined;
+    if (pedida) return pedida;
     const lista = datos.insumos.filter((i) => i.generico_id === generico_id);
     return lista.length ? [...lista].sort((a, b) => saldoTotal(b.producto_id) - saldoTotal(a.producto_id))[0] : null;
   }
@@ -130,7 +133,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   }
   function desdeFicha(f: Ficha, factorTanda: number): Consumo[] {
     return f.lineas.map((l) => {
-      const p = proponerProducto(l.generico_id);
+      const p = proponerProducto(l.generico_id, l.producto_id);
       const e = esperado(l, factorTanda);
       return { clave: crypto.randomUUID(), generico_id: l.generico_id, generico: l.generico, unidad_base: l.unidad_base, producto_id: p?.producto_id ?? null,
                zona: p && p.tipo !== 'SIN_COSTO' ? proponerZona(p.producto_id) : '', gramos: '', unidades: '',
