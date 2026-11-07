@@ -83,29 +83,30 @@ export async function proponerDescripcionConIA(e: EntradaDescripcion): Promise<R
   if (!process.env.ANTHROPIC_API_KEY) {
     return { ok: false, error: 'La IA no está configurada (falta ANTHROPIC_API_KEY en el servidor). Avísale a administración.' };
   }
-  const cliente = new Anthropic({ timeout: 60_000, maxRetries: 1 });
+  const cliente = new Anthropic({ timeout: 90_000, maxRetries: 1 });
   try {
     const respuesta = await cliente.beta.messages.create({
       model: MODELO,
       max_tokens: 4000,
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
-      output_config: { effort: 'medium', format: { type: 'json_schema', schema: ESQUEMA } },
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: ESQUEMA } },
       system: INSTRUCCIONES,
       messages: [{ role: 'user', content: `Propón la descripción para esta ficha.\n\n${armarReceta(e)}` }],
     });
     if (respuesta.stop_reason === 'refusal') return { ok: false, error: 'La IA no quiso proponer una descripción. Inténtalo de nuevo.' };
     if (respuesta.stop_reason === 'max_tokens') return { ok: false, error: 'La respuesta de la IA quedó cortada. Inténtalo de nuevo.' };
-    const json = respuesta.content.find((b) => b.type === 'text')?.text;
+    const json = respuesta.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
     const leida = Propuesta.safeParse(json ? JSON.parse(json) : null);
-    if (!leida.success) return { ok: false, error: 'La IA devolvió una respuesta que no se entiende. Inténtalo de nuevo.' };
+    if (!leida.success) { console.error('[descripcion-ia] respuesta inesperada', json.slice(0, 500)); return { ok: false, error: 'La IA devolvió una respuesta que no se entiende. Inténtalo de nuevo.' }; }
     return { ok: true, propuesta: leida.data };
   } catch (err) {
+    console.error('[descripcion-ia]', err);
     if (err instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espera un minuto e inténtalo de nuevo.' };
     if (err instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de la API de Claude no es válida. Avísale a administración.' };
     if (err instanceof Anthropic.APIConnectionError) return { ok: false, error: 'No hubo conexión con la IA. Inténtalo de nuevo.' };
-    if (err instanceof Anthropic.APIError) return { ok: false, error: `La IA respondió con un error (${err.status}). Inténtalo de nuevo.` };
+    if (err instanceof Anthropic.APIError) return { ok: false, error: `La IA respondió con un error (${err.status ?? 'sin código'}: ${err.message.slice(0, 160)}). Inténtalo de nuevo.` };
     if (err instanceof SyntaxError) return { ok: false, error: 'La IA devolvió una respuesta que no se entiende. Inténtalo de nuevo.' };
-    throw err;
+    return { ok: false, error: `No se pudo pedir la descripción (${String(err).slice(0, 160)}).` };
   }
 }

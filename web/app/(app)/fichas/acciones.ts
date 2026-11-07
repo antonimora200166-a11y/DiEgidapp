@@ -25,6 +25,15 @@ export async function proponerDescripcion(p: {
   generico_id: string; metodo: string; presentacion: string; pasos: string[]; descripcion: string;
   lineas: { generico_id: string; cantidad: string; unidad: string; nota: string }[];
 }): Promise<ResultadoDescripcion> {
+  try {
+    return await armarYProponer(p);
+  } catch (e) {
+    console.error('[proponerDescripcion]', e);
+    return { ok: false, error: `No se pudo preparar la receta para la IA (${e instanceof Error ? e.message.slice(0, 160) : 'error desconocido'}).` };
+  }
+}
+
+async function armarYProponer(p: Parameters<typeof proponerDescripcion>[0]): Promise<ResultadoDescripcion> {
   const perfil = await perfilActual();
   const supabase = await supabaseServidor();
   const { data: g } = await supabase.from('genericos').select('id, nombre, tipo, area').eq('id', p.generico_id).maybeSingle();

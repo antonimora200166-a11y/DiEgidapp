@@ -6,6 +6,8 @@ import PestanasProduccion from '@/components/PestanasProduccion';
 import EditorFicha, { type DatosFicha } from '../EditorFicha';
 
 export const metadata = { title: 'Editar ficha técnica' };
+// la propuesta de descripción con IA corre en esta página y puede tardar más que el límite por defecto
+export const maxDuration = 120;
 
 export default async function EditarFicha({ params }: { params: Promise<{ generico: string }> }) {
   const perfil = await perfilActual();
