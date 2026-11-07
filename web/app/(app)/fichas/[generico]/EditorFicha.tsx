@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Resultado } from '@/lib/catalogo';
 import { ALERGENOS, CONSERVACIONES, TIPOS_PUNTO, type Almacenamiento, type Punto, type TipoPunto } from '@/lib/fichas';
-import { guardarFicha } from '../acciones';
+import { guardarFicha, proponerDescripcion } from '../acciones';
+import type { PropuestaDescripcion } from '@/lib/descripcion-ia';
 import { aprobarReceta } from '../../produccion/validar/acciones';
 
 type UB = 'g' | 'ml' | 'und';
@@ -94,6 +95,21 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [enviando, iniciar] = useTransition();
   const ub = datos.resultado.unidad_base;
+  const esFinal = datos.resultado.tipo === 'BEBIDA' || datos.resultado.tipo === 'PLATO';
+  const [propuesta, setPropuesta] = useState<PropuestaDescripcion | null>(null);
+  const [errorIA, setErrorIA] = useState<string | null>(null);
+  const [pensando, iniciarIA] = useTransition();
+
+  function pedirDescripcion() {
+    setErrorIA(null);
+    iniciarIA(async () => {
+      const r = await proponerDescripcion({
+        generico_id: datos.resultado.id, metodo, presentacion, pasos, descripcion,
+        lineas: lineas.map((l) => ({ generico_id: l.generico_id, cantidad: l.cantidad, unidad: l.unidad, nota: l.nota })),
+      });
+      if (r.ok) setPropuesta(r.propuesta); else { setPropuesta(null); setErrorIA(r.error); }
+    });
+  }
 
   const poner = (k: string, c: Partial<Linea>) => { setLineas((ls) => ls.map((l) => (l.clave === k ? { ...l, ...c } : l))); setResultado(null); };
   const mover = (i: number, d: number) => setLineas((ls) => { const n = [...ls]; [n[i], n[i + d]] = [n[i + d], n[i]]; return n; });
@@ -273,7 +289,34 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
           <section className="tarjeta">
             <h2 className="sec-tit">Descripción y presentación</h2>
             <label htmlFor="desc" style={{ marginTop: 0 }}>Descripción <span className="ayuda">qué es y cómo debe quedar (color, textura, sabor)</span></label>
-            <textarea id="desc" rows={2} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+            <textarea id="desc" rows={esFinal ? 3 : 2} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+            {esFinal && (
+              <div style={{ marginTop: '.45rem' }}>
+                <button type="button" className="secundario chico" disabled={pensando || !lineas.length} onClick={pedirDescripcion}
+                        title="La IA lee los ingredientes, cantidades, método y presentación de este editor y propone una descripción">
+                  {pensando ? 'Pensando la descripción…' : propuesta ? '✦ Otra propuesta' : '✦ Proponer descripción con IA'}
+                </button>
+                {!lineas.length && <span className="ayuda"> agrega ingredientes primero</span>}
+                {errorIA && <div className="error" role="alert" style={{ marginTop: '.45rem' }}>{errorIA}</div>}
+                {propuesta && (
+                  <div className="tarjeta" style={{ borderStyle: 'dashed', marginTop: '.5rem', padding: '.7rem .8rem' }} role="status">
+                    <div className="suave" style={{ fontSize: '.8rem', marginBottom: '.3rem' }}>Propuesta de la IA según los ingredientes · tú decides</div>
+                    <p style={{ margin: '0 0 .5rem' }}>{propuesta.descripcion}</p>
+                    {propuesta.perfil.length > 0 && (
+                      <ul className="renglones" style={{ fontSize: '.85rem', margin: '0 0 .5rem' }}>
+                        {propuesta.perfil.map((x) => <li key={x.eje}><span><strong>{x.eje}:</strong> {x.detalle}</span></li>)}
+                      </ul>
+                    )}
+                    {propuesta.aviso && <div className="aviso" style={{ margin: '0 0 .5rem', padding: '.4rem .6rem', fontSize: '.85rem' }}>{propuesta.aviso}</div>}
+                    <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
+                      <button type="button" className="chico" onClick={() => { setDescripcion(propuesta.descripcion); setPropuesta(null); }}>Usar esta descripción</button>
+                      <button type="button" className="secundario chico" onClick={() => setPropuesta(null)}>Descartar</button>
+                    </div>
+                    <div className="ayuda" style={{ marginTop: '.35rem' }}>Al usarla puedes corregirla arriba; queda en la ficha solo cuando guardes la versión.</div>
+                  </div>
+                )}
+              </div>
+            )}
             <label htmlFor="pres">Presentación <span className="ayuda">{esMpi ? 'cómo se entrega a la línea o a la barra' : 'menaje, montaje y decoración'}</span></label>
             <textarea id="pres" rows={2} value={presentacion} onChange={(e) => setPresentacion(e.target.value)} />
           </section>
