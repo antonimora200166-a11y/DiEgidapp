@@ -89,7 +89,8 @@ function calcular(l: Linea, porId: Map<string, ProductoRecepcion>) {
 type Otra = { area: Area; productos: ProductoRecepcion[]; zonas: { codigo: string; nombre: string }[] };
 const nombreArea = (a: Area) => (a === 'BAR' ? 'bar' : 'cocina');
 
-export default function Recibir({ area, proveedores, zonas, productos, otra, zonaDe }: {
+export default function Recibir({ area, proveedores, zonas, productos, otra, zonaDe, vePesos }: {
+  vePesos: boolean;
   area: Area; proveedores: { id: string; nombre: string }[]; zonas: { codigo: string; nombre: string }[]; productos: ProductoRecepcion[];
   otra: Otra | null; zonaDe: Record<string, string>;
 }) {
@@ -437,7 +438,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       )}
       <ul className="lista">
         {lineas.map((l, i) => (
-          <TarjetaLinea key={l.clave} n={i + 1} l={l} c={calculo(l)} productos={todos} porId={porId} area={area} otraArea={otra?.area ?? null}
+          <TarjetaLinea key={l.clave} vePesos={vePesos} n={i + 1} l={l} c={calculo(l)} productos={todos} porId={porId} area={area} otraArea={otra?.area ?? null}
                         zonas={areaDe(l) === area ? zonas : otra?.zonas ?? []} zonaDefecto={areaDe(l) === area ? enc.ubicacion : enc.ubicacion_otra ?? ''}
                         zonaDe={zonaDe} elegida={elegidas.has(l.clave)}
                         marcar={() => setElegidas((s) => { const x = new Set(s); if (x.has(l.clave)) x.delete(l.clave); else x.add(l.clave); return x; })}
@@ -550,7 +551,8 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
 // ==================================================================== una línea
 type Calculo = ReturnType<typeof calcular>;
 
-function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDefecto, zonaDe, elegida, marcar, creado, poner, quitar }: {
+function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDefecto, zonaDe, elegida, marcar, creado, poner, quitar, vePesos }: {
+  vePesos: boolean;   // costo promedio y referencia: solo administración; el valor de la factura lo ven todos
   n: number; l: Linea; c: Calculo; productos: ProductoRecepcion[]; porId: Map<string, ProductoRecepcion>; area: Area; otraArea: Area | null;
   zonas: { codigo: string; nombre: string }[]; zonaDefecto: string; zonaDe: Record<string, string>; elegida: boolean; marcar: () => void;
   creado: (p: ProductoRecepcion) => void; poner: (cambio: Partial<Linea>) => void; quitar: () => void;
@@ -749,7 +751,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
               {pesos(c.cu, c.cu < 100 ? 2 : 0)} por {p.unidad_base}
               {c.desvio !== null && <> · {c.desvio > 0 ? '+' : ''}{c.desvio} % frente al promedio actual ({pesos(p.costo_promedio!, p.costo_promedio! < 100 ? 2 : 0)})</>}
               {c.nuevoProm !== null && p.costo_promedio !== null && c.nuevoProm !== p.costo_promedio && <> → queda en {pesos(c.nuevoProm, c.nuevoProm < 100 ? 2 : 0)}</>}
-              {p.costo_promedio === null && <> · primera compra: fija el costo del producto</>}
+              {vePesos && p.costo_promedio === null && <> · primera compra: fija el costo del producto</>}
             </div>
           )}
         </>

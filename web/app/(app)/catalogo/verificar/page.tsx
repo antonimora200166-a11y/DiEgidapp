@@ -29,7 +29,7 @@ export default async function Verificar() {
         el <strong>contenido</strong> y el <strong>precio de una unidad de compra</strong> sean los reales. Si está bien, <em>Verificado</em>;
         si no, <em>Corregir</em>. Si un parecido es el mismo insumo, mándalo a <Link href="/catalogo/revision">Revisar duplicados</Link> para unirlos.
       </p>
-      <Hoja filas={filas} soloLectura={perfil.rol === 'auditor'} />
+      <Hoja filas={filas} soloLectura={perfil.rol === 'auditor'} vePesos={perfil.rol === 'admin'} />
     </>
   );
 }

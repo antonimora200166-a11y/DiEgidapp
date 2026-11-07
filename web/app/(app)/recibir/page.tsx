@@ -54,7 +54,7 @@ export default async function PaginaRecibir({ searchParams }: { searchParams: Pr
         </nav>
       )}
       <Recibir key={area} area={area} proveedores={proveedores ?? []} zonas={zonas ?? []}
-               productos={(productos ?? []) as ProductoRecepcion[]} otra={otra} zonaDe={zonaDe} />
+               productos={(productos ?? []) as ProductoRecepcion[]} otra={otra} zonaDe={zonaDe} vePesos={perfil.rol === 'admin'} />
       {!!recientes?.length && (
         <>
           <h2>Últimas recepciones</h2>

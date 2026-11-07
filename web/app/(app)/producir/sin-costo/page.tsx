@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
-import { areasDe, type Area } from '@/lib/roles';
+import { areasDe, vePrecios, type Area } from '@/lib/roles';
 import ListaSinCosto, { type LoteSinCosto } from './ListaSinCosto';
 
 export const metadata = { title: 'Lotes sin costo completo' };
@@ -10,7 +10,7 @@ export const metadata = { title: 'Lotes sin costo completo' };
 export default async function SinCosto() {
   const perfil = await perfilActual();
   const areas = areasDe(perfil);
-  if (!areas.length || perfil.rol === 'servicio') redirect('/');
+  if (!areas.length || !vePrecios(perfil)) redirect('/');   // costos de lotes: solo administración
   const supabase = await supabaseServidor();
   const respuestas = await Promise.all(areas.map((a: Area) => supabase.rpc('lotes_sin_costo', { p_area: a })));
   const error = respuestas.find((r) => r.error)?.error;

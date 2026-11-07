@@ -49,8 +49,9 @@ const PASOS = ['MPI y tanda', 'Indicaciones', 'Pesos reales', 'Neto y responsabl
 const conservacionDeZona = (nombre: string): Almacenamiento['conservacion'] | null =>
   /congel/i.test(nombre) ? 'Congelado' : /(nevera|refri|fr[ií]o|cuarto)/i.test(nombre) ? 'Refrigerado' : null;
 
-export default function Producir({ area, datos, zonas, zonaDe, generico, perfilId }: {
+export default function Producir({ area, datos, zonas, zonaDe, generico, perfilId, vePesos }: {
   area: Area; datos: DatosProduccion; zonas: Zona[];
+  vePesos: boolean;                 // costo del lote: solo administración
   zonaDe: Record<string, string>;   // la zona asignada a cada producto en el mapa del área
   generico?: string;                // «Producir esta ficha»: llega con la MPI elegida
   perfilId: string;
@@ -261,7 +262,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             <div className="cifra"><span>Merma</span><b>{g(r.merma_g ?? null)}</b></div>
             <div className="cifra"><span>Rendimiento</span><b>{r.rendimiento != null ? `${r2(r.rendimiento * 100)} %` : '—'}</b>
               {r.desvio_pp != null && <small>{r.desvio_pp > 0 ? '+' : ''}{r.desvio_pp} pp vs ficha</small>}</div>
-            <div className="cifra"><span>Costo</span><b>{pesos(r.costo_total ?? null)}</b><small>{r.estado_costo === 'PARCIAL' ? 'parcial' : `${pesos(r.costo_gramo ?? null, 2)}/g`}</small></div>
+            {vePesos && <div className="cifra"><span>Costo</span><b>{pesos(r.costo_total ?? null)}</b><small>{r.estado_costo === 'PARCIAL' ? 'parcial' : `${pesos(r.costo_gramo ?? null, 2)}/g`}</small></div>}
             <div className="cifra"><span>Vence</span><b>{r.vence ? fechaCorta(r.vence) : '—'}</b>{r.conservacion && <small>{r.conservacion.toLowerCase()}</small>}</div>
           </div>
           {r.avisos.length > 0 && <div className="aviso" style={{ margin: 0 }}><ul style={{ margin: 0 }}>{r.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
@@ -561,12 +562,12 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             <div className="cifra"><span>Rendimiento</span><b>{calc.rendimiento !== null ? `${r2(calc.rendimiento * 100)} %` : '—'}</b>{rendFicha && <small>ficha {r2(rendFicha * 100)} %</small>}</div>
             <div className={`cifra${calc.alerta ? ' alerta' : ''}`}><span>Desvío</span><b>{calc.desvioPp !== null ? `${calc.desvioPp > 0 ? '+' : ''}${calc.desvioPp} pp` : '—'}</b>
               {calc.desvioPp !== null && <small>{calc.alerta ? `más de ±${datos.umbral_pp} pp` : `dentro de ±${datos.umbral_pp} pp`}</small>}</div>
-            <div className="cifra"><span>Costo lote</span><b>{pesos(calc.costo)}</b>{calc.estado === 'PARCIAL' && <small>parcial</small>}</div>
-            <div className="cifra"><span>$/g</span><b>{pesos(calc.costoGramo, 2)}</b></div>
+            {vePesos && <div className="cifra"><span>Costo lote</span><b>{pesos(calc.costo)}</b>{calc.estado === 'PARCIAL' && <small>parcial</small>}</div>}
+            {vePesos && <div className="cifra"><span>$/g</span><b>{pesos(calc.costoGramo, 2)}</b></div>}
             <div className="cifra"><span>Vence</span><b>{venceEl ? fechaCorta(venceEl) : '—'}</b>{vida && <small>+{vida} d {conservacion.toLowerCase()}</small>}</div>
           </div>
           {calc.alerta && <div className="aviso" style={{ margin: 0 }}><strong>Rendimiento fuera de lo esperado.</strong> Revisa los pesos; si están bien, guarda y anota qué pasó en observaciones.</div>}
-          {calc.estado === 'PARCIAL' && <div className="aviso" style={{ margin: 0 }}>Algún insumo no tiene costo en el kardex: el lote quedará con costo parcial.</div>}
+          {vePesos && calc.estado === 'PARCIAL' && <div className="aviso" style={{ margin: 0 }}>Algún insumo no tiene costo en el kardex: el lote quedará con costo parcial.</div>}
           {resultadoMalo && (
             <div className="error" role="alert" style={{ margin: 0 }}><strong>No se guardó:</strong>
               <ul style={{ margin: 0 }}>{[...resultado.fatales, ...resultado.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul></div>

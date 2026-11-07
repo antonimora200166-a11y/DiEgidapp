@@ -13,12 +13,13 @@ export type ProductoCatalogo = {
 export const NOMBRE_TIPO: Record<string, string> = { MPe: 'MPe · se compra', MPI: 'MPI · se produce', SIN_COSTO: 'Sin costo', BEBIDA: 'Cóctel o bebida', PLATO: 'Plato' };
 
 // Lo que le falta a un producto para la operación
-export function faltasDe(p: ProductoCatalogo): string[] {
+// vePesos: el costo solo lo revisa administración (a los demás la base no les manda costos)
+export function faltasDe(p: ProductoCatalogo, vePesos = true): string[] {
   return [
     !p.categoria && 'categoría',
     !p.conservacion && 'conservación',
     (p.contenido_variable || !p.contenido_base) && 'factor de compra',
-    p.costo_promedio === null && p.costo_referencia === null && p.tipo === 'MPe' && 'costo',
+    vePesos && p.costo_promedio === null && p.costo_referencia === null && p.tipo === 'MPe' && 'costo',
     p.sin_tara && 'tara',
   ].filter(Boolean) as string[];
 }

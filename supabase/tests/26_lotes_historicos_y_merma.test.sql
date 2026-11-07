@@ -33,7 +33,7 @@ select ok((select (r ->> 'ok')::boolean from l1), 'el lote con merma se guarda')
 select is((select (r ->> 'merma_base')::numeric from l1), 100::numeric, 'responde la merma total en unidad base');
 select is((select array[c.merma, c.merma_base, c.cantidad_base] from public.lote_consumos c where c.lote_id = (select (r ->> 'id')::uuid from l1)),
           array[0.1, 100, 1000]::numeric[], 'la línea guarda la merma escrita y en gramos; del kardex sale el kilo completo');
-select is((select (r ->> 'costo_total')::numeric from l1), 5260::numeric, 'la merma no cambia el costo: 1.000 g × $5,26');
+select is((select costo_total from public.lotes_produccion where codigo = (select r ->> 'codigo' from l1)), 5260::numeric, 'la merma no cambia el costo: 1.000 g × $5,26');
 
 -- limón contado sin costo conocido: hay existencia pero no costo
 select privado.registrar_movimiento('SALDO_INICIAL', 'c0000000-0000-0000-0000-000000000003', 'BAR_BODEGA', 1000, privado.hoy(), null, 'CONTEO', null);

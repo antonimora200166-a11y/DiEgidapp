@@ -34,8 +34,10 @@ $$;
 -- ================================================================ saldos del área
 select is((select (saldos ->> 'BAR_BODEGA')::numeric from public.saldos_area('BAR') where codigo = 'BAR_MPe_0005-2500'),
           10000::numeric, 'saldos_area: el azúcar tiene 10.000 g en la bodega');
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
 select is((select costo_promedio from public.saldos_area('BAR') where codigo = 'BAR_MPe_0005-2500'), 5.26::numeric,
           'y su costo promedio');
+select pg_temp.como('a0000000-0000-0000-0000-000000000003');  -- vuelve el aux de bar
 select is((select saldos from public.saldos_area('BAR') where codigo = 'BAR_MPe_0030-KG'), '{}'::jsonb,
           'un producto sin saldo trae saldos vacíos');
 select ok(not exists (select 1 from public.saldos_area('BAR') where tipo not in ('MPe', 'MPI')),

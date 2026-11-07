@@ -20,7 +20,7 @@ select pg_temp.como('a0000000-0000-0000-0000-000000000003');  -- aux de bar
 select throws_like($$ select public.unir_genericos('b0000000-0000-0000-0000-000000000501', 'b0000000-0000-0000-0000-000000000502') $$,
                    '%Solo el jefe%', 'el aux no une');
 select throws_like($$ select public.fijar_costo('c0000000-0000-0000-0000-000000000002', 20000, 'COMPRA') $$,
-                   '%Solo el jefe%', 'ni pone precios');
+                   '%Sin permiso%', 'ni pone precios');
 
 select pg_temp.como('a0000000-0000-0000-0000-000000000002');  -- jefe de bar
 create temp table u as select public.unir_genericos('b0000000-0000-0000-0000-000000000501', 'b0000000-0000-0000-0000-000000000502') as v;
@@ -57,10 +57,11 @@ select is((public.quitar_repetido('c0000000-0000-0000-0000-000000000002', 'c0000
           'no se quita «repetido» entre genéricos distintos');
 
 -- precio a mano: azúcar a $20.000 la bolsa de 2.500 g → $8 por g
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
 create temp table f as select public.fijar_costo('c0000000-0000-0000-0000-000000000002', 20000, 'COMPRA') as v;
 select is((select costo_unitario_base from public.costos_referencia where producto_id = 'c0000000-0000-0000-0000-000000000002'), 8::numeric,
           'precio por bolsa → costo por g');
-select ok((select fuente like 'A mano · Jefe Bar Prueba%' from public.costos_referencia where producto_id = 'c0000000-0000-0000-0000-000000000002'),
+select ok((select fuente like 'A mano · Admin Prueba%' from public.costos_referencia where producto_id = 'c0000000-0000-0000-0000-000000000002'),
           'queda como puesto a mano, con quién');
 select ok((public.fijar_costo('c0000000-0000-0000-0000-000000000002', 20000, 'BASE') -> 'fatales' ->> 0) like '%no es creíble%',
           'un costo absurdo no se acepta');

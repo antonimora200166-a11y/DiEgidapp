@@ -16,7 +16,7 @@ const nombreArea = (a: Area) => (a === 'BAR' ? 'Bar' : 'Cocina');
 const fecha = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 
 // Lo que pide atención hoy, de lo más urgente a lo informativo. Solo sale lo que tiene algo.
-function pendientesDe(r: ResumenArea, varias: boolean, hoy: string): Pendiente[] {
+function pendientesDe(r: ResumenArea, varias: boolean, hoy: string, vePrecios: boolean): Pendiente[] {
   const en = varias ? ` en ${nombreArea(r.area).toLowerCase()}` : '';
   const p: Pendiente[] = [];
   for (const v of r.por_vencer) {
@@ -26,11 +26,11 @@ function pendientesDe(r: ResumenArea, varias: boolean, hoy: string): Pendiente[]
   if (!r.kardex) p.push({ texto: `Falta el conteo inicial${en}: sin él no hay existencias ni costos`, href: '/conteo', icono: 'contar', tono: 'urgente' });
   if (r.conteo_tocan) p.push({ texto: `Toca contar ${r.conteo_tocan} producto(s) en ${r.conteo_zonas} zona(s)${en}`, href: '/conteo', icono: 'contar', tono: 'aviso' });
   if (r.bajo_minimo) p.push({ texto: `${r.bajo_minimo} producto(s) en el mínimo${en}: arma el pedido`, href: `/pedido?area=${r.area}`, icono: 'recibir', tono: 'aviso' });
-  if (r.lotes_sin_costo) p.push({ texto: `${r.lotes_sin_costo} lote(s) del último mes sin costo completo${en}`, href: '/producir/sin-costo', icono: 'producir', tono: 'info' });
+  if (vePrecios && r.lotes_sin_costo) p.push({ texto: `${r.lotes_sin_costo} lote(s) del último mes sin costo completo${en}`, href: '/producir/sin-costo', icono: 'producir', tono: 'info' });
   if (r.propuestas) p.push({ texto: `${r.propuestas} propuesta(s) de unidad por revisar${en}`, href: '/catalogo/unidades', icono: 'catalogo', tono: 'info' });
   if (r.pares) p.push({ texto: `${r.pares} posible(s) duplicado(s) por decidir${en}`, href: '/catalogo/revision', icono: 'revision', tono: 'info' });
   if (r.provisionales) p.push({ texto: `${r.provisionales} producto(s) provisional(es) por validar${en}`, href: '/catalogo?estado=PROVISIONAL', icono: 'catalogo', tono: 'info' });
-  if (r.carta_sin_precio) p.push({ texto: `${r.carta_sin_precio} cóctel(es) o plato(s) sin precio de carta${en}`, href: `/carta?area=${r.area}`, icono: 'fichas', tono: 'info' });
+  if (vePrecios && r.carta_sin_precio) p.push({ texto: `${r.carta_sin_precio} cóctel(es) o plato(s) sin precio de carta${en}`, href: `/carta?area=${r.area}`, icono: 'fichas', tono: 'info' });
   return p;
 }
 
@@ -42,7 +42,7 @@ export default async function Inicio() {
   const { data } = perfil.rol === 'servicio' ? { data: null } : await supabase.rpc('resumen_hoy');
   const resumen = data as Resumen | null;
   const varias = (resumen?.areas.length ?? 0) > 1;
-  const pendientes = (resumen?.areas ?? []).flatMap((r) => pendientesDe(r, varias, resumen!.hoy));
+  const pendientes = (resumen?.areas ?? []).flatMap((r) => pendientesDe(r, varias, resumen!.hoy, perfil.rol === 'admin'));
   if (resumen?.errores_semana) pendientes.push({ texto: `${resumen.errores_semana} error(es) de la app esta semana`, href: '/admin/registro?ver=errores', icono: 'registro', tono: 'info' });
   const hecho = (resumen?.areas ?? []).reduce((t, r) => ({ rec: t.rec + r.recepciones_hoy, lotes: t.lotes + r.lotes_hoy }), { rec: 0, lotes: 0 });
 

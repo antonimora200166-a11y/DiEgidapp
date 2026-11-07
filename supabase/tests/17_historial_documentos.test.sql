@@ -1,7 +1,7 @@
 -- Historial y detalle de documentos (pantalla Historial) y anular desde ahí.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(2 + 18);
 \ir fixtures.inc
 
 select pg_temp.como('a0000000-0000-0000-0000-000000000003');  -- aux de bar
@@ -26,8 +26,11 @@ create temp table baj as select public.registrar_baja(jsonb_build_object('area',
 create temp table h as select * from public.historial_documentos('BAR');
 select is((select count(*) from h), 3::bigint, 'el historial trae los 3 documentos');
 select is((select count(*) from h where anulado), 0::bigint, 'al inicio ninguno está anulado');
-select is((select valor from h where tipo = 'RECEPCION'), 68600::numeric, 'valor de la recepción: $52.600 + $16.000');
-select is((select valor from h where tipo = 'TRASLADO'), 13150::numeric, 'valor del traslado: 2.500 g × $5,26 (solo la salida)');
+select is((select valor from h where tipo = 'RECEPCION'), null::numeric, 'el aux no ve el valor de la recepción');
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
+select is((select valor from public.historial_documentos('BAR') where tipo = 'RECEPCION'), 68600::numeric, 'valor de la recepción: $52.600 + $16.000');
+select is((select valor from public.historial_documentos('BAR') where tipo = 'TRASLADO'), 13150::numeric, 'valor del traslado: 2.500 g × $5,26 (solo la salida)');
+select pg_temp.como('a0000000-0000-0000-0000-000000000003');  -- vuelve el aux de bar
 select is((select detalle from h where tipo = 'RECEPCION'), 'Frutería · FV-9001', 'detalle: proveedor y documento');
 select is((select detalle from h where tipo = 'BAJA'), 'Dañado · Barra', 'detalle de la baja: causa y zona');
 select is((select usuario from h where tipo = 'RECEPCION'), 'Aux Bar Prueba', 'quién lo registró');
@@ -35,7 +38,10 @@ select is((select count(*) from public.historial_documentos('BAR', 'traslado')),
 
 create temp table d as select public.detalle_documento('RECEPCION', (select (r ->> 'id')::uuid from rec)) as v;
 select is((select jsonb_array_length(v -> 'lineas') from d), 2, 'el detalle trae las 2 líneas');
-select is((select (v -> 'lineas' -> 0 ->> 'costo_unitario')::numeric from d), 5.26::numeric, 'con su costo por unidad base');
+select is((select (v -> 'lineas' -> 0 ->> 'costo_unitario')::numeric from d), null::numeric, 'el aux no ve el costo de la línea');
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
+select is((public.detalle_documento('RECEPCION', (select (r ->> 'id')::uuid from rec)) -> 'lineas' -> 0 ->> 'costo_unitario')::numeric, 5.26::numeric, 'administración sí: costo por unidad base');
+select pg_temp.como('a0000000-0000-0000-0000-000000000003');  -- vuelve el aux de bar
 select is((select (v ->> 'puede_anular')::boolean from d), false, 'el aux no puede anular');
 
 -- el jefe anula la línea del limón y luego el traslado completo

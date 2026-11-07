@@ -30,6 +30,11 @@ export const puedeOperar = (p: Perfil, a: Area) =>
 export const editaArea = (p: Perfil, a: Area) =>
   p.rol === 'admin' || (a === 'BAR' && p.rol === 'jefe_bar') || (a === 'COCINA' && ['chef', 'sous_chef'].includes(p.rol));
 
+// privado.ve_precios: costos, valores y precios de todo el establecimiento solo los ve
+// administración (decisión de Anthony, 06–07/11/2026). La base ya los manda vacíos a los demás;
+// esto solo decide qué columnas y textos se muestran.
+export const vePrecios = (p: Perfil) => p.rol === 'admin';
+
 // privado.edita_ficha: crean y cambian fichas técnicas (cada cambio es una versión nueva)
 export const editaFicha = (p: Perfil, a: Area) =>
   p.rol === 'admin' || (a === 'BAR' && p.rol === 'jefe_bar') || (a === 'COCINA' && p.rol === 'chef');
@@ -46,8 +51,9 @@ export function menuDe(p: Perfil): Opcion[] {
   if (p.rol !== 'servicio') m.push({ ruta: '/existencias', titulo: 'Existencias', detalle: 'Qué hay en cada zona y cuánto vale', icono: 'existencias' });
   if (p.rol !== 'servicio') m.push({ ruta: '/fichas', titulo: 'Fichas técnicas', detalle: 'Recetas de MPI, cócteles y platos', icono: 'fichas' });
   if (areasDe(p).length && p.rol !== 'servicio') m.push({ ruta: '/pedido', titulo: 'Pedido sugerido', detalle: 'Lo que está en el mínimo, por proveedor, listo para mandar', icono: 'pedido' });
-  if (p.rol === 'admin' || p.rol === 'auditor' || areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/proveedores', titulo: 'Proveedores', detalle: 'Dependencia, riesgos, repetidos y qué le compramos a cada uno', icono: 'proveedores' });
-  if (areasDe(p).length && p.rol !== 'servicio') m.push({ ruta: '/carta', titulo: 'Carta y margen', detalle: 'Costo de cada cóctel y plato contra su precio', icono: 'carta' });
+  if (vePrecios(p)) m.push({ ruta: '/proveedores', titulo: 'Proveedores', detalle: 'Dependencia, riesgos, repetidos y qué le compramos a cada uno', icono: 'proveedores' });
+  // precios y costos de la carta: solo administración (decisión de Anthony, 06/11/2026)
+  if (p.rol === 'admin') m.push({ ruta: '/carta', titulo: 'Carta y margen', detalle: 'Costo de cada cóctel y plato contra su precio', icono: 'carta' });
   if (p.rol !== 'servicio') m.push({ ruta: '/catalogo', titulo: 'Catálogo', detalle: 'Buscar productos y validar los provisionales', icono: 'catalogo' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/catalogo/nuevo', titulo: 'Crear producto', detalle: 'Alta provisional, con búsqueda de parecidos', icono: 'nuevo' });
   if (p.rol === 'admin' || p.rol === 'auditor' || areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/arranque', titulo: '¿Listo para arrancar?', detalle: 'Lo que falta para operar con la app', icono: 'arranque' });

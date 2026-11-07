@@ -6,7 +6,7 @@ select plan(9);
 
 create temp table v as select 'BAR/2026/' || gen_random_uuid() || '.jpg' as ruta;
 
-select pg_temp.como('a0000000-0000-0000-0000-000000000002');  -- jefe de bar
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
 -- «Dislicores» se escribe distinto en la foto pero se elige de la lista; la IA sugiere marca Tanqueray y nombre «Ginebra»
 create temp table r as select public.guardar_precios_foto(jsonb_build_object(
   'area', 'BAR', 'ruta', (select ruta from v), 'proveedor_id', 'd0000000-0000-0000-0000-000000000001', 'proveedor', 'DISLICORES S.A.S',

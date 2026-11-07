@@ -1,7 +1,7 @@
 -- Precios desde fotos: una foto con líneas de bar y de cocina; cada una a su área.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(3);
+select plan(2);
 \ir fixtures.inc
 
 insert into public.genericos (id, codigo, nombre, tipo, categoria, area, unidad_base) values
@@ -19,10 +19,8 @@ create temp table r as select public.guardar_precios_foto(jsonb_build_object('ru
 select is((select (x ->> 'ok')::int from r), 2, 'el admin guarda el licor (bar) y la zanahoria (cocina) de la misma foto');
 
 select pg_temp.como('a0000000-0000-0000-0000-000000000002');  -- jefe de bar: solo bar
-create temp table r2 as select public.guardar_precios_foto(jsonb_build_object('ruta', 'BAR/2026/' || gen_random_uuid() || '.jpg',
-  'proveedor', 'Makro', 'documento', 'X1', 'lineas', (select v from lineas))) as x;
-select is((select (x ->> 'ok')::int from r2), 1, 'el jefe de bar guarda solo lo de bar');
-select ok((select x -> 'detalle' -> 1 ->> 'mensaje' like '%es de cocina%' from r2), 'y la de cocina dice por qué no');
+select throws_like(format($f$ select public.guardar_precios_foto(jsonb_build_object('ruta', 'BAR/2026/x.jpg', 'proveedor', 'Makro', 'lineas', %L::jsonb)) $f$, (select v from lineas)),
+                   '%Sin permiso%', 'el jefe de bar ya no carga precios: solo administración');
 
 select * from finish();
 rollback;

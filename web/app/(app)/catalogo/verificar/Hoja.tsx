@@ -41,7 +41,10 @@ const numero = (t: string) => {
 };
 const fecha = (s: string | null) => (s ? new Date(s).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'UTC' }) : '');
 
-export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectura: boolean }) {
+// vePesos: precios y costos solo para administración (la base ya los manda vacíos a los demás)
+export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas: Fila[]; soloLectura: boolean; vePesos: boolean }) {
+  const filas = vePesos ? filasBase
+    : filasBase.map((f) => ({ ...f, alertas: f.alertas.filter((a) => a !== 'SIN_PRECIO' && a !== 'PRECIOS_DISPARES') }));
   const router = useRouter();
   const [enviando, iniciar] = useTransition();
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
@@ -270,7 +273,7 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
           ? <button type="button" className="secundario mini" disabled={enviando} onClick={() => correr(() => verificar([f.producto_id], false), `${f.generico}: vuelve a pendiente.`)}>Quitar ✓</button>
           : <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => verificar([f.producto_id]), `${f.generico}: verificado.`)}>Verificado</button>}
         <button type="button" className="secundario mini" disabled={enviando} onClick={() => abrir(f)}>Corregir</button>
-        {f.tipo === 'MPe' && !f.tiene_kardex && (
+        {vePesos && f.tipo === 'MPe' && !f.tiene_kardex && (
           <button type="button" className="secundario mini" disabled={enviando}
                   onClick={() => setPanel({ tipo: 'precio', id: f.producto_id, valor: '', otras: true,
                                             por: !f.contenido_variable && f.contenido_base ? 'COMPRA' : f.unidad_base === 'und' ? 'BASE' : 'KILO' })}>
@@ -316,12 +319,12 @@ export default function Hoja({ filas, soloLectura }: { filas: Fila[]; soloLectur
       <p className="pagina-ancha" style={{ margin: '0 0 .4rem' }}>
         <strong>{abHechos} de {ab.length}</strong> insumos A/B verificados
         <span className="suave"> · {ab.filter((f) => !f.verificado_en && f.alertas.some((a) => GRAVES.includes(a))).length} pendientes con alerta grave
-          · {ab.filter((f) => f.alertas.includes('SIN_PRECIO')).length} sin precio</span>
+          {vePesos && <> · {ab.filter((f) => f.alertas.includes('SIN_PRECIO')).length} sin precio</>}</span>
       </p>
       {mensaje && <div className={mensaje.ok ? 'exito' : 'aviso'} role="status">{mensaje.texto}</div>}
       <VistaFiltrable clave="verificar-ab" filas={filas} id={(f) => f.producto_id}
                       buscar={(f) => `${f.generico} ${f.marca} ${f.presentacion} ${f.codigo} ${f.ult_nombre ?? ''} ${f.ult_proveedor ?? ''}`}
-                      grupos={grupos} columnas={columnas} agrupar={agrupar}
+                      grupos={grupos} columnas={columnas.filter((c) => vePesos || !['precio', 'costo'].includes(c.k))} agrupar={agrupar}
                       filtrosIniciales={{ estado: ['Pendiente'], clase: ['A', 'B'], tipo: ['MPe'], claseInsumo: ['MATERIA_PRIMA'] }}
                       seleccionable={soloLectura ? undefined : (f) => !f.verificado_en}
                       vacio="Nada pendiente con estos filtros. ✔"

@@ -28,7 +28,7 @@ select is((select count(*) from privado.cantidad_presentacion('Granel')), 0::big
 select pg_temp.como('a0000000-0000-0000-0000-000000000003');  -- aux de bar
 select throws_like($$ select * from public.lista_verificacion('BAR') $$, '%Solo administración o el jefe%', 'el aux no ve la hoja');
 
-select pg_temp.como('a0000000-0000-0000-0000-000000000002');  -- jefe de bar
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
 create temp table h as select * from public.lista_verificacion('BAR');
 select is((select n_compras from h where codigo = 'BAR_MPe_0079-700'), 2, 'la ginebra trae sus dos compras');
 select is((select ult_valor from h where codigo = 'BAR_MPe_0079-700'), 154000::numeric, 'la última compra es la del 20/09');

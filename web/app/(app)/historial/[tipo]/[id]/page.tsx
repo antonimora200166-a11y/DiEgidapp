@@ -46,7 +46,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
     ...(tipo === 'CONTEO' ? [['Zona', s(e.zona)], ['Tipo', e.tipo_conteo === 'INICIAL' ? 'Conteo inicial' : 'Conteo normal'], ['Responsable', s(e.responsable)]] : []),
     ['Valor', d.valor !== null ? pesos(Number(d.valor)) : '—'],
     ['Registró', d.registrado ? `${d.registrado.usuario ?? '—'} · ${new Date(d.registrado.en).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}` : '—'],
-  ] as [string, string][]).filter(([, v]) => v !== '');
+  ] as [string, string][]).filter(([k, v]) => v !== '' && (perfil.rol === 'admin' || !['Costo', 'Valor'].includes(k)));   // pesos: solo administración
 
   return (
     <>

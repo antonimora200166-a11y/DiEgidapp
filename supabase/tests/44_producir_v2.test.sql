@@ -51,8 +51,8 @@ select is((select (r ->> 'merma_g')::numeric from l), 4617::numeric, 'merma = en
 select is((select round((r ->> 'rendimiento')::numeric, 6) from l), 0.602565, 'rendimiento = neto / entrada');
 select is((select (r ->> 'desvio_pp')::numeric from l), 6.26, 'desvío = rendimiento − ficha (54 %), en puntos');
 select ok((select r -> 'avisos' from l)::text like '%+6.26 puntos%', 'avisa porque supera 5 puntos');
-select is((select (r ->> 'costo_total')::numeric from l), 39961::numeric, 'costo = 6.570 × $5 + 547 × $13; el agua $0');
-select is((select (r ->> 'costo_gramo')::numeric from l), 5.708714, '$/g = costo / neto');
+select is((select costo_total from public.lotes_produccion where codigo = (select r ->> 'codigo' from l)), 39961::numeric, 'costo = 6.570 × $5 + 547 × $13; el agua $0');
+select is((select round(costo_unitario, 6) from public.lotes_produccion where codigo = (select r ->> 'codigo' from l)), 5.708714, '$/g = costo / neto');
 select is((select (r ->> 'vence')::date from l), privado.hoy() + 90, 'vence = fecha + 90 días congelado');
 
 -- el kardex cuadra: bajan los insumos y sube la MPI exactamente lo registrado

@@ -15,7 +15,8 @@ const n = (x: number | null, d = 0) => (x === null || x === undefined ? '—' : 
 const corta = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' });
 const dias = (a: string, b: string) => Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 864e5);
 
-export default function ListaLotes({ filas, hoy }: { filas: FilaLote[]; hoy: string }) {
+// vePesos: costo del lote y $/g solo para administración
+export default function ListaLotes({ filas, hoy, vePesos }: { filas: FilaLote[]; hoy: string; vePesos: boolean }) {
   const periodo = (l: FilaLote) => { const d = dias(l.fecha, hoy); return d <= 7 ? '7' : d <= 30 ? '30' : d <= 90 ? '90' : 'mas'; };
   const grupos: Grupo<FilaLote>[] = [
     { clave: 'estado', titulo: 'Estado', valor: (l) => l.estado, opciones: Object.entries(ESTADO_LOTE).map(([v, x]) => ({ v, t: x.t })) },
@@ -46,7 +47,7 @@ export default function ListaLotes({ filas, hoy }: { filas: FilaLote[]; hoy: str
   ];
   return (
     <VistaFiltrable clave="produccion-lotes" filas={filas} id={(l) => l.id} buscar={(l) => `${l.codigo} ${l.mpi} ${l.responsable ?? ''}`}
-                    grupos={grupos} columnas={columnas}
+                    grupos={grupos} columnas={columnas.filter((c) => vePesos || !['costo', 'cg'].includes(c.k))}
                     pie={(v) => <p className="suave" style={{ fontSize: '.82rem' }}>{v.length} de {filas.length} lotes. Los «Histórico» vienen de SGI-COSTOS: solo consulta, sin existencia.</p>}
                     vacio="Ningún lote coincide con estos filtros." />
   );

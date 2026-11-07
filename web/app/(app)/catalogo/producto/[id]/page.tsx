@@ -53,7 +53,7 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
       </p>
       {fila.nota && <p className="suave" style={{ fontSize: '.88rem' }}>{fila.nota}</p>}
       <EditarProducto ficha={fila} categorias={categorias ?? []} ubBloqueada={ubBloqueada} />
-      {fila.generico.tipo === 'MPe' && (
+      {fila.generico.tipo === 'MPe' && perfil.rol === 'admin' && (
         <>
           <h2>Precio</h2>
           <PrecioProducto id={fila.id} unidadBase={fila.generico.unidad_base} unidadCompra={fila.unidad_compra || 'und'}

@@ -69,7 +69,10 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
     try { localStorage.setItem(CLAVE_COLUMNAS, JSON.stringify(n)); } catch { /* nada */ }
     return n;
   });
-  const cols = COLUMNAS.filter((c) => visibles.includes(c.k));
+  // costos: solo administración (la base ya los manda vacíos a los demás)
+  const disponibles = COLUMNAS.filter((c) => esAdmin || !c.k.startsWith('costo_'))
+    .map((c) => (c.k === 'faltas' && !esAdmin ? { ...c, ver: (p: ProductoCatalogo) => { const f = faltasDe(p, false); return f.length ? <span style={{ color: 'var(--aviso)', fontSize: '.85rem' }}>{f.join(', ')}</span> : <span style={{ color: 'var(--ok)' }}>✓</span>; } } : c));
+  const cols = disponibles.filter((c) => visibles.includes(c.k));
   const editables = filas.filter((f) => f.edita);
   const todas = editables.length > 0 && editables.every((f) => sel.has(f.id));
   const cambia = (id: string) => setSel((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -136,7 +139,7 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
         <button type="button" className={menu ? 'herramienta chico activa' : 'herramienta chico'} style={{ whiteSpace: 'nowrap' }} onClick={() => setMenu((m) => !m)}>⚙ Columnas</button>
         {menu && (
           <div className="tarjeta" style={{ position: 'absolute', right: 0, top: '100%', zIndex: 20, minWidth: 230, boxShadow: '0 8px 28px rgb(0 0 0 / .25)' }}>
-            {COLUMNAS.map((c) => (
+            {disponibles.map((c) => (
               <label key={c.k} style={{ display: 'flex', gap: '.45rem', alignItems: 'center', fontWeight: 400, margin: '.15rem 0' }}>
                 <input type="checkbox" checked={visibles.includes(c.k)} onChange={() => alternarCol(c.k)} style={{ width: 20, minHeight: 20 }} />
                 {c.t}

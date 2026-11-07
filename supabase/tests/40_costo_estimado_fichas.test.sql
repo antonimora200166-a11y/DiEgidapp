@@ -27,8 +27,10 @@ select pg_temp.como('a0000000-0000-0000-0000-000000000002');  -- jefe de bar
 select ok((select falta like 'Falta la conversión ml→g%' from public.costo_ficha('e0000000-0000-0000-0000-000000000702') where linea = 2),
           'sin conversión ml→g del sirope, la línea dice qué falta');
 insert into public.conversiones (generico_id, unidad, factor_a_base, estado) values ('b0000000-0000-0000-0000-000000000004', 'ml', 1.3, 'SUPUESTO');
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
 select is((select round(sum(costo), 2) from public.costo_ficha('e0000000-0000-0000-0000-000000000702')), 12086.67,
           'con la densidad, el cóctel cuesta 60 × 200 + 39 g × 2,22');
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: la carta con costos es solo de administración
 select ok((select estimado from public.carta_costos('BAR') where nombre = 'Gin Sour'), 'la carta lo marca como estimado');
 
 -- con kardex, manda el kardex

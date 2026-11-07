@@ -24,7 +24,7 @@ export default async function Historial() {
     <>
       <h1 className="pagina-ancha">Historial</h1>
       <p className="suave">Lo registrado, del más reciente al más antiguo. Un error se corrige anulando el documento: nada se borra.</p>
-      {filas.length ? <ListaHistorial filas={filas} variasAreas={areas.length > 1} />
+      {filas.length ? <ListaHistorial filas={filas} variasAreas={areas.length > 1} vePesos={perfil.rol === 'admin'} />
         : <p className="tarjeta">Todavía no hay documentos.</p>}
     </>
   );

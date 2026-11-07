@@ -57,8 +57,8 @@ create temp table lote as select public.registrar_lote(jsonb_build_object(
   'consumos', jsonb_build_array(
     jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000002', 'cantidad', 1000, 'unidad', 'g'),
     jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000005', 'cantidad', 1000, 'unidad', 'ml')))) as r;
-select is((select (r ->> 'costo_total')::numeric from lote), 5260::numeric, 'media tanda: 1.000 g × $5,26 (el agua vale $0)');
-select is((select (r ->> 'costo_unitario')::numeric from lote), 2.768421::numeric, 'costo por gramo = $5.260 / 1.900 g');
+select is((select costo_total from public.lotes_produccion where codigo = (select r ->> 'codigo' from lote)), 5260::numeric, 'media tanda: 1.000 g × $5,26 (el agua vale $0)');
+select is((select costo_unitario from public.lotes_produccion where codigo = (select r ->> 'codigo' from lote)), 2.768421::numeric, 'costo por gramo = $5.260 / 1.900 g');
 select is((select costo_promedio from public.costos_producto where producto_id = 'c0000000-0000-0000-0000-000000000004'),
           2.768421::numeric, 'el sirope entra al kardex con ese costo');
 select is((pg_temp.mpi('BAR_MPi_0006-G') ->> 'ultimo_lote'), null, 'la foto anterior no tenía lotes');

@@ -40,6 +40,7 @@ select is((select jsonb_array_length(v -> 'almacenamientos') from d), 2, 'vida �
 select is((select (v -> 'ficha' ->> 'tiempo_min')::int from d), 30, 'tiempo de preparación');
 
 -- lista de Producción: entrada 2.200, neto 1.800 → 81,8 %; costo 1000×5 + 200×4 = 5.800 → $3,22/g
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
 create temp table l as select * from public.produccion_fichas('BAR') where ficha_codigo = '#99';
 select is((select entrada_esperada from l), 2200::numeric, 'entrada esperada = suma de la receta');
 select is((select round(rendimiento * 100, 1) from l), 81.8, 'rendimiento esperado = neto / entrada');
@@ -49,6 +50,7 @@ select is((select (estado, puntos, pasos) from l), ('VIGENTE'::text, 2, 2), 'vig
 select ok((select estimado from l), 'marca el costo como estimado (sin kardex)');
 select is((select count(*) from public.produccion_fichas('BAR') where estado = 'SIN_FICHA'), 1::bigint, 'el sirope sin ficha sale como SIN_FICHA');
 
+select pg_temp.como('a0000000-0000-0000-0000-000000000002');  -- vuelve el jefe de bar
 -- validaciones
 select ok((public.guardar_ficha(pg_temp.limonada('{"motivo_cambio": "x", "almacenamientos": [{"conservacion": "Nevera", "vida_util_dias": 3}]}')) -> 'fatales' ->> 0)
           like '%ambiente, refrigerado o congelado%', 'almacenamiento válido');

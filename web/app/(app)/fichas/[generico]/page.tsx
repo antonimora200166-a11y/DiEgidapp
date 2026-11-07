@@ -38,6 +38,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
   const rend = neto && entrada ? neto / entrada : null;
   const estimado = d.lineas.some((l) => l.estimado);
   const completa = d.lineas.length > 0 && faltan.length === 0;
+  const vePesos = perfil.rol === 'admin';   // costos: solo administración (la base ya los manda vacíos)
 
   return (
     <>
@@ -48,7 +49,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
         <p className="aviso">Esta ficha está en el <strong>baúl</strong>
           {baul.baul_desde && <> desde el {new Date(baul.baul_desde).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })}</>}{baul.baul_motivo && <> ({baul.baul_motivo})</>}:
           no se vende, no sale en la carta ni en las listas.{' '}
-          <Link href={`/carta?area=${baul.area}&vista=baul`}>Ir al baúl</Link></p>
+          {vePesos && <Link href={`/carta?area=${baul.area}&vista=baul`}>Ir al baúl</Link>}</p>
       )}
 
       {f && !d.es_vigente && (
@@ -81,8 +82,8 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
           <div className="cifras">
             {esMpi && <div className="cifra"><span>Rendimiento</span><b>{pct(rend)}</b><small>{entrada ? `de ${cant(entrada)} ${ub}` : 'sin calcular'}</small></div>}
             <div className="cifra"><span>{esMpi ? 'Neto esperado' : 'Rinde'}</span><b>{neto ? cant(neto) : '—'}</b><small>{neto ? `${ub} por tanda` : 'falta el neto'}</small></div>
-            <div className="cifra"><span>Costo {esMpi ? 'tanda' : 'receta'}</span><b>{completa ? pesos(total) : '—'}</b><small>{completa ? (estimado ? 'estimado' : 'kardex') : 'incompleto'}</small></div>
-            {esMpi && <div className="cifra"><span>Costo / {ub}</span><b>{completa && neto ? pesos(total / neto, 2) : '—'}</b></div>}
+            {vePesos && <div className="cifra"><span>Costo {esMpi ? 'tanda' : 'receta'}</span><b>{completa ? pesos(total) : '—'}</b><small>{completa ? (estimado ? 'estimado' : 'kardex') : 'incompleto'}</small></div>}
+            {vePesos && esMpi && <div className="cifra"><span>Costo / {ub}</span><b>{completa && neto ? pesos(total / neto, 2) : '—'}</b></div>}
             {f.tiempo_min && <div className="cifra"><span>Tiempo</span><b>{f.tiempo_min >= 120 ? `${cant(f.tiempo_min / 60)} h` : `${f.tiempo_min} min`}</b></div>}
             {f.porciones && <div className="cifra"><span>Porciones</span><b>{cant(f.porciones)}</b></div>}
           </div>
@@ -106,17 +107,17 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
                       </span>
                       <span className="n">
                         <strong>{cant(l.cantidad)} {l.unidad}</strong>
-                        <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>
+                        {vePesos && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>
                           {l.tipo === 'SIN_COSTO' ? 'sin costo'
                             : l.costo !== null && l.costo_unitario !== null ? `${pesos(l.costo_unitario, 2)}/${l.unidad_base} = ${pesos(l.costo)}${l.estimado ? ' *' : ''}`
                             : 'sin costo vigente'}
-                        </span>
+                        </span>}
                       </span>
                     </li>
                   ))}
                   {entrada !== null && <li><strong>Entrada total</strong><strong className="n">{cant(entrada)} {ub}</strong></li>}
                 </ul>
-                {estimado && <p className="suave" style={{ fontSize: '.8rem', margin: '.4rem 0 0' }}>* Estimado: el insumo aún no tiene kardex y usa su precio de referencia.</p>}
+                {vePesos && estimado && <p className="suave" style={{ fontSize: '.8rem', margin: '.4rem 0 0' }}>* Estimado: el insumo aún no tiene kardex y usa su precio de referencia.</p>}
               </section>
 
               <section className="tarjeta">

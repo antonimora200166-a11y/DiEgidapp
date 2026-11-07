@@ -27,7 +27,7 @@ const CAUSA: Record<string, string> = { VENCIDO: 'vencido', DANADO: 'dañado', D
 const TIPO_DESTINO: Record<string, string> = { SALIDA_A_PRODUCCION: 'Producción', SALIDA_BAJA: 'Baja', TRASLADO_SALIDA: 'Traslado', AJUSTE_CONTEO_NEGATIVO: 'Ajuste de conteo', SALIDA_VENTA: 'Venta' };
 
 // De dónde salió un insumo: recepción (proveedor) → 1 toque; otro lote → su cadena, plegada
-function Origenes({ o, ub }: { o: Origen[]; ub: string }) {
+function Origenes({ o, ub, vePesos }: { o: Origen[]; ub: string; vePesos: boolean }) {
   if (!o.length) return <div className="suave" style={{ fontSize: '.85rem' }}>Sin costo: no sale del kardex.</div>;
   return <div className="traza">
     {o.map((x, i) => (
@@ -45,7 +45,7 @@ function Origenes({ o, ub }: { o: Origen[]; ub: string }) {
                 <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>Lote del {fecha(x.fecha)} · toca para ver de dónde salió · <Link href={`/produccion/lotes/${encodeURIComponent(x.codigo)}`}>abrir</Link></span></span>
               <span className="n">{num(x.cantidad, 1)} {ub}</span>
             </summary>
-            {x.cadena && <div className="hijos-traza"><Atras insumos={x.cadena} /></div>}
+            {x.cadena && <div className="hijos-traza"><Atras insumos={x.cadena} vePesos={vePesos} /></div>}
           </details>
         ) : (
           <div className="enlace-traza">
@@ -60,7 +60,7 @@ function Origenes({ o, ub }: { o: Origen[]; ub: string }) {
   </div>;
 }
 
-function Atras({ insumos }: { insumos: Insumo[] }) {
+function Atras({ insumos, vePesos }: { insumos: Insumo[]; vePesos: boolean }) {
   return <ul className="renglones">
     {insumos.map((i) => (
       <li key={i.linea} style={{ display: 'block' }}>
@@ -68,9 +68,9 @@ function Atras({ insumos }: { insumos: Insumo[] }) {
           <span><strong>{i.producto}</strong>{i.presentacion && <span className="suave"> · {i.presentacion}</span>}
             {i.zona && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>de {i.zona}</span>}</span>
           <span className="n"><strong>{i.gramos ? `${num(i.gramos)} g` : `${num(i.cantidad_base, 1)} ${i.unidad_base}`}</strong>
-            <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{i.tipo === 'SIN_COSTO' ? 'sin costo' : i.costo !== null ? `${pesos(i.costo)} · ${pesos(i.costo_unitario, 2)}/${i.unidad_base}` : 'sin costo en el kardex'}</span></span>
+            {vePesos && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{i.tipo === 'SIN_COSTO' ? 'sin costo' : i.costo !== null ? `${pesos(i.costo)} · ${pesos(i.costo_unitario, 2)}/${i.unidad_base}` : 'sin costo en el kardex'}</span>}</span>
         </div>
-        <Origenes o={i.origenes} ub={i.unidad_base} />
+        <Origenes o={i.origenes} ub={i.unidad_base} vePesos={vePesos} />
       </li>
     ))}
   </ul>;
@@ -100,6 +100,7 @@ function Adelante({ d, ub }: { d: Destino[]; ub: string }) {
 export default async function DetalleLote({ params }: { params: Promise<{ codigo: string }> }) {
   const perfil = await perfilActual();
   if (perfil.rol === 'servicio') redirect('/');
+  const vePesos = perfil.rol === 'admin';   // costos: solo administración (la base ya los manda vacíos)
   const { codigo } = await params;
   const supabase = await supabaseServidor();
   const { data, error } = await supabase.rpc('traza_lote', { p_codigo: decodeURIComponent(codigo) });
@@ -136,8 +137,8 @@ export default async function DetalleLote({ params }: { params: Promise<{ codigo
         <div className="cifra"><span>Merma</span><b>{num(l.merma_g)}</b><small>g</small></div>
         <div className="cifra"><span>Rendimiento</span><b>{l.rendimiento ? `${num(Number(l.rendimiento) * 100, 1)} %` : '—'}</b>
           {desvio !== null && desvio !== undefined && <small>{desvio > 0 ? '+' : ''}{num(desvio, 1)} pp vs ficha</small>}</div>
-        <div className={`cifra${l.estado_costo !== 'COMPLETO' ? ' alerta' : ''}`}><span>Costo</span><b>{pesos(l.costo_total as number | null)}</b>
-          <small>{l.estado_costo === 'COMPLETO' ? `${pesos(l.costo_unitario as number | null, 2)}/${app ? ub : 'g'}` : 'parcial'}</small></div>
+        {vePesos && <div className={`cifra${l.estado_costo !== 'COMPLETO' ? ' alerta' : ''}`}><span>Costo</span><b>{pesos(l.costo_total as number | null)}</b>
+          <small>{l.estado_costo === 'COMPLETO' ? `${pesos(l.costo_unitario as number | null, 2)}/${app ? ub : 'g'}` : 'parcial'}</small></div>}
         <div className="cifra"><span>Vence</span><b>{l.vence ? fecha(l.vence) : '—'}</b>{l.conservacion ? <small>{String(l.conservacion)}</small> : null}</div>
         {app && <div className="cifra"><span>Queda</span><b>{num(l.restante, 1)}</b><small>{ub}</small></div>}
       </div>
@@ -149,7 +150,7 @@ export default async function DetalleLote({ params }: { params: Promise<{ codigo
           <h2 className="sec-tit">Hacia atrás · de dónde salió cada insumo</h2>
           {app ? (
             <>
-              <Atras insumos={t.atras as Insumo[]} />
+              <Atras insumos={t.atras as Insumo[]} vePesos={vePesos} />
               {Number(t.sin_partida) > 0 && <p className="aviso" style={{ marginBottom: 0 }}>Parte de lo consumido no tenía origen en el kardex (se produjo con menos existencia registrada).</p>}
             </>
           ) : (
@@ -158,8 +159,8 @@ export default async function DetalleLote({ params }: { params: Promise<{ codigo
                 <li key={i.linea}>
                   <span><strong>{i.producto}</strong>
                     {i.lote_origen && <span style={{ display: 'block', fontSize: '.85rem' }}>del lote <Link href={`/produccion/lotes/${encodeURIComponent(i.lote_origen)}`} className="cod">{i.lote_origen}</Link></span>}
-                    {i.fuente_costo && <span className="suave" style={{ display: 'block', fontSize: '.78rem' }}>costo: {i.fuente_costo.toLowerCase()}</span>}</span>
-                  <span className="n"><strong>{num(i.cantidad, 1)} {i.unidad}</strong><span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{pesos(i.costo)}</span></span>
+                    {vePesos && i.fuente_costo && <span className="suave" style={{ display: 'block', fontSize: '.78rem' }}>costo: {i.fuente_costo.toLowerCase()}</span>}</span>
+                  <span className="n"><strong>{num(i.cantidad, 1)} {i.unidad}</strong>{vePesos && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{pesos(i.costo)}</span>}</span>
                 </li>
               ))}
             </ul>

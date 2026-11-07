@@ -50,7 +50,7 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
           <span className="boton">Continuar</span>
         </Link>
       )}
-      <ListaFichasProduccion filas={filas} />
+      <ListaFichasProduccion filas={filas} vePesos={perfil.rol === 'admin'} />
     </>
   );
 }

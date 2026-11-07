@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
-import { areasDe, puedeOperar, type Area } from '@/lib/roles';
+import { areasDe, puedeOperar, vePrecios, type Area } from '@/lib/roles';
 import Producir, { type DatosProduccion } from './Producir';
 import PestanasProduccion from '@/components/PestanasProduccion';
 
@@ -20,7 +20,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
   const [{ data, error }, { data: zonas }, { data: recientes }] = await Promise.all([
     supabase.rpc('datos_produccion', { p_area: area }),
     supabase.from('ubicaciones').select('codigo, nombre').eq('area', area).eq('activo', true).order('nombre'),
-    supabase.from('lotes_produccion').select('id, codigo, fecha, neto_base, costo_unitario, estado_costo, forzado, productos(genericos(nombre, unidad_base))')
+    supabase.from('lotes_produccion').select('id, codigo, fecha, neto_base, estado_costo, forzado, productos(genericos(nombre, unidad_base))')
       .eq('area', area).order('registrado_en', { ascending: false }).limit(5),
   ]);
   if (error) throw new Error(error.message);
@@ -47,8 +47,8 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
           ))}
         </nav>
       )}
-      <Producir key={area} area={area} datos={data as DatosProduccion} zonas={zonas ?? []} zonaDe={zonaDe} generico={sp.generico} perfilId={perfil.id} />
-      <p style={{ marginTop: '1.2rem' }}><Link href="/producir/sin-costo">Lotes sin costo completo y por qué →</Link></p>
+      <Producir key={area} area={area} datos={data as DatosProduccion} zonas={zonas ?? []} zonaDe={zonaDe} generico={sp.generico} perfilId={perfil.id} vePesos={vePrecios(perfil)} />
+      {vePrecios(perfil) && <p style={{ marginTop: '1.2rem' }}><Link href="/producir/sin-costo">Lotes sin costo completo y por qué →</Link></p>}
       {!!recientes?.length && (
         <>
           <h2>Últimos lotes</h2>
@@ -63,9 +63,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
                   </span>
                   <span className="suave" style={{ fontSize: '.85rem', textAlign: 'right' }}>
                     {new Date(l.fecha + 'T12:00:00').toLocaleDateString('es-CO')}<br />
-                    {l.costo_unitario !== null
-                      ? `${Number(l.costo_unitario).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 })}/${g?.unidad_base}`
-                      : <span className="etiqueta provisional">sin costo completo</span>}
+                    {vePrecios(perfil) && l.estado_costo !== 'COMPLETO' && <span className="etiqueta provisional">sin costo completo</span>}
                   </span>
                 </li>
               );

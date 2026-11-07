@@ -43,7 +43,7 @@ export default async function Lotes({ searchParams }: { searchParams: Promise<{ 
           {' '}· quedan {Number(l.restante).toLocaleString('es-CO')} {l.unidad_base}. {l.estado === 'VENCIDO' ? 'Regístralo como baja.' : 'Úsalo primero.'}
         </Link>
       ))}
-      <ListaLotes filas={filas} hoy={hoy} />
+      <ListaLotes filas={filas} hoy={hoy} vePesos={perfil.rol === 'admin'} />
     </>
   );
 }

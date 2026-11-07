@@ -9,7 +9,7 @@ insert into public.genericos (id, codigo, nombre, tipo, categoria, area, unidad_
 insert into public.productos (id, codigo, generico_id, marca, presentacion, unidad_compra, contenido_base, contenido_variable) values
   ('c0000000-0000-0000-0000-000000000701', 'BAR_MPe_0701-1', 'b0000000-0000-0000-0000-000000000701', '', 'Unidad', 'UND', null, true);
 
-select pg_temp.como('a0000000-0000-0000-0000-000000000002');  -- jefe de bar
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
 -- 2 piñas a $3.500 c/u, de ~1.200 g cada una → 2.400 g por $7.000
 create temp table r as select public.guardar_precios_foto(jsonb_build_object(
   'area', 'BAR', 'ruta', 'BAR/2026/' || gen_random_uuid() || '.jpg', 'proveedor', 'Frutería', 'documento', '47-A5449', 'fecha', '2026-11-03',

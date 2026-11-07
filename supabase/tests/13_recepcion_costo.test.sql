@@ -166,6 +166,7 @@ select throws_like($$ select public.proveedor_desde_factura('BAR', 'Otro Proveed
 select pg_temp.como('a0000000-0000-0000-0000-000000000003');
 
 -- ================================================================ lista de la pantalla
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
 select is((select costo_promedio from public.productos_recepcion('BAR') where producto_id = 'c0000000-0000-0000-0000-000000000002'),
           pg_temp.promedio('c0000000-0000-0000-0000-000000000002'), 'productos_recepcion trae el costo vigente');
 select pg_temp.como('a0000000-0000-0000-0000-000000000004');  -- servicio

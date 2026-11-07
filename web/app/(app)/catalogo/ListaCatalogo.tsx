@@ -23,7 +23,7 @@ export default function ListaCatalogo({ filas, categorias, esAdmin }: { filas: P
       )}
       <ul className="rejilla">
         {filas.map((p) => {
-          const faltas = faltasDe(p);
+          const faltas = faltasDe(p, !!esAdmin);
           return (
             <li key={p.id} className={sel.has(p.id) ? 'elegido' : undefined}>
               <div style={{ display: 'flex', gap: '.55rem', alignItems: 'flex-start' }}>

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
-import { editaArea, type Area } from '@/lib/roles';
+import { editaArea, vePrecios, type Area } from '@/lib/roles';
 import ComprasProveedor, { type CompraProveedor } from './ComprasProveedor';
 import Dependencia, { type DatosDependencia } from './Dependencia';
 import Repetidos, { type Par } from './Repetidos';
@@ -16,7 +16,7 @@ export const maxDuration = 300;   // el análisis de riesgos busca en la web: pu
 export default async function Proveedores() {
   const perfil = await perfilActual();
   const edita = perfil.rol === 'admin' || (['BAR', 'COCINA'] as Area[]).some((a) => editaArea(perfil, a));
-  if (!edita && perfil.rol !== 'auditor') redirect('/');
+  if (!vePrecios(perfil)) redirect('/');   // compras en pesos: solo administración
   const supabase = await supabaseServidor();
   const [compras, parecidos, dependencia, analisis, lista] = await Promise.all([
     supabase.rpc('compras_por_proveedor'),

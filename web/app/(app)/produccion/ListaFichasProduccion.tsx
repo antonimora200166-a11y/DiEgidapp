@@ -21,7 +21,8 @@ const pendientes = (f: FilaProd) => f.estado === 'SIN_FICHA' ? [] : [
   ...(f.almacenamientos.length === 0 ? ['Sin vida útil'] : []),
 ];
 
-export default function ListaFichasProduccion({ filas }: { filas: FilaProd[] }) {
+// vePesos: costo de la tanda y $/unidad solo para administración
+export default function ListaFichasProduccion({ filas, vePesos }: { filas: FilaProd[]; vePesos: boolean }) {
   const grupos: Grupo<FilaProd>[] = [
     { clave: 'estado', titulo: 'Estado', valor: (f) => f.estado, opciones: Object.entries(ESTADO).map(([v, x]) => ({ v, t: x.t })) },
     { clave: 'falta', titulo: 'Le falta', valor: pendientes,
@@ -58,10 +59,11 @@ export default function ListaFichasProduccion({ filas }: { filas: FilaProd[] }) 
   return (
     <VistaFiltrable clave="produccion-fichas" filas={filas} id={(f) => f.generico_id}
                     buscar={(f) => `${f.generico_codigo} ${f.ficha_codigo ?? ''} ${f.nombre}`}
-                    grupos={grupos} columnas={columnas}
+                    grupos={grupos} columnas={columnas.filter((c) => vePesos || !['costo', 'cg'].includes(c.k))}
                     pie={(v) => <p className="suave" style={{ fontSize: '.82rem' }}>
-                      {v.length} de {filas.length} MPI. Costo de tanda = Σ cantidad de la ficha × costo promedio vigente; lo que no se compra (agua) vale $0.
-                      {v.some((f) => f.estimado) && ' * Estimado: aún sin kardex, usa precios de referencia.'}</p>}
+                      {v.length} de {filas.length} MPI.
+                      {vePesos && ' Costo de tanda = Σ cantidad de la ficha × costo promedio vigente; lo que no se compra (agua) vale $0.'}
+                      {vePesos && v.some((f) => f.estimado) && ' * Estimado: aún sin kardex, usa precios de referencia.'}</p>}
                     vacio="Ninguna ficha coincide con estos filtros." />
   );
 }

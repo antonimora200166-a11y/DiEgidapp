@@ -9,15 +9,16 @@ export type FilaExistencia = {
 };
 const pesos = (n: number, dec = 0) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: dec, minimumFractionDigits: dec });
 
-export default function ListaExistencias({ filas, zonaInicial, variasAreas }: { filas: FilaExistencia[]; zonaInicial: string | null; variasAreas: boolean }) {
+// vePesos: costo y valor solo para administración (la base ya los manda vacíos a los demás)
+export default function ListaExistencias({ filas, zonaInicial, variasAreas, vePesos }: { filas: FilaExistencia[]; zonaInicial: string | null; variasAreas: boolean; vePesos: boolean }) {
   const grupos: Grupo<FilaExistencia>[] = [
     ...(variasAreas ? [{ clave: 'area', titulo: 'Área', valor: (f: FilaExistencia) => f.area, opciones: [{ v: 'BAR', t: 'Bar' }, { v: 'COCINA', t: 'Cocina' }] }] : []),
     { clave: 'zona', titulo: 'Zona', valor: (f) => f.zona },
     { clave: 'categoria', titulo: 'Categoría', valor: (f) => f.categoria },
     { clave: 'abc', titulo: 'Clase ABC', valor: (f) => f.clase_abc ?? 'Sin clase' },
     { clave: 'unidad', titulo: 'Unidad', valor: (f) => f.unidad_base },
-    { clave: 'estado', titulo: 'Revisar', valor: (f) => [f.costo_promedio === null && 'sin', f.cantidad < 0 && 'neg'].filter(Boolean) as string[],
-      opciones: [{ v: 'sin', t: 'Sin costo todavía' }, { v: 'neg', t: 'Saldo negativo' }] },
+    { clave: 'estado', titulo: 'Revisar', valor: (f) => [vePesos && f.costo_promedio === null && 'sin', f.cantidad < 0 && 'neg'].filter(Boolean) as string[],
+      opciones: [...(vePesos ? [{ v: 'sin', t: 'Sin costo todavía' }] : []), { v: 'neg', t: 'Saldo negativo' }] },
   ];
   const agrupar: Agrupar<FilaExistencia>[] = [
     { v: 'zona', t: 'Zona', valor: (f) => f.zona },
@@ -25,7 +26,7 @@ export default function ListaExistencias({ filas, zonaInicial, variasAreas }: { 
     ...(variasAreas ? [{ v: 'area', t: 'Área', valor: (f: FilaExistencia) => (f.area === 'BAR' ? 'Bar' : 'Cocina') }] : []),
     { v: 'unidad', t: 'Unidad', valor: (f) => f.unidad_base },
   ];
-  const columnas: Columna<FilaExistencia>[] = [
+  const todas: Columna<FilaExistencia>[] = [
     { k: 'producto', t: 'Producto', orden: (f) => f.generico, ver: (f) => (
       <div style={{ minWidth: 180 }}>{f.generico}{f.marca && ` · ${f.marca}`}<div className="suave" style={{ fontSize: '.8rem' }}>{f.presentacion}</div></div>) },
     { k: 'codigo', t: 'Código', def: false, orden: (f) => f.producto_codigo, ver: (f) => <span className="cod">{f.producto_codigo}</span> },
@@ -38,12 +39,17 @@ export default function ListaExistencias({ filas, zonaInicial, variasAreas }: { 
       ver: (f) => (f.costo_promedio === null ? '—' : `${pesos(Number(f.costo_promedio), Number(f.costo_promedio) < 100 ? 2 : 0)}/${f.unidad_base}`) },
     { k: 'valor', t: 'Valor', der: true, orden: (f) => f.valor, ver: (f) => (f.valor === null ? <span className="suave">sin costo</span> : pesos(Number(f.valor))) },
   ];
+  const columnas = todas.filter((c) => vePesos || !['costo', 'valor'].includes(c.k));
   return (
     <VistaFiltrable clave="existencias" filas={filas} id={(f) => f.producto_id + f.ubicacion}
                     buscar={(f) => `${f.generico} ${f.marca} ${f.presentacion} ${f.producto_codigo}`}
                     grupos={grupos} columnas={columnas} agrupar={agrupar}
                     filtrosIniciales={zonaInicial ? { zona: [zonaInicial] } : undefined}
                     pie={(vis) => {
+                      if (!vePesos) {
+                        const neg = vis.filter((f) => f.cantidad < 0).length;
+                        return <p className="suave" style={{ fontSize: '.88rem' }}>{vis.length} línea(s){neg > 0 && ` · ${neg} en negativo`}</p>;
+                      }
                       const total = vis.reduce((t, f) => t + Number(f.valor ?? 0), 0);
                       // valor por área y categoría de lo filtrado, de mayor a menor
                       const porCat = new Map<string, { area: string; categoria: string; valor: number; lineas: number }>();

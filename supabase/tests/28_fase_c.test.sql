@@ -1,7 +1,7 @@
 -- Fase C: Hoy, carta con margen, pedido sugerido, etiqueta de lote y códigos de barras.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(1 + 19);
 \ir fixtures.inc
 
 update public.productos set stock_minimo = 3 where id = 'c0000000-0000-0000-0000-000000000002';   -- azúcar: mínimo 3 bolsas
@@ -25,7 +25,10 @@ create temp table l as select public.registrar_lote(jsonb_build_object(
 create temp table ped as select * from public.pedido_sugerido('BAR');
 select is((select array[saldo_unidades, pedir] from ped where codigo = 'BAR_MPe_0005-2500'), array[1.6, 5]::numeric[], 'azúcar: 1,6 bolsas, pedir 5');
 select is((select proveedor from ped where codigo = 'BAR_MPe_0005-2500'), 'Frutería', 'a quién se le compró la última vez');
-select is((select costo_unidad from ped where codigo = 'BAR_MPe_0005-2500'), 13150::numeric, 'costo de la última bolsa');
+select is((select costo_unidad from ped where codigo = 'BAR_MPe_0005-2500'), null::numeric, 'el aux no ve el costo');
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
+select is((select costo_unidad from public.pedido_sugerido('BAR') where codigo = 'BAR_MPe_0005-2500'), 13150::numeric, 'costo de la última bolsa');
+select pg_temp.como('a0000000-0000-0000-0000-000000000003');  -- vuelve el aux de bar
 
 -- etiqueta del lote
 create temp table et as select public.lote_etiqueta((select r ->> 'codigo' from l)) as e;
@@ -51,13 +54,14 @@ insert into public.fichas (id, codigo, generico_id) values ('e0000000-0000-0000-
 insert into public.ficha_lineas (ficha_id, linea, generico_id, cantidad, unidad) values
   ('e0000000-0000-0000-0000-000000000007', 1, 'b0000000-0000-0000-0000-000000000002', 100, 'g');
 select throws_like($$ select public.fijar_precio('b0000000-0000-0000-0000-000000000007', 10800) $$, '%Sin permiso%', 'el aux no fija precios');
-select pg_temp.como('a0000000-0000-0000-0000-000000000002');  -- jefe de bar
-select ok((public.fijar_precio('b0000000-0000-0000-0000-000000000007', 10800) ->> 'ok')::boolean, 'el jefe fija el precio');
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los precios solo los maneja administración (08/11)
+select ok((public.fijar_precio('b0000000-0000-0000-0000-000000000007', 10800) ->> 'ok')::boolean, 'administración fija el precio');
 select is((select array[costo, pct_costo, margen] from public.carta_costos('BAR') where nombre = 'Gin Sour'),
           array[526, 5.3, 9474]::numeric[], 'costo, % de costo sobre el precio sin impoconsumo y margen');
 select ok(not (public.fijar_precio('b0000000-0000-0000-0000-000000000007', 11000) ->> 'ok')::boolean, 'un precio por día: no se edita');
 
 -- mínimo y máximo
+select pg_temp.como('a0000000-0000-0000-0000-000000000002');  -- jefe de bar
 select ok(not (public.fijar_stock('c0000000-0000-0000-0000-000000000002', 4, 2) ->> 'ok')::boolean, 'el máximo no puede ser menor que el mínimo');
 select ok((public.fijar_stock('c0000000-0000-0000-0000-000000000002', 2, 6) ->> 'ok')::boolean, 'el jefe fija mínimo y máximo');
 select is((select pedir from public.pedido_sugerido('BAR') where codigo = 'BAR_MPe_0005-2500'), 5::numeric, 'con máximo 6: pedir 5 (hay 1,6)');

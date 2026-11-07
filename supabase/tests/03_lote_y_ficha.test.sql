@@ -50,8 +50,8 @@ create temp table lote1 as select public.registrar_lote(jsonb_build_object(
     jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000005', 'cantidad', 2000)))) as r;
 
 select is((select (r ->> 'ok')::boolean from lote1), true, 'lote de sirope guardado');
-select is((select (r ->> 'costo_total')::numeric from lote1), 10520::numeric, 'costo del lote = 2.000 g × $5,26 (el agua vale $0)');
-select is((select (r ->> 'costo_unitario')::numeric from lote1), 2.768421::numeric, 'costo por gramo = $10.520 / 3.800 g');
+select is((select costo_total from public.lotes_produccion where codigo = (select r ->> 'codigo' from lote1)), 10520::numeric, 'costo del lote = 2.000 g × $5,26 (el agua vale $0)');
+select is((select costo_unitario from public.lotes_produccion where codigo = (select r ->> 'codigo' from lote1)), 2.768421::numeric, 'costo por gramo = $10.520 / 3.800 g');
 select is((select r ->> 'estado_costo' from lote1), 'COMPLETO', 'lote COMPLETO');
 select is((select jsonb_array_length(r -> 'avisos') from lote1), 0, 'rendimiento igual a la ficha (95 %): sin aviso');
 select is((select costo_promedio from public.costos_producto where producto_id = 'c0000000-0000-0000-0000-000000000004'),
@@ -68,8 +68,8 @@ create temp table lote2 as select public.registrar_lote(jsonb_build_object(
   'consumos', jsonb_build_array(
     jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000004', 'cantidad', 500),
     jsonb_build_object('producto_id', 'c0000000-0000-0000-0000-000000000003', 'cantidad', 1, 'unidad', 'kg')))) as r;
-select is((select (r ->> 'costo_total')::numeric from lote2), 9384.2105::numeric, 'cascada: 500 g × $2,768421 + 1.000 g × $8');
-select is((select (r ->> 'costo_unitario')::numeric from lote2), 7.820175::numeric, 'costo por gramo de la limonada');
+select is((select costo_total from public.lotes_produccion where codigo = (select r ->> 'codigo' from lote2)), 9384.2105::numeric, 'cascada: 500 g × $2,768421 + 1.000 g × $8');
+select is((select costo_unitario from public.lotes_produccion where codigo = (select r ->> 'codigo' from lote2)), 7.820175::numeric, 'costo por gramo de la limonada');
 
 -- Lote 3 · insumo sin existencia: no se guarda ni con motivo (primero la recepción)
 select ok((select public.registrar_lote(jsonb_build_object(
@@ -102,6 +102,7 @@ insert into public.ficha_lineas (ficha_id, linea, generico_id, cantidad, unidad)
 insert into public.precios_venta (generico_id, precio_con_impuesto, vigente_desde) values
   ('b0000000-0000-0000-0000-000000000007', 32400, current_date - 1);
 
+select pg_temp.como('a0000000-0000-0000-0000-000000000001');  -- admin: los pesos solo los ve administración (08/11)
 select is((select completa from public.v_costo_fichas where ficha_id = 'e0000000-0000-0000-0000-000000000099'),
           false, 'sin densidad del sirope la bebida queda incompleta');
 select is((select faltantes[1] from public.v_costo_fichas where ficha_id = 'e0000000-0000-0000-0000-000000000099'),

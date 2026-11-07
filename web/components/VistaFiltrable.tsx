@@ -25,14 +25,20 @@ const lista = (x: string | string[] | null) => (x === null ? [] : Array.isArray(
 type Estado = { f: Record<string, string[]>; q: string; agrupar: string | null; cols: string[] | null; orden: string | null; desc: boolean };
 
 export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, columnas, agrupar = [], seleccionable, acciones,
-  pie, filtrosIniciales, porPagina = 200, vacio = 'Nada coincide con estos filtros.' }: {
+  pie, detalle, filtrosIniciales, porPagina = 200, vacio = 'Nada coincide con estos filtros.' }: {
   clave: string; filas: T[]; id: (f: T) => string; buscar: (f: T) => string;
   grupos: Grupo<T>[]; columnas: Columna<T>[]; agrupar?: Agrupar<T>[];
   seleccionable?: (f: T) => boolean;
   acciones?: (elegidas: T[], limpiar: () => void) => React.ReactNode;
   pie?: (visibles: T[]) => React.ReactNode;
+  detalle?: (f: T) => React.ReactNode;                  // al tocar la fila se abre debajo
   filtrosIniciales?: Record<string, string[]>; porPagina?: number; vacio?: string;
 }) {
+  const [abiertas, setAbiertas] = useState<Set<string>>(new Set());
+  const tocarFila = (ev: React.MouseEvent, k: string) => {
+    if (!detalle || (ev.target as HTMLElement).closest('a, button, input, select, textarea, label')) return;
+    setAbiertas((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  };
   const inicial: Estado = { f: filtrosIniciales ?? {}, q: '', agrupar: null, cols: null, orden: null, desc: false };
   const [e, setE] = useState<Estado>(inicial);
   const [cargado, setCargado] = useState(false);
@@ -201,13 +207,17 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
                     {ag && (i === 0 || ag.valor(enPantalla[i - 1]) !== g) && (
                       <tr className="fila-grupo"><td colSpan={cols.length + (seleccionable ? 1 : 0)}><strong>{g}</strong> <span className="suave">· {cuentaGrupo.get(g!)}</span></td></tr>
                     )}
-                    <tr className={sel.has(id(f)) ? 'elegida' : undefined}>
+                    <tr className={sel.has(id(f)) ? 'elegida' : undefined} onClick={detalle ? (ev) => tocarFila(ev, id(f)) : undefined}
+                        style={detalle ? { cursor: 'pointer' } : undefined} aria-expanded={detalle ? abiertas.has(id(f)) : undefined}>
                       {seleccionable && (
                         <td className="celda-sel">{seleccionable(f) && <input type="checkbox" aria-label="Seleccionar" checked={sel.has(id(f))} style={{ width: 20, minHeight: 20 }}
                                                        onChange={() => setSel((s) => { const n = new Set(s); if (n.has(id(f))) n.delete(id(f)); else n.add(id(f)); return n; })} />}</td>
                       )}
                       {cols.map((c) => <td key={c.k} data-t={c.t} style={c.der ? { textAlign: 'right', whiteSpace: 'nowrap' } : undefined}>{c.ver(f)}</td>)}
                     </tr>
+                    {detalle && abiertas.has(id(f)) && (
+                      <tr className="fila-detalle"><td colSpan={cols.length + (seleccionable ? 1 : 0)}>{detalle(f)}</td></tr>
+                    )}
                   </Fragment>
                 );
               })}

@@ -8,7 +8,7 @@ const fecha = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-CO
 
 // A esta página lleva el QR de la etiqueta: qué es, cuándo se hizo y hasta cuándo sirve.
 export default async function Lote({ params }: { params: Promise<{ codigo: string }> }) {
-  await perfilActual();
+  const vePesos = (await perfilActual()).rol === 'admin';   // costos: solo administración
   const { codigo } = await params;
   const l = await loteEtiqueta(decodeURIComponent(codigo));
   if (!l) notFound();
@@ -33,7 +33,7 @@ export default async function Lote({ params }: { params: Promise<{ codigo: strin
         <dt>Cantidad</dt><dd>{Number(l.neto).toLocaleString('es-CO')} {l.unidad}{l.unidades ? ` en ${l.unidades} envase(s)` : ''}</dd>
         {l.conservacion && <><dt>Conservación</dt><dd>{l.conservacion}</dd></>}
         {l.costo_unitario !== null && <><dt>Costo</dt><dd>{Number(l.costo_unitario).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 })} por {l.unidad}</dd></>}
-        {l.estado_costo !== 'COMPLETO' && <><dt>Costo</dt><dd>incompleto: algún insumo no tenía costo</dd></>}
+        {vePesos && l.estado_costo !== 'COMPLETO' && <><dt>Costo</dt><dd>incompleto: algún insumo no tenía costo</dd></>}
       </dl>
       <div className="acciones">
         <Link className="boton" href={`/l/${encodeURIComponent(l.codigo)}/etiqueta`}>Imprimir etiqueta</Link>

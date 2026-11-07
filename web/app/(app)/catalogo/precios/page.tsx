@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
-import { editaArea, type Area } from '@/lib/roles';
+import { editaArea, vePrecios, type Area } from '@/lib/roles';
 import PreciosFoto, { type ProductoPrecio } from './PreciosFoto';
 
 export const metadata = { title: 'Precios desde fotos' };
@@ -10,7 +10,7 @@ export const metadata = { title: 'Precios desde fotos' };
 export default async function Precios() {
   const perfil = await perfilActual();
   const areas = (['BAR', 'COCINA'] as Area[]).filter((a) => editaArea(perfil, a));
-  if (!areas.length) redirect('/catalogo');
+  if (!areas.length || !vePrecios(perfil)) redirect('/catalogo');   // cargar precios: solo administración
   const supabase = await supabaseServidor();
   const catalogos = await Promise.all(areas.map((a) => supabase.rpc('productos_recepcion', { p_area: a })));
   const productos: ProductoPrecio[] = [];

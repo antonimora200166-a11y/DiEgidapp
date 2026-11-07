@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
-import { areasDe, type Area } from '@/lib/roles';
+import { areasDe, vePrecios, type Area } from '@/lib/roles';
 import ListaExistencias, { type FilaExistencia } from './ListaExistencias';
 
 export const metadata = { title: 'Existencias' };
@@ -25,7 +25,7 @@ export default async function Existencias({ searchParams }: { searchParams: Prom
     <>
       <h1 className="pagina-ancha">Existencias</h1>
       {filas.length ? (
-        <ListaExistencias filas={filas} zonaInicial={zona ? nombreZona(zona) : null} variasAreas={areas.length > 1} />
+        <ListaExistencias filas={filas} zonaInicial={zona ? nombreZona(zona) : null} variasAreas={areas.length > 1} vePesos={vePrecios(perfil)} />
       ) : (
         <p className="tarjeta">
           No hay existencias todavía. El kardex nace con el <Link href="/conteo">conteo inicial</Link> de cada zona.

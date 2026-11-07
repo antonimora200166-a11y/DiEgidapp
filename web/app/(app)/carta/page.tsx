@@ -2,67 +2,64 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
-import { areasDe, editaArea, type Area } from '@/lib/roles';
 import ListaCarta, { type PlatoCarta } from './ListaCarta';
 import ListaBaul, { type EnBaul } from './ListaBaul';
 
 export const metadata = { title: 'Carta y margen' };
 
 const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' };
+type Vista = 'BAR' | 'COCINA' | 'TODO';
+const NOMBRE: Record<Vista, string> = { BAR: 'Bar', COCINA: 'Cocina', TODO: 'Todo' };
 
+// Consulta rápida de cada producto final. Precios y costos: solo administración (decisión 06/11/2026).
 export default async function Carta({ searchParams }: { searchParams: Promise<{ area?: string; vista?: string }> }) {
   const perfil = await perfilActual();
-  const areas = areasDe(perfil);
-  if (!areas.length || perfil.rol === 'servicio') redirect('/');
+  if (perfil.rol !== 'admin') redirect('/');
   const params = await searchParams;
-  const pedida = params.area as Area | undefined;
-  const area: Area = pedida && areas.includes(pedida) ? pedida : areas[0];
+  const area: Vista = (['BAR', 'COCINA', 'TODO'] as Vista[]).includes(params.area as Vista) ? (params.area as Vista) : 'BAR';
   const enBaul = params.vista === 'baul';
   const supabase = await supabaseServidor();
-  const [{ data, error }, { data: meta }, { data: baul, error: errorBaul }] = await Promise.all([
-    supabase.rpc('carta_costos', { p_area: area }),
-    supabase.from('parametros').select('valor').eq('clave', 'META_PCT_COSTO').order('vigente_desde', { ascending: false }).limit(1).maybeSingle(),
-    supabase.rpc('carta_baul', { p_area: area }),
+  const areasBaul = area === 'TODO' ? (['BAR', 'COCINA'] as const) : [area];
+  const [{ data, error }, ...baules] = await Promise.all([
+    supabase.rpc('carta_margen', { p_area: area === 'TODO' ? null : area }),
+    ...areasBaul.map((a) => supabase.rpc('carta_baul', { p_area: a })),
   ]);
   if (error) throw new Error(error.message);
+  const errorBaul = baules.find((b) => b.error)?.error;
   if (errorBaul) throw new Error(errorBaul.message);
-  const nBaul = (baul ?? []).length;
-  const puede = editaArea(perfil, area);
-  const cosas = area === 'BAR' ? 'cócteles' : 'platos';
+  const baul = baules.flatMap((b) => (b.data ?? []) as EnBaul[]);
+  const filas = (data ?? []) as PlatoCarta[];
+  const imp = filas[0]?.impoconsumo_pct ?? 8;
 
   return (
     <>
       <h1 className="pagina-ancha">Carta y margen</h1>
       <nav className="segmentos" style={{ marginBottom: '1rem', gap: '1rem' }}>
-        {areas.length > 1 && areas.map((a) => (
-          <Link key={a} href={`/carta?area=${a}${enBaul ? '&vista=baul' : ''}`}>
-            <span style={a === area ? activo : undefined}>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>
-          </Link>
+        {(['BAR', 'COCINA', 'TODO'] as Vista[]).map((a) => (
+          <Link key={a} href={`/carta?area=${a}${enBaul ? '&vista=baul' : ''}`}><span style={a === area ? activo : undefined}>{NOMBRE[a]}</span></Link>
         ))}
         <Link href={`/carta?area=${area}`}><span style={!enBaul ? activo : undefined}>En carta</span></Link>
-        <Link href={`/carta?area=${area}&vista=baul`}><span style={enBaul ? activo : undefined}>Baúl{nBaul ? ` (${nBaul})` : ''}</span></Link>
+        <Link href={`/carta?area=${area}&vista=baul`}><span style={enBaul ? activo : undefined}>Baúl{baul.length ? ` (${baul.length})` : ''}</span></Link>
       </nav>
       {enBaul ? (
         <>
           <p className="suave">
-            Los {cosas} que no se venden. Su ficha se guarda tal cual, pero no salen en la carta, en Fichas técnicas
-            ni en los tableros de validación, y no cuentan en los promedios.
-            {puede && ' Marca los que vuelven y devuélvelos a la carta.'}
+            Lo que no se vende. Su ficha se guarda tal cual, pero no sale en la carta, en Fichas técnicas ni en los
+            tableros, y no cuenta en los promedios. Marca lo que vuelve y devuélvelo a la carta.
           </p>
-          {nBaul ? <ListaBaul filas={(baul ?? []) as EnBaul[]} puede={puede} />
-            : <p className="tarjeta">El baúl está vacío. Desde «En carta» marca los {cosas} que no se van a vender y llévalos al baúl.</p>}
+          {baul.length ? <ListaBaul filas={baul} puede />
+            : <p className="tarjeta">El baúl está vacío. Desde «En carta» marca lo que no se va a vender y llévalo al baúl.</p>}
         </>
       ) : (
         <>
           <p className="suave">
-            Costo de la receta vigente de cada {area === 'BAR' ? 'cóctel' : 'plato'} con los costos de hoy, contra su precio de carta.
-            El % de costo se calcula sobre el precio sin impoconsumo. Si un ingrediente no tiene costo todavía, el % no sale.
-            Mientras no haya kardex, el costo es <strong>estimado</strong>: precios de referencia y la receta de cada MPI.
-            {puede && <> Lo que no se va a vender: márcalo y llévalo al <strong>baúl</strong>.</>}
+            Costo de la ficha vigente con los costos de hoy, contra el precio de carta. El % de costo y el margen van sobre
+            el <strong>precio neto</strong> = precio de carta ÷ {(1 + imp / 100).toLocaleString('es-CO')} (impoconsumo del {imp} %).
+            Semáforo contra la meta de cada sección: verde en la meta, amarillo hasta 3 puntos encima, rojo después.
+            Mientras no haya kardex, el costo es <strong>estimado</strong>.
           </p>
-          {(data ?? []).length ? (
-            <ListaCarta filas={(data ?? []) as PlatoCarta[]} meta={Number(meta?.valor ?? 25)} puedePrecio={puede} />
-          ) : <p className="tarjeta">Todavía no hay {cosas} en el catálogo de esta área.</p>}
+          {filas.length ? <ListaCarta filas={filas} variasAreas={area === 'TODO'} />
+            : <p className="tarjeta">Todavía no hay productos de carta en {area === 'TODO' ? 'ninguna área' : NOMBRE[area].toLowerCase()}.</p>}
         </>
       )}
     </>
