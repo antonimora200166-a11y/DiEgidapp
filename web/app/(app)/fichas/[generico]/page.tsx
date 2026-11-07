@@ -19,7 +19,10 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
   const { v } = await searchParams;
   if (!/^[0-9a-f-]{36}$/.test(generico) || (v && !/^[0-9a-f-]{36}$/.test(v))) notFound();
   const supabase = await supabaseServidor();
-  const { data, error } = await supabase.rpc('ficha_para_editar', { p_generico: generico, p_ficha: v ?? null });
+  const [{ data, error }, { data: baul }] = await Promise.all([
+    supabase.rpc('ficha_para_editar', { p_generico: generico, p_ficha: v ?? null }),
+    supabase.from('genericos').select('en_baul, baul_desde, baul_motivo, area').eq('id', generico).maybeSingle(),
+  ]);
   if (error) { if (/Solo los MPI|no es de/.test(error.message)) notFound(); throw new Error(error.message); }
   const d = data as DatosFicha;
   const r = d.resultado;
@@ -40,6 +43,13 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
     <>
       {esMpi && <PestanasProduccion activa="fichas" area={r.area} />}
       <p style={{ margin: '0 0 .3rem' }}><Link href={volver}>← {esMpi ? 'Fichas de producción' : 'Fichas técnicas'}</Link></p>
+
+      {baul?.en_baul && (
+        <p className="aviso">Esta ficha está en el <strong>baúl</strong>
+          {baul.baul_desde && <> desde el {new Date(baul.baul_desde).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })}</>}{baul.baul_motivo && <> ({baul.baul_motivo})</>}:
+          no se vende, no sale en la carta ni en las listas.{' '}
+          <Link href={`/carta?area=${baul.area}&vista=baul`}>Ir al baúl</Link></p>
+      )}
 
       {f && !d.es_vigente && (
         <p className="aviso">Estás viendo la <strong>versión {f.version}</strong>

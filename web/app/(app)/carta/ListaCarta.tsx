@@ -3,7 +3,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/components/VistaFiltrable';
-import { fijarPrecio } from './acciones';
+import { fijarPrecio, moverAlBaul } from './acciones';
 
 export type PlatoCarta = {
   generico_id: string; nombre: string; tipo: 'BEBIDA' | 'PLATO'; carta: string | null; ficha_codigo: string | null;
@@ -57,6 +57,37 @@ function Precio({ f, puede }: { f: PlatoCarta; puede: boolean }) {
   );
 }
 
+// Barra de las filas marcadas: las lleva al baúl (con un motivo opcional).
+function AlBaul({ elegidas, limpiar }: { elegidas: PlatoCarta[]; limpiar: () => void }) {
+  const router = useRouter();
+  const [motivo, setMotivo] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [enviando, iniciar] = useTransition();
+  const llevar = () => {
+    const nombres = elegidas.slice(0, 5).map((f) => f.nombre).join(', ') + (elegidas.length > 5 ? ` y ${elegidas.length - 5} más` : '');
+    if (!confirm(`¿Llevar al baúl ${elegidas.length === 1 ? 'esta ficha' : `estas ${elegidas.length} fichas`}?\n\n${nombres}\n\n`
+      + 'Dejan de salir en la carta, en Fichas técnicas y en los promedios. Se pueden sacar cuando quieras.')) return;
+    iniciar(async () => {
+      const r = await moverAlBaul(elegidas.map((f) => f.generico_id), motivo.trim());
+      if (r.ok) { setMotivo(''); setError(null); limpiar(); router.refresh(); } else setError(r.error ?? 'No se pudo mover.');
+    });
+  };
+  return (
+    <div className="barra-bloque">
+      <div className="linea" style={{ flexWrap: 'wrap' }}>
+        <strong>{elegidas.length} seleccionado(s)</strong>
+        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo (opcional)" aria-label="Motivo"
+                 style={{ minWidth: 180, flex: '1 1 180px' }} />
+          <button type="button" disabled={enviando} onClick={llevar}>{enviando ? 'Moviendo…' : `Llevar ${elegidas.length} al baúl`}</button>
+          <button type="button" className="secundario" disabled={enviando} onClick={limpiar}>Quitar selección</button>
+        </div>
+      </div>
+      {error && <p style={{ color: 'var(--error)', margin: '.4rem 0 0' }}>{error}</p>}
+    </div>
+  );
+}
+
 export default function ListaCarta({ filas, meta, puedePrecio }: { filas: PlatoCarta[]; meta: number; puedePrecio: boolean }) {
   const grupos: Grupo<PlatoCarta>[] = [
     { clave: 'estado', titulo: 'Estado', valor: (f) => estado(f, meta) },
@@ -88,6 +119,8 @@ export default function ListaCarta({ filas, meta, puedePrecio }: { filas: PlatoC
   return (
     <VistaFiltrable clave="carta" filas={filas} id={(f) => f.generico_id} buscar={(f) => `${f.nombre} ${f.carta ?? ''}`}
                     grupos={grupos} columnas={columnas} agrupar={agrupar} vacio="Nada coincide con estos filtros."
+                    seleccionable={puedePrecio ? () => true : undefined}
+                    acciones={(elegidas, limpiar) => <AlBaul elegidas={elegidas} limpiar={limpiar} />}
                     pie={(vis) => {
                       const con = vis.filter((f) => f.pct_costo !== null);
                       const prom = con.length ? con.reduce((t, f) => t + Number(f.pct_costo), 0) / con.length : null;
