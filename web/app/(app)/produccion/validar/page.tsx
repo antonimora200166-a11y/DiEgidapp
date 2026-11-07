@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe } from '@/lib/roles';
-import { FUENTES, claveFuente } from '@/lib/recetario';
+import { FUENTES, claveFuente, paramFuente } from '@/lib/recetario';
 import PestanasProduccion from '@/components/PestanasProduccion';
 import ValidarRecetario, { type Datos, type Resumen } from './ValidarRecetario';
 
@@ -18,7 +18,7 @@ export default async function Validar({ searchParams }: { searchParams: Promise<
   if (perfil.rol === 'servicio' || !(areasDe(perfil).includes(F.area) || perfil.rol === 'auditor')) redirect('/');
   const tabs: Tab[] = F.conIngredientes ? ['ingredientes', 'mpi', 'recetas'] : ['mpi', 'recetas'];
   const tab = tabs.find((t) => t === sp.tab) ?? tabs[0];
-  const q = (t: Tab) => `/produccion/validar?${clave === 'cocteles' ? 'fuente=cocteles&' : ''}tab=${t}`;
+  const q = (t: Tab) => `/produccion/validar?${paramFuente(clave) ? paramFuente(clave) + '&' : ''}tab=${t}`;
 
   const supabase = await supabaseServidor();
   const [resumen, ingredientes, mpi, genericos] = await Promise.all([
@@ -31,10 +31,13 @@ export default async function Validar({ searchParams }: { searchParams: Promise<
       : Promise.resolve({ data: [], error: null }),
   ]);
   for (const r of [resumen, ingredientes, mpi, genericos]) if (r.error) throw new Error(r.error.message);
+  // los platos dependen de las MPI: se muestra cuánto falta allá
+  const cocina = clave === 'platos'
+    ? (await supabase.rpc('validacion_recetario_resumen', { p_fuente: FUENTES.cocina.fuente })).data as Resumen | null : null;
   const s = resumen.data as Resumen;
   const datos = { ...(mpi.data as Omit<Datos, 'ingredientes' | 'genericos'>), ingredientes: ingredientes.data, genericos: genericos.data } as Datos;
-  // del recetario de cocina cuenta tener ficha; de la carta, haberla completado (las bebidas ya tenían ficha)
-  const hechas = F.conIngredientes ? s.mpi.con_ficha : s.mpi.aprobadas;
+  // de cocina (MPI y platos) cuenta tener ficha; de la carta de cócteles, haberla completado (las bebidas ya tenían ficha)
+  const hechas = F.lineasDeReceta ? s.mpi.con_ficha : s.mpi.aprobadas;
   const nPend: Record<Tab, number> = { ingredientes: s.ingredientes.pendientes, mpi: s.mpi.total - hechas - s.mpi.sin_receta - s.mpi.no_es_mpi, recetas: s.recetas.subrecetas - s.recetas.aprobadas };
 
   return (
@@ -45,15 +48,19 @@ export default async function Validar({ searchParams }: { searchParams: Promise<
       <p className="suave" style={{ marginTop: 0 }}>
         {F.conIngredientes
           ? 'Tres pasos: empareja los ingredientes del recetario con el catálogo, dile a cada MPI cuál es su receta y aprueba la propuesta como ficha.'
-          : 'Cada bebida ya tiene ficha con sus ingredientes costeados. Al aprobar, nace una versión nueva que suma de la carta el procedimiento, la descripción, la presentación, el método y los alérgenos.'}
+          : F.lineasDeReceta
+            ? 'Cada plato de la carta con su receta del recetario: sus componentes son las MPI (subrecetas) y algunos insumos. Revisa las porciones y aprueba la ficha. Un componente sin MPI o un ingrediente sin emparejar se resuelve primero en «Validar MPI».'
+            : 'Cada bebida ya tiene ficha con sus ingredientes costeados. Al aprobar, nace una versión nueva que suma de la carta el procedimiento, la descripción, la presentación, el método y los alérgenos.'}
         {' '}Nada se vuelve ficha sin tu aprobación.{!s.puede_editar && ` Solo ${F.area === 'BAR' ? 'el jefe de barra' : 'el chef'} o administración deciden; tú puedes consultar.`}
       </p>
       <div className="cifras">
-        <div className="cifra"><span>{F.conIngredientes ? 'MPI con ficha' : 'Fichas completadas'}</span><b>{hechas} / {s.mpi.total}</b><small>{s.mpi.receta_elegida} por aprobar</small></div>
+        <div className="cifra"><span>{F.lineasDeReceta ? `${F.resultados} con ficha` : 'Fichas completadas'}</span><b>{hechas} / {s.mpi.total}</b><small>{s.mpi.receta_elegida} por aprobar</small></div>
         {F.conIngredientes && <div className="cifra"><span>Ingredientes</span><b>{s.ingredientes.confirmados} / {s.ingredientes.total}</b><small>{s.ingredientes.pendientes} por decidir</small></div>}
-        <div className="cifra"><span>{F.conIngredientes ? 'Recetas aprobadas' : 'Cócteles aprobados'}</span><b>{s.recetas.aprobadas} / {s.recetas.subrecetas}</b>
-          <small>{s.recetas.sin_mpi} sin {F.resultado} elegida</small></div>
+        <div className="cifra"><span>{F.lineasDeReceta ? 'Recetas aprobadas' : 'Cócteles aprobados'}</span><b>{s.recetas.aprobadas} / {s.recetas.subrecetas}</b>
+          <small>{s.recetas.sin_mpi} sin {F.resultado} {clave === 'platos' ? 'elegido' : 'elegida'}</small></div>
         <div className="cifra"><span>Revisadas aparte</span><b>{s.mpi.sin_receta + s.mpi.no_es_mpi}</b><small>{s.mpi.sin_receta} sin {F.receta}</small></div>
+        {clave === 'platos' && cocina && <div className="cifra"><span>MPI de cocina con ficha</span><b>{cocina.mpi.con_ficha} / {cocina.mpi.total}</b>
+          <small><Link href="/produccion/validar?tab=mpi">Validar MPI</Link></small></div>}
       </div>
       <nav className="segmentos pagina-ancha" aria-label="Pasos" style={{ marginBottom: '1rem' }}>
         {tabs.map((t, i) => (

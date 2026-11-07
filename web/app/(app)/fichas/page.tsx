@@ -20,6 +20,9 @@ export default async function Fichas() {
   // avance de las fichas de cócteles con la carta de coctelería
   const carta = areas.includes('BAR')
     ? (await supabase.rpc('validacion_recetario_resumen', { p_fuente: 'CARTA COCTELERÍA' })).data as { mpi: { total: number; aprobadas: number } } | null : null;
+  // avance de las fichas de los platos de la carta de cocina
+  const platos = areas.includes('COCINA')
+    ? (await supabase.rpc('validacion_recetario_resumen', { p_fuente: 'CARTA COCINA' })).data as { mpi: { total: number; con_ficha: number; sin_receta: number } } | null : null;
 
   return (
     <>
@@ -30,6 +33,13 @@ export default async function Fichas() {
         <Link href="/produccion/validar?fuente=cocteles" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--marca)' }}>
           <span><strong>Completar las fichas de cócteles con la carta</strong><br />
             <span className="suave">{carta.mpi.aprobadas} de {carta.mpi.total} bebidas con procedimiento, presentación y alérgenos de la carta.</span></span>
+          <span className="boton">Continuar</span>
+        </Link>
+      )}
+      {platos && platos.mpi.total > 0 && platos.mpi.con_ficha < platos.mpi.total && (
+        <Link href="/produccion/validar?fuente=platos" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--marca)' }}>
+          <span><strong>Fichas de los platos de la carta</strong><br />
+            <span className="suave">{platos.mpi.con_ficha} de {platos.mpi.total} platos con ficha · {platos.mpi.sin_receta} sin receta en el recetario.</span></span>
           <span className="boton">Continuar</span>
         </Link>
       )}

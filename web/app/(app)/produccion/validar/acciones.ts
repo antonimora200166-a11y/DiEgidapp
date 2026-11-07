@@ -7,7 +7,7 @@ import { inicialDesdePropuesta, payloadSinCambios, type Propuesta } from '@/lib/
 
 // un archivo 'use server' solo exporta funciones: la fuente llega como texto
 type Ok = { ok: boolean; error?: string; n?: number };
-const FUENTES = ['RECETARIO COCINA', 'CARTA COCTELERÍA'];
+const FUENTES = ['RECETARIO COCINA', 'CARTA COCINA', 'CARTA COCTELERÍA'];
 const f = (fuente?: string) => (fuente && FUENTES.includes(fuente) ? fuente : 'RECETARIO COCINA');
 
 async function rpc(nombre: string, args: Record<string, unknown>): Promise<Ok & Record<string, unknown>> {
@@ -51,7 +51,8 @@ export async function aprobarReceta(payload: Record<string, unknown>): Promise<R
 export type ResultadoGrupo = { aprobadas: string[]; fallidas: { codigo: string; nombre: string; motivo: string }[] };
 export async function aprobarComoVienen(items: { codigo: string; generico_id: string }[], fuente?: string): Promise<ResultadoGrupo> {
   const fu = f(fuente);
-  const conIngredientes = fu === 'RECETARIO COCINA';
+  // cocina y platos toman los ingredientes de la receta; los cócteles conservan los de su ficha
+  const lineasDeReceta = fu !== 'CARTA COCTELERÍA';
   const supabase = await supabaseServidor();
   const out: ResultadoGrupo = { aprobadas: [], fallidas: [] };
   for (const it of items.slice(0, 200)) {
@@ -73,8 +74,8 @@ export async function aprobarComoVienen(items: { codigo: string; generico_id: st
       const fe = await supabase.rpc('ficha_para_editar', { p_generico: it.generico_id });
       if (fe.error) { falla(fe.error.message); continue; }
       const datos = fe.data as DatosFicha;
-      const ini = inicialDesdePropuesta(p, datos, conIngredientes);
-      if (conIngredientes && p.lineas.some((l) => !l.generico_id)) { falla('Tiene ingredientes sin emparejar: apruébala desde el editor.'); continue; }
+      const ini = inicialDesdePropuesta(p, datos, lineasDeReceta);
+      if (lineasDeReceta && p.lineas.some((l) => !l.generico_id)) { falla(p.lineas.some((l) => !l.generico_id && l.tipo === 'sub') ? 'Tiene subrecetas sin MPI: elígelas en Validar MPI.' : 'Tiene ingredientes sin emparejar: apruébala desde el editor.'); continue; }
       if (!ini.lineas.length) { falla('La ficha no tiene ingredientes.'); continue; }
       const motivo = `Aprobada en grupo con ${p.receta.codigo} de ${fu.toLowerCase()}`;
       const ap = await supabase.rpc('aprobar_receta', { p: { ...payloadSinCambios(datos, ini, motivo), fuente: fu, receta: it.codigo } });

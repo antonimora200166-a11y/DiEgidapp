@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Columna, type Grupo } from '@/components/VistaFiltrable';
 import { aprobarComoVienen, crearMpi, decidirIngredientes, elegirReceta, marcarMpi, type ResultadoGrupo } from './acciones';
 import { confirmar } from '@/components/Dialogo';
-import { FUENTES, type ClaveFuente } from '@/lib/recetario';
+import { FUENTES, paramFuente, type ClaveFuente } from '@/lib/recetario';
 
 export type Resumen = {
   puede_editar: boolean;
@@ -69,9 +69,9 @@ function Buscador({ opciones, alElegir, placeholder }: { opciones: { id: string;
 export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, clave }: { tab: 'ingredientes' | 'mpi' | 'recetas'; datos: Datos; puedeEditar: boolean; exactos: number; clave: ClaveFuente }) {
   const F = FUENTES[clave];
   const fuente = F.fuente;
-  const urlReceta = (codigo: string) => `/produccion/validar/receta/${encodeURIComponent(codigo)}${clave === 'cocteles' ? '?fuente=cocteles' : ''}`;
-  // hecha: en cocina, la MPI ya tiene ficha; en la carta, la ficha ya se completó con el cóctel
-  const hecha = (m: { ficha_id: string | null; ficha_origen: string | null }) => (F.conIngredientes ? !!m.ficha_id : m.ficha_origen === fuente);
+  const urlReceta = (codigo: string) => `/produccion/validar/receta/${encodeURIComponent(codigo)}${paramFuente(clave) ? '?' + paramFuente(clave) : ''}`;
+  // hecha: en cocina (MPI y platos), ya tiene ficha; en la carta de cócteles, la ficha ya se completó con el cóctel
+  const hecha = (m: { ficha_id: string | null; ficha_origen: string | null }) => (F.lineasDeReceta ? !!m.ficha_id : m.ficha_origen === fuente);
   const router = useRouter();
   const [enviando, iniciar] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -185,7 +185,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
   if (tab === 'mpi') {
     const estado = (m: Mpi) => hecha(m) ? 'CON_FICHA' : m.receta ? 'POR_APROBAR' : m.revision ?? (m.candidatas.length ? 'CON_CANDIDATA' : 'SIN_CANDIDATA');
     const ESTADOS: Record<string, { t: string; c: string }> = {
-      CON_FICHA: { t: F.conIngredientes ? 'Con ficha' : 'Completada', c: 'ok' }, POR_APROBAR: { t: `${F.receta[0].toUpperCase()}${F.receta.slice(1)} elegido`, c: 'info' }, CON_CANDIDATA: { t: 'Por revisar', c: 'aviso' },
+      CON_FICHA: { t: F.lineasDeReceta ? 'Con ficha' : 'Completada', c: 'ok' }, POR_APROBAR: { t: `${F.receta[0].toUpperCase()}${F.receta.slice(1)} elegido`, c: 'info' }, CON_CANDIDATA: { t: 'Por revisar', c: 'aviso' },
       SIN_CANDIDATA: { t: `Sin ${F.receta} parecido`, c: 'aviso' }, SIN_RECETA: { t: `Sin ${F.receta}`, c: 'gris' }, NO_ES_MPI: { t: F.conIngredientes ? 'No es MPI' : 'No va en la carta', c: 'gris' },
     };
     const grupos: Grupo<Mpi>[] = [
@@ -198,8 +198,8 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
       { k: 'estado', t: 'Estado', orden: estado, ver: (m) => <>
         <span className={`pill ${ESTADOS[estado(m)].c}`}>{ESTADOS[estado(m)].t}</span>
         {m.nota && <span className="suave" style={{ display: 'block', fontSize: '.78rem' }}>{m.nota}</span>}</> },
-      { k: 'receta', t: F.conIngredientes ? 'Receta del recetario' : 'Cóctel de la carta', ver: (m) => {
-        if (hecha(m)) return <span className="suave">{F.conIngredientes && m.ficha_origen !== fuente ? `Ficha de ${m.ficha_origen}` : 'Aprobada'}</span>;
+      { k: 'receta', t: F.lineasDeReceta ? 'Receta del recetario' : 'Cóctel de la carta', ver: (m) => {
+        if (hecha(m)) return <span className="suave">{F.lineasDeReceta && m.ficha_origen !== 'RECETARIO COCINA' ? `Ficha de ${m.ficha_origen}` : 'Aprobada'}</span>;
         if (m.receta) return <><strong>{m.receta.nombre}</strong> <span className="cod">{m.receta.codigo}</span><span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{rinde(m.receta)}</span></>;
         if (!m.candidatas.length) return <span className="suave">—</span>;
         const c = m.candidatas[0];
@@ -220,8 +220,8 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
         </div>;
         return <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {m.candidatas[0] && !m.revision && <button type="button" className="mini" disabled={enviando}
-            onClick={() => correr(() => elegirReceta(m.candidatas[0].codigo, m.generico_id, fuente), () => router.push(urlReceta(m.candidatas[0].codigo)))}>{F.conIngredientes ? 'Es esta' : 'Es este'}</button>}
-          <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(m.generico_id)}>{F.conIngredientes ? 'Otra receta' : 'Otro cóctel'}</button>
+            onClick={() => correr(() => elegirReceta(m.candidatas[0].codigo, m.generico_id, fuente), () => router.push(urlReceta(m.candidatas[0].codigo)))}>{F.lineasDeReceta ? 'Es esta' : 'Es este'}</button>}
+          <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(m.generico_id)}>{F.lineasDeReceta ? 'Otra receta' : 'Otro cóctel'}</button>
           {m.revision
             ? <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => marcarMpi(m.generico_id, null, undefined, fuente))}>Quitar marca</button>
             : <>
@@ -241,7 +241,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
         {resumenGrupo}
         {puedeEditar && listas.length > 0 && (
           <div className="aviso" style={{ display: 'flex', gap: '.6rem', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-            <span><strong>{listas.length} {F.resultados.toLowerCase()}</strong> tienen su {F.receta} {F.conIngredientes ? 'elegida o con el mismo código' : 'de la carta con el mismo código'}.
+            <span><strong>{listas.length} {F.resultados.toLowerCase()}</strong> tienen su {F.receta} {F.lineasDeReceta ? 'elegida o con el mismo código' : 'de la carta con el mismo código'}.
               Puedes aprobarlas todas como vienen, o marcar solo algunas en la lista.</span>
             <button type="button" disabled={enviando} onClick={() => aprobarGrupo(listas)}>{enviando ? 'Aprobando…' : `Aprobar las ${listas.length} como vienen`}</button>
           </div>
@@ -277,8 +277,8 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
       </div>;
       return <div style={{ display: 'grid', gap: '.3rem', justifyItems: 'end' }}>
         <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          {r.propuesto_id && <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => elegirReceta(r.codigo, r.propuesto_id, fuente))}>{F.conIngredientes ? 'Es esta MPI' : 'Es esta bebida'}</button>}
-          <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(r.codigo)}>Otra {F.resultado}</button>
+          {r.propuesto_id && <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => elegirReceta(r.codigo, r.propuesto_id, fuente))}>{F.conIngredientes ? 'Es esta MPI' : clave === 'platos' ? 'Es este plato' : 'Es esta bebida'}</button>}
+          <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(r.codigo)}>{clave === 'platos' ? 'Otro plato' : `Otra ${F.resultado}`}</button>
           {F.conIngredientes && <button type="button" className="secundario mini" disabled={enviando} onClick={() => {
             setError(null); setBloqueo(null);
             iniciar(async () => {

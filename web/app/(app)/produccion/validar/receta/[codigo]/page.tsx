@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { tipoPunto } from '@/lib/fichas';
-import { FUENTES, claveFuente } from '@/lib/recetario';
+import { FUENTES, claveFuente, paramFuente } from '@/lib/recetario';
 import PestanasProduccion from '@/components/PestanasProduccion';
 import EditorFicha, { type DatosFicha, type InicialFicha } from '../../../../fichas/[generico]/EditorFicha';
 import { inicialDesdePropuesta, type Propuesta } from '@/lib/propuesta-ficha';
@@ -23,7 +23,8 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
   const p = data as Propuesta;
   const r = p.receta;
   const pr = p.propuesta ?? {};
-  const volver = `/produccion/validar?${clave === 'cocteles' ? 'fuente=cocteles&' : ''}tab=mpi`;
+  const pf = paramFuente(clave) ? paramFuente(clave) + '&' : '';
+  const volver = `/produccion/validar?${pf}tab=mpi`;
 
   let datos: DatosFicha | null = null;
   if (r.generico_id) {
@@ -32,8 +33,8 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
     datos = f.data as DatosFicha;
   }
   const sugeridos = pr.alergenos_sugeridos ?? [];
-  const faltan = F.conIngredientes ? p.lineas.filter((l) => !l.generico_id) : [];
-  const inicial: InicialFicha | undefined = datos ? inicialDesdePropuesta(p, datos, F.conIngredientes) : undefined;
+  const faltan = F.lineasDeReceta ? p.lineas.filter((l) => !l.generico_id) : [];
+  const inicial: InicialFicha | undefined = datos ? inicialDesdePropuesta(p, datos, F.lineasDeReceta) : undefined;
 
   return (
     <>
@@ -41,7 +42,7 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
       <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href={volver}>← {F.titulo}</Link></p>
       <h1 style={{ marginBottom: '.2rem' }}>{r.nombre}</h1>
       <p className="suave" style={{ marginTop: 0 }}>
-        <span className="cod">{r.codigo}</span> de {F.fuente.toLowerCase()}{F.conIngredientes && r.rendimiento ? ` · rinde ${Number(r.rendimiento).toLocaleString('es-CO')} ${r.unidad}` : ''}
+        <span className="cod">{r.codigo}</span> de {(clave === 'platos' ? FUENTES.cocina.fuente : F.fuente).toLowerCase()}{F.lineasDeReceta && r.rendimiento ? ` · rinde ${Number(r.rendimiento).toLocaleString('es-CO')} ${r.unidad}` : ''}
         {pr.concepto ? ` · ${pr.concepto.toLowerCase()}` : ''}
         {datos && <> · {datos.ficha ? 'completa' : 'será'} la ficha de <Link href={`/fichas/${datos.resultado.id}`}><strong>{datos.resultado.nombre}</strong></Link>
           {datos.ficha ? ` (hoy v${datos.ficha.version})` : ''}</>}
@@ -50,14 +51,19 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
       {r.estado === 'APROBADA' ? (
         <p className="exito">Ya se aprobó. <Link href={`/fichas/${r.generico_id}`}>Ver la ficha</Link></p>
       ) : !datos || !inicial ? (
-        <p className="aviso">Aún no tiene {F.resultado} elegida. Elígela en <Link href={`/produccion/validar?${clave === 'cocteles' ? 'fuente=cocteles&' : ''}tab=recetas`}>{F.recetas}</Link>.</p>
+        <p className="aviso">Aún no tiene {F.resultado} elegida. Elígela en <Link href={`/produccion/validar?${pf}tab=recetas`}>{F.recetas}</Link>.</p>
       ) : (
         <>
           <div className="dos-col pagina-ancha" style={{ marginBottom: '1rem' }}>
             <section className="tarjeta">
               <h2 className="sec-tit">Antes de aprobar, revisa</h2>
               <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'grid', gap: '.35rem' }}>
-                {F.conIngredientes ? (
+                {clave === 'platos' ? (
+                  <>
+                    <li><strong>Porciones</strong>: la receta rinde {r.rendimiento ?? 1} {r.unidad ?? 'porciones'}. Las MPI van en porciones: si una no tiene el peso de su porción, escríbelo en la línea (factor) o la ficha no la costea.</li>
+                    <li><strong>Componentes</strong>: cada subreceta es una MPI; si alguna sale «sin emparejar», elígele su MPI en <Link href="/produccion/validar?tab=recetas">Validar MPI</Link>.</li>
+                  </>
+                ) : F.conIngredientes ? (
                   <>
                     <li><strong>Neto esperado en gramos</strong>: {r.unidad === 'g' ? `el recetario dice ${r.rendimiento} g; confírmalo.`
                       : `el recetario dice ${r.rendimiento ?? '—'} ${r.unidad ?? ''}. Pesa una tanda terminada.`}
@@ -71,11 +77,11 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
                 {sugeridos.length > 0 && <li><strong>Alérgenos sugeridos por los ingredientes</strong>: {sugeridos.join(', ')}. Ya van marcados; desmarca los que no apliquen.</li>}
                 {(pr.observaciones ?? []).length > 0 && <li><strong>Notas del documento</strong>: van en observaciones.</li>}
                 {faltan.length > 0 && <li style={{ color: 'var(--aviso)' }}><strong>{faltan.length} ingrediente(s) sin emparejar</strong> no entran a la ficha:{' '}
-                  {faltan.map((l) => l.nombre ?? l.codigo).join(', ')}. <Link href="/produccion/validar?tab=ingredientes">Emparéjalos</Link> y vuelve, o agrégalos abajo.</li>}
+                  {faltan.map((l) => l.nombre ?? l.codigo).join(', ')}. <Link href={faltan.some((l) => l.tipo === 'ing') ? '/produccion/validar?tab=ingredientes' : '/produccion/validar?tab=recetas'}>Emparéjalos</Link> y vuelve, o agrégalos abajo.</li>}
               </ul>
             </section>
-            <details className="tarjeta" open={!F.conIngredientes}>
-              <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{F.conIngredientes ? 'Receta original del recetario' : 'Así está en la carta'}</summary>
+            <details className="tarjeta" open={!F.lineasDeReceta}>
+              <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{F.lineasDeReceta ? 'Receta original del recetario' : 'Así está en la carta'}</summary>
               <ul className="renglones" style={{ marginTop: '.5rem' }}>
                 {p.lineas.map((l, i) => <li key={i}><span>{l.nombre ?? l.codigo}{l.generico && l.generico !== l.nombre ? <span className="suave"> → {l.generico}</span> : ''}
                   {l.nota && <span className="suave" style={{ display: 'block', fontSize: '.78rem' }}>{l.nota}</span>}</span>

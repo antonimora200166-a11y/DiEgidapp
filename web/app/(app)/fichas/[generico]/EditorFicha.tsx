@@ -145,7 +145,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
   return (
     <>
       <p className="suave" style={{ marginTop: 0 }}>
-        {receta ? <>Revisa la propuesta y apruébala: nace la <strong>versión {(f?.version ?? 0) + 1}</strong> de la ficha, con origen {receta.fuente.toLowerCase()}.</>
+        {receta ? <>Revisa la propuesta y apruébala: nace la <strong>versión {(f?.version ?? 0) + 1}</strong> de la ficha, con origen {(receta.fuente === 'CARTA COCINA' ? 'RECETARIO COCINA' : receta.fuente).toLowerCase()}.</>
           : f ? <>Al guardar nace la <strong>versión {f.version + 1}</strong>; la {f.version} queda tal cual
           {Number(f.lotes) > 0 ? ` para los ${f.lotes} lote(s) que se hicieron con ella` : ''}.</> : 'Primera versión de esta ficha.'}
       </p>
