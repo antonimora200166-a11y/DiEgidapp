@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { puedeOperar } from '@/lib/roles';
-import { cant, fechaLarga, pct, pesos, tipoPunto } from '@/lib/fichas';
+import { cant, fechaLarga, pct, pesos, textoPresentacion, tipoPunto } from '@/lib/fichas';
 import PestanasProduccion from '@/components/PestanasProduccion';
 import type { DatosFicha } from './EditorFicha';
 
@@ -150,7 +150,16 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
               <section className="tarjeta">
                 <h2 className="sec-tit">Empaque y almacenamiento</h2>
                 <ul className="renglones">
-                  <li><span>Empaque</span><strong>{f.empaque ?? '—'}</strong></li>
+                  <li><span>Método de empaque</span><strong>{f.empaque ?? '—'}</strong></li>
+                  {(d.presentaciones ?? []).map((p, i) => (
+                    <li key={i}>
+                      <span style={{ minWidth: 0 }}>
+                        <strong>{textoPresentacion(p, ub)}</strong>
+                        {p.empaque && <span className="suave" style={{ display: 'block', fontSize: '.82rem' }}>{p.empaque}</span>}
+                      </span>
+                      <span className="n">{p.por_tanda ? <strong>{cant(p.por_tanda)} por tanda</strong> : <span className="suave">las que salgan</span>}</span>
+                    </li>
+                  ))}
                   {d.almacenamientos.length
                     ? d.almacenamientos.map((a) => (
                         <li key={a.conservacion}><span>{a.conservacion}{a.nota ? <span className="suave"> · {a.nota}</span> : ''}</span>

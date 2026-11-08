@@ -3,7 +3,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Resultado } from '@/lib/catalogo';
-import { ALERGENOS, CONSERVACIONES, TIPOS_PUNTO, type Almacenamiento, type Punto, type TipoPunto } from '@/lib/fichas';
+import { ALERGENOS, CONSERVACIONES, TIPOS_PUNTO, cant, type Almacenamiento, type Presentacion, type Punto, type TipoPunto } from '@/lib/fichas';
 import { guardarFicha, proponerDescripcion } from '../acciones';
 import type { PropuestaDescripcion } from '@/lib/descripcion-ia';
 import { aprobarReceta } from '../../produccion/validar/acciones';
@@ -26,6 +26,7 @@ export type DatosFicha = {
             factor: number | null; cantidad_base: number | null; costo_unitario: number | null; costo: number | null; falta: string | null; estimado: boolean }[];
   puntos: Punto[];
   almacenamientos: Almacenamiento[];
+  presentaciones?: Presentacion[];
   versiones: { id: string; version: number; vigente_desde: string; vigente_hasta: string | null; origen: string; motivo_cambio: string | null;
                creado_en: string; creado_por: string | null; lotes: number }[];
   sugerencias: { generico: { conservacion: string | null; vida_util_dias: number | null }; lotes: LoteViejo[] };
@@ -35,6 +36,7 @@ export type DatosFicha = {
 // producto_id: la marca que pide la ficha ('' = cualquiera del genérico)
 type Linea = { clave: string; generico_id: string; producto_id: string; cantidad: string; unidad: string; nota: string; factor: string };
 type Alm = { conservacion: Almacenamiento['conservacion']; dias: string; nota: string };
+type Pres = { clave: string; contenido: string; detalle: string; por_tanda: string; empaque: string };
 // Propuesta con que abre el editor (receta del recetario): reemplaza lo de la ficha vigente
 export type InicialFicha = {
   codigo: string; neto: string; tiempo: string; porciones: string; metodo: string; pasos: string[]; puntos: Punto[]; alergenos: string[];
@@ -80,6 +82,10 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
   const [alergenos, setAlergenos] = useState<string[]>(inicial?.alergenos ?? f?.alergenos ?? []);
   const [alm, setAlm] = useState<Alm[]>(datos.almacenamientos.map((a) => ({ conservacion: a.conservacion, dias: String(a.vida_util_dias), nota: a.nota ?? '' })));
   const [empaque, setEmpaque] = useState(f?.empaque ?? '');
+  const [pres, setPres] = useState<Pres[]>(() => (datos.presentaciones ?? []).map((p) => ({
+    clave: crypto.randomUUID(), contenido: p.contenido === null ? '' : String(p.contenido), detalle: p.detalle ?? '',
+    por_tanda: p.por_tanda === null ? '' : String(p.por_tanda), empaque: p.empaque ?? '' })));
+  const ponerPres = (k: string, c: Partial<Pres>) => setPres((xs) => xs.map((x) => (x.clave === k ? { ...x, ...c } : x)));
   const [descripcion, setDescripcion] = useState(inicial?.descripcion ?? f?.descripcion ?? '');
   const [presentacion, setPresentacion] = useState(inicial?.presentacion ?? f?.presentacion ?? '');
   const [observaciones, setObservaciones] = useState(inicial?.observaciones ?? f?.observaciones ?? '');
@@ -150,6 +156,8 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
         tiempo_min: tiempo, porciones, metodo, empaque, descripcion, presentacion, observaciones,
         procedimiento: pasos, alergenos, puntos,
         almacenamientos: alm.map((a) => ({ conservacion: a.conservacion, vida_util_dias: a.dias, nota: a.nota })),
+        presentaciones: pres.filter((p) => p.contenido.trim() || p.detalle.trim() || p.por_tanda.trim() || p.empaque.trim())
+          .map((p) => ({ contenido: p.contenido.replace(',', '.'), detalle: p.detalle, por_tanda: p.por_tanda, empaque: p.empaque })),
         lineas: lineas.map((l) => ({ generico_id: l.generico_id, producto_id: l.producto_id || null, cantidad: l.cantidad, unidad: l.unidad, nota: l.nota, factor: num(l.factor) })),
       });
       setResultado(r);
@@ -365,8 +373,44 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
 
           <section className="tarjeta">
             <h2 className="sec-tit">Empaque y vida útil</h2>
-            <label htmlFor="empaque" style={{ marginTop: 0 }}>Empaque</label>
+            <label htmlFor="empaque" style={{ marginTop: 0 }}>Método de empaque</label>
             <input id="empaque" value={empaque} onChange={(e) => setEmpaque(e.target.value)} placeholder="Bolsa de vacío, frasco hermético…" />
+
+            <label>Presentaciones <span className="ayuda">en qué porciones se guarda lo que sale de una tanda</span></label>
+            {pres.length === 0 && <div className="suave" style={{ fontSize: '.85rem', marginBottom: '.4rem' }}>
+              Sin presentaciones: se guarda todo junto. Agrega una por cada forma de porcionar (p. ej. 200 {ub} y 150 {ub}, o 22 porciones de 3 tapas).</div>}
+            {pres.map((p, i) => (
+              <div key={p.clave} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '.4rem', padding: '.5rem 0', borderBottom: '1px solid var(--borde)' }}>
+                <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Cada una lleva ({ub})
+                  <input inputMode="decimal" value={p.contenido} onChange={(e) => ponerPres(p.clave, { contenido: e.target.value })} placeholder="200" />
+                </label>
+                <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Qué lleva
+                  <input value={p.detalle} maxLength={120} onChange={(e) => ponerPres(p.clave, { detalle: e.target.value })} placeholder="3 tapas, porción individual…" />
+                </label>
+                <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Salen por tanda <span className="ayuda">si es fijo</span>
+                  <input inputMode="numeric" value={p.por_tanda} onChange={(e) => ponerPres(p.clave, { por_tanda: e.target.value })} placeholder="22" />
+                </label>
+                <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Empaque <span className="ayuda">si es otro</span>
+                  <input value={p.empaque} maxLength={120} onChange={(e) => ponerPres(p.clave, { empaque: e.target.value })} placeholder={empaque || 'Bolsa de vacío…'} />
+                </label>
+                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.4rem' }}>
+                  <span className="suave" style={{ fontSize: '.8rem' }}>Presentación {i + 1}</span>
+                  <button type="button" className="secundario chico" onClick={() => setPres((xs) => xs.filter((x) => x.clave !== p.clave))} aria-label={`Quitar presentación ${i + 1}`}>Quitar</button>
+                </div>
+              </div>
+            ))}
+            {(() => {
+              const fijas = pres.filter((p) => num(p.contenido) && num(p.por_tanda));
+              const suma = fijas.reduce((t, p) => t + num(p.contenido)! * num(p.por_tanda)!, 0);
+              const n = num(neto);
+              return fijas.length > 0 && n ? (
+                <div className={suma > n * 1.02 ? 'aviso' : 'suave'} style={{ fontSize: '.85rem', margin: '.4rem 0 0', padding: suma > n * 1.02 ? '.4rem .6rem' : 0 }}>
+                  Las porciones fijas suman {cant(suma)} {ub} de {cant(n)} {ub} por tanda{suma > n * 1.02 ? ': pesan más que la tanda.' : suma < n ? ` · quedan ${cant(n - suma)} ${ub} para las demás.` : '.'}
+                </div>) : null;
+            })()}
+            <button type="button" className="secundario chico" style={{ marginTop: '.5rem' }}
+                    onClick={() => setPres((xs) => [...xs, { clave: crypto.randomUUID(), contenido: '', detalle: '', por_tanda: '', empaque: '' }])}>+ Presentación</button>
+
             <label>Vida útil según dónde se guarde</label>
             {alm.map((a, i) => (
               <div key={a.conservacion} style={{ display: 'grid', gridTemplateColumns: 'auto 90px minmax(0, 1fr) auto', gap: '.4rem', alignItems: 'center', marginBottom: '.4rem' }}>

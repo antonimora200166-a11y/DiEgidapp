@@ -32,3 +32,8 @@ export const vidaUtil = (a: Almacenamiento[]) =>
   a.map((x) => `${x.vida_util_dias} d ${x.conservacion === 'Refrigerado' ? 'refrig.' : x.conservacion === 'Congelado' ? 'cong.' : 'amb.'}`).join(' · ');
 export const fechaLarga = (d: string) => new Date(d.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 
+
+// Cómo se porciona y empaca lo que sale de una tanda (200 g y 150 g; 22 porciones de 3 tapas)
+export type Presentacion = { contenido: number | null; detalle: string | null; por_tanda: number | null; empaque: string | null };
+export const textoPresentacion = (p: Presentacion, ub: string) =>
+  [p.contenido !== null ? `${cant(p.contenido)} ${ub}` : null, p.detalle].filter(Boolean).join(' · ');

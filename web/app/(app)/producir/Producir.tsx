@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { fmtCantidad } from '@/lib/catalogo';
 import { calcularLote, rendimientoFicha, vence as calcularVence } from '@/lib/produccion';
-import { tipoPunto, type Almacenamiento, type Punto } from '@/lib/fichas';
+import { cant, textoPresentacion, tipoPunto, type Almacenamiento, type Presentacion, type Punto } from '@/lib/fichas';
 import type { Area } from '@/lib/roles';
 import { registrarLote, type ResultadoLote } from './acciones';
 import { confirmar } from '@/components/Dialogo';
@@ -20,6 +20,7 @@ type FichaLinea = { linea: number; generico_id: string; generico: string; tipo: 
 type Ficha = {
   id: string; codigo: string; version: number; neto_esperado: number | null; nota: string | null; alergenos: string[]; empaque: string | null;
   tiempo_min: number | null; puntos: Punto[]; almacenamientos: Almacenamiento[]; lineas: FichaLinea[];
+  presentaciones?: Presentacion[];   // cómo se porciona y empaca lo que sale
 };
 type Insumo = {
   producto_id: string; codigo: string; generico_id: string; generico: string; marca: string; presentacion: string; tipo: string; unidad_base: UB;
@@ -82,6 +83,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   const [conservacion, setConservacion] = useState<Almacenamiento['conservacion'] | ''>('');
   const [tiempo, setTiempo] = useState('');
   const [obs, setObs] = useState('');
+  const [empacadas, setEmpacadas] = useState<Record<number, string>>({});   // solo para repartir el neto: no se guarda
   const [motivo, setMotivo] = useState('');
   const [buscarMpi, setBuscarMpi] = useState('');
   const [buscarInsumo, setBuscarInsumo] = useState('');
@@ -523,6 +525,44 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
               <label>{mpi.generico} se lleva en ml: 1 g = ¿cuántos ml?<input inputMode="decimal" value={netoFactor} onChange={(e) => setNetoFactor(e.target.value)} style={{ maxWidth: 200 }} /></label>
             )}
           </section>
+          {ficha && (ficha.presentaciones?.length ?? 0) > 0 && (() => {
+            const ps = ficha.presentaciones!;
+            const ubm = mpi.unidad_base;
+            const enGramos = ubm === 'g';
+            const usado = ps.reduce((t, p, i) => t + (p.contenido ?? 0) * (num(empacadas[i] ?? '') ?? 0), 0);
+            const hayConteo = ps.some((p, i) => p.contenido && num(empacadas[i] ?? ''));
+            return (
+              <section className="tarjeta">
+                <h2 className="sec-tit">Cómo se empaca{ficha.empaque ? ` · ${ficha.empaque}` : ''}</h2>
+                <ul className="renglones">
+                  {ps.map((p, i) => (
+                    <li key={i}>
+                      <span style={{ minWidth: 0 }}>
+                        <strong>{textoPresentacion(p, ubm)}</strong>
+                        <span className="suave" style={{ display: 'block', fontSize: '.82rem' }}>
+                          {p.por_tanda ? `${cant(p.por_tanda * k)} por ${k === 1 ? 'tanda' : `${cant(k)} tandas`}` : 'las que convengan'}
+                          {p.empaque ? ` · ${p.empaque}` : ''}
+                          {enGramos && p.contenido && netoG ? ` · el neto alcanza para ${Math.floor(netoG / p.contenido)}` : ''}
+                        </span>
+                      </span>
+                      {enGramos && p.contenido !== null && (
+                        <input inputMode="numeric" value={empacadas[i] ?? ''} placeholder="cuántas" aria-label={`Cuántas de ${textoPresentacion(p, ubm)}`}
+                               onChange={(e) => setEmpacadas((x) => ({ ...x, [i]: e.target.value }))} style={{ maxWidth: 90 }} />
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {hayConteo && enGramos && (
+                  <p className={netoG && usado > netoG ? 'aviso' : 'suave'} style={{ fontSize: '.85rem', margin: '.4rem 0 0' }}>
+                    Empacado: {fmtCantidad(usado)} g{netoG ? ` de ${fmtCantidad(netoG)} g · ${usado > netoG ? `faltan ${fmtCantidad(usado - netoG)} g` : `sobran ${fmtCantidad(netoG - usado)} g`}` : ''}
+                  </p>
+                )}
+                {enGramos && ps.some((p) => p.contenido !== null) && (
+                  <p className="ayuda" style={{ margin: '.3rem 0 0' }}>Anota cuántas de cada una para repartir el neto; no se guarda con el lote.</p>
+                )}
+              </section>
+            );
+          })()}
           <section className="tarjeta">
             <h2 className="sec-tit">Responsable</h2>
             <div className="resp-prod">
