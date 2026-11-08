@@ -12,6 +12,12 @@ export const TIPOS_INSUMO: { v: TipoInsumo; t: string; ayuda: string }[] = [
   { v: 'HERRAMIENTA', t: 'Herramienta o equipo', ayuda: 'Bar spoon, cuchillos, licuadora: no se gastan; salen por baja.' },
 ];
 
+// Al corregir un insumo también puede quedar sin costo (agua de la llave, subproductos ya pagados).
+export const TIPOS_EDITAR: { v: TipoInsumo | 'SIN_COSTO'; t: string; ayuda: string }[] = [
+  ...TIPOS_INSUMO,
+  { v: 'SIN_COSTO', t: 'Sin costo', ayuda: 'Agua de la llave o subproducto ya pagado en otro insumo: no lleva precio y suma $0 en las fichas.' },
+];
+
 export const NOMBRE_CLASE: Record<Clase, string> = {
   MATERIA_PRIMA: 'Materia prima', DESECHABLE: 'Desechable', ASEO: 'Aseo y limpieza', MENAJE: 'Menaje', HERRAMIENTA: 'Herramienta o equipo',
 };

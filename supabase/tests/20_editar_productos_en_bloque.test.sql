@@ -36,14 +36,14 @@ select is((select count(*) from public.productos where id in ('c0000000-0000-000
 update public.productos set estado = 'PROVISIONAL' where id = 'c0000000-0000-0000-0000-000000000003';
 select is((pg_temp.bloque(array['c0000000-0000-0000-0000-000000000003'], '{}', true) ->> 'ok')::int, 1, 'validar en bloque sin cambiar nada');
 
--- uno se puede y otro no: el que no, no detiene al otro
+-- estar en una ficha ya no bloquea la unidad (solo el kardex): cambia y avisa que revise el neto
 create temp table r2 as select pg_temp.bloque(array['c0000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000006'],
   '{"generico": {"conservacion": "Ambiente", "unidad_base": "ml"}}') as v;
-select is((select (v ->> 'fallidos')::int from r2), 1, 'el sirope (en una ficha) no cambia de unidad');
-select ok((select x -> 'mensajes' ->> 0 from r2, jsonb_array_elements(v -> 'detalle') x where x ->> 'codigo' = 'BAR_MPi_0006-G')
-          like '%está en una ficha técnica%', 'y dice por qué');
+select is((select (v ->> 'fallidos')::int from r2), 0, 'el sirope (con ficha) también cambia de unidad');
+select ok((select x -> 'mensajes' from r2, jsonb_array_elements(v -> 'detalle') x where x ->> 'codigo' = 'BAR_MPi_0006-G')::text
+          like '%neto esperado%', 'y avisa que revise el neto de su ficha');
 select is((select unidad_base::text from public.genericos where id = 'b0000000-0000-0000-0000-000000000006'), 'ml', 'el cardamomo sí cambia');
-select is((select unidad_base::text from public.genericos where id = 'b0000000-0000-0000-0000-000000000004'), 'g', 'el sirope quedó como estaba');
+select is((select unidad_base::text from public.genericos where id = 'b0000000-0000-0000-0000-000000000004'), 'ml', 'el sirope quedó en ml');
 
 select throws_like($$ select pg_temp.bloque(array['c0000000-0000-0000-0000-000000000006'], '{"generico": {"nombre": "Otro"}}') $$,
                    '%En bloque solo se cambia%', 'el nombre no se cambia en bloque');

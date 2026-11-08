@@ -39,7 +39,8 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
   const actual = kardex?.costo_promedio != null
     ? { cu: Number(kardex.costo_promedio), fuente: '', fecha: fechaCorta(kardex.actualizado_en as string), deKardex: true }
     : ref ? { cu: Number(ref.costo_unitario_base), fuente: ref.fuente as string, fecha: ref.calculado_en ? fechaCorta(ref.calculado_en as string) : null, deKardex: false } : null;
-  const ubBloqueada = (movs ?? 0) > 0 ? 'ya tiene movimientos en el kardex' : (enFicha ?? 0) > 0 ? 'está en una ficha técnica' : null;
+  // las fichas guardan su propia unidad y se convierten al calcular: solo el kardex bloquea el cambio
+  const ubBloqueada = (movs ?? 0) > 0 ? 'no se cambia: ya tiene movimientos en el kardex' : null;
   const nPres = idsPres.length || 1;
 
   return (
@@ -53,6 +54,9 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
       </p>
       {fila.nota && <p className="suave" style={{ fontSize: '.88rem' }}>{fila.nota}</p>}
       <EditarProducto ficha={fila} categorias={categorias ?? []} ubBloqueada={ubBloqueada} />
+      {fila.generico.tipo === 'SIN_COSTO' && (
+        <p className="suave" style={{ fontSize: '.88rem' }}>Sin costo: no lleva precio y suma $0 en las fichas{(enFicha ?? 0) > 0 ? ` (está en ${enFicha} línea${enFicha === 1 ? '' : 's'} de ficha)` : ''}.</p>
+      )}
       {fila.generico.tipo === 'MPe' && perfil.rol === 'admin' && (
         <>
           <h2>Precio</h2>

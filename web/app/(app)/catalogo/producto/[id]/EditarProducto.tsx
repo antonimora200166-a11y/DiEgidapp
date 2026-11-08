@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { TIPOS_INSUMO, aTipoInsumo, deTipoInsumo, type Clase, type TipoInsumo } from '@/lib/clases';
+import { TIPOS_EDITAR, aTipoInsumo, deTipoInsumo, type Clase, type TipoInsumo } from '@/lib/clases';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Resultado } from '@/lib/catalogo';
@@ -31,17 +31,20 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
   const [variable, setVariable] = useState(ficha.contenido_variable);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [enviando, iniciar] = useTransition();
-  const esInsumo = g.tipo === 'MPe' || g.tipo === 'MPI';
+  const esInsumo = g.tipo === 'MPe' || g.tipo === 'MPI' || g.tipo === 'SIN_COSTO';
+  // tipo y clase que se guardan según lo elegido en pantalla
+  const elegido = (): { tipo: string; clase: Clase } =>
+    !esInsumo ? { tipo, clase: g.clase } : tipo === 'SIN_COSTO' ? { tipo, clase: 'MATERIA_PRIMA' } : deTipoInsumo(tipo as TipoInsumo);
 
   function guardar(validar: boolean) {
     const datos = {
       id: ficha.id, validar,
-      generico: { nombre, tipo: esInsumo ? deTipoInsumo(tipo as TipoInsumo).tipo : tipo, unidad_base: ub, categoria, conservacion, temp_max_llegada: tmax.replace(',', '.') },
+      generico: { nombre, tipo: elegido().tipo, unidad_base: ub, categoria, conservacion, temp_max_llegada: tmax.replace(',', '.') },
       producto: { marca, presentacion, unidad_compra: ucompra, contenido_base: variable ? '' : contenido.replace(',', '.'), contenido_variable: variable },
     };
     iniciar(async () => {
       const r = await editarProducto(datos);
-      const clase = esInsumo ? deTipoInsumo(tipo as TipoInsumo).clase : g.clase;
+      const clase = elegido().clase;
       if (r.ok && clase !== g.clase) {
         const aviso = await fijarClase([g.id], clase);
         if (aviso) r.avisos = [...(r.avisos ?? []), `La clase no cambió: ${aviso}`];
@@ -62,16 +65,18 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
           <div>
             <label htmlFor="tipo">Tipo</label>
             <select id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} disabled={!esInsumo}>
-              {esInsumo ? TIPOS_INSUMO.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)
-                        : <option value={tipo}>{tipo}</option>}
+              {esInsumo ? TIPOS_EDITAR.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)
+                        : <option value={tipo}>{tipo === 'BEBIDA' ? 'Bebida de carta' : tipo === 'PLATO' ? 'Plato de carta' : tipo}</option>}
             </select>
-            {esInsumo && <span className="ayuda">{TIPOS_INSUMO.find((o) => o.v === tipo)?.ayuda}</span>}
+            {esInsumo ? <span className="ayuda">{TIPOS_EDITAR.find((o) => o.v === tipo)?.ayuda}</span>
+                      : <span className="ayuda">Lo de la carta no cambia de tipo.</span>}
           </div>
           <div>
             <label htmlFor="ub">Unidad base {ubBloqueada && <span className="ayuda">{ubBloqueada}</span>}</label>
             <select id="ub" value={ub} onChange={(e) => setUb(e.target.value as 'g' | 'ml' | 'und')} disabled={!!ubBloqueada}>
               <option value="g">gramos (g)</option><option value="ml">mililitros (ml)</option><option value="und">unidades (und)</option>
             </select>
+            {!ubBloqueada && ub !== g.unidad_base && <span className="ayuda">Al guardar te aviso si alguna ficha queda sin conversión.</span>}
           </div>
         </div>
         <label htmlFor="categoria">Categoría</label>

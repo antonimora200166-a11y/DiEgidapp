@@ -46,11 +46,10 @@ select is((select unidad_compra from public.productos where id = 'c0000000-0000-
 select is((select categoria from public.genericos where id = 'b0000000-0000-0000-0000-000000000301'), 'FRUVER', 'y queda su categoría');
 select is((select estado from public.propuestas_unidad where id = 'f0000000-0000-0000-0000-000000000001'), 'ACEPTADA', 'la propuesta queda aceptada');
 
--- lo que no se puede: queda pendiente con el motivo
+-- con ficha ya no se bloquea (solo el kardex lo impide): se aplica
 create temp table r2 as select pg_temp.decidir(array['f0000000-0000-0000-0000-000000000003'], 'ACEPTAR') as v;
-select is((select (v ->> 'fallidos')::int from r2), 1, 'el sirope en una ficha no cambia de unidad');
-select ok((select estado = 'PENDIENTE' and mensaje like '%ficha técnica%' from public.propuestas_unidad where id = 'f0000000-0000-0000-0000-000000000003'),
-          'y la propuesta sigue pendiente con el motivo');
+select is((select (v ->> 'fallidos')::int from r2), 0, 'el sirope con ficha sí cambia de unidad');
+select is((select unidad_base::text from public.genericos where id = 'b0000000-0000-0000-0000-000000000004'), 'ml', 'y queda en ml');
 
 -- corregir: en vez de und, el cardamomo se deja en g pero se le da categoría
 create temp table r3 as select pg_temp.decidir(array['f0000000-0000-0000-0000-000000000004'], 'ACEPTAR', '{"categoria": "FRUVER"}') as v;
