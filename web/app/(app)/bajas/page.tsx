@@ -7,7 +7,7 @@ import type { ProductoSaldo } from '@/components/LineasInventario';
 import Bajas from './Bajas';
 
 export const metadata = { title: 'Bajas' };
-const CAUSAS: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado / roto', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro' };
+const CAUSAS: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado / roto', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro', CORTESIA: 'Cortesía', MAL_HECHO: 'Mal hecho' };
 
 export default async function PaginaBajas({ searchParams }: { searchParams: Promise<{ area?: string }> }) {
   const perfil = await perfilActual();
@@ -29,6 +29,7 @@ export default async function PaginaBajas({ searchParams }: { searchParams: Prom
     <>
       <h1>Bajas</h1>
       <p className="suave">Lo que se bota o ya no sirve: sale del kardex al costo promedio.</p>
+      <p><Link href={`/bajas/carta?area=${area}`} className="boton secundario chico">Cortesía o mal hecho de la carta →</Link></p>
       {areas.length > 1 && (
         <nav className="segmentos" style={{ marginBottom: '1rem' }}>
           {areas.map((a) => (

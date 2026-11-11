@@ -45,7 +45,7 @@ export function menuDe(p: Perfil): Opcion[] {
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/recibir', titulo: 'Recibir', detalle: 'Mercancía de proveedores, con foto de la factura', icono: 'recibir' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/produccion', titulo: 'Producción', detalle: 'Fichas técnicas, producir lotes y su trazabilidad', icono: 'producir' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/trasladar', titulo: 'Trasladar', detalle: 'Mover mercancía entre zonas: bodega → barra', icono: 'trasladar' });
-  if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/bajas', titulo: 'Bajas', detalle: 'Lo vencido, dañado o derramado', icono: 'bajas' });
+  if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/bajas', titulo: 'Bajas', detalle: 'Lo vencido o dañado, cortesías y mal hechos', icono: 'bajas' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/conteo', titulo: 'Contar', detalle: 'Conteo por zona (y el conteo inicial)', icono: 'contar' });
   if (p.rol !== 'servicio') m.push({ ruta: '/historial', titulo: 'Historial', detalle: 'Lo registrado, y anular lo que quedó mal', icono: 'historial' });
   if (p.rol !== 'servicio') m.push({ ruta: '/existencias', titulo: 'Existencias', detalle: 'Qué hay en cada zona y cuánto vale', icono: 'existencias' });

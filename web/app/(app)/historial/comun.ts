@@ -11,4 +11,4 @@ export const pesos = (n: number, dec = 0) =>
 export const pesosU = (n: number) => pesos(n, Math.abs(n) < 100 ? 2 : 0);
 export const cant = (n: number | null | undefined) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CO', { maximumFractionDigits: 3 }));
 export const CONDICION: Record<string, string> = { OK: 'Bien', DANADO: 'Dañado', INCOMPLETO: 'Incompleto', NO_LLEGO: 'No llegó' };
-export const CAUSA: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado / roto', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro' };
+export const CAUSA: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado / roto', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro', CORTESIA: 'Cortesía', MAL_HECHO: 'Mal hecho' };

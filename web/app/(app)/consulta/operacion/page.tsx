@@ -11,7 +11,7 @@ const BLOQUES: { v: Bloque; t: string }[] = [
   { v: 'inventario', t: 'Inventario' }, { v: 'compras', t: 'Compras' }, { v: 'produccion', t: 'Producción' }, { v: 'perdidas', t: 'Pérdidas' },
 ];
 const RPC: Record<Bloque, string> = { inventario: 'consulta_inventario', compras: 'consulta_compras', produccion: 'consulta_produccion', perdidas: 'consulta_perdidas' };
-const CAUSA: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro' };
+const CAUSA: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro', CORTESIA: 'Cortesía', MAL_HECHO: 'Mal hecho' };
 const HALLAZGO: Record<string, string> = { H03: 'sin precio', H09: 'cantidad dudosa', H12: 'precio fuera de banda' };
 
 const pesos = (n: unknown) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }));
@@ -201,6 +201,7 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
             <div className="cifra"><span>Pérdidas del período</span><b>{pesos(d.total)}</b><small>bajas del kardex</small></div>
           </div>
           {!Number(d.total) && <p className="suave">Sin bajas en el período.</p>}
+          <p style={{ fontSize: '.9rem' }}><Link href="/bajas/carta">Cortesías y mal hechos: quién autorizó, quién responde y lo que falta por cobrar →</Link></p>
           <div className="dos-col pagina-ancha">
             <section><h2>Por causa</h2><Barras filas={lista('por_causa')} etiqueta={(f) => CAUSA[String(f.causa)] ?? String(f.causa)} valor={(f) => Number(f.valor)} /></section>
             <section><h2>Tendencia</h2><Barras filas={lista('tendencia')} etiqueta={(f) => `${corta(String(f.desde))} – ${corta(String(f.hasta))}`} valor={(f) => Number(f.valor)} /></section>
