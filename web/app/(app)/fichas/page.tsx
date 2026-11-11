@@ -28,7 +28,8 @@ export default async function Fichas() {
     <>
       <h1 className="pagina-ancha">Fichas técnicas</h1>
       <p className="suave">La receta de cada MPI, cóctel y plato: con ella se producen los lotes y se calcula el costo estándar.
-        Por defecto se ven las que les falta algo; quita el filtro de estado para verlas todas.</p>
+        Por defecto se ven las que les falta algo, incluidas las que no tienen ficha; quita el filtro de estado para verlas todas.
+        Con «Forma de venta» separas los cócteles de las botellas, shots, copas y reventa.</p>
       {carta && carta.mpi.aprobadas < carta.mpi.total && (
         <Link href="/produccion/validar?fuente=cocteles" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--marca)' }}>
           <span><strong>Completar las fichas de cócteles con la carta</strong><br />

@@ -324,3 +324,11 @@ summary.enlace-traza::-webkit-details-marker { display: none; }
 /* Filas que se abren para mostrar su detalle (Carta y margen: ingredientes) */
 .fila-detalle > td { background: color-mix(in srgb, var(--marca) 5%, var(--tarjeta)); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Consulta: semáforo de las cifras del resumen (verde en la meta, amarillo cerca, rojo encima) */
+.cifra.sv { border-top: 4px solid var(--ok); }
+.cifra.sa { border-top: 4px solid var(--aviso); }
+.cifra.sr { border-top: 4px solid var(--error); }
+.cifra > small { display: block; }
+.cifras.anchas { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.cifra > b { overflow-wrap: anywhere; }

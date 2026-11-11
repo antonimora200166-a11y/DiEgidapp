@@ -7,6 +7,8 @@ const raiz = path.resolve('.');
 const config: NextConfig = {
   outputFileTracingRoot: raiz,
   turbopack: { root: raiz },
+  // el reporte de ventas de Odoo (Excel) llega por una acción del servidor: hasta 16 MB
+  experimental: { serverActions: { bodySizeLimit: '16mb' } },
   async headers() {
     return [
       {

@@ -116,10 +116,10 @@ insert into _bebidas values
   ('BAR_BEB_B12', 'Botella Tequila José Cuervo 375 ml',       'BOTELLA', 'BOTELLA', 'Jose Cuervo Reposado media 375 ml', 100000, 'BAR_MPe_0142', 375, 'ml', 'Supuesto: José Cuervo Reposado del TPV = José Cuervo Especial del catálogo.'),
   ('BAR_BEB_B13', 'Botella Tequila Olmeca Chocolate',         'BOTELLA', 'BOTELLA', 'Olmeca Chocolate Bot 700',       190000, 'BAR_MPe_0087', 700, 'ml', null),
   ('BAR_BEB_B14', 'Botella Tequila Olmeca Reposado 700 ml',   'BOTELLA', 'BOTELLA', 'Olmeca Reposado bot 700',        280000, 'BAR_MPe_0086', 700, 'ml', null),
-  ('BAR_BEB_B15', 'Botella Tequila Olmeca Reposado 1000 ml',  'BOTELLA', 'BOTELLA', 'Olmeca Reposado bot 1000',       498000, 'BAR_MPe_0086', 1000, 'ml', null),
+  ('BAR_BEB_B15', 'Botella Tequila Olmeca Reposado 1000 ml',  'BOTELLA', 'BOTELLA', 'Olmeca Reposado bot 1000',       498000, 'BAR_MPe_0086', 1000, 'ml', 'La botella de 1.000 ml no se ha comprado nunca: su presentación quedó PROVISIONAL hasta que el jefe de barra la confirme.'),
   ('BAR_BEB_B16', 'Botella Tequila Olmeca Blanco',            'BOTELLA', 'BOTELLA', 'Olmeca Blanco',                  195000, null, null, null, 'Sin ficha: el Olmeca Blanco no está en el catálogo.'),
   ('BAR_BEB_B17', 'Botella Tequila Don Julio 70',             'BOTELLA', 'BOTELLA', 'Don Julio 70',                   750000, 'BAR_MPe_0140', 700, 'ml', null),
-  ('BAR_BEB_B18', 'Botella Tequila Don Julio Reposado',       'BOTELLA', 'BOTELLA', 'Don Julio Reposado',             600000, 'BAR_MPe_0141', 700, 'ml', null),
+  ('BAR_BEB_B18', 'Botella Tequila Don Julio Reposado',       'BOTELLA', 'BOTELLA', 'Don Julio Reposado',             600000, 'BAR_MPe_0141', 700, 'ml', 'El Don Julio Reposado se compra en botella de 700 ml (presentación verificada en la app el 06/11/2026).'),
   ('BAR_BEB_B19', 'Botella Tequila Don Julio 1942',           'BOTELLA', 'BOTELLA', 'Don Julio 1942',                2000000, 'BAR_MPe_0139', 750, 'ml', null),
   ('BAR_BEB_B20', 'Botella Mezcal Ojo de Tigre',              'BOTELLA', 'BOTELLA', 'Mezcal Ojo De Tigre',            350000, 'BAR_MPe_0134', 750, 'ml', null),
   ('BAR_BEB_B21', 'Botella Mezcal Montelobos',                'BOTELLA', 'BOTELLA', 'Montelobos',                     648000, 'BAR_MPe_0106', 750, 'ml', null),
@@ -127,7 +127,7 @@ insert into _bebidas values
   ('BAR_BEB_B23', 'Botella Ron Zacapa 23 años',               'BOTELLA', 'BOTELLA', 'Zacapa 23',                      650000, 'BAR_MPe_0137', 700, 'ml', null),
   ('BAR_BEB_B24', 'Botella Ron Zacapa Ámbar',                 'BOTELLA', 'BOTELLA', 'Zacapa Ambar',                   378000, 'BAR_MPe_0138', 750, 'ml', null),
   ('BAR_BEB_B25', 'Botella Ron La Hechicera',                 'BOTELLA', 'BOTELLA', 'La Hechicera',                   570000, 'BAR_MPe_0136', 700, 'ml', null),
-  ('BAR_BEB_B26', 'Botella Vodka Absolut 750 ml',             'BOTELLA', 'BOTELLA', 'Absolut 750 ml',                 200000, 'BAR_MPe_0069', 750, 'ml', null),
+  ('BAR_BEB_B26', 'Botella Vodka Absolut 750 ml',             'BOTELLA', 'BOTELLA', 'Absolut 750 ml',                 200000, 'BAR_MPe_0069', 750, 'ml', 'El Absolut se compra en 1.000 ml: la presentación de 750 ml quedó PROVISIONAL hasta que el jefe de barra la confirme.'),
   ('BAR_BEB_B27', 'Botella Vodka Grey Goose',                 'BOTELLA', 'BOTELLA', 'Grey Goose',                     500000, 'BAR_MPe_0143', 700, 'ml', null),
   ('BAR_BEB_B28', 'Botella Whisky Buchanan''s Two Souls',     'BOTELLA', 'BOTELLA', 'Buchanan''S Two Souls',          465250, 'BAR_MPe_0144', 750, 'ml', null),
   ('BAR_BEB_B29', 'Botella Whisky Bulleit Bourbon',           'BOTELLA', 'BOTELLA', 'Bullet Bourbon',                 456500, 'BAR_MPe_0107', 750, 'ml', null),
@@ -213,3 +213,59 @@ select g.id, b.precio, '2026-11-06'
   from _bebidas b
   join public.genericos g on g.codigo = b.codigo
  where not exists (select 1 from public.precios_venta v where v.generico_id = g.id);
+
+-- =====================================================================================
+-- Tamaños de botella corregidos (07/11/2026). Cada botella de carta tiene que coincidir con
+-- una presentación que se compra; si no, el teórico del cierre sale con un faltante o un
+-- sobrante que no existe.
+-- =====================================================================================
+
+-- Don Julio Reposado: se compra en 700 ml (presentación verificada en la app el 06/11/2026).
+-- El 07/11 se le puso por error una versión de 750 ml; si la vigente dice 750, nace la versión
+-- siguiente con 700 ml. La versión guardada no se toca: solo se cierra.
+do $$
+declare
+  v_vieja public.fichas%rowtype;
+  v_desde date;
+  v_nueva uuid;
+begin
+  select f.* into v_vieja
+    from public.fichas f join public.genericos g on g.id = f.generico_id
+   where g.codigo = 'BAR_BEB_B18'
+   order by f.version desc limit 1;
+  if v_vieja.id is null then return; end if;
+  if not exists (select 1 from public.ficha_lineas l join public.genericos i on i.id = l.generico_id
+                  where l.ficha_id = v_vieja.id and i.codigo = 'BAR_MPe_0141' and l.cantidad = 750 and l.unidad = 'ml') then
+    return;
+  end if;
+
+  v_desde := greatest(privado.hoy(), v_vieja.vigente_desde);
+  update public.fichas set vigente_hasta = v_desde - 1 where id = v_vieja.id;
+  insert into public.fichas (codigo, generico_id, version, vigente_desde, nota, descripcion, origen, motivo_cambio)
+  values (v_vieja.codigo, v_vieja.generico_id, v_vieja.version + 1, v_desde,
+          'Ficha automática de una línea (decisión de Anthony, 06/11/2026).',
+          'Botella entera de 700 ml.', 'APP',
+          'La botella se compra de 700 ml (presentación BAR_MPe_0141-750, verificada el 06/11/2026 con 700 ml); la versión anterior decía 750 ml por error.')
+  returning id into v_nueva;
+  insert into public.ficha_lineas (ficha_id, linea, generico_id, cantidad, unidad, nota, producto_id)
+  select v_nueva, l.linea, l.generico_id, 700, l.unidad, l.nota, l.producto_id
+    from public.ficha_lineas l where l.ficha_id = v_vieja.id;
+  perform privado.bitacora('FICHA CORREGIDA', 'fichas', v_vieja.codigo,
+    jsonb_build_object('generico', 'BAR_BEB_B18', 'version_anterior', v_vieja.version, 'version', v_vieja.version + 1,
+                       'antes_ml', 750, 'ahora_ml', 700));
+end
+$$;
+
+-- Absolut 750 ml y Olmeca Reposado 1.000 ml: la carta los vende pero nunca se han comprado en
+-- ese tamaño. Entran PROVISIONALES: se pueden recibir y contar con su tamaño real, y el jefe de
+-- barra los confirma (o los desactiva si ya no se venden) en Catálogo → Verificar.
+insert into public.productos (codigo, generico_id, marca, presentacion, unidad_compra, contenido_base, contenido_variable, estado, nota)
+select v.codigo, g.id, v.marca, v.presentacion, 'BOT', v.ml, false, 'PROVISIONAL', v.nota
+  from (values
+    ('BAR_MPe_0069-750',  'BAR_MPe_0069', 'Absolut',         'Botella 750 ml',  750,
+     'Alta 07/11/2026: la carta vende «Botella Vodka Absolut 750 ml» (BAR_BEB_B26) y solo se compraba la de 1.000 ml. Confirmar si se compra.'),
+    ('BAR_MPe_0086-1000', 'BAR_MPe_0086', 'Olmeca Reposado', 'Botella 1000 ml', 1000,
+     'Alta 07/11/2026: la carta vende «Botella Tequila Olmeca Reposado 1000 ml» (BAR_BEB_B15) y solo se compraba la de 700 ml. Confirmar si se compra.')
+  ) v(codigo, generico, marca, presentacion, ml, nota)
+  join public.genericos g on g.codigo = v.generico
+on conflict do nothing;

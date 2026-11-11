@@ -10,6 +10,15 @@ export type ResultadoConteo = Resultado & { ajustes?: number; sin_costo?: number
 // Fecha operativa en Cali (la base vuelve a validarla: no se cuenta en el futuro).
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
 
+// Tara de una presentación, para pesar la botella abierta. Las reglas las aplica public.registrar_tara.
+export async function registrarTara(productoId: string, modo: 'LLENA' | 'VACIA', pesoG: number):
+  Promise<{ ok: boolean; error?: string; mensaje?: string; tara_g?: number }> {
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('registrar_tara', { p: { producto_id: productoId, modo, peso_g: pesoG } });
+  if (error) return { ok: false, error: error.message };
+  return data as { ok: boolean; error?: string; mensaje?: string; tara_g?: number };
+}
+
 // Todas las reglas (permiso, inicial solo para jefes, taras, duplicados) las aplica public.registrar_conteo.
 export async function registrarConteo(ubicacion: string, inicial: boolean, lineas: LineaConteo[], observaciones: string): Promise<ResultadoConteo> {
   const perfil = await perfilActual();

@@ -8,6 +8,7 @@ import Escaner from '@/components/Escaner';
 import Icono from '@/components/Icono';
 import { registrarConteo, type LineaConteo, type ResultadoConteo } from '../acciones';
 import { confirmar } from '@/components/Dialogo';
+import RegistrarTara from './RegistrarTara';
 
 export type ProductoHoja = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -60,6 +61,9 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
   const reconocedor = useRef<Reconocedor | null>(null);
   const [resultado, setResultado] = useState<ResultadoConteo | null>(null);
   const [enviando, iniciar] = useTransition();
+  // presentaciones a las que se les registró la tara en esta hoja: ya se pueden pesar
+  const [conTara, setConTara] = useState<Set<string>>(new Set());
+  const tara = (p: ProductoHoja) => p.tiene_tara || conTara.has(p.producto_id);
 
   // borrador en este equipo: recargar la página o bloquear el celular no borra lo contado.
   // Solo se guarda bajo la clave ya cargada: al cambiar de inicial a normal no se pisa un borrador con el otro.
@@ -179,7 +183,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
       for (let i = e.resultIndex; i < e.results.length; i++) {
         if (!e.results[i].isFinal) continue;
         const texto = e.results[i][0].transcript.trim();
-        const d = entenderDictado(texto, lista.map((p) => ({ id: p.producto_id, nombre: nombreDe(p), cerradas: porCerradas(p), tara: p.tiene_tara })));
+        const d = entenderDictado(texto, lista.map((p) => ({ id: p.producto_id, nombre: nombreDe(p), cerradas: porCerradas(p), tara: tara(p) })));
         if ('error' in d) { setOido({ texto, error: d.error }); continue; }
         setCapturas((x) => {
           setOido({ texto, d, antes: x[d.id] });
@@ -321,7 +325,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
                       No hay
                     </button>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${1 + (porCerradas(p) ? 1 : 0) + (p.tiene_tara ? 1 : 0)}, minmax(0, 1fr))`, gap: '.5rem', marginTop: '.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${1 + (porCerradas(p) ? 1 : 0) + (tara(p) ? 1 : 0)}, minmax(0, 1fr))`, gap: '.5rem', marginTop: '.5rem' }}>
                     {porCerradas(p) && (
                       <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>
                         Cerradas ({p.unidad_compra.toLowerCase()} de {fmtCantidad(p.contenido_base!)} {p.unidad_base})
@@ -332,13 +336,17 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
                       {porCerradas(p) ? `Abierto / suelto (${p.unidad_base})` : `Cantidad (${p.unidad_base})`}
                       <input inputMode="decimal" value={c?.suelto ?? ''} onChange={(e) => poner(p.producto_id, 'suelto', e.target.value)} />
                     </label>
-                    {p.tiene_tara && (
+                    {tara(p) && (
                       <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>
                         Botella abierta: peso (g)
                         <input inputMode="decimal" value={c?.peso ?? ''} onChange={(e) => poner(p.producto_id, 'peso', e.target.value)} />
                       </label>
                     )}
                   </div>
+                  {!tara(p) && p.unidad_base === 'ml' && porCerradas(p) && (
+                    <RegistrarTara productoId={p.producto_id} nombre={nombreDe(p)} contenido={p.contenido_base} unidad={p.unidad_base}
+                                   onLista={() => setConTara((s) => new Set(s).add(p.producto_id))} />
+                  )}
                   {t !== null && (
                     <div className="suave" style={{ fontSize: '.82rem', marginTop: '.3rem' }}>
                       = {fmtCantidad(t)} {p.unidad_base}{num(c?.peso ?? '') !== null && ' + la botella pesada'}
