@@ -5,7 +5,7 @@ import { nombreRol, type Perfil } from '@/lib/roles';
 import Link from 'next/link';
 import FormUsuario from './FormUsuario';
 import Restablecer from './Restablecer';
-import { cambiarActivo } from './acciones';
+import { cambiarActivo, borrarPin } from './acciones';
 
 export const metadata = { title: 'Usuarios' };
 
@@ -37,6 +37,12 @@ export default async function Usuarios() {
                   {p.id === yo.id ? <Link href="/cuenta">Mi cuenta</Link> : (
                     <div style={{ display: 'grid', gap: '.4rem' }}>
                       {p.activo && p.usuario && <Restablecer id={p.id} nombre={p.nombre} />}
+                      {p.activo && ['admin', 'jefe_bar', 'chef'].includes(p.rol) && (
+                        <form action={borrarPin}>
+                          <input type="hidden" name="id" value={p.id} />
+                          <button type="submit" className="secundario">Borrar PIN</button>
+                        </form>
+                      )}
                       <form action={cambiarActivo}>
                         <input type="hidden" name="id" value={p.id} />
                         <input type="hidden" name="activo" value={String(!p.activo)} />

@@ -24,7 +24,8 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
   const tipo = t.toUpperCase();
   if (!NOMBRE_TIPO[tipo] || !UUID.test(id)) notFound();
   const supabase = await supabaseServidor();
-  const { data, error } = await supabase.rpc('detalle_documento', { p_tipo: tipo, p_id: id });
+  const [{ data, error }, { data: exigePin }] = await Promise.all([
+    supabase.rpc('detalle_documento', { p_tipo: tipo, p_id: id }), supabase.rpc('exige_pin')]);
   if (error) { if (/No existe/.test(error.message)) notFound(); throw new Error(error.message); }
   const d = data as Detalle;
   const e = d.encabezado;
@@ -104,7 +105,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
                 {!!(l.observaciones || l.nota) && <div className="suave" style={{ fontSize: '.82rem' }}>{s(l.observaciones || l.nota)}</div>}
               </div>
               {tipo === 'RECEPCION' && d.puede_anular && !anulado && !l.anulada && d.lineas.length > 1 && (
-                <Anular tipo={tipo} id={d.id} lineaId={s(l.id)} etiqueta="Anular línea" pequeno />
+                <Anular tipo={tipo} id={d.id} lineaId={s(l.id)} etiqueta="Anular línea" pequeno exigePin={exigePin === true} />
               )}
             </div>
           </li>
@@ -113,7 +114,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
 
       {!anulado && (
         d.puede_anular
-          ? <div className="acciones"><Anular tipo={tipo} id={d.id} etiqueta={`Anular ${NOMBRE_TIPO[tipo].singular.toLowerCase()}`} /></div>
+          ? <div className="acciones"><Anular tipo={tipo} id={d.id} etiqueta={`Anular ${NOMBRE_TIPO[tipo].singular.toLowerCase()}`} exigePin={exigePin === true} /></div>
           : <p className="suave" style={{ fontSize: '.88rem' }}>Si hay un error, pídele al jefe del área o a administración que lo anule desde aquí.</p>
       )}
     </>

@@ -17,8 +17,8 @@ select throws_like($$ update public.existencias set cantidad = 0 $$, '%permissio
 select throws_like($$ insert into public.genericos (codigo, nombre, tipo, area, unidad_base) values ('X1', 'X', 'MPe', 'BAR', 'g') $$,
                    '%row-level security%', 'el aux no crea genéricos');
 select is((select count(*) from public.bitacora), 0::bigint, 'el aux no lee la bitácora');
-select throws_like($$ select public.anular_documento('RECEPCION', gen_random_uuid(), 'motivo suficientemente largo') $$,
-                   '%No existe el documento%', 'las RPC sí están a su alcance');
+select throws_like($$ select public.enviar(null, 'anular_documento', jsonb_build_object('tipo', 'RECEPCION', 'id', gen_random_uuid(), 'motivo', 'motivo suficientemente largo')) $$,
+                   '%No existe el documento%', 'las RPC sí están a su alcance (por la puerta)');
 reset role;
 
 -- jefe de bar: maestros de su área, no de cocina
@@ -34,7 +34,7 @@ reset role;
 select pg_temp.como('a0000000-0000-0000-0000-000000000004');
 set local role authenticated;
 select is((select count(*) from public.movimientos), 0::bigint, 'servicio no ve el kardex');
-select throws_like($$ select public.registrar_baja('{"area":"BAR"}') $$, '%Sin permiso%', 'servicio no registra bajas');
+select throws_like($$ select public.enviar(null, 'registrar_baja', '{"area":"BAR"}') $$, '%Sin permiso%', 'servicio no registra bajas');
 reset role;
 
 -- anon: nada

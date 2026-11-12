@@ -3,14 +3,15 @@ import { useMemo, useState, useTransition } from 'react';
 import type { Area } from '@/lib/roles';
 import RechazoConMotivo from '@/components/RechazoConMotivo';
 import { registrarBajaCarta, type ResultadoCarta } from './acciones';
+import { useEnvio } from '@/lib/envio';
 
 type Persona = { id: string; nombre: string; rol: string; autoriza: boolean };
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
 const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 const sinTilde = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-export default function RegistrarCarta({ area, carta, zonas, personas, yo }: {
-  area: Area; carta: { id: string; nombre: string }[]; zonas: { codigo: string; nombre: string }[]; personas: Persona[]; yo: string;
+export default function RegistrarCarta({ area, carta, zonas, personas, yo, exigePin }: {
+  area: Area; carta: { id: string; nombre: string }[]; zonas: { codigo: string; nombre: string }[]; personas: Persona[]; yo: string; exigePin: boolean;
 }) {
   const [tipo, setTipo] = useState<'CORTESIA' | 'MAL_HECHO' | ''>('');
   const [buscar, setBuscar] = useState('');
@@ -26,6 +27,8 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo }: {
   const [motivo, setMotivo] = useState('');
   const [resultado, setResultado] = useState<ResultadoCarta | null>(null);
   const [pend, start] = useTransition();
+  const [pin, setPin] = useState('');
+  const envio = useEnvio();
 
   const cargo = aCargo ?? tipo === 'MAL_HECHO';
   const opciones = useMemo(() => {
@@ -35,18 +38,21 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo }: {
   const und = Number(unidades.replace(',', '.'));
   const falta = !tipo ? 'Escoge si es cortesía o mal hecho.' : !producto ? 'Escoge el producto.' : !(und > 0) ? 'Escribe las unidades.'
     : !zona ? 'Escoge la zona de donde salió.' : tipo === 'CORTESIA' && !autoriza ? 'Escoge quién autorizó.'
-    : (tipo === 'MAL_HECHO' || cargo) && !responsable ? 'Escoge el responsable.' : null;
+    : (tipo === 'MAL_HECHO' || cargo) && !responsable ? 'Escoge el responsable.'
+    : exigePin && autoriza && !/^[0-9]{4,6}$/.test(pin) ? 'Escribe el PIN de quien autorizó.' : null;
 
   function guardar(conMotivo: boolean) {
     setResultado(null);
     start(async () => {
       const r = await registrarBajaCarta({ area, ubicacion: zona, fecha, tipo, generico_id: producto?.id, unidades: und,
         autorizado_por: autoriza || null, responsable_id: responsable || null, a_cargo: cargo, observaciones: obs,
-        motivo_forzado: conMotivo ? motivo : null });
+        pin_autoriza: exigePin && autoriza ? pin : null, confirmados: envio.confirmados,
+        motivo_forzado: conMotivo || motivo.trim().length >= 15 ? motivo : null }, envio.clave);
       setResultado(r);
+      if (r.ok || r.pin) setPin('');
     });
   }
-  function otro() { setProducto(null); setBuscar(''); setUnidades('1'); setObs(''); setMotivo(''); setResultado(null); setACargo(null); setResponsable(''); }
+  function otro() { envio.nuevo(); setPin(''); setProducto(null); setBuscar(''); setUnidades('1'); setObs(''); setMotivo(''); setResultado(null); setACargo(null); setResponsable(''); }
 
   if (resultado?.ok) {
     return (
@@ -119,6 +125,13 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo }: {
           </select>
         </div>
       </div>
+      {exigePin && autoriza && (
+        <div style={{ maxWidth: '14rem' }}>
+          <label htmlFor="pin-autoriza">PIN de {personas.find((p) => p.id === autoriza)?.nombre ?? 'quien autoriza'}</label>
+          <input id="pin-autoriza" type="password" inputMode="numeric" autoComplete="off" maxLength={6} value={pin}
+                 onChange={(e) => setPin(e.target.value.replace(/D/g, ''))} />
+          <span className="ayuda">Lo escribe quien autoriza. Así nadie autoriza a nombre de otro.</span>
+        </div>)}
       {tipo && (
         <label style={{ display: 'flex', gap: '.45rem', alignItems: 'center', marginTop: '.7rem' }}>
           <input type="checkbox" checked={cargo} onChange={(e) => setACargo(e.target.checked)} style={{ width: 'auto', minHeight: 0 }} />
@@ -130,7 +143,7 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo }: {
       <input id="obs" value={obs} onChange={(e) => setObs(e.target.value)} maxLength={200}
              placeholder={tipo === 'MAL_HECHO' ? 'Ej.: quedó aguado, se cayó al servirlo' : 'Ej.: mesa 4, cumpleaños'} />
 
-      <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} ejemplo="Ej.: la botella está en la barra pero no se ha trasladado en la app" />
+      <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} ejemplo="Ej.: la botella está en la barra pero no se ha trasladado en la app" />
       <div className="acciones">
         {bloqueado ? (
           <button type="button" disabled={pend || motivo.trim().length < 15} onClick={() => guardar(true)}>{pend ? 'Guardando…' : 'Guardar con este motivo'}</button>

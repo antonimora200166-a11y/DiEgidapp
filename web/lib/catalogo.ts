@@ -6,7 +6,12 @@ export type Parecido = {
 };
 
 // Respuesta de las RPC (privado.resultado): F = no se puede, B = se puede con motivo, avisos = informativo.
-export type Resultado = { ok: boolean; id: string | null; codigo: string | null; fatales: string[]; bloqueos: string[]; avisos: string[] };
+// revisar: cantidades fuera de lo normal o contenidos sin verificar que hay que confirmar (public.enviar)
+export type Revision = { producto_id: string; motivo: 'CANTIDAD' | 'CONTENIDO'; mensaje: string };
+export type Resultado = {
+  ok: boolean; id: string | null; codigo: string | null; fatales: string[]; bloqueos: string[]; avisos: string[];
+  revisar?: Revision[]; repetido?: boolean; pin?: boolean;
+};
 
 export const UMBRAL_BLOQUEO = 0.6;   // igual que public.crear_producto
 

@@ -18,12 +18,13 @@ export default async function PaginaBajasCarta({ searchParams }: { searchParams:
   const area: Area = pedida && lista.includes(pedida) ? pedida : lista[0];
 
   const supabase = await supabaseServidor();
-  const [{ data: carta }, { data: zonas }, { data: personas }, { data: filas, error }] = await Promise.all([
+  const [{ data: carta }, { data: zonas }, { data: personas }, { data: filas, error }, { data: exigePin }] = await Promise.all([
     supabase.from('genericos').select('id, nombre, tipo, seccion_carta').eq('area', area).in('tipo', ['BEBIDA', 'PLATO'])
       .eq('activo', true).eq('en_baul', false).order('nombre'),
     supabase.from('ubicaciones').select('codigo, nombre').eq('area', area).eq('activo', true).order('nombre'),
     supabase.rpc('personas_bajas_carta'),
     supabase.rpc('bajas_carta_lista', { p_area: esAdmin ? null : area }),
+    supabase.rpc('exige_pin'),
   ]);
   if (error) throw new Error(error.message);
   const puede = areas.includes(area);
@@ -44,7 +45,7 @@ export default async function PaginaBajasCarta({ searchParams }: { searchParams:
         </nav>)}
       {puede ? (
         <RegistrarCarta key={area} area={area} carta={(carta ?? []).map((g) => ({ id: g.id, nombre: g.nombre }))} zonas={zonas ?? []}
-                        personas={(personas ?? []) as { id: string; nombre: string; rol: string; autoriza: boolean }[]} yo={perfil.id} />
+                        personas={(personas ?? []) as { id: string; nombre: string; rol: string; autoriza: boolean }[]} yo={perfil.id} exigePin={exigePin === true} />
       ) : <p className="suave">No registras en esta área; aquí ves lo registrado.</p>}
       <ListaBajasCarta filas={(filas ?? []) as FilaBajaCarta[]} esAdmin={esAdmin} />
     </>

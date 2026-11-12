@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
+import { enviar } from '@/lib/enviar';
 import type { Resultado } from '@/lib/catalogo';
 
 export type LineaConteo = { producto_id: string; cantidad?: number; unidades_compra?: number; peso_bruto_g?: number; recontado?: boolean; primer_conteo?: number };
@@ -20,16 +21,14 @@ export async function registrarTara(productoId: string, modo: 'LLENA' | 'VACIA',
 }
 
 // Todas las reglas (permiso, inicial solo para jefes, taras, duplicados) las aplica public.registrar_conteo.
-export async function registrarConteo(ubicacion: string, inicial: boolean, lineas: LineaConteo[], observaciones: string): Promise<ResultadoConteo> {
+export async function registrarConteo(ubicacion: string, inicial: boolean, lineas: LineaConteo[], observaciones: string,
+                                      clave?: string, confirmados: string[] = []): Promise<ResultadoConteo> {
   const perfil = await perfilActual();
-  const supabase = await supabaseServidor();
-  const { data, error } = await supabase.rpc('registrar_conteo', {
-    p: { ubicacion, fecha: hoyCali(), responsable_id: perfil.id, inicial, observaciones, lineas },
-  });
-  if (error) return { ok: false, id: null, codigo: null, fatales: [error.message], bloqueos: [], avisos: [] };
-  if ((data as Resultado).ok) {
+  const data = await enviar<ResultadoConteo>('registrar_conteo',
+    { ubicacion, fecha: hoyCali(), responsable_id: perfil.id, inicial, observaciones, lineas, confirmados }, clave);
+  if (data.ok) {
     revalidatePath('/conteo', 'layout');
     revalidatePath('/existencias');
   }
-  return data as ResultadoConteo;
+  return data;
 }

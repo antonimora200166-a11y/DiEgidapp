@@ -75,3 +75,12 @@ export async function cambiarActivo(form: FormData) {
   await supabase.from('perfiles').update({ activo: form.get('activo') === 'true' }).eq('id', id);
   revalidatePath('/admin/usuarios');
 }
+
+// Borra el PIN de alguien que lo olvidó: lo vuelve a fijar en Mi cuenta (public.borrar_pin, solo admin).
+export async function borrarPin(form: FormData) {
+  const yo = await perfilActual();
+  if (yo.rol !== 'admin') return;
+  const supabase = await supabaseServidor();
+  await supabase.rpc('borrar_pin', { p_perfil: String(form.get('id')) });
+  revalidatePath('/admin/usuarios');
+}

@@ -11,6 +11,8 @@ import { confirmar, pedirTexto } from '@/components/Dialogo';
 import Escaner from '@/components/Escaner';
 import Icono from '@/components/Icono';
 import { asociarCodigo, leerCodigo } from '@/lib/escaneo';
+import { Revisiones } from '@/components/RechazoConMotivo';
+import { useEnvio } from '@/lib/envio';
 
 export type ProductoRecepcion = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -126,6 +128,9 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
   const [motivo, setMotivo] = useState('');
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [enviando, iniciar] = useTransition();
+  // una clave de envío por área: una factura de las dos áreas son dos recepciones
+  const envio = useEnvio();
+  const [claveOtra, setClaveOtra] = useState(() => crypto.randomUUID());
   const camara = useRef<HTMLInputElement>(null);
   const galeria = useRef<HTMLInputElement>(null);
 
@@ -272,7 +277,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       area: g, ubicacion: (g === area ? enc.ubicacion : enc.ubicacion_otra) || lineas.find((l) => areaDe(l) === g && l.zona)?.zona || '',
       fecha: enc.fecha, proveedor_id: enc.proveedor_id,
       tipo_soporte: enc.tipo_soporte, documento: enc.documento, observaciones: enc.obs, soporte_ruta: ruta, propuesta_ia: propuesta,
-      motivo_forzado: conMotivo ? motivo : null,
+      motivo_forzado: conMotivo || motivo.trim().length >= 15 ? motivo : null, confirmados: envio.confirmados,
       lineas: lineas.filter((l) => areaDe(l) === g).map((l) => {
         const c = calculo(l);
         return {
@@ -301,7 +306,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
           if (!c.ok) { setResultado({ ok: false, id: null, codigo: null, fatales: [c.error], bloqueos: [], avisos: [] }); return; }
           ruta = c.ruta;
         }
-        const r = await registrarRecepcion(payload(conMotivo, g, ruta));
+        const r = await registrarRecepcion(payload(conMotivo, g, ruta), g === area ? envio.clave : claveOtra);
         if (!r.ok) {
           setResultado({ ...r, avisos: [...(codigos.length ? [`Ya quedó guardada: ${codigos.join(', ')}. Falta la de ${nombreArea(g)}.`] : []), ...r.avisos] });
           return;
@@ -317,6 +322,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
   }
 
   function empezarDeNuevo() {
+    envio.nuevo(); setClaveOtra(crypto.randomUUID());
     setEnc(vacio); setLineas([]); setFoto(null); setVista(null); setPropuesta(null); setTotalFactura(null);
     setNotaIA(null); setNotaProveedor(null); setProvLeido(null); setMotivo(''); setResultado(null); setErrorFoto(null);
   }
@@ -502,7 +508,10 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       <label htmlFor="obs">Observaciones <span className="ayuda">opcional</span></label>
       <textarea id="obs" rows={2} value={enc.obs} onChange={(e) => ponerEnc({ obs: e.target.value })} />
 
-      {resultado && !resultado.ok && (
+      {resultado && !resultado.ok && !!resultado.revisar?.length && (
+        <Revisiones resultado={resultado} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} />
+      )}
+      {resultado && !resultado.ok && !resultado.revisar?.length && (
         <div className={bloqueado ? 'aviso' : 'error'} role="alert">
           <strong>{bloqueado ? 'Para guardar así hace falta un motivo:' : 'No se guardó:'}</strong>
           <ul>{[...resultado.fatales, ...resultado.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul>

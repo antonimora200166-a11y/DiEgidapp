@@ -17,7 +17,7 @@ export default async function ConteoZona({ params }: { params: Promise<{ ubicaci
   if (!zona) notFound();
   const area = zona.area as Area;
   if (!puedeOperar(perfil, area) || !areasDe(perfil).includes(area)) redirect('/conteo');
-  const { data, error } = await hoja;
+  const [{ data, error }, { data: sinVer }] = await Promise.all([hoja, supabase.rpc('contenidos_sin_verificar', { p_ubicacion: ubicacion })]);
   if (error) throw new Error(error.message);
   // el conteo inicial lo hace administración o el jefe del área (igual que la base)
   const haceInicial = perfil.rol === 'admin' || (area === 'BAR' && perfil.rol === 'jefe_bar') || (area === 'COCINA' && perfil.rol === 'chef');
@@ -26,7 +26,8 @@ export default async function ConteoZona({ params }: { params: Promise<{ ubicaci
     <>
       <p style={{ margin: '0 0 .3rem' }}><Link href="/conteo">← Zonas</Link></p>
       <h1>{zona.nombre}</h1>
-      <HojaConteo ubicacion={zona.codigo} productos={(data ?? []) as ProductoHoja[]} haceInicial={haceInicial} />
+      <HojaConteo ubicacion={zona.codigo} productos={(data ?? []) as ProductoHoja[]} haceInicial={haceInicial}
+                  sinVerificar={((sinVer ?? []) as { producto_id: string }[]).map((x) => x.producto_id)} />
     </>
   );
 }

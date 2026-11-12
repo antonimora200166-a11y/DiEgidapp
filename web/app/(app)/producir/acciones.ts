@@ -1,7 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { perfilActual } from '@/lib/sesion';
-import { supabaseServidor } from '@/lib/supabase/server';
+import { enviar } from '@/lib/enviar';
 import type { Resultado } from '@/lib/catalogo';
 
 export type ResultadoLote = Resultado & {
@@ -12,15 +12,13 @@ export type ResultadoLote = Resultado & {
 
 // Todas las reglas (permiso, MPI y ficha válidos, conversiones, saldo en la zona, neto) y el costo
 // del lote las aplica public.registrar_lote en una sola transacción.
-export async function registrarLote(payload: Record<string, unknown>): Promise<ResultadoLote> {
+export async function registrarLote(payload: Record<string, unknown>, clave?: string): Promise<ResultadoLote> {
   const perfil = await perfilActual();
-  const supabase = await supabaseServidor();
-  const { data, error } = await supabase.rpc('registrar_lote', { p: { ...payload, responsable_id: payload.responsable_id || perfil.id } });
-  if (error) return { ok: false, id: null, codigo: null, fatales: [error.message], bloqueos: [], avisos: [] };
-  if ((data as Resultado).ok) {
+  const data = await enviar<ResultadoLote>('registrar_lote', { ...payload, responsable_id: payload.responsable_id || perfil.id }, clave);
+  if (data.ok) {
     revalidatePath('/producir');
     revalidatePath('/existencias');
     revalidatePath('/produccion', 'layout');
   }
-  return data as ResultadoLote;
+  return data;
 }

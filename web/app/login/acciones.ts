@@ -21,6 +21,13 @@ export async function entrar(_: EstadoLogin, form: FormData): Promise<EstadoLogi
   redirect(volver.startsWith('/') && !volver.startsWith('//') ? volver : '/');
 }
 
+// Tras un rato sin tocar la app (iPad compartido): lo que se registre después no queda a nombre de otro.
+export async function salirPorInactividad() {
+  const supabase = await supabaseServidor();
+  await supabase.auth.signOut();
+  redirect('/login?inactividad=1');
+}
+
 export async function salir() {
   const supabase = await supabaseServidor();
   await supabase.auth.signOut();

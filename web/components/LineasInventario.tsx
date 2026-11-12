@@ -82,6 +82,7 @@ export default function LineasInventario({ productos, zona, lineas, setLineas, o
               </div>
               <div className="suave" style={{ fontSize: '.82rem', marginTop: '.3rem' }}>
                 {b !== null && l.modo === 'compra' && porCompra(p) && <>= {fmtCantidad(b)} {p.unidad_base} · </>}
+                {b !== null && l.modo === 'base' && porCompra(p) && <>= {fmtCantidad(b / p.contenido_base!)} {p.unidad_compra.toLowerCase()} de {fmtCantidad(p.contenido_base!)} {p.unidad_base} · </>}
                 {zona ? <>en la zona hay {fmtCantidad(hay)} {p.unidad_base}</> : 'elige la zona para ver el saldo'}
                 {v !== null && <> · vale {pesos(v)}</>}
                 {ofrecerTodo && hay > 0 && (

@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
+import { enviar } from '@/lib/enviar';
 import { puedeOperar, type Area } from '@/lib/roles';
 import type { Resultado } from '@/lib/catalogo';
 import { emparejarConIA, leerFacturaConIA, type PropuestaFactura, type SugerenciaIA } from '@/lib/factura-ia';
@@ -138,12 +139,10 @@ export async function crearProductoRapido(area: Area, d: {
 
 // Todas las reglas (compuertas F/B, banda de precio, sello, cadena de frío, costo promedio) las
 // aplica public.registrar_recepcion en una sola transacción.
-export async function registrarRecepcion(payload: Record<string, unknown>): Promise<Resultado> {
+export async function registrarRecepcion(payload: Record<string, unknown>, clave?: string): Promise<Resultado> {
   const perfil = await perfilActual();
-  const supabase = await supabaseServidor();
-  const { data, error } = await supabase.rpc('registrar_recepcion', { p: { ...payload, recibe_id: perfil.id } });
-  if (error) return { ok: false, id: null, codigo: null, fatales: [error.message], bloqueos: [], avisos: [] };
-  if ((data as Resultado).ok) {
+  const data = await enviar('registrar_recepcion', { ...payload, recibe_id: perfil.id }, clave);
+  if (data.ok) {
     revalidatePath('/recibir');
     revalidatePath('/existencias');
   }

@@ -4,17 +4,20 @@ import { useRouter } from 'next/navigation';
 import type { Resultado } from '@/lib/catalogo';
 import { anularDocumento } from '../../acciones';
 import { confirmar } from '@/components/Dialogo';
+import { useEnvio } from '@/lib/envio';
 
 // Anular el documento completo o, en una recepción, una sola línea. Pide el motivo y confirma:
 // la anulación reversa los movimientos en el kardex y no se puede deshacer.
-export default function Anular({ tipo, id, lineaId, etiqueta, pequeno }: {
-  tipo: string; id: string; lineaId?: string; etiqueta: string; pequeno?: boolean;
+export default function Anular({ tipo, id, lineaId, etiqueta, pequeno, exigePin }: {
+  tipo: string; id: string; lineaId?: string; etiqueta: string; pequeno?: boolean; exigePin?: boolean;
 }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [motivo, setMotivo] = useState('');
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [enviando, iniciar] = useTransition();
+  const [pin, setPin] = useState('');
+  const envio = useEnvio();
 
   if (!abierto) {
     return (
@@ -28,8 +31,9 @@ export default function Anular({ tipo, id, lineaId, etiqueta, pequeno }: {
     if (!(await confirmar(`${etiqueta}: sus movimientos se reversan en el kardex. Queda en el historial y no se puede deshacer.`,
       { titulo: '¿Seguir?', aceptar: etiqueta, peligro: true }))) return;
     iniciar(async () => {
-      const r = await anularDocumento(tipo, id, motivo, lineaId ?? null);
+      const r = await anularDocumento(tipo, id, motivo, lineaId ?? null, exigePin ? pin : undefined, envio.clave);
       setResultado(r);
+      if (!r.ok) setPin('');
       if (r.ok) router.refresh();
     });
   }
@@ -46,11 +50,17 @@ export default function Anular({ tipo, id, lineaId, etiqueta, pequeno }: {
       <textarea id={`motivo-${lineaId ?? id}`} rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)}
                 placeholder="Ej.: se registró dos veces / el producto se devolvió al proveedor" />
       <span className="ayuda">Mínimo 15 caracteres. Queda en la bitácora con tu nombre.</span>
+      {exigePin && (
+        <div style={{ maxWidth: '14rem' }}>
+          <label htmlFor={`pin-${lineaId ?? id}`}>Tu PIN</label>
+          <input id={`pin-${lineaId ?? id}`} type="password" inputMode="numeric" autoComplete="off" maxLength={6} value={pin}
+                 onChange={(e) => setPin(e.target.value.replace(/D/g, ''))} />
+        </div>)}
       {resultado && !resultado.ok && (
         <div className="error" role="alert"><ul style={{ margin: 0 }}>{resultado.fatales.map((m) => <li key={m}>{m}</li>)}</ul></div>
       )}
       <div className="acciones">
-        <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={anular}>{enviando ? 'Anulando…' : etiqueta}</button>
+        <button type="button" disabled={enviando || motivo.trim().length < 15 || (!!exigePin && !/^[0-9]{4,6}$/.test(pin))} onClick={anular}>{enviando ? 'Anulando…' : etiqueta}</button>
         <button type="button" className="secundario" disabled={enviando} onClick={() => { setAbierto(false); setMotivo(''); setResultado(null); }}>Cancelar</button>
       </div>
     </div>

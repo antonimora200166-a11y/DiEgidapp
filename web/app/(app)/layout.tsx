@@ -6,6 +6,7 @@ import { navDe, nombreRol } from '@/lib/roles';
 import { Dialogos } from '@/components/Dialogo';
 import Icono from '@/components/Icono';
 import NavInferior from '@/components/NavInferior';
+import CierreInactividad from '@/components/CierreInactividad';
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
   const perfil = await perfilActual();
@@ -25,6 +26,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       <main className="contenido">{children}</main>
       <NavInferior opciones={navDe(perfil)} />
       <Dialogos />
+      <CierreInactividad />
     </>
   );
 }

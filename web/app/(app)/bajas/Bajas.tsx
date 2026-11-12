@@ -7,6 +7,7 @@ import { registrarBaja } from '@/lib/movimientos';
 import LineasInventario, { baseDe, valorDe, type LineaInv, type ProductoSaldo } from '@/components/LineasInventario';
 import RechazoConMotivo from '@/components/RechazoConMotivo';
 import { confirmar } from '@/components/Dialogo';
+import { useEnvio } from '@/lib/envio';
 
 const CAUSAS = [
   { v: 'VENCIDO', t: 'Vencido' }, { v: 'DANADO', t: 'Dañado / roto' }, { v: 'DERRAME', t: 'Derrame' },
@@ -24,6 +25,7 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
   const [motivo, setMotivo] = useState('');
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [enviando, iniciar] = useTransition();
+  const envio = useEnvio();
 
   // borrador en este equipo
   const clave = `sgi-bajas:${area}`;
@@ -45,15 +47,16 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
     setResultado(null);
     iniciar(async () => {
       const r = await registrarBaja({
-        area, ubicacion: zona, fecha, causa, observaciones: obs, motivo_forzado: conMotivo ? motivo : null,
+        area, ubicacion: zona, fecha, causa, observaciones: obs, confirmados: envio.confirmados,
+        motivo_forzado: conMotivo || motivo.trim().length >= 15 ? motivo : null,
         lineas: lineas.map((l) => ({ producto_id: l.producto_id, cantidad: baseDe(l, porId.get(l.producto_id)),
                                      unidad: porId.get(l.producto_id)?.unidad_base })),
-      });
+      }, envio.clave);
       setResultado(r);
       if (r.ok) { try { localStorage.removeItem(clave); } catch { /* nada */ } window.scrollTo({ top: 0, behavior: 'smooth' }); }
     });
   }
-  function otra() { setLineas([]); setObs(''); setCausa(''); setMotivo(''); setResultado(null); setFecha(hoyCali()); }
+  function otra() { envio.nuevo(); setLineas([]); setObs(''); setCausa(''); setMotivo(''); setResultado(null); setFecha(hoyCali()); }
 
   if (resultado?.ok) {
     return (
@@ -101,7 +104,7 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
       <textarea id="obs" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
       {total > 0 && <p className="suave">Valor de la baja: <strong>{pesos(total)}</strong></p>}
 
-      <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} ejemplo="Ej.: la botella se rompió antes de registrar su recepción" />
+      <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} ejemplo="Ej.: la botella se rompió antes de registrar su recepción" />
       <div className="acciones barra-guardar">
         {bloqueado ? (
           <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>

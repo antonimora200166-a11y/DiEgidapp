@@ -24,3 +24,15 @@ export async function cambiarClave(_: EstadoClave, form: FormData): Promise<Esta
   revalidatePath('/', 'layout');
   return { ok: true };
 }
+
+// PIN para autorizar cortesías y anular (public.fijar_pin): 4 a 6 números; para cambiarlo pide el anterior.
+export async function fijarPin(_: EstadoClave, form: FormData): Promise<EstadoClave> {
+  const pin = String(form.get('pin') || ''), repetido = String(form.get('repetido') || ''), anterior = String(form.get('anterior') || '');
+  if (pin !== repetido) return { error: 'Los dos PIN no coinciden.' };
+  const supabase = await supabaseServidor();
+  const { data, error } = await supabase.rpc('fijar_pin', { p_pin: pin, p_anterior: anterior || null });
+  if (error) return { error: error.message };
+  const r = data as { ok: boolean; error?: string };
+  if (r.ok) revalidatePath('/cuenta');
+  return r.ok ? { ok: true } : { error: r.error };
+}

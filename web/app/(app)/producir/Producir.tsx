@@ -7,6 +7,8 @@ import { cant, textoPresentacion, tipoPunto, type Almacenamiento, type Presentac
 import type { Area } from '@/lib/roles';
 import { registrarLote, type ResultadoLote } from './acciones';
 import { confirmar } from '@/components/Dialogo';
+import { Revisiones } from '@/components/RechazoConMotivo';
+import { useEnvio } from '@/lib/envio';
 import Escaner from '@/components/Escaner';
 import Icono from '@/components/Icono';
 import { leerCodigo } from '@/lib/escaneo';
@@ -89,6 +91,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   const [buscarInsumo, setBuscarInsumo] = useState('');
   const [resultado, setResultado] = useState<ResultadoLote | null>(null);
   const [enviando, iniciar] = useTransition();
+  const envio = useEnvio();
   const [escaneando, setEscaneando] = useState(false);
   const [leido, setLeido] = useState<{ ok: boolean; texto: string } | null>(null);
 
@@ -228,15 +231,16 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
       const r = await registrarLote({
         area, fecha, producto_id: mpi.producto_id, ficha_id: ficha?.id ?? null, responsable_id: responsable,
         ubicacion_destino: destino, conservacion: conservacion || null, tandas: k, neto_g: netoG,
-        unidades: num(unidades), neto_factor: num(netoFactor), tiempo_min: num(tiempo), observaciones: obs, motivo_forzado: motivo || null,
+        unidades: num(unidades), neto_factor: num(netoFactor), tiempo_min: num(tiempo), observaciones: obs, motivo_forzado: motivo || null, confirmados: envio.confirmados,
         consumos: filas.map(({ c, ins, sinCosto }) => ({ producto_id: c.producto_id, gramos: num(c.gramos), unidades: num(c.unidades),
           factor: ins?.factor_g === null ? num(c.factor) : null, ubicacion: sinCosto ? null : c.zona || null, nota: c.nota || null, lote_origen: c.lote_origen ?? null })),
-      });
+      }, envio.clave);
       setResultado(r);
       if (r.ok) { try { localStorage.removeItem(clave); } catch { /* nada */ } setPaso(5); window.scrollTo({ top: 0, behavior: 'smooth' }); }
     });
   }
   function empezarDeNuevo() {
+    envio.nuevo();
     setMpiId(null); setPaso(1); setTandas('1'); setConsumos([]); setNeto(''); setUnidades(''); setNetoFactor(''); setResponsable(perfilId);
     setDestino(''); setConservacion(''); setTiempo(''); setObs(''); setMotivo(''); setResultado(null); setFecha(hoyCali());
     try { localStorage.removeItem(clave); } catch { /* nada */ }
@@ -611,7 +615,10 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
           </div>
           {calc.alerta && <div className="aviso" style={{ margin: 0 }}><strong>Rendimiento fuera de lo esperado.</strong> Revisa los pesos; si están bien, guarda y anota qué pasó en observaciones.</div>}
           {vePesos && calc.estado === 'PARCIAL' && <div className="aviso" style={{ margin: 0 }}>Algún insumo no tiene costo en el kardex: el lote quedará con costo parcial.</div>}
-          {resultadoMalo && (
+          {resultadoMalo && !!resultado.revisar?.length && (
+            <Revisiones resultado={resultado} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} />
+          )}
+          {resultadoMalo && !resultado.revisar?.length && (
             <div className="error" role="alert" style={{ margin: 0 }}><strong>No se guardó:</strong>
               <ul style={{ margin: 0 }}>{[...resultado.fatales, ...resultado.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul></div>
           )}

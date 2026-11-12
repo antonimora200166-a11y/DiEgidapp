@@ -6,6 +6,7 @@ import type { Area } from '@/lib/roles';
 import { registrarTraslado } from '@/lib/movimientos';
 import LineasInventario, { baseDe, type LineaInv, type ProductoSaldo } from '@/components/LineasInventario';
 import RechazoConMotivo from '@/components/RechazoConMotivo';
+import { useEnvio } from '@/lib/envio';
 import { confirmar } from '@/components/Dialogo';
 
 type Zona = { codigo: string; nombre: string; area: Area };
@@ -26,6 +27,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
   const [motivo, setMotivo] = useState('');
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [enviando, iniciar] = useTransition();
+  const envio = useEnvio();
   // lo que se traslada es del área de la zona de origen
   const area = zonas.find((z) => z.codigo === origen)?.area;
   const lista = area ? productos[area] ?? [] : [];
@@ -56,15 +58,16 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
     setResultado(null);
     iniciar(async () => {
       const r = await registrarTraslado({
-        fecha, origen, destino, observaciones: obs, motivo_forzado: conMotivo ? motivo : null,
+        fecha, origen, destino, observaciones: obs, confirmados: envio.confirmados,
+        motivo_forzado: conMotivo || motivo.trim().length >= 15 ? motivo : null,
         lineas: lineas.map((l) => ({ producto_id: l.producto_id, cantidad: baseDe(l, porId.get(l.producto_id)),
                                      unidad: porId.get(l.producto_id)?.unidad_base })),
-      });
+      }, envio.clave);
       setResultado(r);
       if (r.ok) { try { localStorage.removeItem(clave); } catch { /* nada */ } window.scrollTo({ top: 0, behavior: 'smooth' }); }
     });
   }
-  function otro() { setLineas([]); setObs(''); setMotivo(''); setResultado(null); setFecha(hoyCali()); }
+  function otro() { envio.nuevo(); setLineas([]); setObs(''); setMotivo(''); setResultado(null); setFecha(hoyCali()); }
   const nombre = (u: string) => zonas.find((z) => z.codigo === u)?.nombre ?? u;
 
   if (resultado?.ok) {
@@ -113,7 +116,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
       <label htmlFor="obs">Observaciones <span className="ayuda">opcional</span></label>
       <textarea id="obs" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
 
-      <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} ejemplo="Ej.: la mercancía llegó directo a la barra y la recepción se registró en bodega" />
+      <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} ejemplo="Ej.: la mercancía llegó directo a la barra y la recepción se registró en bodega" />
       <div className="acciones barra-guardar">
         {bloqueado ? (
           <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>

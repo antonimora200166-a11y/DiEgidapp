@@ -15,7 +15,7 @@ export type Responsable = { id: string; nombre: string; rol: string };
 export const REGLA: Record<string, string> = {
   VARIACION_ROJA: 'Real vs. teórico en rojo', FALTANTE_INSUMO: 'Faltante no explicado', SOBRE_META: 'Sobre la meta de costo',
   SUBIDA_PRECIO: 'Subida de precio', RENDIMIENTO: 'Rendimiento fuera de banda', PERDIDAS_ALTAS: 'Pérdidas sobre el promedio',
-  VENTAS_SIN_FICHA: 'Ventas sin ficha',
+  VENTAS_SIN_FICHA: 'Ventas sin ficha', CONTROL_CAMBIADO: 'Control cambiado',
 };
 const ESTADO = { ABIERTA: 'Abierta', EN_CURSO: 'En curso', RESUELTA: 'Resuelta' } as const;
 const COLOR_ESTADO = { ABIERTA: 'var(--error)', EN_CURSO: 'var(--aviso)', RESUELTA: 'var(--ok)' } as const;

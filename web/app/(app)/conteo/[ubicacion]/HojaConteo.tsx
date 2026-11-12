@@ -9,6 +9,8 @@ import Icono from '@/components/Icono';
 import { registrarConteo, type LineaConteo, type ResultadoConteo } from '../acciones';
 import { confirmar } from '@/components/Dialogo';
 import RegistrarTara from './RegistrarTara';
+import { Revisiones } from '@/components/RechazoConMotivo';
+import { useEnvio } from '@/lib/envio';
 
 export type ProductoHoja = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -36,7 +38,11 @@ const crearReconocedor = (): Reconocedor | null => {
 };
 const cuenta = (c?: Captura) => !!c && (c.cerradas.trim() !== '' || c.suelto.trim() !== '' || c.peso.trim() !== '');
 
-export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubicacion: string; productos: ProductoHoja[]; haceInicial: boolean }) {
+export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerificar = [] }: {
+  ubicacion: string; productos: ProductoHoja[]; haceInicial: boolean; sinVerificar?: string[];
+}) {
+  const envio = useEnvio();
+  const noVerificado = useMemo(() => new Set(sinVerificar), [sinVerificar]);
   const sinKardex = productos.filter((p) => !p.tiene_kardex);
   const conKardex = productos.filter((p) => p.tiene_kardex);
   // si nada tiene kardex y quien cuenta es jefe, el conteo que corresponde es el inicial
@@ -124,7 +130,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
       : `Vas a guardar ${lineas.length} producto(s). Las diferencias con el kardex quedan como ajuste.${faltan ? ` Los ${faltan} que no contaste no cambian.` : ''}`;
     if (!(await confirmar(aviso, { titulo: '¿Guardar el conteo?', aceptar: 'Guardar' }))) return;
     iniciar(async () => {
-      const r = await registrarConteo(ubicacion, inicial, lineas, obs);
+      const r = await registrarConteo(ubicacion, inicial, lineas, obs, envio.clave, envio.confirmados);
       setResultado(r);
       if (!r.ok && r.recontar?.length) {
         // se cuentan otra vez sin ver el primer número: se borra lo escrito de esos productos
@@ -134,6 +140,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       if (r.ok) {
+        envio.nuevo();
         try { localStorage.removeItem(clave); localStorage.removeItem(`${clave}:recontar`); } catch { /* nada */ }
         setCapturas({});
         setRecontar({});
@@ -329,6 +336,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
                     {porCerradas(p) && (
                       <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>
                         Cerradas ({p.unidad_compra.toLowerCase()} de {fmtCantidad(p.contenido_base!)} {p.unidad_base})
+                        {noVerificado.has(p.producto_id) && <span className="etiqueta provisional" style={{ fontSize: '.72rem', marginLeft: '.3rem' }} title="Nadie ha confirmado cuánto trae cada unidad">contenido sin verificar</span>}
                         <input inputMode="decimal" value={c?.cerradas ?? ''} onChange={(e) => poner(p.producto_id, 'cerradas', e.target.value)} />
                       </label>
                     )}
@@ -361,6 +369,9 @@ export default function HojaConteo({ ubicacion, productos, haceInicial }: { ubic
           <label htmlFor="obs">Observaciones <span className="ayuda">opcional</span></label>
           <textarea id="obs" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
 
+          {resultado && !resultado.ok && !!resultado.revisar?.length && (
+            <Revisiones resultado={resultado} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} />
+          )}
           {resultado && !resultado.ok && resultado.fatales.some((m) => !m.startsWith('F10')) && (
             <div className="error" role="alert">
               <strong>No se guardó:</strong>

@@ -6,6 +6,7 @@ import EditarProducto, { type Ficha } from './EditarProducto';
 import EliminarProductos from '@/components/EliminarProductos';
 import StockMinMax from './StockMinMax';
 import PrecioProducto from './PrecioProducto';
+import VerificarContenido from './VerificarContenido';
 
 export const metadata = { title: 'Producto' };
 
@@ -14,11 +15,11 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
   const perfil = await perfilActual();
   const supabase = await supabaseServidor();
   const { data } = await supabase.from('productos')
-    .select(`id, codigo, estado, activo, marca, presentacion, unidad_compra, contenido_base, contenido_variable, nota, clase_abc, stock_minimo, stock_maximo,
+    .select(`id, codigo, estado, activo, marca, presentacion, unidad_compra, contenido_base, contenido_variable, contenido_verificado_en, nota, clase_abc, stock_minimo, stock_maximo,
              generico:genericos!inner(id, codigo, nombre, tipo, clase, categoria, unidad_base, conservacion, temp_max_llegada, estado, area)`)
     .eq('id', id).maybeSingle();
   if (!data) notFound();
-  const fila = data as unknown as Ficha & { nota: string | null; clase_abc: string | null; stock_minimo: number | null; stock_maximo: number | null; generico: Ficha['generico'] & { id: string; area: Area } };
+  const fila = data as unknown as Ficha & { contenido_verificado_en: string | null; nota: string | null; clase_abc: string | null; stock_minimo: number | null; stock_maximo: number | null; generico: Ficha['generico'] & { id: string; area: Area } };
   if (!editaArea(perfil, fila.generico.area)) redirect('/catalogo');
 
   // presentaciones del genérico: la unidad base solo cambia si ninguna tiene movimientos (igual que la RPC)
@@ -54,6 +55,11 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
       </p>
       {fila.nota && <p className="suave" style={{ fontSize: '.88rem' }}>{fila.nota}</p>}
       <EditarProducto ficha={fila} categorias={categorias ?? []} ubBloqueada={ubBloqueada} />
+      {fila.contenido_base != null && !fila.contenido_variable && (
+        <VerificarContenido id={fila.id}
+          texto={`${Number(fila.contenido_base).toLocaleString('es-CO')} ${fila.generico.unidad_base} por ${(fila.unidad_compra || 'unidad').toLowerCase()}`}
+          verificado={fila.contenido_verificado_en ? new Date(fila.contenido_verificado_en).toLocaleDateString('es-CO') : null} />
+      )}
       {fila.generico.tipo === 'SIN_COSTO' && (
         <p className="suave" style={{ fontSize: '.88rem' }}>Sin costo: no lleva precio y suma $0 en las fichas{(enFicha ?? 0) > 0 ? ` (está en ${enFicha} línea${enFicha === 1 ? '' : 's'} de ficha)` : ''}.</p>
       )}

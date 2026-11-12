@@ -3,11 +3,16 @@ import { nombreRol } from '@/lib/roles';
 import FormClave from './FormClave';
 import Icono from '@/components/Icono';
 import { salir } from '../../login/acciones';
+import FormPin from './FormPin';
+import { supabaseServidor } from '@/lib/supabase/server';
 
 export const metadata = { title: 'Mi cuenta' };
 
 export default async function Cuenta() {
   const perfil = await perfilActual();
+  const supabase = await supabaseServidor();
+  const [{ data: tienePin }, { data: exigePin }] = await Promise.all([supabase.rpc('tiene_pin'), supabase.rpc('exige_pin')]);
+  const autoriza = ['admin', 'jefe_bar', 'chef'].includes(perfil.rol);
   return (
     <>
       <h1>Mi cuenta</h1>
@@ -18,6 +23,16 @@ export default async function Cuenta() {
       <h2>Cambiar contraseña</h2>
       <FormClave temporal={perfil.debe_cambiar_clave} />
       <p className="suave" style={{ fontSize: '.88rem' }}>¿La olvidaste? Pídele a administración que te dé una temporal desde la pantalla Usuarios.</p>
+      {autoriza && (
+        <>
+          <h2>PIN para autorizar</h2>
+          <p className="suave" style={{ fontSize: '.88rem', marginTop: 0 }}>
+            {exigePin ? 'Se pide' : 'Cuando administración lo active, se pedirá'} al autorizar una cortesía y al anular un documento.
+            {tienePin ? ' Ya tienes uno.' : ' Aún no tienes uno.'} ¿Lo olvidaste? Administración lo borra y fijas uno nuevo.
+          </p>
+          <FormPin tiene={tienePin === true} />
+        </>
+      )}
       <h2>Sesión</h2>
       <form action={salir}>
         <button type="submit" className="secundario peligro"><Icono nombre="salir" /> Salir de la app</button>
