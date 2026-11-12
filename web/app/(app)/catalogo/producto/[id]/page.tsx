@@ -7,6 +7,7 @@ import EliminarProductos from '@/components/EliminarProductos';
 import StockMinMax from './StockMinMax';
 import PrecioProducto from './PrecioProducto';
 import VerificarContenido from './VerificarContenido';
+import { ENVASES } from '@/lib/catalogo';
 
 export const metadata = { title: 'Producto' };
 
@@ -57,7 +58,7 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
       <EditarProducto ficha={fila} categorias={categorias ?? []} ubBloqueada={ubBloqueada} />
       {fila.contenido_base != null && !fila.contenido_variable && (
         <VerificarContenido id={fila.id}
-          texto={`${Number(fila.contenido_base).toLocaleString('es-CO')} ${fila.generico.unidad_base} por ${(fila.unidad_compra || 'unidad').toLowerCase()}`}
+          texto={`${Number(fila.contenido_base).toLocaleString('es-CO')} ${fila.generico.unidad_base} por ${(ENVASES.find((e) => e.unidad === fila.unidad_compra)?.etiqueta ?? 'unidad').toLowerCase()}`}
           verificado={fila.contenido_verificado_en ? new Date(fila.contenido_verificado_en).toLocaleDateString('es-CO') : null} />
       )}
       {fila.generico.tipo === 'SIN_COSTO' && (
