@@ -50,8 +50,8 @@ export default async function Precios() {
       <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href="/catalogo">← Catálogo</Link></p>
       <h1 className="pagina-ancha">Precios desde fotos</h1>
       <p className="suave pagina-ancha">
-        Sube la foto de una factura, tiquete, lista de precios o cotización. La IA saca el nombre, la cantidad y el precio de cada
-        producto; tú corriges lo que haga falta y guardas. <strong>No es una recepción:</strong> no entra nada al inventario ni al
+        Suba la foto de una factura, tiquete, lista de precios o cotización. La IA saca el nombre, la cantidad y el precio de cada
+        producto; usted corrige lo que haga falta y guardas. <strong>No es una recepción:</strong> no entra nada al inventario ni al
         kardex. El precio queda como referencia de compra y, si lo marcas, como costo del producto.
       </p>
       <p className="pagina-ancha" style={{ margin: '.2rem 0 .6rem' }}><Link href="/proveedores#compras">Ver lo que le compramos a cada proveedor →</Link></p>

@@ -10,7 +10,7 @@ export default function Restablecer({ id, nombre }: { id: string; nombre: string
     return (
       <div className="aviso" role="status" style={{ margin: 0 }}>
         Temporal de {nombre.split(' ')[0]}: <strong className="cod" style={{ fontSize: '1rem', color: 'inherit' }}>{estado.clave}</strong>
-        <div className="suave" style={{ fontSize: '.8rem' }}>Díctasela en persona. Solo se muestra esta vez; al entrar pondrá una suya.</div>
+        <div className="suave" style={{ fontSize: '.8rem' }}>Díctesela en persona. Solo se muestra esta vez; al entrar pondrá una suya.</div>
       </div>
     );
   }

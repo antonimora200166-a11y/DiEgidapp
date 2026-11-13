@@ -40,7 +40,7 @@ async function armarYProponer(p: Parameters<typeof proponerDescripcion>[0]): Pro
   if (!g || (g.tipo !== 'BEBIDA' && g.tipo !== 'PLATO')) return { ok: false, error: 'La descripción con IA es solo para bebidas y platos de la carta.' };
   if (!editaFicha(perfil, g.area)) return { ok: false, error: `Solo el ${g.area === 'BAR' ? 'jefe de barra' : 'chef'} o administración editan esta ficha.` };
   const lineas = p.lineas.filter((l) => l.generico_id).slice(0, 60);
-  if (!lineas.length) return { ok: false, error: 'Agrega los ingredientes antes de pedir la descripción.' };
+  if (!lineas.length) return { ok: false, error: 'Agregue los ingredientes antes de pedir la descripción.' };
 
   const ids = [...new Set(lineas.map((l) => l.generico_id))];
   const { data: ings } = await supabase.from('genericos').select('id, nombre, tipo').in('id', ids);

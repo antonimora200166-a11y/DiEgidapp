@@ -27,7 +27,7 @@ function Fila({ f, carta }: { f: SinEquivalencia; carta: ProductoCarta[] }) {
   const lleva = tipo === 'PRODUCTO' || tipo === 'COMBO';
   const guardar = () => {
     const elegidas = lleva ? partes.filter(Boolean) : [];
-    if (lleva && !elegidas.length) { setError('Escoge el producto de la carta.'); return; }
+    if (lleva && !elegidas.length) { setError('Escoja el producto de la carta.'); return; }
     iniciar(async () => {
       const r = await fijarEquivalencia({ clave: f.clave, nombre_odoo: f.nombre_odoo, tipo,
                                           partes: elegidas.map((g) => ({ generico_id: g, cantidad: 1 })) });
@@ -47,7 +47,7 @@ function Fila({ f, carta }: { f: SinEquivalencia; carta: ProductoCarta[] }) {
       {lleva && partes.map((g, i) => (
         <div key={i} style={{ display: 'flex', gap: '.4rem' }}>
           <select value={g} onChange={(e) => setPartes((p) => p.map((x, j) => (j === i ? e.target.value : x)))} aria-label="Producto de la carta" style={{ flex: 1 }}>
-            <option value="">Escoge el producto de la carta…</option>
+            <option value="">Escoja el producto de la carta…</option>
             {(['BAR', 'COCINA'] as const).map((a) => (
               <optgroup key={a} label={a === 'BAR' ? 'Bar' : 'Cocina'}>
                 {carta.filter((c) => c.area === a).map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}

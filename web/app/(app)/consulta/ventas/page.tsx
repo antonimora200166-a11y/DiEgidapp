@@ -24,8 +24,8 @@ export default async function CargarVentasPagina() {
   return (
     <>
       <p style={{ margin: '0 0 .3rem' }}><Link href="/consulta">← Consulta</Link></p>
-      <h1 className="pagina-ancha">Cargar ventas de Odoo</h1>
-      <p className="suave">Cada lunes sube el reporte de la semana tal como sale de Odoo. La app lo lee, revisa que cuadre día por día y lo guarda;
+      <h1 className="pagina-ancha titulo-gestion">Cargar ventas de Odoo</h1>
+      <p className="suave">Cada lunes suba el reporte de la semana tal como sale de Odoo. La app lo lee, revisa que cuadre día por día y lo guarda;
         los días que ya estaban cargados no se cuentan dos veces. La app no escribe nada en Odoo.</p>
       <CargarVentas />
 

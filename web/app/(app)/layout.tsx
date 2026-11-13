@@ -19,7 +19,10 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
     <>
       <TemaDelRol oscuro={perfil.rol === 'jefe_bar' || perfil.rol === 'aux_bar'} />
       <header className="barra">
-        <Link href="/">SGI Di Égida</Link>
+        <Link href="/" className="marca" aria-label="Di Égida · Inicio">
+          <span className="monograma" aria-hidden>D·É</span>
+          <span className="marca-txt"><strong>Di Égida</strong><small>Tosca Bistró · SGI</small></span>
+        </Link>
         {/* Salir está en Mi cuenta: en la cabecera se tocaba sin querer */}
         <div className="barra-der">
           <BotonTema />

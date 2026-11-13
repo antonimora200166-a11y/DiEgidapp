@@ -64,7 +64,7 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
           )}
         </div>
         <span className="suave" style={{ fontSize: '.85rem' }}>
-          Cada vez que tocas el botón, la IA busca en la web lo que está pasando hoy (clima, vías, paros, vedas, temporadas, precios)
+          Cada vez que toca el botón, la IA busca en la web lo que está pasando hoy (clima, vías, paros, vedas, temporadas, precios)
           y lo cruza con la dependencia de proveedores de arriba. Cada análisis queda guardado con su fecha.
         </span>
         {error && <div className="aviso" role="status">{error}</div>}
@@ -75,7 +75,7 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
             </select>
           </label>
         )}
-        {!actual && !analizando && <p className="suave">Todavía no hay ningún análisis. {puedeAnalizar ? 'Toca «Analizar riesgos ahora».' : ''}</p>}
+        {!actual && !analizando && <p className="suave">Todavía no hay ningún análisis. {puedeAnalizar ? 'Toque «Analizar riesgos ahora».' : ''}</p>}
         {actual && (
           <>
             <p style={{ margin: 0 }}><span className="suave">{actual.resultado.fecha} · </span>{actual.resultado.resumen}</p>

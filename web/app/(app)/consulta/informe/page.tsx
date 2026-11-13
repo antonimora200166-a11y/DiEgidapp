@@ -46,7 +46,7 @@ export default async function InformePagina({ searchParams }: { searchParams: Pr
   return (
     <>
       <p className="no-imprimir" style={{ margin: '0 0 .3rem' }}><Link href="/consulta">← Consulta</Link></p>
-      <h1 className="pagina-ancha">Informe quincenal{p ? ` · ${p.area === 'BAR' ? 'Bar' : 'Cocina'} · ${fechaC(p.desde)} al ${fechaC(p.hasta)}` : ''}</h1>
+      <h1 className="pagina-ancha titulo-gestion">Informe quincenal{p ? ` · ${p.area === 'BAR' ? 'Bar' : 'Cocina'} · ${fechaC(p.desde)} al ${fechaC(p.hasta)}` : ''}</h1>
       {!cerrados.length ? (
         <p className="tarjeta">Todavía no hay períodos cerrados. El informe se arma con el cierre de cada quincena:
           primero el conteo de todas las zonas y luego <Link href="/consulta/cerrar">cerrar el período</Link>.</p>

@@ -38,7 +38,7 @@ export default async function Etiqueta({ params, searchParams }: { params: Promi
       <div className="no-imprimir">
         <p style={{ margin: '0 0 .3rem' }}><Link href={`/l/${encodeURIComponent(l.codigo)}`}>← Lote</Link></p>
         <h1>Etiqueta de {l.mpi}</h1>
-        <p className="suave">Una por envase. Se imprimen {n}; cambia la cantidad si hace falta.</p>
+        <p className="suave">Una por envase. Se imprimen {n}; cambie la cantidad si hace falta.</p>
         <form className="acciones" style={{ marginTop: 0, alignItems: 'center' }}>
           <label style={{ margin: 0, fontWeight: 400 }}>Cantidad <input name="n" type="number" min={1} max={40} defaultValue={n} style={{ width: 90 }} /></label>
           <button type="submit" className="secundario chico">Actualizar</button>

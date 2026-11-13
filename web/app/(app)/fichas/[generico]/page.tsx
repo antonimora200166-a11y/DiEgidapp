@@ -77,7 +77,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
       </div>
 
       {!f ? (
-        <div className="vacio">{r.nombre} aún no tiene ficha técnica.{d.puede_editar ? ' Créala con el botón de arriba.' : ` La crea el ${r.area === 'BAR' ? 'jefe de barra' : 'chef'}.`}</div>
+        <div className="vacio">{r.nombre} aún no tiene ficha técnica.{d.puede_editar ? ' Créela con el botón de arriba.' : ` La crea el ${r.area === 'BAR' ? 'jefe de barra' : 'chef'}.`}</div>
       ) : (
         <>
           <div className="cifras">
@@ -126,7 +126,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
                 <h2 className="sec-tit">Procedimiento{f.metodo ? ` · ${f.metodo}` : ''}</h2>
                 {f.procedimiento.length
                   ? <ol className="pasos-ficha">{f.procedimiento.map((p, i) => <li key={i}>{p}</li>)}</ol>
-                  : <div className="vacio">Aún no hay pasos escritos.{d.puede_editar && d.es_vigente ? ' Agrégalos en Editar.' : ''}</div>}
+                  : <div className="vacio">Aún no hay pasos escritos.{d.puede_editar && d.es_vigente ? ' Agréguelos en Editar.' : ''}</div>}
               </section>
 
               {(f.descripcion || f.presentacion) && (
@@ -143,7 +143,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
                 {d.puntos.length
                   ? d.puntos.map((p, i) => <div key={i} className="punto"><span className={`pill ${tipoPunto(p.tipo).c}`}>{tipoPunto(p.tipo).t}</span><span>{p.texto}</span></div>)
                   : <div className="aviso" style={{ margin: 0 }}><strong>Ficha sin puntos críticos</strong>
-                      <div>Antes de producir no se mostrará ninguna indicación.{d.puede_editar && d.es_vigente ? ' Complétalos en Editar.' : ''}</div></div>}
+                      <div>Antes de producir no se mostrará ninguna indicación.{d.puede_editar && d.es_vigente ? ' Complételos en Editar.' : ''}</div></div>}
                 <div className="punto"><span className="pill aviso">Alérgenos</span>
                   <span>{f.alergenos.length ? f.alergenos.join(', ') : <span className="suave">Ninguno declarado</span>}</span></div>
               </section>

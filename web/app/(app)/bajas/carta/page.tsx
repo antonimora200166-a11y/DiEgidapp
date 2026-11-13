@@ -47,7 +47,7 @@ export default async function PaginaBajasCarta({ searchParams }: { searchParams:
       {puede ? (
         <RegistrarCarta key={area} area={area} carta={(carta ?? []).map((g) => ({ id: g.id, nombre: g.nombre }))} zonas={zonas ?? []}
                         personas={(personas ?? []) as { id: string; nombre: string; rol: string; autoriza: boolean }[]} yo={perfil.id} exigePin={exigePin === true} />
-      ) : <p className="suave">No registras en esta área; aquí ves lo registrado.</p>}
+      ) : <p className="suave">No registra en esta área; aquí ve lo registrado.</p>}
       <ListaBajasCarta filas={(filas ?? []) as FilaBajaCarta[]} esAdmin={esAdmin} />
     </>
   );

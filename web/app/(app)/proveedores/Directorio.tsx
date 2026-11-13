@@ -37,7 +37,7 @@ export default function Directorio({ proveedores, soloLectura }: { proveedores: 
   return (
     <div className="pagina-ancha">
       <p className="suave">
-        La lista de proveedores, para tenerla en orden: corrige el nombre y el NIT, y desactiva el que ya no se usa (sale de las listas de
+        La lista de proveedores, para tenerla en orden: corrija el nombre y el NIT, y desactive el que ya no se usa (sale de las listas de
         Recibir y de las fotos, pero su historia queda). Al cambiar un nombre, el viejo se sigue reconociendo en las facturas.
       </p>
       <div className="fila" style={{ marginBottom: '.5rem' }}>

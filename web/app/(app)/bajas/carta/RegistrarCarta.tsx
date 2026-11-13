@@ -36,10 +36,10 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo, exige
     return q.length < 2 ? [] : carta.filter((c) => sinTilde(c.nombre).includes(q)).slice(0, 8);
   }, [buscar, carta]);
   const und = Number(unidades.replace(',', '.'));
-  const falta = !tipo ? 'Escoge si es cortesía o mal hecho.' : !producto ? 'Escoge el producto.' : !(und > 0) ? 'Escribe las unidades.'
-    : !zona ? 'Escoge la zona de donde salió.' : tipo === 'CORTESIA' && !autoriza ? 'Escoge quién autorizó.'
-    : (tipo === 'MAL_HECHO' || cargo) && !responsable ? 'Escoge el responsable.'
-    : exigePin && autoriza && !/^[0-9]{4,6}$/.test(pin) ? 'Escribe el PIN de quien autorizó.' : null;
+  const falta = !tipo ? 'Escoja si es cortesía o mal hecho.' : !producto ? 'Escoja el producto.' : !(und > 0) ? 'Escriba las unidades.'
+    : !zona ? 'Escoja la zona de donde salió.' : tipo === 'CORTESIA' && !autoriza ? 'Escoja quién autorizó.'
+    : (tipo === 'MAL_HECHO' || cargo) && !responsable ? 'Escoja el responsable.'
+    : exigePin && autoriza && !/^[0-9]{4,6}$/.test(pin) ? 'Escriba el PIN de quien autorizó.' : null;
 
   function guardar(conMotivo: boolean) {
     setResultado(null);
@@ -82,7 +82,7 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo, exige
         </div>
       ) : (
         <>
-          <input id="producto" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Escribe el nombre: negroni, burrata…" autoComplete="off" />
+          <input id="producto" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Escriba el nombre: negroni, burrata…" autoComplete="off" />
           {opciones.length > 0 && (
             <div className="chips-sel" style={{ marginTop: '.4rem' }}>
               {opciones.map((o) => <button key={o.id} type="button" onClick={() => setProducto(o)}>{o.nombre}</button>)}
@@ -120,7 +120,7 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo, exige
         <div>
           <label htmlFor="resp">Responsable {tipo === 'MAL_HECHO' || cargo ? '' : <span className="ayuda">opcional (quién la entregó)</span>}</label>
           <select id="resp" value={responsable} onChange={(e) => setResponsable(e.target.value)}>
-            <option value="">— Escoge —</option>
+            <option value="">— Escoja —</option>
             {personas.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
           </select>
         </div>

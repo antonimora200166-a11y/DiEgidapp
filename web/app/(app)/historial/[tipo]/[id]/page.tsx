@@ -116,7 +116,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
       {!anulado && (
         d.puede_anular
           ? <div className="acciones"><Anular tipo={tipo} id={d.id} etiqueta={`Anular ${NOMBRE_TIPO[tipo].singular.toLowerCase()}`} exigePin={exigePin === true} /></div>
-          : <p className="suave" style={{ fontSize: '.88rem' }}>Si hay un error, pídele al jefe del área o a administración que lo anule desde aquí.</p>
+          : <p className="suave" style={{ fontSize: '.88rem' }}>Si hay un error, pídale al jefe del área o a administración que lo anule desde aquí.</p>
       )}
     </>
   );

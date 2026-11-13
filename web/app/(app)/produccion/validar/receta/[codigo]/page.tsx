@@ -51,33 +51,33 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
       {r.estado === 'APROBADA' ? (
         <p className="exito">Ya se aprobó. <Link href={`/fichas/${r.generico_id}`}>Ver la ficha</Link></p>
       ) : !datos || !inicial ? (
-        <p className="aviso">Aún no tiene {F.resultado} elegida. Elígela en <Link href={`/produccion/validar?${pf}tab=recetas`}>{F.recetas}</Link>.</p>
+        <p className="aviso">Aún no tiene {F.resultado} elegida. Elíjala en <Link href={`/produccion/validar?${pf}tab=recetas`}>{F.recetas}</Link>.</p>
       ) : (
         <>
           <div className="dos-col pagina-ancha" style={{ marginBottom: '1rem' }}>
             <section className="tarjeta">
-              <h2 className="sec-tit">Antes de aprobar, revisa</h2>
+              <h2 className="sec-tit">Antes de aprobar, revise</h2>
               <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'grid', gap: '.35rem' }}>
                 {clave === 'platos' ? (
                   <>
-                    <li><strong>Porciones</strong>: la receta rinde {r.rendimiento ?? 1} {r.unidad ?? 'porciones'}. Las MPI van en porciones: si una no tiene el peso de su porción, escríbelo en la línea (factor) o la ficha no la costea.</li>
-                    <li><strong>Componentes</strong>: cada subreceta es una MPI; si alguna sale «sin emparejar», elígele su MPI en <Link href="/produccion/validar?tab=recetas">Validar MPI</Link>.</li>
+                    <li><strong>Porciones</strong>: la receta rinde {r.rendimiento ?? 1} {r.unidad ?? 'porciones'}. Las MPI van en porciones: si una no tiene el peso de su porción, escríbalo en la línea (factor) o la ficha no la costea.</li>
+                    <li><strong>Componentes</strong>: cada subreceta es una MPI; si alguna sale «sin emparejar», elíjale su MPI en <Link href="/produccion/validar?tab=recetas">Validar MPI</Link>.</li>
                   </>
                 ) : F.conIngredientes ? (
                   <>
-                    <li><strong>Neto esperado en gramos</strong>: {r.unidad === 'g' ? `el recetario dice ${r.rendimiento} g; confírmalo.`
-                      : `el recetario dice ${r.rendimiento ?? '—'} ${r.unidad ?? ''}. Pesa una tanda terminada.`}
+                    <li><strong>Neto esperado en gramos</strong>: {r.unidad === 'g' ? `el recetario dice ${r.rendimiento} g; confírmelo.`
+                      : `el recetario dice ${r.rendimiento ?? '—'} ${r.unidad ?? ''}. Pese una tanda terminada.`}
                       {pr.suma_entrada_g ? ` Lo que entra suma ≈ ${pr.suma_entrada_g.toLocaleString('es-CO')} g${pr.suma_completa ? '' : ' (sin contar lo que va en unidades)'}.` : ''}</li>
-                    <li><strong>Vida útil</strong>: el recetario no la trae; agrégala según dónde se guarde.</li>
+                    <li><strong>Vida útil</strong>: el recetario no la trae; agréguela según dónde se guarde.</li>
                   </>
                 ) : (
-                  <li><strong>Ingredientes</strong>: se dejan los de la ficha (ya costeados). Compáralos con los de la carta a la derecha y ajusta cantidades si cambiaron.</li>
+                  <li><strong>Ingredientes</strong>: se dejan los de la ficha (ya costeados). Compárelos con los de la carta a la derecha y ajuste cantidades si cambiaron.</li>
                 )}
-                {(pr.puntos ?? []).length > 0 && <li><strong>Puntos críticos</strong>: los propuso la app con el texto de los pasos ({(pr.puntos ?? []).map((x) => tipoPunto(x.tipo).t.toLowerCase()).join(', ')}). Quita o ajusta los que no sirvan.</li>}
-                {sugeridos.length > 0 && <li><strong>Alérgenos sugeridos por los ingredientes</strong>: {sugeridos.join(', ')}. Ya van marcados; desmarca los que no apliquen.</li>}
+                {(pr.puntos ?? []).length > 0 && <li><strong>Puntos críticos</strong>: los propuso la app con el texto de los pasos ({(pr.puntos ?? []).map((x) => tipoPunto(x.tipo).t.toLowerCase()).join(', ')}). Quite o ajuste los que no sirvan.</li>}
+                {sugeridos.length > 0 && <li><strong>Alérgenos sugeridos por los ingredientes</strong>: {sugeridos.join(', ')}. Ya van marcados; desmarque los que no apliquen.</li>}
                 {(pr.observaciones ?? []).length > 0 && <li><strong>Notas del documento</strong>: van en observaciones.</li>}
                 {faltan.length > 0 && <li style={{ color: 'var(--aviso)' }}><strong>{faltan.length} ingrediente(s) sin emparejar</strong> no entran a la ficha:{' '}
-                  {faltan.map((l) => l.nombre ?? l.codigo).join(', ')}. <Link href={faltan.some((l) => l.tipo === 'ing') ? '/produccion/validar?tab=ingredientes' : '/produccion/validar?tab=recetas'}>Emparéjalos</Link> y vuelve, o agrégalos abajo.</li>}
+                  {faltan.map((l) => l.nombre ?? l.codigo).join(', ')}. <Link href={faltan.some((l) => l.tipo === 'ing') ? '/produccion/validar?tab=ingredientes' : '/produccion/validar?tab=recetas'}>Emparéjelos</Link> y vuelva, o agréguelos abajo.</li>}
               </ul>
             </section>
             <details className="tarjeta" open={!F.lineasDeReceta}>

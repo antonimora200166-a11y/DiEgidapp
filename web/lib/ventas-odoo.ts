@@ -49,7 +49,7 @@ export function leerTablaDinamica(hoja: Hoja, impoconsumoPct = 8): ReporteVentas
     const fecha = etiqueta ? fechaOdoo(etiqueta) : null;
     if (fecha) columnas.push({ col, fecha, medida });   // la columna «Total» del final no tiene fecha
   }
-  if (!columnas.length) throw new Error('No encontré los días en el encabezado. En Odoo deja los días en las columnas.');
+  if (!columnas.length) throw new Error('No encontré los días en el encabezado. En Odoo deje los días en las columnas.');
   const hayNeto = columnas.some((c) => c.medida === 'neto');
   const medidaValor: Medida = hayNeto ? 'neto' : 'bruto';
   const factor = hayNeto ? 1 : 1 / (1 + impoconsumoPct / 100);

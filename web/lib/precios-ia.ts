@@ -86,7 +86,7 @@ export type ResultadoLectura = { ok: true; lectura: LecturaPrecios } | { ok: fal
 
 export async function leerPreciosConIA(datos: Uint8Array, tipo: string): Promise<ResultadoLectura> {
   if (!process.env.ANTHROPIC_API_KEY) {
-    return { ok: false, error: 'La lectura con IA no está configurada (falta ANTHROPIC_API_KEY en el servidor). Avísale a administración.' };
+    return { ok: false, error: 'La lectura con IA no está configurada (falta ANTHROPIC_API_KEY en el servidor). Avísele a administración.' };
   }
   const base64 = Buffer.from(datos).toString('base64');
   const adjunto: Anthropic.Beta.BetaContentBlockParam = tipo === 'application/pdf'
@@ -104,15 +104,15 @@ export async function leerPreciosConIA(datos: Uint8Array, tipo: string): Promise
       system: INSTRUCCIONES,
       messages: [{ role: 'user', content: [adjunto, { type: 'text', text: 'Saca los precios de esta foto.' }] }],
     });
-    if (respuesta.stop_reason === 'refusal') return { ok: false, error: 'La IA no quiso leer esta imagen. Prueba con otra foto.' };
+    if (respuesta.stop_reason === 'refusal') return { ok: false, error: 'La IA no quiso leer esta imagen. Pruebe con otra foto.' };
     if (respuesta.stop_reason === 'max_tokens') return { ok: false, error: 'La foto tiene demasiadas líneas para leerla de una vez: tómala por partes.' };
     const json = respuesta.content.find((b) => b.type === 'text')?.text;
     const leida = Lectura.safeParse(json ? JSON.parse(json) : null);
     if (!leida.success) return { ok: false, error: 'La IA devolvió una respuesta que no se entiende. Inténtalo de nuevo.' };
     return { ok: true, lectura: leida.data };
   } catch (e) {
-    if (e instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espera un minuto e inténtalo de nuevo.' };
-    if (e instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de la API de Claude no es válida. Avísale a administración.' };
+    if (e instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espere un minuto e inténtelo de nuevo.' };
+    if (e instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de la API de Claude no es válida. Avísele a administración.' };
     if (e instanceof Anthropic.APIConnectionError) return { ok: false, error: 'No hubo conexión con la IA. Inténtalo de nuevo.' };
     if (e instanceof Anthropic.APIError) return { ok: false, error: `La IA respondió con un error (${e.status}). Inténtalo de nuevo.` };
     if (e instanceof SyntaxError) return { ok: false, error: 'La IA devolvió una respuesta que no se entiende. Inténtalo de nuevo.' };

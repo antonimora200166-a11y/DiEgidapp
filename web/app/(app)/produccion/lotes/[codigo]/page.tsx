@@ -43,7 +43,7 @@ function Origenes({ o, ub, vePesos }: { o: Origen[]; ub: string; vePesos: boolea
           <details>
             <summary className="enlace-traza">
               <span><strong>{x.mpi}</strong> · <span className="cod">{x.codigo}</span> <span className="pill info">MPI</span>
-                <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>Lote del {fecha(x.fecha)} · toca para ver de dónde salió · <Link href={`/produccion/lotes/${encodeURIComponent(x.codigo)}`}>abrir</Link></span></span>
+                <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>Lote del {fecha(x.fecha)} · toque para ver de dónde salió · <Link href={`/produccion/lotes/${encodeURIComponent(x.codigo)}`}>abrir</Link></span></span>
               <span className="n">{num(x.cantidad, 1)} {ub}</span>
             </summary>
             {x.cadena && <div className="hijos-traza"><Atras insumos={x.cadena} vePesos={vePesos} /></div>}

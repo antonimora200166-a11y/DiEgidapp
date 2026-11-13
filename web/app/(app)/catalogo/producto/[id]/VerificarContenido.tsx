@@ -12,7 +12,7 @@ export default function VerificarContenido({ id, texto, verificado }: { id: stri
   if (hecho) return <p className="suave" style={{ fontSize: '.88rem' }}>✔ Contenido verificado ({texto}) el {hecho}.</p>;
   return (
     <div className="aviso" style={{ fontSize: '.9rem' }}>
-      <strong>Contenido sin verificar:</strong> la app cuenta cada unidad como {texto}. Mira una unidad real (etiqueta o báscula) y confírmalo.
+      <strong>Contenido sin verificar:</strong> la app cuenta cada unidad como {texto}. Mire una unidad real (etiqueta o báscula) y confírmelo.
       {error && <p className="error" style={{ margin: '.4rem 0 0' }}>{error}</p>}
       <div className="acciones" style={{ marginTop: '.4rem' }}>
         <button type="button" className="chico" disabled={pend} onClick={() => start(async () => {

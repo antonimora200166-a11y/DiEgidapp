@@ -18,7 +18,7 @@ export async function crearUsuario(_: EstadoUsuario, form: FormData): Promise<Es
   if (!USUARIO_VALIDO.test(usuario)) return { error: 'El usuario va en minúsculas, de 3 a 30 letras, números, punto o guion (ej.: frank.motato).' };
   if (nombre.length < 3) return { error: 'Falta el nombre completo.' };
   if (clave.length < 8) return { error: 'La contraseña debe tener al menos 8 caracteres.' };
-  if (!def) return { error: 'Elige un rol.' };
+  if (!def) return { error: 'Elija un rol.' };
   // el área sale del rol; el admin y servicio pueden marcar áreas a mano
   const marcadas = form.getAll('areas').map(String).filter((a): a is Area => a === 'BAR' || a === 'COCINA');
   const areas = def.areas.length && rol !== 'admin' ? def.areas : marcadas;
@@ -39,7 +39,7 @@ export async function crearUsuario(_: EstadoUsuario, form: FormData): Promise<Es
     return { error: `No se pudo crear el perfil: ${e2.message}` };
   }
   revalidatePath('/admin/usuarios');
-  return { ok: `Usuario «${usuario}» creado. Entrégale su contraseña en persona; al entrar, la app le pedirá una propia.` };
+  return { ok: `Usuario «${usuario}» creado. Entréguele su contraseña en persona; al entrar, la app le pedirá una propia.` };
 }
 
 // Contraseña temporal legible para dictarla en persona («Egida-4821-kiwi»)
@@ -55,7 +55,7 @@ export async function restablecerClave(_: EstadoRestablecer, form: FormData): Pr
   const yo = await perfilActual();
   if (yo.rol !== 'admin') return { error: 'Solo administración restablece contraseñas.' };
   const id = String(form.get('id') || '');
-  if (!id || id === yo.id) return { error: 'Tu propia contraseña se cambia en Mi cuenta.' };
+  if (!id || id === yo.id) return { error: 'Su propia contraseña se cambia en Mi cuenta.' };
   const clave = claveTemporal();
   const { error } = await supabaseServicio().auth.admin.updateUserById(id, { password: clave });
   if (error) return { error: `No se pudo restablecer: ${error.message}` };

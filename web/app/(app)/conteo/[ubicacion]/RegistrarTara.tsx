@@ -22,7 +22,7 @@ export default function RegistrarTara({ productoId, nombre, contenido, unidad, o
   }
   const guardar = () => {
     const n = Number(peso.replace(',', '.'));
-    if (!peso.trim() || !Number.isFinite(n) || n <= 0) { setMsg({ ok: false, texto: 'Escribe el peso en gramos.' }); return; }
+    if (!peso.trim() || !Number.isFinite(n) || n <= 0) { setMsg({ ok: false, texto: 'Escriba el peso en gramos.' }); return; }
     iniciar(async () => {
       const r = await registrarTara(productoId, modo, n);
       setMsg({ ok: r.ok, texto: r.ok ? r.mensaje ?? 'Tara registrada.' : r.error ?? 'No se pudo registrar.' });
@@ -41,8 +41,8 @@ export default function RegistrarTara({ productoId, nombre, contenido, unidad, o
       </div>
       <div className="suave" style={{ fontSize: '.8rem' }}>
         {modo === 'LLENA'
-          ? `Pesa una botella cerrada de ${contenido} ${unidad}, con tapa. La app le resta el contenido (${contenido} ${unidad} × la densidad del licor).`
-          : 'Pesa la botella vacía, con su tapa y su pico vertedor si lo usa.'}
+          ? `Pese una botella cerrada de ${contenido} ${unidad}, con tapa. La app le resta el contenido (${contenido} ${unidad} × la densidad del licor).`
+          : 'Pese la botella vacía, con su tapa y su pico vertedor si lo usa.'}
       </div>
       <div className="fila" style={{ gridTemplateColumns: '1fr auto', alignItems: 'end', marginTop: '.4rem' }}>
         <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>

@@ -22,8 +22,8 @@ export default async function Clases() {
       <p className="suave pagina-ancha">
         Lo que se compra y no es alimento se separa en <strong>desechables</strong> (pueden ir en una ficha), <strong>aseo y limpieza</strong>
         {' '}(gasto del área), <strong>menaje</strong> y <strong>herramientas o equipos</strong> (no se gastan: se cuentan y salen por baja).
-        Esta es una propuesta por el nombre y la categoría de cada uno. <strong>Nada cambia hasta que la aceptes.</strong> Acepta por grupos,
-        corrige la clase de los que estén mal y rechaza lo que sí es materia prima.
+        Esta es una propuesta por el nombre y la categoría de cada uno. <strong>Nada cambia hasta que la acepte.</strong> Acepte por grupos,
+        corrija la clase de los que estén mal y rechace lo que sí es materia prima.
       </p>
       <PropuestasClase filas={(data ?? []) as PropuestaClase[]} soloLectura={perfil.rol === 'auditor'} />
     </>

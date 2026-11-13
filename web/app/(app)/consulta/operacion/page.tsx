@@ -69,7 +69,7 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
   return (
     <>
       <p style={{ margin: '0 0 .3rem' }}><Link href={`/consulta?${new URLSearchParams({ desde, hasta, area })}`}>← Consulta</Link></p>
-      <h1 className="pagina-ancha">Inventario, compras, producción y pérdidas</h1>
+      <h1 className="pagina-ancha titulo-gestion">Inventario, compras, producción y pérdidas</h1>
       <Exportar params={{ desde, hasta, area }} bloques={[{ bloque: 'inventario', t: 'Inventario' }, { bloque: 'compras', t: 'Compras' }, { bloque: 'produccion', t: 'Producción' }, { bloque: 'perdidas', t: 'Pérdidas' }]} />
       <div className="tarjeta" style={{ display: 'grid', gap: '.6rem', marginBottom: '1rem' }}>
         <nav className="segmentos" style={{ gap: '.4rem' }}>

@@ -170,7 +170,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
   return (
     <>
       <p className="suave" style={{ marginTop: 0 }}>
-        {receta ? <>Revisa la propuesta y apruébala: nace la <strong>versión {(f?.version ?? 0) + 1}</strong> de la ficha, con origen {(receta.fuente === 'CARTA COCINA' ? 'RECETARIO COCINA' : receta.fuente).toLowerCase()}.</>
+        {receta ? <>Revise la propuesta y apruébela: nace la <strong>versión {(f?.version ?? 0) + 1}</strong> de la ficha, con origen {(receta.fuente === 'CARTA COCINA' ? 'RECETARIO COCINA' : receta.fuente).toLowerCase()}.</>
           : f ? <>Al guardar nace la <strong>versión {f.version + 1}</strong>; la {f.version} queda tal cual
           {Number(f.lotes) > 0 ? ` para los ${f.lotes} lote(s) que se hicieron con ella` : ''}.</> : 'Primera versión de esta ficha.'}
       </p>
@@ -255,7 +255,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                     </div>
                     {sinConv && i && (
                       <div className="aviso" style={{ margin: '.5rem 0 0', padding: '.45rem .6rem', fontSize: '.85rem' }}>
-                        {nombre} no tiene conversión de {l.unidad} a {i.unidad_base}. Mídela una vez y la ficha podrá costearlo:
+                        {nombre} no tiene conversión de {l.unidad} a {i.unidad_base}. Mídala una vez y la ficha podrá costearlo:
                         <div style={{ display: 'flex', gap: '.4rem', alignItems: 'center', marginTop: '.35rem' }}>
                           <span style={{ whiteSpace: 'nowrap' }}>1 {l.unidad} =</span>
                           <input inputMode="decimal" value={l.factor} onChange={(e) => poner(l.clave, { factor: e.target.value })} style={{ maxWidth: 110 }} aria-label={`Equivalencia de ${l.unidad} en ${i.unidad_base}`} />
@@ -314,11 +314,11 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                         title="La IA lee los ingredientes, cantidades, método y presentación de este editor y propone una descripción">
                   {pensando ? 'Pensando la descripción…' : propuesta ? '✦ Otra propuesta' : '✦ Proponer descripción con IA'}
                 </button>
-                {!lineas.length && <span className="ayuda"> agrega ingredientes primero</span>}
+                {!lineas.length && <span className="ayuda"> agregue ingredientes primero</span>}
                 {errorIA && <div className="error" role="alert" style={{ marginTop: '.45rem' }}>{errorIA}</div>}
                 {propuesta && (
                   <div className="tarjeta" style={{ borderStyle: 'dashed', marginTop: '.5rem', padding: '.7rem .8rem' }} role="status">
-                    <div className="suave" style={{ fontSize: '.8rem', marginBottom: '.3rem' }}>Propuesta de la IA según los ingredientes · tú decides</div>
+                    <div className="suave" style={{ fontSize: '.8rem', marginBottom: '.3rem' }}>Propuesta de la IA según los ingredientes · usted decide</div>
                     <p style={{ margin: '0 0 .5rem' }}>{propuesta.descripcion}</p>
                     {propuesta.perfil.length > 0 && (
                       <ul className="renglones" style={{ fontSize: '.85rem', margin: '0 0 .5rem' }}>
@@ -330,7 +330,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                       <button type="button" className="chico" onClick={() => { setDescripcion(propuesta.descripcion); setPropuesta(null); }}>Usar esta descripción</button>
                       <button type="button" className="secundario chico" onClick={() => setPropuesta(null)}>Descartar</button>
                     </div>
-                    <div className="ayuda" style={{ marginTop: '.35rem' }}>Al usarla puedes corregirla arriba; queda en la ficha solo cuando guardes la versión.</div>
+                    <div className="ayuda" style={{ marginTop: '.35rem' }}>Al usarla puede corregirla arriba; queda en la ficha solo cuando guarde la versión.</div>
                   </div>
                 )}
               </div>
@@ -343,7 +343,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
         <div className="pila">
           <section className="tarjeta">
             <h2 className="sec-tit">Puntos críticos · se muestran antes de producir</h2>
-            {puntos.length === 0 && <div className="vacio">Sin puntos críticos. Escribe lo que no se puede olvidar: temperaturas, tiempos, higiene, calidad.</div>}
+            {puntos.length === 0 && <div className="vacio">Sin puntos críticos. Escriba lo que no se puede olvidar: temperaturas, tiempos, higiene, calidad.</div>}
             {puntos.map((p, i) => (
               <div key={i} style={{ display: 'grid', gap: '.35rem', padding: '.5rem 0', borderBottom: '1px solid var(--borde)' }}>
                 <div style={{ display: 'flex', gap: '.4rem' }}>
@@ -378,7 +378,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
 
             <label>Presentaciones <span className="ayuda">en qué porciones se guarda lo que sale de una tanda</span></label>
             {pres.length === 0 && <div className="suave" style={{ fontSize: '.85rem', marginBottom: '.4rem' }}>
-              Sin presentaciones: se guarda todo junto. Agrega una por cada forma de porcionar (p. ej. 200 {ub} y 150 {ub}, o 22 porciones de 3 tapas).</div>}
+              Sin presentaciones: se guarda todo junto. Agregue una por cada forma de porcionar (p. ej. 200 {ub} y 150 {ub}, o 22 porciones de 3 tapas).</div>}
             {pres.map((p, i) => (
               <div key={p.clave} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '.4rem', padding: '.5rem 0', borderBottom: '1px solid var(--borde)' }}>
                 <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Cada una lleva ({ub})
@@ -431,7 +431,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
 
           {(sug.almac.length > 0 || sug.emp || sug.obs.length > 0) && (
             <section className="tarjeta" style={{ borderStyle: 'dashed' }}>
-              <h2 className="sec-tit">Anotado antes de la app · úsalo si sirve</h2>
+              <h2 className="sec-tit">Anotado antes de la app · úselo si sirve</h2>
               <ul className="renglones">
                 {sug.almac.map((s) => (
                   <li key={s.c}><span>{s.c} {s.dias} días <span className="suave">· de {s.de}</span></span>
@@ -474,7 +474,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
         <button type="button" disabled={enviando || !codigo.trim() || !lineas.length || (!!f && !receta && !motivo.trim()) || faltaNeto} onClick={guardar}>
           {enviando ? 'Guardando…' : receta ? 'Aprobar como ficha' : f ? `Guardar versión ${f.version + 1}` : 'Crear ficha'}
         </button>
-        {faltaNeto && <span className="suave" style={{ fontSize: '.85rem', alignSelf: 'center' }}>Falta el neto esperado en {ub}: pesa una tanda terminada.</span>}
+        {faltaNeto && <span className="suave" style={{ fontSize: '.85rem', alignSelf: 'center' }}>Falta el neto esperado en {ub}: pese una tanda terminada.</span>}
         {pendientes > 0 && <span className="suave" style={{ fontSize: '.85rem', alignSelf: 'center' }}>{pendientes} línea(s) por completar: se puede guardar igual.</span>}
       </div>
     </>

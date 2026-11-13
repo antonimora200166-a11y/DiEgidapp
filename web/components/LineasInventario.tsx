@@ -83,7 +83,7 @@ export default function LineasInventario({ productos, zona, lineas, setLineas, o
               <div className="suave" style={{ fontSize: '.82rem', marginTop: '.3rem' }}>
                 {b !== null && l.modo === 'compra' && porCompra(p) && <>= {fmtCantidad(b)} {p.unidad_base} · </>}
                 {b !== null && l.modo === 'base' && porCompra(p) && <>= {fmtCantidad(b / p.contenido_base!)} {p.unidad_compra.toLowerCase()} de {fmtCantidad(p.contenido_base!)} {p.unidad_base} · </>}
-                {zona ? <>en la zona hay {fmtCantidad(hay)} {p.unidad_base}</> : 'elige la zona para ver el saldo'}
+                {zona ? <>en la zona hay {fmtCantidad(hay)} {p.unidad_base}</> : 'elija la zona para ver el saldo'}
                 {v !== null && <> · vale {pesos(v)}</>}
                 {ofrecerTodo && hay > 0 && (
                   <> · <button type="button" className="secundario mini"
@@ -92,7 +92,7 @@ export default function LineasInventario({ productos, zona, lineas, setLineas, o
               </div>
               {b !== null && zona && b > hay && (
                 <div className="aviso" style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
-                  El kardex no tiene tanto en esta zona: al guardar te pedirá un motivo.
+                  El kardex no tiene tanto en esta zona: al guardar le pedirá un motivo.
                 </div>
               )}
             </li>

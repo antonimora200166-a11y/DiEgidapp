@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
   if (!b) return NextResponse.json({ error: 'Bloque no válido.' }, { status: 400 });
   const supabase = await supabaseServidor();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Inicia sesión.' }, { status: 401 });
+  if (!user) return NextResponse.json({ error: 'Inicie sesión.' }, { status: 401 });
   const { data, error } = await supabase.rpc(b.rpc, b.args(q));
   if (error) return NextResponse.json({ error: error.message }, { status: error.code === '42501' ? 403 : 400 });
   const buf = crearXlsx(libro(b.titulo, data, q));

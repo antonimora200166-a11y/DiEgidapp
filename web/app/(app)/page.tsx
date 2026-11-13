@@ -29,7 +29,7 @@ function pendientesDe(r: ResumenArea, varias: boolean, hoy: string, vePrecios: b
   }
   if (!r.kardex) p.push({ texto: 'Falta el conteo inicial: sin él no hay existencias ni costos', area, href: '/conteo', icono: 'contar', tono: 'urgente' });
   if (r.conteo_tocan) p.push({ cifra: r.conteo_tocan, texto: `${plural(r.conteo_tocan, 'producto', 'productos')} por contar en ${r.conteo_zonas} ${plural(r.conteo_zonas, 'zona', 'zonas')}`, area, href: '/conteo', icono: 'contar', tono: 'aviso' });
-  if (r.bajo_minimo) p.push({ cifra: r.bajo_minimo, texto: `${plural(r.bajo_minimo, 'producto', 'productos')} en el mínimo: arma el pedido`, area, href: `/pedido?area=${r.area}`, icono: 'recibir', tono: 'aviso' });
+  if (r.bajo_minimo) p.push({ cifra: r.bajo_minimo, texto: `${plural(r.bajo_minimo, 'producto', 'productos')} en el mínimo: arme el pedido`, area, href: `/pedido?area=${r.area}`, icono: 'recibir', tono: 'aviso' });
   if (vePrecios && r.lotes_sin_costo) p.push({ cifra: r.lotes_sin_costo, texto: `${plural(r.lotes_sin_costo, 'lote', 'lotes')} del último mes sin costo completo`, area, href: '/producir/sin-costo', icono: 'producir', tono: 'info' });
   if (r.propuestas) p.push({ cifra: r.propuestas, texto: `${plural(r.propuestas, 'propuesta', 'propuestas')} de unidad por revisar`, area, href: '/catalogo/unidades', icono: 'catalogo', tono: 'info' });
   if (r.pares) p.push({ cifra: r.pares, texto: `${plural(r.pares, 'posible duplicado', 'posibles duplicados')} por decidir`, area, href: '/catalogo/revision', icono: 'revision', tono: 'info' });
@@ -104,7 +104,7 @@ export default async function Inicio() {
           </nav>
         </section>
       )) : (
-        <p className="tarjeta">Todavía no hay pantallas para tu rol. Las de servicio llegan con la carta y las fichas.</p>
+        <p className="tarjeta">Todavía no hay pantallas para su rol. Las de servicio llegan con la carta y las fichas.</p>
       )}
     </>
   );

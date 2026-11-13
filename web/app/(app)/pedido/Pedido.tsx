@@ -27,7 +27,7 @@ export default function Pedido({ lineas }: { lineas: LineaPedido[] }) {
     const texto = [`Pedido Di Égida — ${fmtFecha(new Date())}`, '',
       ...ls.filter((l) => n(l.producto_id) > 0).map((l) => `• ${n(l.producto_id)} ${l.unidad_compra.toLowerCase()} — ${nombre(l)}`), '', 'Gracias.'].join('\n');
     try { await navigator.clipboard.writeText(texto); setCopiado(prov); setTimeout(() => setCopiado(null), 2500); }
-    catch { window.prompt('Copia el pedido:', texto); }
+    catch { window.prompt('Copie el pedido:', texto); }
   }
 
   return (

@@ -112,7 +112,7 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
 
   return (
     <>
-      <h1 className="pagina-ancha">Consulta</h1>
+      <h1 className="pagina-ancha titulo-gestion">Consulta</h1>
       {porCerrar.length > 0 && <TarjetaCierre periodos={porCerrar} />}
       {/* filtros compactos: período en un chip que se abre y el área en un segmento; las cifras quedan arriba */}
       <div className="filtros-consulta">
@@ -151,7 +151,7 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
       </p>
 
       {sinDatos ? (
-        <p className="tarjeta">No hay ventas cargadas en este período. <Link href="/consulta/ventas">Carga el reporte de Odoo</Link> o escoge «Todo lo cargado».</p>
+        <p className="tarjeta">No hay ventas cargadas en este período. <Link href="/consulta/ventas">Cargue el reporte de Odoo</Link> o escoja «Todo lo cargado».</p>
       ) : (
         <>
           {/* ------------------------------------------------ bloque 0: tres cifras principales y las demás */}
@@ -192,7 +192,7 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
             <p className="aviso falta-datos">
               <strong>Falta para ver costo real, real vs. teórico, pérdidas e inventario:</strong>{' '}
               {area === 'TODO'
-                ? <>escoge <Link href={enlace({ area: 'BAR' })}>Bar</Link> o <Link href={enlace({ area: 'COCINA' })}>Cocina</Link>.</>
+                ? <>escoja <Link href={enlace({ area: 'BAR' })}>Bar</Link> o <Link href={enlace({ area: 'COCINA' })}>Cocina</Link>.</>
                 : <>el <Link href="/conteo">conteo inicial</Link> y el <Link href={`/consulta/cerrar?area=${area}`}>primer cierre de período</Link>.</>}
             </p>
           )}

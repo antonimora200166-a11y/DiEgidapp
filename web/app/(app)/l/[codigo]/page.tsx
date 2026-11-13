@@ -26,7 +26,7 @@ export default async function Lote({ params }: { params: Promise<{ codigo: strin
         <p className={vencido ? 'error' : l.vence === hoy ? 'aviso' : 'exito'}>
           <strong>{vencido ? 'Vencido' : l.vence === hoy ? 'Vence hoy' : 'Sirve'}</strong>{vencido ? ' desde el ' : l.vence === hoy ? '' : ' hasta el '}
           {l.vence !== hoy && fecha(l.vence)}.
-          {vencido && ' Regístralo como baja.'}
+          {vencido && ' Regístrelo como baja.'}
         </p>
       )}
       <dl className="tarjeta datos">

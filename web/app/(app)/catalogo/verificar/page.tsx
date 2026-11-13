@@ -25,9 +25,9 @@ export default async function Verificar() {
       <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href="/catalogo">← Catálogo</Link></p>
       <h1 className="pagina-ancha">Verificar insumos A/B</h1>
       <p className="suave pagina-ancha">
-        Con el empaque en la mano, de arriba abajo: los primeros son los que más pesan en la compra. Mira que la <strong>unidad</strong>,
+        Con el empaque en la mano, de arriba abajo: los primeros son los que más pesan en la compra. Mire que la <strong>unidad</strong>,
         el <strong>contenido</strong> y el <strong>precio de una unidad de compra</strong> sean los reales. Si está bien, <em>Verificado</em>;
-        si no, <em>Corregir</em>. Si un parecido es el mismo insumo, mándalo a <Link href="/catalogo/revision">Revisar duplicados</Link> para unirlos.
+        si no, <em>Corregir</em>. Si un parecido es el mismo insumo, mándelo a <Link href="/catalogo/revision">Revisar duplicados</Link> para unirlos.
       </p>
       <Hoja filas={filas} soloLectura={perfil.rol === 'auditor'} vePesos={perfil.rol === 'admin'} />
     </>

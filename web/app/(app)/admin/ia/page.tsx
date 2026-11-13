@@ -30,10 +30,10 @@ export default async function EstadoIA({ searchParams }: { searchParams: Promise
           e.variable ? `Está puesta (termina en …${e.final}).` : 'No está. Vercel → Settings → Environment Variables, y después Redeploy.')}
         {e.variable && fila(e.clave === 'ok', 'Anthropic acepta la clave',
           e.clave === 'ok' ? `Sí, y la cuenta puede usar el modelo ${e.modelo}.`
-            : e.clave === 'invalida' ? 'No: la clave está mal copiada, se borró o no tiene permiso. Crea otra y reemplázala.'
+            : e.clave === 'invalida' ? 'No: la clave está mal copiada, se borró o no tiene permiso. Cree otra y reemplácela.'
               : `No se pudo comprobar (${e.detalle ?? 'sin conexión'}).`)}
         {e.clave === 'ok' && fila(e.prueba === null ? null : e.prueba === 'ok', 'Crédito en la cuenta',
-          e.prueba === null ? 'Sin probar: toca «Probar con un mensaje» (cuesta una fracción de centavo de dólar).'
+          e.prueba === null ? 'Sin probar: toque «Probar con un mensaje» (cuesta una fracción de centavo de dólar).'
             : e.prueba === 'ok' ? 'Sí: la IA respondió. La lectura de facturas está lista.'
               : e.prueba === 'sin-credito' ? 'La cuenta no tiene saldo: console.anthropic.com → Billing.'
                 : `La prueba falló (${e.detalle}).`)}
@@ -42,7 +42,7 @@ export default async function EstadoIA({ searchParams }: { searchParams: Promise
         {e.clave === 'ok' && e.prueba !== 'ok' && <Link className="boton" href="/admin/ia?probar=1">Probar con un mensaje</Link>}
         <Link className="boton secundario" href="/admin/ia">Volver a revisar</Link>
       </div>
-      <p className="suave" style={{ fontSize: '.85rem' }}>Si cambias la clave en Vercel, haz Redeploy: la app solo la lee al desplegarse.</p>
+      <p className="suave" style={{ fontSize: '.85rem' }}>Si cambia la clave en Vercel, haga Redeploy: la app solo la lee al desplegarse.</p>
     </>
   );
 }

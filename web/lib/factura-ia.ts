@@ -94,8 +94,8 @@ export async function leerFacturaConIA(datos: Uint8Array, tipo: string): Promise
     if (!leida.success) return { ok: false, error: 'La IA devolvió una respuesta que no se entiende. Registra las líneas a mano.' };
     return { ok: true, propuesta: leida.data };
   } catch (e) {
-    if (e instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espera un minuto e inténtalo de nuevo.' };
-    if (e instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de la API de Claude no es válida. Avísale a administración.' };
+    if (e instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espere un minuto e inténtelo de nuevo.' };
+    if (e instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de la API de Claude no es válida. Avísele a administración.' };
     if (e instanceof Anthropic.APIConnectionError) return { ok: false, error: 'No hubo conexión con la IA. Inténtalo de nuevo o registra las líneas a mano.' };
     if (e instanceof Anthropic.APIError) return { ok: false, error: `La IA respondió con un error (${e.status}). Registra las líneas a mano.` };
     if (e instanceof SyntaxError) return { ok: false, error: 'La IA devolvió una respuesta que no se entiende. Registra las líneas a mano.' };

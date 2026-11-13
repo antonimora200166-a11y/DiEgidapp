@@ -29,7 +29,7 @@ export default async function Conteo() {
   return (
     <>
       <h1>Contar</h1>
-      <p className="suave">Elige la zona que vas a recorrer. Cuenta lo que ves; lo que no cuentes no cambia.</p>
+      <p className="suave">Elija la zona que va a recorrer. Cuente lo que ve; lo que no cuente no cambia.</p>
       <p className="suave" style={{ fontSize: '.88rem' }}>
         Programa de conteos: clase A cada semana, B cada 15 días, C cada mes, desde el último conteo de cada producto en su zona.
         {totalToca > 0 ? <> Hoy tocan <strong>{totalToca}</strong> producto(s).</> : ' Hoy no toca ninguno.'}

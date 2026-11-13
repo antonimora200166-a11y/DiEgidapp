@@ -66,7 +66,7 @@ export default async function Revision({ searchParams }: { searchParams: Promise
     <>
       <h1>Revisar duplicados</h1>
       <p className="suave">
-        Posibles repetidos que dejó la migración. Decide si son <strong>el mismo insumo</strong> (se unen: nada se borra, el que sobra queda inactivo)
+        Posibles repetidos que dejó la migración. Decida si son <strong>el mismo insumo</strong> (se unen: nada se borra, el que sobra queda inactivo)
         o <strong>distintos</strong>. Llevas <strong>{decididos ?? 0} de {total}</strong>.
       </p>
       {total > 0 && (

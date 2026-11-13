@@ -96,7 +96,7 @@ function cantidadEscrita(t: string | null): { n: number; unidad: Unidad } | null
 // cantidad en la unidad base del producto, o el motivo por el que no se puede
 function aBase(l: Linea, p: ProductoPrecio | undefined): { base: number | null; problema: string | null } {
   const c = numero(l.cantidad);
-  if (!p) return { base: null, problema: 'Elige el producto.' };
+  if (!p) return { base: null, problema: 'Elija el producto.' };
   if (!(c > 0)) return { base: null, problema: 'Falta la cantidad.' };
   const ub = p.unidad_base;
   switch (l.unidad) {
@@ -110,11 +110,11 @@ function aBase(l: Linea, p: ProductoPrecio | undefined): { base: number | null; 
       if (ub === 'und') return { base: c, problema: null };
       const peso = l.peso.trim() ? numero(l.peso) : Number(p.peso_und);
       return peso > 0 ? { base: c * peso, problema: null }
-        : { base: null, problema: `${p.generico} va en ${ub}: escribe cuánto pesa cada unidad (aprox.).` };
+        : { base: null, problema: `${p.generico} va en ${ub}: escriba cuánto pesa cada unidad (aprox.).` };
     }
     case 'empaque': {
       const cont = l.corregir && !l.pres.variable ? numero(l.pres.contenido) : p.contenido_variable ? NaN : Number(p.contenido_base);
-      return cont > 0 ? { base: c * cont, problema: null } : { base: null, problema: 'El empaque de este producto no tiene contenido fijo: usa kg, g, litro o ml.' };
+      return cont > 0 ? { base: c * cont, problema: null } : { base: null, problema: 'El empaque de este producto no tiene contenido fijo: use kg, g, litro o ml.' };
     }
   }
 }
@@ -218,10 +218,10 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
     const nv = l.nuevo;
     if (!nv) return;
     const genExistente = nv.modo === 'presentacion' ? productos.find((x) => x.producto_id === nv.generico_id) : undefined;
-    if (nv.modo === 'presentacion' && !genExistente) { cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, error: 'Elige de qué producto es la presentación.' } })); return; }
+    if (nv.modo === 'presentacion' && !genExistente) { cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, error: 'Elija de qué producto es la presentación.' } })); return; }
     const ub = genExistente?.unidad_base ?? nv.unidad_base;
     const cont = nv.variable ? null : numero(nv.contenido);
-    if (!nv.variable && !(cont && cont > 0)) { cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, error: `Di cuánto trae 1 ${nv.unidad_compra || 'unidad'} en ${ub}, o marca «se pesa al recibir».` } })); return; }
+    if (!nv.variable && !(cont && cont > 0)) { cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, error: `Diga cuánto trae 1 ${nv.unidad_compra || 'unidad'} en ${ub}, o marque «se pesa al recibir».` } })); return; }
     cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: { ...nv, enviando: true, error: null } }));
     const areaNueva = genExistente?.area ?? nv.area;
     const r = await crearDesdeFoto(areaNueva, {
@@ -269,7 +269,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
     const marcarSinTerminar = (x: Foto): Foto => ({ ...x, lineas: x.lineas.map((l) => (sinTerminar.has(l.n)
       ? { ...l, resultado: { ok: false, mensaje: `No se guardó: ${sinTerminar.get(l.n)}` } } : l)) });
     if (!lineas.length) {
-      cambiarFoto(f.id, (x) => ({ ...marcarSinTerminar(x), error: 'No hay líneas listas para guardar: revisa las marcadas en rojo.' }));
+      cambiarFoto(f.id, (x) => ({ ...marcarSinTerminar(x), error: 'No hay líneas listas para guardar: revise las marcadas en rojo.' }));
       return;
     }
     setGuardando(f.id);
@@ -280,7 +280,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
     const pendientes = r.fallidos + sinTerminar.size;
     cambiarFoto(f.id, (x) => ({
       ...marcarSinTerminar(x),
-      error: pendientes ? `${r.ok} guardada(s); ${pendientes} sin guardar: corrige las marcadas en rojo y vuelve a guardar.` : null,
+      error: pendientes ? `${r.ok} guardada(s); ${pendientes} sin guardar: corrija las marcadas en rojo y vuelva a guardar.` : null,
       estado: pendientes ? 'listo' : 'guardado',
       lineas: marcarSinTerminar(x).lineas.map((l) => { const d = r.detalle.find((y) => y.n === l.n); return d ? { ...l, resultado: { ok: d.ok, mensaje: d.mensaje } } : l; }),
     }));
@@ -297,7 +297,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                  onChange={(e) => { subir(e.target.files); e.target.value = ''; }} />
         </label>
         <span className="suave" style={{ fontSize: '.85rem' }}>
-          Puedes subir varias a la vez. Cada foto se lee aparte; nada se guarda hasta que tocas «Guardar precios».
+          Puede subir varias a la vez. Cada foto se lee aparte; nada se guarda hasta que toque «Guardar precios».
         </span>
       </div>
 
@@ -321,7 +321,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                       <optgroup label="Todos">{proveedores.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</optgroup>
                     </select>
                     {f.proveedor_razon && <span className="ayuda">{f.proveedor_razon}{f.proveedor ? ` (en la foto: «${f.proveedor}»)` : ''}</span>}
-                    {!f.proveedor_id && f.proveedor && <span className="ayuda">Se guarda con el nombre de la foto. Para que quede en la lista, créalo en Recibir o pídeselo a administración.</span>}
+                    {!f.proveedor_id && f.proveedor && <span className="ayuda">Se guarda con el nombre de la foto. Para que quede en la lista, créelo en Recibir o pídaselo a administración.</span>}
                   </label>
                   <label style={{ margin: 0 }}>Fecha<input type="date" value={f.fecha} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, fecha: e.target.value }))} /></label>
                   <label style={{ margin: 0 }}>N° documento<input value={f.documento} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, documento: e.target.value }))} /></label>
@@ -358,7 +358,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                   <>
                     <label style={{ margin: 0 }}>Producto del catálogo
                       <select value={l.producto_id ?? ''} onChange={(e) => elegir(f.id, l.n, e.target.value || null)}>
-                        <option value="">— elige —</option>
+                        <option value="">— elija —</option>
                         {opciones.map((id) => { const x = porId.get(id); return x ? <option key={id} value={id}>{nombre(x)}</option> : null; })}
                       </select>
                     </label>
@@ -399,7 +399,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                         </div>
                       );
                     })()}
-                    <input placeholder="¿No está? Busca otro producto…" value={l.buscar}
+                    <input placeholder="¿No está? Busque otro producto…" value={l.buscar}
                            onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, buscar: e.target.value }))} />
                     {!l.nuevo && (
                       <button type="button" className={!l.producto_id || (!l.leida.candidatos.length && !l.leida.sugerencia_ia?.producto_id) ? 'mini' : 'secundario mini'}
@@ -430,7 +430,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                               {genSel ? (
                                 <span>De: <strong>{genSel.generico}</strong> ({genSel.unidad_base}{dosAreas ? ` · ${zona(genSel.area)}` : ''}) <button type="button" className="secundario mini" onClick={() => set({ generico_id: '' })}>cambiar</button></span>
                               ) : (
-                                <label style={{ margin: 0 }}>¿De qué producto es? <input value={nv.nombre} onChange={(e) => set({ nombre: e.target.value })} placeholder="Escribe para buscar…" /></label>
+                                <label style={{ margin: 0 }}>¿De qué producto es? <input value={nv.nombre} onChange={(e) => set({ nombre: e.target.value })} placeholder="Escriba para buscar…" /></label>
                               )}
                               {busca.length > 0 && (
                                 <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
@@ -531,8 +531,8 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                           = {cant(base)} {p.unidad_base} · <strong>{pesos(cu)} por {p.unidad_base}</strong>
                           {!p.contenido_variable && p.contenido_base ? <> · 1 {p.unidad_compra} = {pesos(cu * Number(p.contenido_base))}</> : null}
                           {actual != null && <span className="suave"> · antes {pesos(actual)} por {p.unidad_base}{cambio != null && ` (${cambio >= 0 ? '+' : ''}${Math.round(cambio * 100)} %)`}</span>}
-                          {raro && <div style={{ color: 'var(--error)' }}>Ese costo no es creíble: revisa la cantidad y su unidad.</div>}
-                          {cambio != null && Math.abs(cambio) > 0.5 && !raro && <div style={{ color: 'var(--aviso)' }}>Cambia más del 50 % frente al costo que tenía: revisa que sea la misma presentación.</div>}
+                          {raro && <div style={{ color: 'var(--error)' }}>Ese costo no es creíble: revise la cantidad y su unidad.</div>}
+                          {cambio != null && Math.abs(cambio) > 0.5 && !raro && <div style={{ color: 'var(--aviso)' }}>Cambia más del 50 % frente al costo que tenía: revise que sea la misma presentación.</div>}
                         </>
                       )}
                     </div>

@@ -59,7 +59,7 @@ function Precio({ f }: { f: PlatoCarta }) {
   }
   const guardar = () => {
     const n = num(valor);
-    if (!n) { setError('Escribe el precio de carta, con impoconsumo.'); return; }
+    if (!n) { setError('Escriba el precio de carta, con impoconsumo.'); return; }
     iniciar(async () => {
       const r = await fijarPrecio(f.generico_id, n);
       if (r.ok) { setAbierto(false); setError(null); router.refresh(); } else setError(r.error ?? 'No se pudo guardar.');
@@ -151,7 +151,7 @@ function FranjaMeta({ filas, elegido, filtrar }: { filas: PlatoCarta[]; elegido:
   ];
   const sinPct = filas.filter((f) => !f.semaforo).length;
   return (
-    <div className="franja" role="group" aria-label="Contra la meta: toca para filtrar">
+    <div className="franja" role="group" aria-label="Contra la meta: toque para filtrar">
       {items.map((i) => {
         const activo = elegido.length === 1 && elegido[0] === i.v;
         return (
@@ -161,7 +161,7 @@ function FranjaMeta({ filas, elegido, filtrar }: { filas: PlatoCarta[]; elegido:
           </button>
         );
       })}
-      <span className="franja-nota suave">{sinPct ? `${sinPct} sin % (ficha incompleta o sin precio)` : 'Todos tienen %'}{elegido.length ? ' · toca de nuevo para ver todos' : ' · toca una cifra para filtrar'}</span>
+      <span className="franja-nota suave">{sinPct ? `${sinPct} sin % (ficha incompleta o sin precio)` : 'Todos tienen %'}{elegido.length ? ' · toque de nuevo para ver todos' : ' · toque una cifra para filtrar'}</span>
     </div>
   );
 }
@@ -212,7 +212,7 @@ export default function ListaCarta({ filas, variasAreas }: { filas: PlatoCarta[]
                           {' '}· {vis.filter((f) => f.semaforo === 'ROJO').length} sobre la meta
                           {' '}· {vis.filter((f) => f.estado_ficha === 'PARCIAL').length} con ficha parcial
                           {' '}· {vis.filter((f) => f.estado_ficha === 'SIN_FICHA').length} sin ficha.
-                          {' '}Toca un producto para ver sus ingredientes.
+                          {' '}Toque un producto para ver sus ingredientes.
                         </p>
                       );
                     }} />

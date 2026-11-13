@@ -40,13 +40,13 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
         )}
       </div>
       <p className="suave" style={{ marginTop: 0 }}>
-        La receta de cada MPI: con ella se produce y se calcula el costo estándar. Toca una para ver sus pasos, puntos críticos y vida útil.
-        {editaFicha(perfil, area) ? ' Cada cambio que guardes crea una versión nueva.' : ' Las crea y cambia el ' + (area === 'BAR' ? 'jefe de barra' : 'chef') + '.'}
+        La receta de cada MPI: con ella se produce y se calcula el costo estándar. Toque una para ver sus pasos, puntos críticos y vida útil.
+        {editaFicha(perfil, area) ? ' Cada cambio que guarde crea una versión nueva.' : ' Las crea y cambia el ' + (area === 'BAR' ? 'jefe de barra' : 'chef') + '.'}
       </p>
       {avance && avance.mpi.con_ficha < avance.mpi.total && (
         <Link href="/produccion/validar" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--tinta)' }}>
           <span><strong>Validar MPI con el recetario de cocina</strong><br />
-            <span className="suave">{avance.mpi.con_ficha} de {avance.mpi.total} MPI con ficha. Empareja ingredientes, elige recetas y apruébalas.</span></span>
+            <span className="suave">{avance.mpi.con_ficha} de {avance.mpi.total} MPI con ficha. Empareje ingredientes, elija recetas y apruébelas.</span></span>
           <span className="boton">Continuar</span>
         </Link>
       )}

@@ -54,8 +54,8 @@ export default function CargarVentas() {
             <div className={`cifra${cuadra ? '' : ' alerta'}`}><span>Cuadre</span><b>{cuadra ? 'Exacto' : 'No cuadra'}</b><small>día por día con la fila Total</small></div>
           </div>
           {r.netoEstimado && <p className="aviso" style={{ margin: 0 }}>El reporte no trae la medida «Subtotal sin impuestos». Se estima el neto dividiendo por 1,08;
-            si hay productos con IVA del 19 % o sin impuesto, su valor queda un poco distinto. Para la próxima, agrega esa medida en Odoo.</p>}
-          {!cuadra && <p className="aviso" style={{ margin: 0 }}>La suma de los productos no da el total de algún día: el archivo no se guarda. Revisa que no tenga filtros.</p>}
+            si hay productos con IVA del 19 % o sin impuesto, su valor queda un poco distinto. Para la próxima, agregue esa medida en Odoo.</p>}
+          {!cuadra && <p className="aviso" style={{ margin: 0 }}>La suma de los productos no da el total de algún día: el archivo no se guarda. Revise que no tenga filtros.</p>}
           <div className="acciones" style={{ margin: 0 }}>
             <button type="button" disabled={enviando || !cuadra} onClick={guardar}>Guardar ventas</button>
             <button type="button" className="secundario" disabled={enviando} onClick={() => setLectura(null)}>Cancelar</button>

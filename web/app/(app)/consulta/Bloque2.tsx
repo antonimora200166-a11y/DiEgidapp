@@ -98,7 +98,7 @@ export default function Bloque2({ cerrados, abiertos, detalle, insumos, area }: 
       <h2>Real vs. teórico</h2>
       {!detalle ? (
         <div className="tarjeta">
-          <p style={{ marginTop: 0 }}>{area === 'TODO' ? 'Escoge Bar o Cocina para ver el detalle de un período.'
+          <p style={{ marginTop: 0 }}>{area === 'TODO' ? 'Escoja Bar o Cocina para ver el detalle de un período.'
             : 'Todavía no hay kardex en esta área. Con el conteo inicial empieza el período, y con el conteo de cierre del jefe de bar se cierra.'}</p>
           <p className="suave" style={{ marginBottom: 0 }}>CMV real = inventario inicial + recepciones + traslados de otras áreas − traslados a otras áreas − inventario final.
             Teórico = unidades vendidas en Odoo × costo de la ficha. Lo que no cuadra, descontadas las pérdidas reportadas, es lo no explicado.</p>
@@ -158,7 +158,7 @@ export default function Bloque2({ cerrados, abiertos, detalle, insumos, area }: 
             );
           })() : <p className="suave">Sin consumo de insumos en el período.</p>}
           <p className="suave" style={{ fontSize: '.8rem' }}>Teórico: lo vendido en Odoo × la cantidad de cada ficha. Real: lo que el conteo encontró de menos (las botellas abiertas, pesadas).
-            Toca el nombre de un insumo para ver de qué cócteles, shots o botellas sale su teórico. Ordenados por la diferencia en pesos.</p>
+            Toque el nombre de un insumo para ver de qué cócteles, shots o botellas sale su teórico. Ordenados por la diferencia en pesos.</p>
         </>
       )}
 

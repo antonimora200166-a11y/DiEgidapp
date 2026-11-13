@@ -134,7 +134,7 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
     <>
       <div ref={menuRef} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.5rem', margin: '0 0 .4rem', position: 'relative' }}>
         <span className="suave" style={{ fontSize: '.85rem' }}>
-          Toca una celda para corregirla{sel.size > 1 ? `; con ${sel.size} filas seleccionadas, el cambio se ofrece para todas` : ''}. Enter guarda, Esc cancela.
+          Toque una celda para corregirla{sel.size > 1 ? `; con ${sel.size} filas seleccionadas, el cambio se ofrece para todas` : ''}. Enter guarda, Esc cancela.
         </span>
         <button type="button" className={menu ? 'herramienta chico activa' : 'herramienta chico'} style={{ whiteSpace: 'nowrap' }} onClick={() => setMenu((m) => !m)}>⚙ Columnas</button>
         {menu && (

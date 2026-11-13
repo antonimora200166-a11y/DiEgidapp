@@ -29,7 +29,7 @@ export default function Redactar({ periodo_id, hay }: { periodo_id: string; hay:
         </div>
       ) : (
         <>
-          <label>Borrador {modelo ? '(redactado por la IA solo con las cifras de arriba: revísalo antes de guardar)' : ''}
+          <label>Borrador {modelo ? '(redactado por la IA solo con las cifras de arriba: revíselo antes de guardar)' : ''}
             <textarea rows={7} value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={4000} />
           </label>
           <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.4rem' }}>

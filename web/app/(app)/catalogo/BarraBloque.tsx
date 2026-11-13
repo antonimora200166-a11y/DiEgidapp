@@ -109,7 +109,7 @@ export default function BarraBloque({ elegidos, categorias, setSel, esAdmin }: {
                   <input inputMode="decimal" value={contenido} onChange={(e) => setContenido(e.target.value)} placeholder="— no cambiar — (1000, 750…)" />
                 </label>
               </div>
-              {ub && <p className="ayuda" style={{ marginTop: '.4rem' }}>Cambiar la unidad base no convierte el contenido: si pasas de und a g, pon también el contenido en g. No se cambia si el producto ya tiene kardex o está en una ficha.</p>}
+              {ub && <p className="ayuda" style={{ marginTop: '.4rem' }}>Cambiar la unidad base no convierte el contenido: si pasa de und a g, ponga también el contenido en g. No se cambia si el producto ya tiene kardex o está en una ficha.</p>}
               <label style={{ display: 'flex', gap: '.5rem', alignItems: 'center', fontWeight: 400, margin: '.6rem 0 0' }}>
                 <input type="checkbox" checked={validar} onChange={(e) => setValidar(e.target.checked)} style={{ width: 22, minHeight: 22 }} />
                 Y validarlos de una vez

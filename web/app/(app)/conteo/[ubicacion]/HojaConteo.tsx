@@ -122,7 +122,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
       lineas.push(l);
     }
     if (malos.length) {
-      setResultado({ ok: false, id: null, codigo: null, fatales: [`Revisa los números de: ${malos.join(', ')}.`], bloqueos: [], avisos: [] });
+      setResultado({ ok: false, id: null, codigo: null, fatales: [`Revise los números de: ${malos.join(', ')}.`], bloqueos: [], avisos: [] });
       return;
     }
     const faltan = lista.length - lineas.length;
@@ -155,7 +155,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
   function sumarUna(p: ProductoHoja, texto: string) {
     if (!porCerradas(p)) {
       setFiltro(p.generico); setSoloFaltan(false); setSoloTocan(false);
-      setOido({ texto, leido: true, error: `${nombreDe(p)}: se cuenta en ${p.unidad_base}; escribe la cantidad.` });
+      setOido({ texto, leido: true, error: `${nombreDe(p)}: se cuenta en ${p.unidad_base}; escriba la cantidad.` });
       return;
     }
     setCapturas((x) => {
@@ -199,7 +199,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
         });
       }
     };
-    rec.onerror = (e) => setOido({ texto: '', error: e.error === 'not-allowed' ? 'El navegador no dejó usar el micrófono.' : 'No se pudo escuchar. Intenta de nuevo.' });
+    rec.onerror = (e) => setOido({ texto: '', error: e.error === 'not-allowed' ? 'El navegador no dejó usar el micrófono.' : 'No se pudo escuchar. Intente de nuevo.' });
     rec.onend = () => setEscuchando(false);
     reconocedor.current = rec;
     rec.start();
@@ -237,11 +237,11 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
         </div>
       )}
       {inicial ? (
-        <p className="aviso">Conteo inicial: lo que cuentes abre el kardex de cada producto y se valoriza con su costo de referencia. Cuenta con cuidado: es el punto de partida.</p>
+        <p className="aviso">Conteo inicial: lo que cuente abre el kardex de cada producto y se valoriza con su costo de referencia. Cuente con cuidado: es el punto de partida.</p>
       ) : !conKardex.length ? (
         <p className="aviso">
           Esta zona todavía no tiene conteo inicial: ningún producto tiene kardex.
-          {haceInicial ? ' Elige «Conteo inicial» arriba.' : ' Lo hace el jefe del área o administración; después ya se puede contar aquí.'}
+          {haceInicial ? ' Elija «Conteo inicial» arriba.' : ' Lo hace el jefe del área o administración; después ya se puede contar aquí.'}
         </p>
       ) : sinKardex.length > 0 && (
         <p className="suave" style={{ fontSize: '.88rem' }}>{sinKardex.length} producto(s) de esta zona aún no tienen kardex: entran en el conteo inicial.</p>
@@ -249,8 +249,8 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
 
       {Object.keys(recontar).length > 0 && (
         <p className="aviso" role="status">
-          <strong>Recuenta {Object.keys(recontar).length} producto(s)</strong> (marcados en rojo): lo contado se aparta mucho de lo esperado.
-          Cuéntalos otra vez con calma, escríbelos y guarda. Lo que salga en el segundo conteo es lo que queda.
+          <strong>Recuente {Object.keys(recontar).length} producto(s)</strong> (marcados en rojo): lo contado se aparta mucho de lo esperado.
+          Cuéntelos otra vez con calma, escríbalos y guarde. Lo que salga en el segundo conteo es lo que queda.
         </p>
       )}
       {lista.length > 0 && (
@@ -280,7 +280,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
                 )}
               </div>
             )}
-            {escuchando && !oido && <div className="suave" style={{ fontSize: '.85rem', marginTop: '.3rem' }}>Di el producto y la cantidad: «ginebra tres botellas», «limón 1500», «ron pesa 820».</div>}
+            {escuchando && !oido && <div className="suave" style={{ fontSize: '.85rem', marginTop: '.3rem' }}>Diga el producto y la cantidad: «ginebra tres botellas», «limón 1500», «ron pesa 820».</div>}
             {oido && (
               <div className={oido.error ? 'aviso' : 'exito'} style={{ margin: '.4rem 0 0', padding: '.4rem .6rem', fontSize: '.88rem' }} role="status">
                 {oido.error ? oido.error : <>✔ {oido.d!.nombre} → {oido.d!.valor} {oido.d!.campo === 'cerradas' ? 'cerradas' : oido.d!.campo === 'peso' ? 'g (peso)' : ''}</>}
@@ -292,7 +292,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
             {porAsociar && (
               <div className="tarjeta" style={{ marginTop: '.5rem', padding: '.7rem' }}>
                 <strong>Código nuevo <span className="cod">{porAsociar}</span>: ¿qué producto es?</strong>
-                <div className="suave" style={{ fontSize: '.82rem' }}>Elígelo una vez y la app lo reconoce en adelante.</div>
+                <div className="suave" style={{ fontSize: '.82rem' }}>Elíjalo una vez y la app lo reconoce en adelante.</div>
                 <input autoFocus value={buscarAsociar} onChange={(e) => setBuscarAsociar(e.target.value)} placeholder="Buscar en esta zona…" style={{ marginTop: '.4rem' }} />
                 <div style={{ display: 'grid', gap: '.3rem', marginTop: '.4rem', maxHeight: 220, overflowY: 'auto' }}>
                   {lista.filter((p) => !buscarAsociar.trim() || nombreDe(p).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -325,7 +325,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
                         {!inicial && p.clase_abc && <> · clase {p.clase_abc}</>}
                         {!inicial && (p.ultimo_conteo ? <> · contado el {fmtFecha(p.ultimo_conteo)}</> : p.tiene_kardex && <> · sin contar aquí</>)}
                       </div>
-                      {p.producto_id in recontar && <div style={{ color: 'var(--error)', fontSize: '.85rem', fontWeight: 600 }}>Recuéntalo</div>}
+                      {p.producto_id in recontar && <div style={{ color: 'var(--error)', fontSize: '.85rem', fontWeight: 600 }}>Recuéntelo</div>}
                       {!inicial && p.toca && !(p.producto_id in recontar) && <span className="etiqueta provisional" style={{ fontSize: '.75rem' }}>toca hoy</span>}
                     </div>
                     <button type="button" className="secundario chico"
@@ -390,7 +390,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
               </button>
             )}
           </div>
-          <p className="suave" style={{ fontSize: '.82rem' }}>Lo que vas contando se guarda en este equipo hasta que guardes el conteo, aunque cierres la página.</p>
+          <p className="suave" style={{ fontSize: '.82rem' }}>Lo que va contando se guarda en este equipo hasta que guarde el conteo, aunque cierre la página.</p>
         </>
       )}
     </>

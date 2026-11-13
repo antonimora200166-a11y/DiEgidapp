@@ -71,7 +71,7 @@ function Tarjeta({ a, admin, responsables }: { a: Alerta; admin: boolean; respon
       {panel === 'asignar' && (
         <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label style={{ margin: 0, flex: '1 1 180px' }}>Responsable
-            <select value={resp} onChange={(e) => setResp(e.target.value)}><option value="">Escoge…</option>
+            <select value={resp} onChange={(e) => setResp(e.target.value)}><option value="">Escoja…</option>
               {responsables.map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}</select></label>
           <label style={{ margin: 0 }}>Para el<input type="date" value={fechaC} onChange={(e) => setFechaC(e.target.value)} /></label>
           <button type="button" className="mini" disabled={enviando || !resp} onClick={() => hacer({ id: a.id, accion: 'ASIGNAR', responsable_id: resp, fecha: fechaC || null })}>Guardar</button>
@@ -142,7 +142,7 @@ export default function ListaAlertas({ alertas, admin, responsables, revisar }: 
       {admin && <p className="suave" style={{ fontSize: '.88rem' }}>{vis.length} alerta(s){total > 0 && <> · impacto estimado <strong>{pesos(total)}</strong></>}. Ordenadas por impacto.</p>}
       {vis.length ? (
         <ul className="pila" style={{ listStyle: 'none', padding: 0, margin: 0 }}>{vis.map((a) => <Tarjeta key={a.id} a={a} admin={admin} responsables={responsables} />)}</ul>
-      ) : <p className="tarjeta">{admin ? 'No hay alertas con estos filtros.' : 'No tienes alertas asignadas en este estado.'}</p>}
+      ) : <p className="tarjeta">{admin ? 'No hay alertas con estos filtros.' : 'No tiene alertas asignadas en este estado.'}</p>}
     </>
   );
 }

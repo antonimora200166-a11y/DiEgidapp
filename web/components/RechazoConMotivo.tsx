@@ -19,7 +19,7 @@ export default function RechazoConMotivo({ resultado, motivo, setMotivo, ejemplo
       {resultado.avisos.length > 0 && <><strong>Avisos:</strong><ul>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></>}
       {bloqueado && (
         <>
-          <label htmlFor="motivo">Corrige lo de arriba, o escribe por qué se registra así</label>
+          <label htmlFor="motivo">Corrija lo de arriba, o escriba por qué se registra así</label>
           <textarea id="motivo" rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder={ejemplo} />
         </>
       )}
@@ -34,7 +34,7 @@ export function Revisiones({ resultado, confirmados, setConfirmados }: {
   const faltan = lista.filter((r) => !confirmados.includes(r.producto_id)).length;
   return (
     <div className="aviso" role="alert">
-      <strong>Revisa antes de guardar. Todavía no se guardó nada:</strong>
+      <strong>Revise antes de guardar. Todavía no se guardó nada:</strong>
       <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
         {lista.map((r) => (
           <li key={r.producto_id + r.motivo} style={{ marginTop: '.5rem' }}>
@@ -50,7 +50,7 @@ export function Revisiones({ resultado, confirmados, setConfirmados }: {
         ))}
       </ul>
       <span className="ayuda">
-        {faltan > 0 ? 'Si algo está mal, corrígelo arriba. Si está bien, márcalo y vuelve a guardar.' : 'Listo: vuelve a guardar.'}
+        {faltan > 0 ? 'Si algo está mal, corríjalo arriba. Si está bien, márquelo y vuelva a guardar.' : 'Listo: vuelva a guardar.'}
       </span>
     </div>
   );

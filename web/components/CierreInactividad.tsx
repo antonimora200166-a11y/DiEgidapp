@@ -25,7 +25,7 @@ export default function CierreInactividad() {
   if (quedan === null) return null;
   return (
     <div className="aviso" role="alert" style={{ position: 'fixed', left: 16, right: 16, bottom: 90, zIndex: 50, textAlign: 'center' }}>
-      Sin uso: la sesión se cierra en {quedan} s. Toca la pantalla para seguir.
+      Sin uso: la sesión se cierra en {quedan} s. Toque la pantalla para seguir.
     </div>
   );
 }

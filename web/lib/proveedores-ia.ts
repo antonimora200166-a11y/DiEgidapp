@@ -142,7 +142,7 @@ ${contexto || '(no se encontró nada; usa solo lo estacional)'}` }],
     if (!a.success) return { ok: false, error: 'La IA devolvió un análisis que no se entiende. Inténtalo de nuevo.' };
     return { ok: true, analisis: { ...a.data, contexto, fecha: hoy, fuentes: [...fuentes].slice(0, 15).map(([url, titulo]) => ({ url, titulo })) } };
   } catch (e) {
-    if (e instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espera un minuto e inténtalo de nuevo.' };
+    if (e instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espere un minuto e inténtelo de nuevo.' };
     if (e instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de la API de Claude no es válida. Revísala en Administración → IA.' };
     if (e instanceof Anthropic.APIConnectionError) return { ok: false, error: 'No hubo conexión con la IA. Inténtalo de nuevo.' };
     if (e instanceof Anthropic.APIError) return { ok: false, error: `La IA respondió con un error (${e.status}): ${e.message}` };

@@ -81,7 +81,7 @@ export type ResultadoDescripcion = { ok: true; propuesta: PropuestaDescripcion }
 
 export async function proponerDescripcionConIA(e: EntradaDescripcion): Promise<ResultadoDescripcion> {
   if (!process.env.ANTHROPIC_API_KEY) {
-    return { ok: false, error: 'La IA no está configurada (falta ANTHROPIC_API_KEY en el servidor). Avísale a administración.' };
+    return { ok: false, error: 'La IA no está configurada (falta ANTHROPIC_API_KEY en el servidor). Avísele a administración.' };
   }
   const cliente = new Anthropic({ timeout: 90_000, maxRetries: 1 });
   try {
@@ -102,8 +102,8 @@ export async function proponerDescripcionConIA(e: EntradaDescripcion): Promise<R
     return { ok: true, propuesta: leida.data };
   } catch (err) {
     console.error('[descripcion-ia]', err);
-    if (err instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espera un minuto e inténtalo de nuevo.' };
-    if (err instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de la API de Claude no es válida. Avísale a administración.' };
+    if (err instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espere un minuto e inténtelo de nuevo.' };
+    if (err instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de la API de Claude no es válida. Avísele a administración.' };
     if (err instanceof Anthropic.APIConnectionError) return { ok: false, error: 'No hubo conexión con la IA. Inténtalo de nuevo.' };
     if (err instanceof Anthropic.APIError) return { ok: false, error: `La IA respondió con un error (${err.status ?? 'sin código'}: ${err.message.slice(0, 160)}). Inténtalo de nuevo.` };
     if (err instanceof SyntaxError) return { ok: false, error: 'La IA devolvió una respuesta que no se entiende. Inténtalo de nuevo.' };

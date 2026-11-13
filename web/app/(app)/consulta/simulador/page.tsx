@@ -39,9 +39,9 @@ export default async function SimuladorPagina({ searchParams }: { searchParams: 
   return (
     <>
       <p style={{ margin: '0 0 .3rem' }}><Link href="/consulta">← Consulta</Link></p>
-      <h1 className="pagina-ancha">Simulador de carta</h1>
-      <p className="suave">Prueba un precio nuevo o cantidades nuevas en la ficha y mira el % de costo, el margen y el efecto sobre el % teórico del área
-        con las ventas del {fechaC(desde)} al {fechaC(hasta)}. Nada cambia en la carta hasta que apruebes una propuesta.</p>
+      <h1 className="pagina-ancha titulo-gestion">Simulador de carta</h1>
+      <p className="suave">Pruebe un precio nuevo o cantidades nuevas en la ficha y mire el % de costo, el margen y el efecto sobre el % teórico del área
+        con las ventas del {fechaC(desde)} al {fechaC(hasta)}. Nada cambia en la carta hasta que apruebe una propuesta.</p>
       <form method="get" className="no-imprimir" style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
         {prod && <input type="hidden" name="producto" value={prod.generico_id} />}
         <label style={{ margin: 0 }}>Ventas desde<input type="date" name="desde" defaultValue={desde} /></label>
@@ -53,7 +53,7 @@ export default async function SimuladorPagina({ searchParams }: { searchParams: 
         <Simulador key={prod.generico_id} producto={{ generico_id: prod.generico_id, nombre: prod.nombre, area: prod.area, seccion: prod.seccion,
                                                       estado_ficha: prod.estado_ficha }}
                    base={productoSim(prod)} mezcla={mezcla} desde={desde} hasta={hasta} />
-      ) : <p className="tarjeta">Escoge un producto de la carta para simular.</p>}
+      ) : <p className="tarjeta">Escoja un producto de la carta para simular.</p>}
       <Exportar params={{}} bloques={[{ bloque: 'propuestas', t: 'Propuestas' }, { bloque: 'carta', t: 'Carta y margen' }]} />
       <Propuestas propuestas={(props ?? []) as Propuesta[]} />
     </>

@@ -23,11 +23,11 @@ export default async function AlertasPagina() {
 
   return (
     <>
-      <h1 className="pagina-ancha">Alertas</h1>
+      <h1 className="pagina-ancha titulo-gestion">Alertas</h1>
       <p className="suave">
         {admin
-          ? 'Lo que las reglas encontraron en las ventas, el kardex, las compras y la producción, con su impacto estimado. Asígnalas con una fecha, comenta y márcalas resueltas con la causa encontrada. Las que no se resuelven siguen abiertas en el siguiente período.'
-          : 'Las alertas que administración te asignó. Comenta lo que encuentres, márcalas en curso y resuélvelas escribiendo la causa.'}
+          ? 'Lo que las reglas encontraron en las ventas, el kardex, las compras y la producción, con su impacto estimado. Asígnelas con una fecha, comente y márquelas resueltas con la causa encontrada. Las que no se resuelven siguen abiertas en el siguiente período.'
+          : 'Las alertas que administración le asignó. Comente lo que encuentre, márquelas en curso y resuélvalas escribiendo la causa.'}
       </p>
       <ListaAlertas alertas={(data ?? []) as Alerta[]} admin={admin} responsables={(responsables ?? []) as Responsable[]} revisar={revisar} />
     </>

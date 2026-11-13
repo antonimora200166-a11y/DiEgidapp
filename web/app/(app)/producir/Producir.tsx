@@ -201,12 +201,12 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
     const ins = id ? insumoPorId.get(id) : undefined;
     if (r.tipo === 'lote' && r.lote.anulado) { setLeido({ ok: false, texto: `El lote ${r.lote.codigo} está anulado: no lo uses.` }); return; }
     if (r.tipo === 'lote' && r.lote.vence && r.lote.vence < hoyCali()) { setLeido({ ok: false, texto: `El lote ${r.lote.codigo} de ${r.lote.mpi} venció: no lo uses.` }); return; }
-    if (!ins) { setLeido({ ok: false, texto: r.tipo === 'desconocido' ? 'No conozco ese código. Busca el ingrediente por nombre.' : 'Eso no es un ingrediente de esta área.' }); return; }
+    if (!ins) { setLeido({ ok: false, texto: r.tipo === 'desconocido' ? 'No conozco ese código. Busque el ingrediente por nombre.' : 'Eso no es un ingrediente de esta área.' }); return; }
     const ya = consumos.find((c) => c.generico_id === ins.generico_id);
     if (ya) { poner(ya.clave, { producto_id: ins.producto_id, zona: proponerZona(ins.producto_id), nota: r.tipo === 'lote' ? `lote ${r.lote.codigo}` : ya.nota, lote_origen: r.tipo === 'lote' ? r.lote.id : ya.lote_origen });
               setLeido({ ok: true, texto: `✔ ${ins.generico}: se usa ${r.tipo === 'lote' ? `el lote ${r.lote.codigo}` : 'ese producto'}.` }); return; }
     agregarInsumo(ins, r.tipo === 'lote' ? `lote ${r.lote.codigo}` : '', r.tipo === 'lote' ? r.lote.id : null);
-    setLeido({ ok: true, texto: `✔ ${ins.generico} agregado: pésalo.` });
+    setLeido({ ok: true, texto: `✔ ${ins.generico} agregado: péselo.` });
   }
 
   // ---------------------------------------------------------------- cálculos en vivo
@@ -280,7 +280,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   // aviso de borrador de otro día: se decide antes de seguir
   const avisoRetomado = retomado && (
     <div className="aviso retomado" role="alert">
-      <span>Retomaste un lote empezado el <strong>{fechaCorta(retomado)}</strong>. Quedó con la fecha de hoy, {fechaCorta(hoyCali())}.</span>
+      <span>Retomó un lote empezado el <strong>{fechaCorta(retomado)}</strong>. Quedó con la fecha de hoy, {fechaCorta(hoyCali())}.</span>
       <div className="acciones" style={{ marginTop: '.5rem' }}>
         <button type="button" onClick={() => setRetomado(null)}>Seguir con este</button>
         <button type="button" className="secundario" onClick={() => { setRetomado(null); empezarDeNuevo(); }}>Empezar de nuevo</button>
@@ -344,7 +344,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
     );
     return (
       <>
-        <input className="buscar-grande" aria-label="Buscar MPI" placeholder="¿Qué vas a producir? Sirope, zumo, #5…" value={buscarMpi} onChange={(e) => setBuscarMpi(e.target.value)} />
+        <input className="buscar-grande" aria-label="Buscar MPI" placeholder="¿Qué va a producir? Sirope, zumo, #5…" value={buscarMpi} onChange={(e) => setBuscarMpi(e.target.value)} />
         {deSiempre.length > 0 && (
           <>
             <h2 className="sec-tit">Lo de siempre</h2>
@@ -354,7 +354,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
         )}
         <div className="rejilla-mpi">{resto.slice(0, 40).map(boton)}</div>
         {!opciones.length && <p className="suave">Nada coincide.</p>}
-        {resto.length > 40 && <p className="suave">Hay {opciones.length}: escribe para buscar.</p>}
+        {resto.length > 40 && <p className="suave">Hay {opciones.length}: escriba para buscar.</p>}
       </>
     );
   }
@@ -379,7 +379,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
         {cabecera}{barra}{avisoRetomado}
         <div className="dos-col pagina-ancha">
           <section className="tarjeta">
-            <h2 className="sec-tit">¿Cuánto vas a hacer?</h2>
+            <h2 className="sec-tit">¿Cuánto va a hacer?</h2>
             <div className="tandas">
               {[0.5, 1, 1.5, 2].map((t) => (
                 <button key={t} type="button" aria-pressed={k === t} onClick={() => cambiarTandas(String(t))}>×{fmtCantidad(t)}</button>
@@ -392,7 +392,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
               </div>
               {principal && ficha && (
                 <div>
-                  <label htmlFor="principal">o según el {principal.generico.toLowerCase()} que tienes (g)</label>
+                  <label htmlFor="principal">o según el {principal.generico.toLowerCase()} que tiene (g)</label>
                   <input id="principal" inputMode="decimal" placeholder={fmtCantidad(principal.base!)}
                          onChange={(e) => { const v = num(e.target.value); if (v && v > 0) cambiarTandas(String(Math.round((v / principal.base!) * 1000) / 1000)); }} />
                 </div>
@@ -431,7 +431,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             <div className="aviso" style={{ margin: 0 }}><strong>Sin ficha técnica</strong><div>No hay indicaciones registradas para {mpi.generico}.</div></div>
           ) : ficha.puntos.length === 0 ? (
             <div className="aviso" style={{ margin: 0, fontSize: '1.05rem' }}><strong>Ficha sin puntos críticos</strong>
-              <div>Esta ficha no tiene temperaturas, tiempos ni cuidados de higiene registrados. Avísale al {area === 'BAR' ? 'jefe de barra' : 'chef'} para que los complete.</div></div>
+              <div>Esta ficha no tiene temperaturas, tiempos ni cuidados de higiene registrados. Avísele al {area === 'BAR' ? 'jefe de barra' : 'chef'} para que los complete.</div></div>
           ) : (
             <div>{ficha.puntos.map((p, i) => (
               <div key={i} className="punto" style={{ fontSize: '1.08rem' }}><span className={`pill ${tipoPunto(p.tipo).c}`}>{tipoPunto(p.tipo).t}</span><span>{p.texto}</span></div>
@@ -460,13 +460,13 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
         {!conIndicaciones && (
           <p className="aviso banda-prod">
             <strong>{ficha ? 'Ficha sin puntos críticos.' : 'Sin ficha técnica.'}</strong>{' '}
-            {ficha ? `No tiene temperaturas, tiempos ni cuidados de higiene registrados. Avísale al ${area === 'BAR' ? 'jefe de barra' : 'chef'} para que los complete.`
+            {ficha ? `No tiene temperaturas, tiempos ni cuidados de higiene registrados. Avísele al ${area === 'BAR' ? 'jefe de barra' : 'chef'} para que los complete.`
               : `No hay indicaciones registradas para ${mpi.generico}.`}
           </p>
         )}
         <section className="tarjeta pagina-ancha">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '.6rem', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0 }}>Pesa cada ingrediente</h2>
+            <h2 style={{ margin: 0 }}>Pese cada ingrediente</h2>
             <span className="suave">Entrada: <strong style={{ color: 'var(--texto)', fontSize: '1.25rem' }}>{g(calc.entrada)}</strong></span>
           </div>
           {filas.map(({ c, ins, gr, hay, falta, sinCosto, pidefactor, base }) => {
@@ -504,7 +504,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                   {/* vacío se ve vacío: lo esperado va pequeño y tenue, para no confundirlo con un peso escrito */}
                   <label className={`peso-grande${llenado === c.clave ? ' recien' : ''}`}>
                     <input inputMode="decimal" value={c.gramos} aria-label={`Peso real de ${c.generico} en gramos`}
-                           placeholder={c.esperado_g !== null ? `esperado ${fmtCantidad(Math.round(c.esperado_g))}` : 'pesa aquí'}
+                           placeholder={c.esperado_g !== null ? `esperado ${fmtCantidad(Math.round(c.esperado_g))}` : 'pese aquí'}
                            onChange={(e) => poner(c.clave, { gramos: e.target.value })} />
                     <span>g</span>
                   </label>
@@ -525,16 +525,16 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                 </div>
                 {falta && ins && (
                   <div className="error bloqueo-prod" role="alert">
-                    <strong>No alcanza: {c.zona ? `en ${nombreZona(c.zona)} ` : ''}hay {fmtCantidad(r2(hay))} {ins.unidad_base} y necesitas {fmtCantidad(r2(base ?? 0))}.</strong>{' '}
+                    <strong>No alcanza: {c.zona ? `en ${nombreZona(c.zona)} ` : ''}hay {fmtCantidad(r2(hay))} {ins.unidad_base} y necesita {fmtCantidad(r2(base ?? 0))}.</strong>{' '}
                     {otrasZonas.length > 0 && <>Hay suficiente en {otrasZonas.map((z) => <button key={z.codigo} type="button" className="secundario mini" onClick={() => poner(c.clave, { zona: z.codigo })}>{z.nombre}</button>)} </>}
-                    {otrosProductos.length > 0 && <>O usa {otrosProductos.map((o) => <button key={o.producto_id} type="button" className="secundario mini" onClick={() => poner(c.clave, { producto_id: o.producto_id, zona: proponerZona(o.producto_id) })}>{[o.marca, o.presentacion].filter(Boolean).join(' · ') || o.codigo}</button>)} </>}
-                    {!otrasZonas.length && !otrosProductos.length && <>Registra primero la <Link href="/recibir">recepción</Link> o el <Link href="/trasladar">traslado</Link>.</>}
+                    {otrosProductos.length > 0 && <>O use {otrosProductos.map((o) => <button key={o.producto_id} type="button" className="secundario mini" onClick={() => poner(c.clave, { producto_id: o.producto_id, zona: proponerZona(o.producto_id) })}>{[o.marca, o.presentacion].filter(Boolean).join(' · ') || o.codigo}</button>)} </>}
+                    {!otrasZonas.length && !otrosProductos.length && <>Registre primero la <Link href="/recibir">recepción</Link> o el <Link href="/trasladar">traslado</Link>.</>}
                   </div>
                 )}
               </div>
             );
           })}
-          {!consumos.length && <div className="vacio">Agrega los ingredientes que vas a usar.</div>}
+          {!consumos.length && <div className="vacio">Agregue los ingredientes que va a usar.</div>}
           <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', marginTop: '1rem', flexWrap: 'wrap' }}>
             <input placeholder="Agregar otro ingrediente…" value={buscarInsumo} onChange={(e) => setBuscarInsumo(e.target.value)} style={{ flex: '1 1 240px' }} aria-label="Buscar ingrediente" />
             <button type="button" className="secundario" onClick={() => { setLeido(null); setEscaneando(true); }}><Icono nombre="escanear" /> Escanear lote</button>
@@ -556,7 +556,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
         <div className="barra-accion">
           <button type="button" className="secundario" onClick={() => setPaso(conIndicaciones ? 2 : 1)}>Atrás</button>
           <button type="button" className="principal" disabled={!consumos.length || bloqueados > 0 || pendientesPeso > 0 || !!retomado} onClick={() => setPaso(4)}>
-            {bloqueados ? `Resuelve ${bloqueados} ingrediente(s) en rojo` : pendientesPeso ? `Falta pesar ${pendientesPeso}` : 'Seguir al neto'}
+            {bloqueados ? `Resuelva ${bloqueados} ingrediente(s) en rojo` : pendientesPeso ? `Falta pesar ${pendientesPeso}` : 'Seguir al neto'}
           </button>
         </div>
       </>
@@ -575,7 +575,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             <h2 className="sec-tit">Neto obtenido · pesado al final, sin recipiente</h2>
             <label className="peso-grande" style={{ maxWidth: 320 }}>
               <input inputMode="decimal" value={neto} onChange={(e) => setNeto(e.target.value)} aria-label="Neto obtenido en gramos"
-                     placeholder={ficha?.neto_esperado && mpi.unidad_base === 'g' ? `esperado ${fmtCantidad(Math.round(ficha.neto_esperado * k))}` : 'pesa aquí'} />
+                     placeholder={ficha?.neto_esperado && mpi.unidad_base === 'g' ? `esperado ${fmtCantidad(Math.round(ficha.neto_esperado * k))}` : 'pese aquí'} />
               <span>g</span>
             </label>
             {mpi.unidad_base === 'und' && (
@@ -618,7 +618,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                   </p>
                 )}
                 {enGramos && ps.some((p) => p.contenido !== null) && (
-                  <p className="ayuda" style={{ margin: '.3rem 0 0' }}>Anota cuántas de cada una para repartir el neto; no se guarda con el lote.</p>
+                  <p className="ayuda" style={{ margin: '.3rem 0 0' }}>Anote cuántas de cada una para repartir el neto; no se guarda con el lote.</p>
                 )}
               </section>
             );
@@ -669,7 +669,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             {vePesos && <div className="cifra"><span>$/g</span><b>{pesos(calc.costoGramo, 2)}</b></div>}
             <div className="cifra"><span>Vence</span><b>{venceEl ? fechaCorta(venceEl) : '—'}</b>{vida && <small>+{vida} d {conservacion.toLowerCase()}</small>}</div>
           </div>
-          {calc.alerta && <div className="aviso" style={{ margin: 0 }}><strong>Rendimiento fuera de lo esperado.</strong> Revisa los pesos; si están bien, guarda y anota qué pasó en observaciones.</div>}
+          {calc.alerta && <div className="aviso" style={{ margin: 0 }}><strong>Rendimiento fuera de lo esperado.</strong> Revise los pesos; si están bien, guarde y anote qué pasó en observaciones.</div>}
           {vePesos && calc.estado === 'PARCIAL' && <div className="aviso" style={{ margin: 0 }}>Algún insumo no tiene costo en el kardex: el lote quedará con costo parcial.</div>}
           {resultadoMalo && !!resultado.revisar?.length && (
             <Revisiones resultado={resultado} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} />
@@ -688,7 +688,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
       <div className="barra-accion">
         <button type="button" className="secundario" onClick={() => setPaso(3)}>Atrás</button>
         <button type="button" className="principal" disabled={!listo4 || enviando || !!retomado} onClick={guardar}>
-          {enviando ? 'Guardando…' : !netoG ? 'Falta el neto' : !destino ? 'Falta dónde queda' : netoBaseFalta ? 'Completa el neto' : 'Guardar lote'}
+          {enviando ? 'Guardando…' : !netoG ? 'Falta el neto' : !destino ? 'Falta dónde queda' : netoBaseFalta ? 'Complete el neto' : 'Guardar lote'}
         </button>
       </div>
     </>

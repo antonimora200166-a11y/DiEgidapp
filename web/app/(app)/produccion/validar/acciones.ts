@@ -75,7 +75,7 @@ export async function aprobarComoVienen(items: { codigo: string; generico_id: st
       if (fe.error) { falla(fe.error.message); continue; }
       const datos = fe.data as DatosFicha;
       const ini = inicialDesdePropuesta(p, datos, lineasDeReceta);
-      if (lineasDeReceta && p.lineas.some((l) => !l.generico_id)) { falla(p.lineas.some((l) => !l.generico_id && l.tipo === 'sub') ? 'Tiene subrecetas sin MPI: elígelas en Validar MPI.' : 'Tiene ingredientes sin emparejar: apruébala desde el editor.'); continue; }
+      if (lineasDeReceta && p.lineas.some((l) => !l.generico_id)) { falla(p.lineas.some((l) => !l.generico_id && l.tipo === 'sub') ? 'Tiene subrecetas sin MPI: elíjalas en Validar MPI.' : 'Tiene ingredientes sin emparejar: apruébela desde el editor.'); continue; }
       if (!ini.lineas.length) { falla('La ficha no tiene ingredientes.'); continue; }
       const motivo = `Aprobada en grupo con ${p.receta.codigo} de ${fu.toLowerCase()}`;
       const ap = await supabase.rpc('aprobar_receta', { p: { ...payloadSinCambios(datos, ini, motivo), fuente: fu, receta: it.codigo } });

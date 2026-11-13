@@ -111,7 +111,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
       <h2>Productos {lineas.length > 0 && <span className="suave" style={{ fontWeight: 400 }}>({lineas.length})</span>}</h2>
       {origen
         ? <LineasInventario productos={lista} zona={origen} lineas={lineas} setLineas={setLineas} ofrecerTodo />
-        : <p className="suave">Elige primero de qué zona sale.</p>}
+        : <p className="suave">Elija primero de qué zona sale.</p>}
 
       <label htmlFor="obs">Observaciones <span className="ayuda">opcional</span></label>
       <textarea id="obs" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
@@ -131,7 +131,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
         </div>
       )}
       {lineas.length > 0 && (!destino || malas > 0) && (
-        <p className="suave" style={{ fontSize: '.85rem' }}>{!destino ? 'Elige a qué zona llega. ' : ''}{malas > 0 ? `Falta la cantidad en ${malas} producto(s).` : ''}</p>
+        <p className="suave" style={{ fontSize: '.85rem' }}>{!destino ? 'Elija a qué zona llega. ' : ''}{malas > 0 ? `Falta la cantidad en ${malas} producto(s).` : ''}</p>
       )}
     </>
   );

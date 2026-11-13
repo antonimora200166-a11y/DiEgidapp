@@ -76,7 +76,7 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
             <select id="ub" value={ub} onChange={(e) => setUb(e.target.value as 'g' | 'ml' | 'und')} disabled={!!ubBloqueada}>
               <option value="g">gramos (g)</option><option value="ml">mililitros (ml)</option><option value="und">unidades (und)</option>
             </select>
-            {!ubBloqueada && ub !== g.unidad_base && <span className="ayuda">Al guardar te aviso si alguna ficha queda sin conversión.</span>}
+            {!ubBloqueada && ub !== g.unidad_base && <span className="ayuda">Al guardar le aviso si alguna ficha queda sin conversión.</span>}
           </div>
         </div>
         <label htmlFor="categoria">Categoría</label>

@@ -33,7 +33,7 @@ export default async function Carta({ searchParams }: { searchParams: Promise<{ 
 
   return (
     <>
-      <h1 className="pagina-ancha">Carta y margen</h1>
+      <h1 className="pagina-ancha titulo-gestion">Carta y margen</h1>
       <nav className="segmentos" style={{ marginBottom: '1rem', gap: '1rem' }}>
         {(['BAR', 'COCINA', 'TODO'] as Vista[]).map((a) => (
           <Link key={a} href={`/carta?area=${a}${enBaul ? '&vista=baul' : ''}`}><span style={a === area ? activo : undefined}>{NOMBRE[a]}</span></Link>
@@ -45,10 +45,10 @@ export default async function Carta({ searchParams }: { searchParams: Promise<{ 
         <>
           <p className="suave">
             Lo que no se vende. Su ficha se guarda tal cual, pero no sale en la carta, en Fichas técnicas ni en los
-            tableros, y no cuenta en los promedios. Marca lo que vuelve y devuélvelo a la carta.
+            tableros, y no cuenta en los promedios. Marque lo que vuelve y devuélvelo a la carta.
           </p>
           {baul.length ? <ListaBaul filas={baul} puede />
-            : <p className="tarjeta">El baúl está vacío. Desde «En carta» marca lo que no se va a vender y llévalo al baúl.</p>}
+            : <p className="tarjeta">El baúl está vacío. Desde «En carta» marque lo que no se va a vender y llévelo al baúl.</p>}
         </>
       ) : (
         <>

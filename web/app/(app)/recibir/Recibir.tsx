@@ -207,7 +207,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
     setCreandoProv(false);
     if (!r.ok) { setNotaProveedor(r.error); return; }
     const pr = r.proveedor;
-    if (!pr.activo) { setNotaProveedor(`«${pr.nombre}» está inactivo en la lista de proveedores. Pídele a administración que lo reactive.`); return; }
+    if (!pr.activo) { setNotaProveedor(`«${pr.nombre}» está inactivo en la lista de proveedores. Pídale a administración que lo reactive.`); return; }
     setCreados((cs) => (cs.some((c) => c.id === pr.id) ? cs : [...cs, { id: pr.id, nombre: pr.nombre }]));
     ponerEnc({ proveedor_id: pr.id });
     setProvLeido(null);
@@ -232,13 +232,13 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       const p = r.propuesta;
       setPropuesta(p as unknown as Record<string, unknown>);
       setTotalFactura(p.total_factura);
-      setNotaIA(p.legible ? p.notas : 'La IA no reconoció una factura en la foto. Revisa la imagen o registra las líneas a mano.');
+      setNotaIA(p.legible ? p.notas : 'La IA no reconoció una factura en la foto. Revise la imagen o registre las líneas a mano.');
       setProvLeido(p.proveedor && !r.proveedor_id ? { nombre: p.proveedor, nit: p.nit, sugeridos: r.proveedor_sugeridos } : null);
       const n = r.proveedor_nuevo;
       if (n?.creado) setCreados((cs) => [...cs, { id: n.id, nombre: n.nombre }]);
       setNotaProveedor(!n ? null
         : n.creado ? `Proveedor nuevo creado desde la factura: «${n.nombre}». Si el nombre quedó mal, administración lo corrige.`
-        : !n.activo ? `«${n.nombre}» está inactivo en la lista de proveedores. Pídele a administración que lo reactive.` : null);
+        : !n.activo ? `«${n.nombre}» está inactivo en la lista de proveedores. Pídale a administración que lo reactive.` : null);
       setEnc((e) => ({
         ...e,
         proveedor_id: e.proveedor_id || r.proveedor_id || '',
@@ -387,14 +387,14 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
           </button>
           <button type="button" className="secundario" disabled={!!estadoFoto} onClick={() => galeria.current?.click()}>Elegir archivo</button>
         </div>
-        {estadoFoto === 'leyendo' && <p className="suave" role="status" style={{ fontSize: '.88rem' }}>Esto toma entre 10 y 40 segundos. No cierres la pantalla.</p>}
+        {estadoFoto === 'leyendo' && <p className="suave" role="status" style={{ fontSize: '.88rem' }}>Esto toma entre 10 y 40 segundos. No cierre la pantalla.</p>}
         {errorFoto && <p className="error" role="alert">{errorFoto}</p>}
         {foto && !estadoFoto && (
           <p className="suave" style={{ fontSize: '.85rem', marginBottom: 0 }}>
             ✓ Foto guardada{vista && <> · <a href={vista} target="_blank" rel="noreferrer">verla</a></>}
           </p>
         )}
-        {notaIA && <p className="aviso" style={{ marginBottom: 0 }}><strong>Revisa:</strong> {notaIA}</p>}
+        {notaIA && <p className="aviso" style={{ marginBottom: 0 }}><strong>Revise:</strong> {notaIA}</p>}
       </section>
 
       {/* ------------------------------------------------ encabezado */}
@@ -402,7 +402,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
         <strong>2. Proveedor y documento</strong>
         <label htmlFor="prov">Proveedor</label>
         <select id="prov" value={enc.proveedor_id} onChange={(e) => ponerEnc({ proveedor_id: e.target.value })}>
-          <option value="">— Elige de la lista —</option>
+          <option value="">— Elija de la lista —</option>
           {listaProv.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
         {notaProveedor && <span className="ayuda" role="status">{notaProveedor}</span>}
@@ -467,15 +467,15 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       <h2>3. Productos {lineas.length > 0 && <span className="suave" style={{ fontWeight: 400 }}>({lineas.length})</span>}</h2>
       {sinConfirmar > 0 && (
         <div className="aviso confirmar-bloque">
-          <span>La IA propuso {sinConfirmar === 1 ? '1 línea' : `${sinConfirmar} líneas`} sin confirmar. Revisa producto, cantidad y valor contra la factura.</span>
+          <span>La IA propuso {sinConfirmar === 1 ? '1 línea' : `${sinConfirmar} líneas`} sin confirmar. Revise producto, cantidad y valor contra la factura.</span>
           {cuadran.length > 0 && (
             <>
               <button type="button" onClick={() => { const ks = new Set(cuadran.map((l) => l.clave)); setLineas((ls) => ls.map((l) => (ks.has(l.clave) ? { ...l, confirmada: true } : l))); }}>
                 ✓ Confirmar {cuadran.length === 1 ? 'la que cuadra' : `las ${cuadran.length} que cuadran`}
               </button>
               <span className="ayuda">Producto reconocido, cantidad y valor escritos, y precio parecido al de siempre.
-                {sinConfirmar - cuadran.length === 1 && ' La otra revísala a mano.'}
-                {sinConfirmar - cuadran.length > 1 && ` Las otras ${sinConfirmar - cuadran.length} revísalas una por una.`}</span>
+                {sinConfirmar - cuadran.length === 1 && ' La otra revísela a mano.'}
+                {sinConfirmar - cuadran.length > 1 && ` Las otras ${sinConfirmar - cuadran.length} revíselas una por una.`}</span>
             </>
           )}
         </div>
@@ -520,7 +520,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       {porAsociar && (
         <div className="tarjeta" style={{ marginTop: '.6rem', padding: '.7rem' }}>
           <strong>Código nuevo <span className="cod">{porAsociar}</span>: ¿qué producto es?</strong>
-          <div className="suave" style={{ fontSize: '.82rem' }}>Elígelo una vez y la app lo reconoce en adelante.</div>
+          <div className="suave" style={{ fontSize: '.82rem' }}>Elíjalo una vez y la app lo reconoce en adelante.</div>
           <input autoFocus value={buscarAsociar} onChange={(e) => setBuscarAsociar(e.target.value)} placeholder="Buscar en el catálogo…" style={{ marginTop: '.4rem' }} />
           <div style={{ display: 'grid', gap: '.3rem', marginTop: '.4rem', maxHeight: 220, overflowY: 'auto' }}>
             {buscarAsociar.trim().length >= 2 && productos.filter((x) => {
@@ -535,7 +535,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
           <button type="button" className="discreto mini" style={{ marginTop: '.4rem' }} onClick={() => setPorAsociar(null)}>Cancelar</button>
         </div>
       )}
-      {descuadre && <p className="aviso">La suma de las líneas no cuadra con el total de la factura. Revisa IVA, descuentos o una línea que falte.</p>}
+      {descuadre && <p className="aviso">La suma de las líneas no cuadra con el total de la factura. Revise IVA, descuentos o una línea que falte.</p>}
 
       <label htmlFor="obs">Observaciones <span className="ayuda">opcional</span></label>
       <textarea id="obs" rows={2} value={enc.obs} onChange={(e) => ponerEnc({ obs: e.target.value })} />
@@ -550,7 +550,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
           {resultado.avisos.length > 0 && <><strong>Avisos:</strong><ul>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></>}
           {bloqueado && (
             <>
-              <label htmlFor="motivo">Corrige lo de arriba, o escribe por qué se recibe así</label>
+              <label htmlFor="motivo">Corrija lo de arriba, o escriba por qué se recibe así</label>
               <textarea id="motivo" rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)}
                         placeholder="Ej.: el proveedor subió el precio, confirmado con administración" />
             </>
@@ -647,7 +647,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
           </label>
           {l.nombre_factura && <div className="suave" style={{ fontSize: '.85rem' }}>Factura: «{l.nombre_factura}»</div>}
           {p && !eligiendo && l.ia_sugerido?.producto_id === p.producto_id && (
-            <div className="suave" style={{ fontSize: '.82rem', color: 'var(--tinta)' }}>Elegido por la IA: {l.ia_sugerido.razon} Revísalo.</div>
+            <div className="suave" style={{ fontSize: '.82rem', color: 'var(--tinta)' }}>Elegido por la IA: {l.ia_sugerido.razon} Revíselo.</div>
           )}
           {p && !eligiendo && (
             <div>
@@ -681,7 +681,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
                 <span style={{ display: 'block', marginTop: '.3rem' }}>La IA: {l.ia_sugerido.razon}</span>
               ) : null}
               <span style={{ display: 'block', marginTop: '.3rem' }}>
-                {sugeridos.length ? 'Otros parecidos están abajo; si ninguno es, créalo.' : 'No se parece a ningún producto: créalo o búscalo con otro nombre.'}
+                {sugeridos.length ? 'Otros parecidos están abajo; si ninguno es, créelo.' : 'No se parece a ningún producto: créelo o búsquelo con otro nombre.'}
               </span>
               <div style={{ marginTop: '.4rem' }}>
                 <button type="button" className="chico" onClick={() => setCreando(true)}>+ Crear «{nombreSugerido(l.nombre_factura)}»</button>
@@ -740,7 +740,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
           </label>
           {(p.contenido_variable || l.pesar) && (
             <label style={{ ...campo, marginTop: '.5rem' }}>
-              {l.pesar ? <strong style={{ color: c.faltaPeso ? 'var(--aviso)' : undefined }}>Pésalo: peso total que llegó ({p.unidad_base}) *</strong>
+              {l.pesar ? <strong style={{ color: c.faltaPeso ? 'var(--aviso)' : undefined }}>Péselo: peso total que llegó ({p.unidad_base}) *</strong>
                 : <>Peso o volumen total que llegó ({p.unidad_base})</>}
               <input inputMode="decimal" value={l.total_base} onChange={(e) => poner({ total_base: e.target.value })}
                      style={c.faltaPeso ? { borderColor: 'var(--aviso)', borderWidth: 2 } : undefined}
@@ -751,7 +751,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
           {l.nota && <div className="suave" style={{ fontSize: '.8rem', marginTop: '.3rem' }}>{l.nota}</div>}
           {c.diferencia !== null && !l.obs.trim() && (
             <div className="aviso" style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
-              Diferencia de {c.diferencia > 0 ? '+' : ''}{fmtCantidad(c.diferencia)} frente a lo pedido. Escribe qué pasó en observaciones.
+              Diferencia de {c.diferencia > 0 ? '+' : ''}{fmtCantidad(c.diferencia)} frente a lo pedido. Escriba qué pasó en observaciones.
             </div>
           )}
 
@@ -812,7 +812,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
       {!l.confirmada && (
         <div className="acciones" style={{ marginTop: '.6rem' }}>
           <button type="button" disabled={!l.producto_id} onClick={() => poner({ confirmada: true })}>
-            {l.producto_id ? 'Confirmar línea' : 'Elige el producto para confirmar'}
+            {l.producto_id ? 'Confirmar línea' : 'Elija el producto para confirmar'}
           </button>
         </div>
       )}
@@ -878,7 +878,7 @@ function CrearRapido({ area, otraArea, l, listo, cancelar }: { area: Area; otraA
         <div className={bloqueado ? 'aviso' : 'error'} style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
           <ul style={{ margin: 0 }}>{[...error.fatales, ...error.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul>
           {bloqueado && (
-            <label style={{ ...campo, marginTop: '.4rem' }}>Si no es ninguno de esos, escribe por qué (mínimo 15 caracteres)
+            <label style={{ ...campo, marginTop: '.4rem' }}>Si no es ninguno de esos, escriba por qué (mínimo 15 caracteres)
               <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej.: es la fruta fresca, no la pulpa" />
             </label>
           )}

@@ -49,7 +49,7 @@ export default function Anular({ tipo, id, lineaId, etiqueta, pequeno, exigePin 
       <label htmlFor={`motivo-${lineaId ?? id}`} style={{ marginTop: 0 }}>¿Por qué se anula?</label>
       <textarea id={`motivo-${lineaId ?? id}`} rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)}
                 placeholder="Ej.: se registró dos veces / el producto se devolvió al proveedor" />
-      <span className="ayuda">Mínimo 15 caracteres. Queda en la bitácora con tu nombre.</span>
+      <span className="ayuda">Mínimo 15 caracteres. Queda en la bitácora con su nombre.</span>
       {exigePin && (
         <div style={{ maxWidth: '14rem' }}>
           <label htmlFor={`pin-${lineaId ?? id}`}>Tu PIN</label>

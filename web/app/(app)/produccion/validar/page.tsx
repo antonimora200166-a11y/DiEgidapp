@@ -47,11 +47,11 @@ export default async function Validar({ searchParams }: { searchParams: Promise<
       <h1 style={{ marginBottom: '.3rem' }}>{F.titulo}</h1>
       <p className="suave" style={{ marginTop: 0 }}>
         {F.conIngredientes
-          ? 'Tres pasos: empareja los ingredientes del recetario con el catálogo, dile a cada MPI cuál es su receta y aprueba la propuesta como ficha.'
+          ? 'Tres pasos: empareje los ingredientes del recetario con el catálogo, dígale a cada MPI cuál es su receta y apruebe la propuesta como ficha.'
           : F.lineasDeReceta
-            ? 'Cada plato de la carta con su receta del recetario: sus componentes son las MPI (subrecetas) y algunos insumos. Revisa las porciones y aprueba la ficha. Un componente sin MPI o un ingrediente sin emparejar se resuelve primero en «Validar MPI».'
+            ? 'Cada plato de la carta con su receta del recetario: sus componentes son las MPI (subrecetas) y algunos insumos. Revise las porciones y apruebe la ficha. Un componente sin MPI o un ingrediente sin emparejar se resuelve primero en «Validar MPI».'
             : 'Cada bebida ya tiene ficha con sus ingredientes costeados. Al aprobar, nace una versión nueva que suma de la carta el procedimiento, la descripción, la presentación, el método y los alérgenos.'}
-        {' '}Nada se vuelve ficha sin tu aprobación.{!s.puede_editar && ` Solo ${F.area === 'BAR' ? 'el jefe de barra' : 'el chef'} o administración deciden; tú puedes consultar.`}
+        {' '}Nada se vuelve ficha sin su aprobación.{!s.puede_editar && ` Solo ${F.area === 'BAR' ? 'el jefe de barra' : 'el chef'} o administración deciden; usted puede consultar.`}
       </p>
       <div className="cifras">
         <div className="cifra"><span>{F.lineasDeReceta ? `${F.resultados} con ficha` : 'Fichas completadas'}</span><b>{hechas} / {s.mpi.total}</b><small>{s.mpi.receta_elegida} por aprobar</small></div>

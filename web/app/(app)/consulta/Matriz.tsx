@@ -68,7 +68,7 @@ export default function Matriz({ puntos }: { puntos: PuntoMatriz[] }) {
           <div style={{ marginTop: '.3rem' }}>{QUE_HACER[cuad(elegido)]}</div>
           <Link href={`/fichas/${elegido.generico_id}`} className="mini">Abrir la ficha</Link> · <Link href={`/consulta/simulador?producto=${elegido.generico_id}`} className="mini">Simular precio o receta</Link>
         </div>
-      ) : <p className="suave" style={{ fontSize: '.85rem' }}>Toca un punto para ver el producto.</p>}
+      ) : <p className="suave" style={{ fontSize: '.85rem' }}>Toque un punto para ver el producto.</p>}
     </div>
   );
 }

@@ -42,7 +42,7 @@ export default function Simulador({ producto, base, mezcla, desde, hasta }: { pr
     setMsg(null);
     start(async () => {
       const res = await guardarPropuesta({ generico_id: producto.generico_id, precio_nuevo: precioN, cantidades, unidades_nuevas: uN, nota, desde, hasta });
-      setMsg(res.ok ? { ok: true, texto: `Propuesta ${res.codigo} guardada. Apruébala o descártala abajo.` } : { ok: false, texto: res.error ?? 'No se pudo guardar.' });
+      setMsg(res.ok ? { ok: true, texto: `Propuesta ${res.codigo} guardada. Apruébela o descártela abajo.` } : { ok: false, texto: res.error ?? 'No se pudo guardar.' });
       if (res.ok) setNota('');
     });
   }
@@ -71,7 +71,7 @@ export default function Simulador({ producto, base, mezcla, desde, hasta }: { pr
             <label style={{ marginTop: '.6rem', display: 'block' }}>Unidades esperadas en el período
               <input inputMode="numeric" placeholder={`igual: ${mezcla.unidades.toLocaleString('es-CO')}`} value={unidades} onChange={(e) => setUnidades(e.target.value)} />
               <small className="suave">Vendidas {pagadas.toLocaleString('es-CO')}{mezcla.unidades_sin_valor ? ` + ${mezcla.unidades_sin_valor.toLocaleString('es-CO')} a $0` : ''}.
-                Déjalo vacío si crees que el precio nuevo no cambia lo que se vende.</small>
+                Déjelo vacío si cree que el precio nuevo no cambia lo que se vende.</small>
             </label>)}
         </div>
         <div>

@@ -8,12 +8,12 @@ export type EstadoLogin = { error?: string };
 export async function entrar(_: EstadoLogin, form: FormData): Promise<EstadoLogin> {
   const usuario = String(form.get('usuario') || '').trim();
   const clave = String(form.get('clave') || '');
-  if (!usuario || !clave) return { error: 'Escribe tu usuario y tu contraseña.' };
+  if (!usuario || !clave) return { error: 'Escriba su usuario y su contraseña.' };
 
   const supabase = await supabaseServidor();
   const { error } = await supabase.auth.signInWithPassword({ email: correoDe(usuario), password: clave });
   if (error) {
-    return { error: error.status === 400 ? 'Usuario o contraseña incorrectos.' : 'No hay conexión con el servidor. Revisa la red e inténtalo otra vez.' };
+    return { error: error.status === 400 ? 'Usuario o contraseña incorrectos.' : 'No hay conexión con el servidor. Revise la red e inténtelo otra vez.' };
   }
 
   // solo sirve una ruta interna: no se redirige a otro sitio

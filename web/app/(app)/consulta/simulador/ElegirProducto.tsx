@@ -15,7 +15,7 @@ export default function ElegirProducto({ opciones, actual, desde, hasta }: { opc
     <label style={{ display: 'block', margin: '.6rem 0 1rem', maxWidth: 520 }}>
       <span className="suave" style={{ fontSize: '.85rem' }}>Producto</span>
       <select value={actual} onChange={(e) => router.push(`/consulta/simulador?${new URLSearchParams({ producto: e.target.value, desde, hasta })}`)}>
-        <option value="">Escoge un producto…</option>
+        <option value="">Escoja un producto…</option>
         {[...grupos].map(([g, lista]) => (
           <optgroup key={g} label={g}>
             {lista.map((o) => (

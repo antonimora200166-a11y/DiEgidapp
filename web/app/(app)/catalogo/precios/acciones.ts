@@ -33,7 +33,7 @@ export async function leerPrecios(ruta: string): Promise<LecturaFoto> {
   if (!RUTA.test(ruta) || !areas.some((a) => ruta.startsWith(`${a}/`))) return { ok: false, error: 'La foto no se subió en una carpeta válida.' };
   const supabase = await supabaseServidor();
   const { data: archivo, error } = await supabase.storage.from('facturas').download(ruta);
-  if (error || !archivo) return { ok: false, error: 'No se pudo abrir la foto subida. Vuelve a subirla.' };
+  if (error || !archivo) return { ok: false, error: 'No se pudo abrir la foto subida. Vuelva a subirla.' };
 
   const r = await leerPreciosConIA(new Uint8Array(await archivo.arrayBuffer()), TIPOS[ruta.split('.').pop()!]);
   if (!r.ok) return r;
@@ -158,7 +158,7 @@ export async function crearDesdeFoto(area: Area, d: NuevoDesdeFoto): Promise<Cre
   if (!genId && clase !== 'MATERIA_PRIMA') {
     const { data: prod } = await supabase.from('productos').select('generico_id').eq('id', r.id).maybeSingle();
     const { data: fc } = prod ? await supabase.rpc('fijar_clase', { p_genericos: [prod.generico_id], p_clase: clase }) : { data: null };
-    if (!fc || (fc as { ok: number }).ok !== 1) avisos.push('Se creó como materia prima: cambia su tipo en el catálogo.');
+    if (!fc || (fc as { ok: number }).ok !== 1) avisos.push('Se creó como materia prima: cambie su tipo en el catálogo.');
   }
   revalidatePath('/catalogo', 'layout');
   return { ok: true, producto_id: r.id, avisos };

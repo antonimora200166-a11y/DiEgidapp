@@ -1,4 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#7a2e2a"/>
-  <text x="256" y="330" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="260" font-weight="700" fill="#f6f4ef">É</text>
+  <!-- Monograma D·É del sistema gráfico: dorado champaña sobre verde bosque, con filete dorado -->
+  <rect width="512" height="512" rx="96" fill="#0D3B33"/>
+  <rect x="40" y="40" width="432" height="432" rx="64" fill="none" stroke="#B08D57" stroke-width="6"/>
+  <text x="256" y="318" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="200" font-weight="600" fill="#C9A86F">D·É</text>
 </svg>

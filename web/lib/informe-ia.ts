@@ -49,7 +49,7 @@ export async function redactarResumen(cifras: unknown): Promise<ResultadoInforme
     if (!r.success || !r.data.lineas.length) return { ok: false, error: 'La IA devolvió una respuesta que no se entiende. Inténtalo de nuevo.' };
     return { ok: true, texto: r.data.lineas.slice(0, 5).map((l) => l.trim()).join('\n'), modelo: respuesta.model ?? MODELO };
   } catch (e) {
-    if (e instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espera un minuto e inténtalo de nuevo.' };
+    if (e instanceof Anthropic.RateLimitError) return { ok: false, error: 'La IA está ocupada. Espere un minuto e inténtelo de nuevo.' };
     if (e instanceof Anthropic.AuthenticationError) return { ok: false, error: 'La clave de la API de Claude no es válida.' };
     if (e instanceof Anthropic.APIConnectionError) return { ok: false, error: 'No hubo conexión con la IA. Inténtalo de nuevo.' };
     if (e instanceof Anthropic.APIError) return { ok: false, error: `La IA respondió con un error (${e.status}).` };

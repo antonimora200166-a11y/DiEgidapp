@@ -28,7 +28,7 @@ const ALERTA: Record<string, { t: string; d: string }> = {
   PRECIOS_DISPARES: { t: 'Precios muy distintos', d: 'Entre una compra y otra el costo por unidad base cambia más del doble.' },
   PARECIDO: { t: 'Posible duplicado', d: 'Hay otro genérico con un nombre muy parecido.' },
   MPI_SIN_FICHA: { t: 'MPI sin ficha', d: 'Sin ficha técnica no tiene costo.' },
-  VARIAS_PRESENTACIONES: { t: 'Varias presentaciones', d: 'El genérico tiene otra presentación activa: si es la misma, quita la repetida.' },
+  VARIAS_PRESENTACIONES: { t: 'Varias presentaciones', d: 'El genérico tiene otra presentación activa: si es la misma, quite la repetida.' },
 };
 const GRAVES = ['PRESENTACION', 'CONTENIDO', 'PRECIO_RARO', 'UNIDAD_TEXTO'];
 
@@ -87,7 +87,7 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
     if (!b.variable) {
       const t = b.contenido.trim();
       const v = Number(/^\d{1,3}(\.\d{3})+$/.test(t) ? t.replace(/\./g, '') : t.replace(',', '.'));  // «2.500» = 2500 · «0,75» = 0.75
-      if (!(v > 0)) { setMensaje({ ok: false, texto: 'El contenido debe ser un número mayor que cero (o marca «se pesa al recibir»).' }); return; }
+      if (!(v > 0)) { setMensaje({ ok: false, texto: 'El contenido debe ser un número mayor que cero (o marque «se pesa al recibir»).' }); return; }
       if (v !== Number(f.contenido_base)) c.contenido_base = v;
     }
     correr(() => corregirYVerificar(f.producto_id, c), `${f.generico}: corregido y verificado.`, () => setCorrigiendo(null));
@@ -102,7 +102,7 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
   function guardarPrecio(f: Fila) {
     if (panel?.tipo !== 'precio') return;
     const v = numero(panel.valor);
-    if (!(v > 0)) { setMensaje({ ok: false, texto: 'Escribe el precio en pesos, mayor que cero.' }); return; }
+    if (!(v > 0)) { setMensaje({ ok: false, texto: 'Escriba el precio en pesos, mayor que cero.' }); return; }
     const { por, otras } = panel;
     correr(() => fijarCosto(f.producto_id, v, por, otras), `${f.generico}: precio guardado.`, () => setPanel(null));
   }
@@ -114,7 +114,7 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
     let factor: number | null = null;
     if (ubQueda !== ubVa) {
       factor = numero(panel.factor);
-      if (!(factor > 0)) { setMensaje({ ok: false, texto: `Di cuántos ${ubQueda} son 1 ${ubVa}.` }); return; }
+      if (!(factor > 0)) { setMensaje({ ok: false, texto: `Diga cuántos ${ubQueda} son 1 ${ubVa}.` }); return; }
     }
     const nombre = este ? f.generico : p.nombre;
     correr(() => unir(queda, va, factor), `Unidos en «${nombre}».`, () => setPanel(null));

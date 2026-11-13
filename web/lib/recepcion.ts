@@ -51,12 +51,12 @@ export function aUnidadesCompra(cantidad: number | null, unidadFactura: string |
     || ['UND', 'UNDS', 'UNIDAD', 'UNIDADES', 'UN', 'U'].includes(p.unidad_compra.toUpperCase());
   if (!m && p.unidad_base !== 'und' && (POR_PIEZA.has(u) || !u) && granel) {
     return { cantidad, total_base: null, pesar: true,
-             nota: `La factura dice ${cantidad} ${u ? u.toLowerCase() : 'pieza(s)'}: pésalas juntas y escribe el peso total en ${p.unidad_base}.` };
+             nota: `La factura dice ${cantidad} ${u ? u.toLowerCase() : 'pieza(s)'}: péselas juntas y escriba el peso total en ${p.unidad_base}.` };
   }
   if (!m || m.base !== p.unidad_base) return { cantidad, total_base: null, nota: null };
   const base = cantidad * m.factor;
   if (p.contenido_variable) {
-    return { cantidad: 1, total_base: base, nota: `${cantidad} ${u} = ${base} ${p.unidad_base} en total: indica cuántas unidades llegaron.` };
+    return { cantidad: 1, total_base: base, nota: `${cantidad} ${u} = ${base} ${p.unidad_base} en total: indique cuántas unidades llegaron.` };
   }
   if (!p.contenido_base || u === p.unidad_compra.toUpperCase()) return { cantidad, total_base: null, nota: null };
   const q = r4(base / p.contenido_base);

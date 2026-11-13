@@ -49,7 +49,7 @@ export default function PrecioProducto({ id, unidadBase, unidadCompra, contenido
         : (
           <form onSubmit={(e) => {
             e.preventDefault();
-            if (!(v > 0)) { setMsg({ ok: false, texto: 'Escribe el precio en pesos, mayor que cero.' }); return; }
+            if (!(v > 0)) { setMsg({ ok: false, texto: 'Escriba el precio en pesos, mayor que cero.' }); return; }
             setMsg(null);
             iniciar(async () => {
               const r = await fijarCosto(id, v, por, otras);

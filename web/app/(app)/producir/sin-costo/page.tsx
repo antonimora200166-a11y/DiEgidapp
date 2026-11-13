@@ -24,7 +24,7 @@ export default async function SinCosto() {
       <h1>Lotes sin costo completo</h1>
       <p className="suave">
         Lotes a los que les falta el costo de algún insumo: su costo por gramo no es confiable. {filas.length - historicos} de la app
-        y {historicos} del histórico de los Sheets. Filtra por «Insumo que falta» para ver qué compra o conversión destraba más lotes.
+        y {historicos} del histórico de los Sheets. Filtre por «Insumo que falta» para ver qué compra o conversión destraba más lotes.
       </p>
       <ListaSinCosto filas={filas} />
     </>

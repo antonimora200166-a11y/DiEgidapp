@@ -110,7 +110,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
         </div>
       )}
 
-      <label htmlFor="busqueda">¿Qué producto es? <span className="ayuda">Escribe como aparece en la factura: «Azúcar Manuelita 2500», «Ginebra Hendricks»</span></label>
+      <label htmlFor="busqueda">¿Qué producto es? <span className="ayuda">Escriba como aparece en la factura: «Azúcar Manuelita 2500», «Ginebra Hendricks»</span></label>
       <input id="busqueda" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} autoComplete="off" autoFocus />
 
       {busqueda.trim().length >= 3 && (
@@ -119,7 +119,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
             : !parecidos.length ? <p className="suave">No hay nada parecido en {area === 'BAR' ? 'bar' : 'cocina'}: es un genérico nuevo.</p>
             : (
               <>
-                {fuertes.length > 0 && <p className="aviso">Hay {fuertes.length} producto(s) muy parecido(s). Si es uno de estos, <strong>no lo crees</strong>: úsalo con su código.</p>}
+                {fuertes.length > 0 && <p className="aviso">Hay {fuertes.length} producto(s) muy parecido(s). Si es uno de estos, <strong>no lo cree</strong>: úselo con su código.</p>}
                 <ul className="lista">
                   {parecidos.map((p) => (
                     <li key={p.producto_id}>
@@ -224,7 +224,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
 
           {resultado && !resultado.ok && (
             <div className={resultado.fatales.length ? 'error' : 'aviso'} role="alert">
-              <strong>{resultado.fatales.length ? 'No se puede crear:' : 'Antes de crear, revisa:'}</strong>
+              <strong>{resultado.fatales.length ? 'No se puede crear:' : 'Antes de crear, revise:'}</strong>
               <ul>{[...resultado.fatales, ...resultado.bloqueos, ...resultado.avisos].map((m) => <li key={m}>{m}</li>)}</ul>
             </div>
           )}

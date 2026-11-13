@@ -19,20 +19,20 @@ export default async function Cuenta() {
       <h1>Mi cuenta</h1>
       <p className="suave">{perfil.nombre} · usuario <span className="cod">{perfil.usuario ?? '—'}</span> · {nombreRol(perfil.rol)}</p>
       {perfil.debe_cambiar_clave && (
-        <p className="aviso">Entraste con una contraseña temporal. Antes de seguir, ponle una tuya: lo que registres queda a tu nombre.</p>
+        <p className="aviso">Entró con una contraseña temporal. Antes de seguir, póngale una suya: lo que registre queda a su nombre.</p>
       )}
       <h2>Tema</h2>
       <SelectorTema />
       <p className="suave" style={{ fontSize: '.88rem' }}>Se guarda en este equipo. «Automático» sigue al celular o iPad; en la barra conviene «Oscuro».</p>
       <h2>Cambiar contraseña</h2>
       <FormClave temporal={perfil.debe_cambiar_clave} />
-      <p className="suave" style={{ fontSize: '.88rem' }}>¿La olvidaste? Pídele a administración que te dé una temporal desde la pantalla Usuarios.</p>
+      <p className="suave" style={{ fontSize: '.88rem' }}>¿La olvidó? Pídale a administración que le dé una temporal desde la pantalla Usuarios.</p>
       {autoriza && (
         <>
           <h2>PIN para autorizar</h2>
           <p className="suave" style={{ fontSize: '.88rem', marginTop: 0 }}>
             {exigePin ? 'Se pide' : 'Cuando administración lo active, se pedirá'} al autorizar una cortesía y al anular un documento.
-            {tienePin ? ' Ya tienes uno.' : ' Aún no tienes uno.'} ¿Lo olvidaste? Administración lo borra y fijas uno nuevo.
+            {tienePin ? ' Ya tiene uno.' : ' Aún no tiene uno.'} ¿Lo olvidó? Administración lo borra y usted fija uno nuevo.
           </p>
           <FormPin tiene={tienePin === true} />
         </>
@@ -41,7 +41,7 @@ export default async function Cuenta() {
       <form action={salir}>
         <button type="submit" className="secundario peligro"><Icono nombre="salir" /> Salir de la app</button>
       </form>
-      <p className="suave" style={{ fontSize: '.88rem' }}>En un celular compartido, sal al terminar el turno: lo que se registre después quedaría a tu nombre.</p>
+      <p className="suave" style={{ fontSize: '.88rem' }}>En un celular compartido, salga al terminar el turno: lo que se registre después quedaría a su nombre.</p>
     </>
   );
 }

@@ -15,7 +15,7 @@ export default async function NuevoProducto() {
   return (
     <>
       <h1>Crear producto</h1>
-      <p className="suave">Primero busca: si ya existe, úsalo. Lo que crees aquí entra <strong>provisional</strong> hasta que el jefe del área lo valide.</p>
+      <p className="suave">Primero busque: si ya existe, úselo. Lo que cree aquí entra <strong>provisional</strong> hasta que el jefe del área lo valide.</p>
       <CrearProducto areas={areas as Area[]} categorias={(categorias ?? []) as { codigo: string; nombre: string; area: Area }[]} />
     </>
   );

@@ -120,8 +120,8 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
       )}
       {lineas.length > 0 && (!zona || !causa || malas > 0 || faltaObs) && (
         <p className="suave" style={{ fontSize: '.85rem' }}>
-          {!zona ? 'Elige la zona. ' : ''}{!causa ? 'Elige la causa. ' : ''}
-          {malas > 0 ? `Falta la cantidad en ${malas} producto(s). ` : ''}{faltaObs ? 'Escribe qué pasó en observaciones.' : ''}
+          {!zona ? 'Elija la zona. ' : ''}{!causa ? 'Elija la causa. ' : ''}
+          {malas > 0 ? `Falta la cantidad en ${malas} producto(s). ` : ''}{faltaObs ? 'Escriba qué pasó en observaciones.' : ''}
         </p>
       )}
     </>

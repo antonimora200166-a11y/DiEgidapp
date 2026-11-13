@@ -23,7 +23,7 @@ export default async function Existencias({ searchParams }: { searchParams: Prom
 
   return (
     <>
-      <h1 className="pagina-ancha">Existencias</h1>
+      <h1 className="pagina-ancha titulo-gestion">Existencias</h1>
       {filas.length ? (
         <ListaExistencias filas={filas} zonaInicial={zona ? nombreZona(zona) : null} variasAreas={areas.length > 1} vePesos={vePrecios(perfil)} />
       ) : (

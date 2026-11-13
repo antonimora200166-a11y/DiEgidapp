@@ -98,7 +98,7 @@ export default function TarjetaPar({ par }: { par: Par }) {
       {mismoGenerico && <p className="suave" style={{ margin: '.6rem 0 0', fontSize: '.88rem' }}>Los dos ya son el mismo genérico: «son el mismo» desactiva el producto repetido.</p>}
       {ubDistinta && !eligiendo && (
         <p className="suave" style={{ margin: '.6rem 0 0', fontSize: '.88rem' }}>
-          Van en unidades distintas ({par.a.generico!.unidad_base} / {par.b.generico!.unidad_base}). Si son el mismo, al unirlos te
+          Van en unidades distintas ({par.a.generico!.unidad_base} / {par.b.generico!.unidad_base}). Si son el mismo, al unirlos le
           preguntaremos la equivalencia y los productos del que se absorbe pasan a la unidad del que queda.
           {(par.a.generico!.unidad_base === 'und') !== (par.b.generico!.unidad_base === 'und') && (
             <> Casi siempre conviene quedarse con el que va en <strong>{par.a.generico!.unidad_base === 'und' ? par.b.generico!.unidad_base : par.a.generico!.unidad_base}</strong> (lado {par.a.generico!.unidad_base === 'und' ? 'B' : 'A'}): se pesa o se mide con más precisión que por unidad.</>
@@ -114,7 +114,7 @@ export default function TarjetaPar({ par }: { par: Par }) {
             <input id={`factor-${par.id}`} inputMode="decimal" value={respuesta} onChange={(e) => setRespuesta(e.target.value)} style={{ maxWidth: 140 }} autoFocus />
             <span>{p.a}</span>
           </div>
-          <span className="ayuda">Pésalo si puedes (un limón, una botella llena sin el envase). Si el lado que se absorbe ya tiene kardex, no se puede cambiar su unidad.</span>
+          <span className="ayuda">Péselo si puede (un limón, una botella llena sin el envase). Si el lado que se absorbe ya tiene kardex, no se puede cambiar su unidad.</span>
           <div className="acciones">
             <button type="button" disabled={enviando || !x || x <= 0} onClick={() => decidir('FUSIONAR', eligiendo!, p.factor(x!))}>
               {enviando ? 'Uniendo…' : 'Unir con esta equivalencia'}

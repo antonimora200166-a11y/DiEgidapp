@@ -35,7 +35,7 @@ export async function leerFactura(ruta: string, area: Area): Promise<Lectura> {
   if (!RUTA.test(ruta) || !ruta.startsWith(`${area}/`)) return { ok: false, error: 'La foto no corresponde a esta área.' };
   const supabase = await supabaseServidor();
   const { data: archivo, error } = await supabase.storage.from('facturas').download(ruta);
-  if (error || !archivo) return { ok: false, error: 'No se pudo abrir la foto subida. Vuelve a tomarla.' };
+  if (error || !archivo) return { ok: false, error: 'No se pudo abrir la foto subida. Vuelva a tomarla.' };
 
   const r = await leerFacturaConIA(new Uint8Array(await archivo.arrayBuffer()), TIPOS[ruta.split('.').pop()!]);
   if (!r.ok) return r;
@@ -134,7 +134,7 @@ export async function crearProductoRapido(area: Area, d: {
   if (!res.ok || !res.id) return { ok: false, fatales: res.fatales, bloqueos: res.bloqueos };
   const { data: lista } = await supabase.rpc('productos_recepcion', { p_area: area });
   const producto = ((lista ?? []) as ProductoRecepcion[]).find((x) => x.producto_id === res.id);
-  return producto ? { ok: true, producto } : { ok: false, fatales: ['Se creó, pero no aparece entre lo que se recibe. Recarga la página.'], bloqueos: [] };
+  return producto ? { ok: true, producto } : { ok: false, fatales: ['Se creó, pero no aparece entre lo que se recibe. Recargue la página.'], bloqueos: [] };
 }
 
 // Todas las reglas (compuertas F/B, banda de precio, sello, cadena de frío, costo promedio) las

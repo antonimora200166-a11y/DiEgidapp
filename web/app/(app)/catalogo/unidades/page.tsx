@@ -25,8 +25,8 @@ export default async function Unidades() {
       <h1>Revisar unidades</h1>
       <p className="suave">
         Revisión del catálogo hecha con Claude el 31/10/2026: para cada insumo propone la unidad base (g, ml o und), el contenido de
-        su presentación y la categoría, con la razón. <strong>Nada cambia hasta que lo aceptes.</strong> Acepta por grupos las que estén
-        bien, corrige las que no y rechaza las que sobren. Conviene terminar antes del conteo inicial: después, la unidad de un
+        su presentación y la categoría, con la razón. <strong>Nada cambia hasta que lo acepte.</strong> Acepte por grupos las que estén
+        bien, corrija las que no y rechace las que sobren. Conviene terminar antes del conteo inicial: después, la unidad de un
         producto con kardex ya no se puede cambiar.
       </p>
       <Propuestas filas={filas} categorias={categorias ?? []} soloLectura={perfil.rol === 'auditor'} esAdmin={perfil.rol === 'admin'} />

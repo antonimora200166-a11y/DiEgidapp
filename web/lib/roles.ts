@@ -55,7 +55,7 @@ export function menuDe(p: Perfil): Opcion[] {
   // precios y costos de la carta: solo administración (decisión de Anthony, 06/11/2026)
   if (p.rol === 'admin') m.push({ ruta: '/carta', titulo: 'Carta y margen', detalle: 'Costo de cada cóctel y plato contra su precio', icono: 'carta' });
   if (p.rol === 'admin') m.push({ ruta: '/alertas', titulo: 'Alertas', detalle: 'Lo que hay que revisar, a quién se asignó y cómo se resolvió', icono: 'registro' });
-  else if (p.rol !== 'servicio' && p.rol !== 'auditor') m.push({ ruta: '/alertas', titulo: 'Mis alertas', detalle: 'Lo que administración te pidió revisar', icono: 'registro' });
+  else if (p.rol !== 'servicio' && p.rol !== 'auditor') m.push({ ruta: '/alertas', titulo: 'Mis alertas', detalle: 'Lo que administración le pidió revisar', icono: 'registro' });
   if (p.rol === 'admin') m.push({ ruta: '/consulta', titulo: 'Consulta', detalle: 'Ventas de Odoo, costo teórico, margen e ingeniería de menú', icono: 'existencias' });
   if (p.rol !== 'servicio') m.push({ ruta: '/catalogo', titulo: 'Catálogo', detalle: 'Buscar productos y validar los provisionales', icono: 'catalogo' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/catalogo/nuevo', titulo: 'Crear producto', detalle: 'Alta provisional, con búsqueda de parecidos', icono: 'nuevo' });

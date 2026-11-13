@@ -292,7 +292,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
         {bloqueo?.codigo === r.codigo && <div className="aviso" style={{ margin: 0, fontSize: '.85rem', maxWidth: 360 }}>
           {bloqueo.mensajes.map((m) => <div key={m}>{m}</div>)}
           <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="No es la misma porque…" style={{ marginTop: '.3rem' }} aria-label="Motivo para crearla igual" />
-          <span className="suave">Escribe el motivo y toca «Crear MPI» otra vez.</span>
+          <span className="suave">Escriba el motivo y toque «Crear MPI» otra vez.</span>
         </div>}
       </div>;
     } }] : []),

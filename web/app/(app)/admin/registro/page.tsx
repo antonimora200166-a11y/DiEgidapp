@@ -115,7 +115,7 @@ export default async function Registro({ searchParams }: { searchParams: Promise
       ) : (
         <>
           <p className="suave" style={{ fontSize: '.88rem' }}>
-            Lo que falló en el servidor o en el celular de alguien. Si un error se repite, pásale el mensaje a quien mantiene la app.
+            Lo que falló en el servidor o en el celular de alguien. Si un error se repite, pásele el mensaje a quien mantiene la app.
           </p>
           {errores.length ? (
             <ul className="lista">
