@@ -7,7 +7,6 @@ import ListaBaul, { type EnBaul } from './ListaBaul';
 
 export const metadata = { title: 'Carta y margen' };
 
-const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' };
 type Vista = 'BAR' | 'COCINA' | 'TODO';
 const NOMBRE: Record<Vista, string> = { BAR: 'Bar', COCINA: 'Cocina', TODO: 'Todo' };
 
@@ -36,10 +35,10 @@ export default async function Carta({ searchParams }: { searchParams: Promise<{ 
       <h1 className="pagina-ancha titulo-gestion">Carta y margen</h1>
       <nav className="segmentos" style={{ marginBottom: '1rem', gap: '1rem' }}>
         {(['BAR', 'COCINA', 'TODO'] as Vista[]).map((a) => (
-          <Link key={a} href={`/carta?area=${a}${enBaul ? '&vista=baul' : ''}`}><span style={a === area ? activo : undefined}>{NOMBRE[a]}</span></Link>
+          <Link key={a} href={`/carta?area=${a}${enBaul ? '&vista=baul' : ''}`} aria-current={a === area ? 'true' : undefined}><span>{NOMBRE[a]}</span></Link>
         ))}
-        <Link href={`/carta?area=${area}`}><span style={!enBaul ? activo : undefined}>En carta</span></Link>
-        <Link href={`/carta?area=${area}&vista=baul`}><span style={enBaul ? activo : undefined}>Baúl{baul.length ? ` (${baul.length})` : ''}</span></Link>
+        <Link href={`/carta?area=${area}`} aria-current={!enBaul ? 'true' : undefined}><span>En carta</span></Link>
+        <Link href={`/carta?area=${area}&vista=baul`} aria-current={enBaul ? 'true' : undefined}><span>Baúl{baul.length ? ` (${baul.length})` : ''}</span></Link>
       </nav>
       {enBaul ? (
         <>

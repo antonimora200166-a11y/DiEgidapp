@@ -580,3 +580,79 @@ button:not(.secundario):not(.discreto):not(.herramienta):not(.peligro):not(.quit
                           box-shadow: inset 0 0 0 2px var(--dorado); color: var(--dorado-claro); font-family: var(--fuente-titulos); font-weight: 600; font-size: 1.7rem; }
 .login-marca .tagline { font-family: var(--fuente-titulos); font-style: italic; font-weight: 500; font-size: 1.05rem; color: var(--dorado-texto); }
 .login h1 { text-align: center; }
+
+/* ---------------------------------------------------------------- Menú lateral (GEN-01): iPad horizontal y computador */
+.menu-lateral { display: none; }
+@media (min-width: 901px) {
+  :root { --ancho-menu: 236px; }
+  :root[data-menu-plegado] { --ancho-menu: 68px; }
+  .menu-lateral { display: flex; flex-direction: column; gap: .1rem; position: fixed; z-index: 9; left: 0; bottom: 0;
+                  top: var(--alto-barra, 67px); width: var(--ancho-menu); overflow-y: auto; padding: .7rem .5rem 1rem;
+                  background: var(--tarjeta); border-right: 1px solid var(--borde); }
+  .contenido { margin-left: calc(var(--ancho-menu) + max(0px, (100vw - var(--ancho-menu) - 760px) / 2)); margin-right: auto; }
+  .contenido:has(.pagina-ancha) { margin-left: var(--ancho-menu); margin-right: 0; max-width: min(1280px, calc(100vw - var(--ancho-menu))); }
+  .ml-grupo { display: grid; gap: .1rem; margin-top: .7rem; }
+  .ml-tit { font-size: .66rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--dorado-texto); padding: 0 .65rem .2rem; }
+  .ml-op { display: flex; align-items: center; gap: .65rem; min-height: 44px; padding: .35rem .65rem; border-radius: var(--radio);
+           text-decoration: none; color: var(--texto); font-size: .92rem; font-weight: 500; white-space: nowrap; }
+  .ml-op .icono { width: 1.25rem; height: 1.25rem; color: var(--suave); }
+  .ml-op:hover { background: color-mix(in srgb, var(--tinta) 8%, transparent); }
+  .ml-op[aria-current='page'] { background: color-mix(in srgb, var(--tinta) 13%, transparent); color: var(--tinta); font-weight: 600;
+                                box-shadow: inset 3px 0 0 var(--dorado); }
+  .ml-op[aria-current='page'] .icono { color: var(--tinta); }
+  .ml-plegar { margin-top: auto; justify-content: flex-start; gap: .65rem; min-height: 44px; padding: .35rem .65rem; background: none;
+               border: 0; color: var(--suave); font-weight: 500; font-size: .85rem; }
+  .ml-plegar:hover:not(:disabled) { background: color-mix(in srgb, var(--tinta) 8%, transparent); }
+  :root[data-menu-plegado] .menu-lateral :is(.ml-op, .ml-plegar) > span:last-child, :root[data-menu-plegado] .ml-tit { display: none; }
+  :root[data-menu-plegado] .ml-op { justify-content: center; padding: .35rem; }
+  :root[data-menu-plegado] .ml-grupo { border-top: 1px solid var(--borde); padding-top: .5rem; }
+}
+
+/* Recibir: línea lista en un renglón y avance de la factura (REC-01, REC-03) */
+.lista > li.linea-compacta { display: flex; align-items: center; gap: .6rem; padding: .45rem .7rem; min-height: 60px; border-left: 3px solid var(--ok); }
+.lc-txt { flex: 1; min-width: 0; }
+.lc-txt strong { display: block; line-height: 1.25; overflow-wrap: anywhere; }
+.lc-txt small { display: block; color: var(--suave); font-size: .8rem; }
+.lc-valor { white-space: nowrap; font-weight: 600; }
+@media (max-width: 520px) { .linea-compacta .insignia { display: none; } }
+.lc-cerrar { float: right; margin: -.2rem -.3rem .2rem .5rem; }
+.barra-guardar .avance-rec { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .8rem; font-size: .88rem; }
+.avance-rec-barra { flex: 1 1 120px; height: 6px; border-radius: 999px; background: var(--borde); overflow: hidden; }
+.avance-rec-barra > span { display: block; height: 100%; background: var(--ok); transition: width .25s ease; }
+@media (prefers-reduced-motion: reduce) { .avance-rec-barra > span { transition: none; } }
+.lista { grid-template-columns: minmax(0, 1fr); }   /* una fila larga (nombre sin cortar) no ensancha la página */
+/* barra de guardar de Recibir más baja: avance y suma en dos renglones cortos, botones en uno */
+.barra-guardar:has(.avance-rec) { gap: .35rem .5rem; }
+.barra-guardar:has(.avance-rec) > button { min-height: var(--toque); }
+.avance-rec-txt { flex: 1; }
+.avance-rec-barra { order: 3; flex-basis: 100%; }
+.avance-rec .discreto { min-height: 40px; padding: .2rem .5rem; }
+@media (pointer: coarse) { .avance-rec .discreto { min-height: var(--toque); } }
+
+/* Consulta: pestañas fijas bajo la cabecera, que se deslizan de lado en el celular (CONS-02) */
+.pestanas-consulta { position: sticky; top: var(--alto-barra, 67px); z-index: 8; display: flex; gap: .2rem; overflow-x: auto; scrollbar-width: none;
+                     margin: .8rem 0 .9rem; padding: .3rem 0; background: var(--fondo); border-bottom: 1px solid var(--borde); }
+.pestanas-consulta::-webkit-scrollbar { display: none; }
+.pestanas-consulta a { flex: none; display: inline-flex; align-items: center; gap: .35rem; min-height: var(--toque); padding: 0 .85rem;
+                       border-radius: var(--radio); text-decoration: none; font-size: .9rem; font-weight: 500; color: var(--suave); white-space: nowrap; }
+.pestanas-consulta a:hover { color: var(--texto); background: color-mix(in srgb, var(--tinta) 7%, transparent); }
+.pestanas-consulta a[aria-current='page'] { color: var(--tinta); font-weight: 600; box-shadow: inset 0 -2px 0 var(--dorado); }
+.pc-n { min-width: 1.4rem; padding: 0 .35rem; border-radius: 999px; background: var(--error-fondo); color: var(--error); font-size: .72rem; font-weight: 700; text-align: center; }
+
+/* Calidad del catálogo: bandeja con contador por tipo (CAL-01) */
+.migas { margin: 0 0 .2rem; font-size: .85rem; color: var(--suave); }
+.migas a { color: var(--dorado-texto); }
+.bandeja-calidad { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.bc-item { display: flex; flex-direction: column; gap: .35rem; text-decoration: none; min-height: 190px; }
+.bc-item:hover { border-color: var(--tinta); }
+.bc-item.pendiente { border-top: 2px solid var(--aviso); }
+.bc-item > .suave { font-size: .85rem; flex: 1; }
+.bc-cab { display: flex; justify-content: space-between; align-items: center; }
+.bc-n { font-size: 2rem; font-weight: 600; line-height: 1; }
+.bc-pie { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.bc-accion { color: var(--tinta); font-weight: 600; font-size: .9rem; }
+
+/* Segmentos que son enlaces (Bar / Cocina, períodos, pestañas chicas): el elegido lo marca aria-current, no un estilo
+   escrito en cada pantalla (GEN-10) */
+.segmentos a { text-decoration: none; }
+.segmentos a[aria-current] > span { background: var(--marca); color: var(--marca-texto); border-color: var(--tinta); }

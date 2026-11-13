@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import Exportar from '../Exportar';
+import PestanasConsulta from '@/components/PestanasConsulta';
+import FiltroConsulta, { periodos, hoyCali } from '@/components/FiltroConsulta';
 import { pesos as fmtPesos, fecha as corta } from '@/lib/formato';
 const pesos = (n: unknown) => fmtPesos(n as number | null);
 
@@ -63,26 +65,14 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
   if (error) throw new Error(error.message);
   const d = (data ?? {}) as Record<string, unknown>;
   const lista = (k: string) => (d[k] ?? []) as Fila[];
-  const enlace = (c: Record<string, string>) => `/consulta/operacion?${new URLSearchParams({ desde, hasta, area, bloque, ...c })}`;
-  const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' };
 
   return (
     <>
-      <p style={{ margin: '0 0 .3rem' }}><Link href={`/consulta?${new URLSearchParams({ desde, hasta, area })}`}>← Consulta</Link></p>
-      <h1 className="pagina-ancha titulo-gestion">Inventario, compras, producción y pérdidas</h1>
+      <h1 className="pagina-ancha titulo-gestion">Consulta</h1>
+      <FiltroConsulta ruta="/consulta/operacion" desde={desde} hasta={hasta} area={area} fijos={{ bloque }}
+                      opciones={[{ t: 'Últimos 30 días', desde: hace(29), hasta: hoy }, ...periodos(hoyCali())]} />
+      <PestanasConsulta activa={bloque} desde={desde} hasta={hasta} area={area} />
       <Exportar params={{ desde, hasta, area }} bloques={[{ bloque: 'inventario', t: 'Inventario' }, { bloque: 'compras', t: 'Compras' }, { bloque: 'produccion', t: 'Producción' }, { bloque: 'perdidas', t: 'Pérdidas' }]} />
-      <div className="tarjeta" style={{ display: 'grid', gap: '.6rem', marginBottom: '1rem' }}>
-        <nav className="segmentos" style={{ gap: '.4rem' }}>
-          {BLOQUES.map((b) => <Link key={b.v} href={enlace({ bloque: b.v })}><span style={b.v === bloque ? activo : undefined}>{b.t}</span></Link>)}
-        </nav>
-        <form method="get" style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <input type="hidden" name="bloque" value={bloque} />
-          <label style={{ margin: 0 }}>Desde<input type="date" name="desde" defaultValue={desde} /></label>
-          <label style={{ margin: 0 }}>Hasta<input type="date" name="hasta" defaultValue={hasta} /></label>
-          <label style={{ margin: 0 }}>Área<select name="area" defaultValue={area}><option value="TODO">Total</option><option value="BAR">Bar</option><option value="COCINA">Cocina</option></select></label>
-          <button type="submit" className="secundario">Ver</button>
-        </form>
-      </div>
 
       {bloque === 'inventario' && (
         <>

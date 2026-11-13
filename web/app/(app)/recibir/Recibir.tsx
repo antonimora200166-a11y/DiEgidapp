@@ -14,7 +14,7 @@ import { asociarCodigo, leerCodigo } from '@/lib/escaneo';
 import { Revisiones } from '@/components/RechazoConMotivo';
 import { useEnvio } from '@/lib/envio';
 import { Insignia } from '@/components/Insignia';
-import { pesos as fmtPesos } from '@/lib/formato';
+import { pesos as fmtPesos, fecha as fmtFecha } from '@/lib/formato';
 
 export type ProductoRecepcion = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -92,6 +92,9 @@ function calcular(l: Linea, porId: Map<string, ProductoRecepcion>) {
            caliente: frio && temp !== null && p!.temp_max !== null && temp > p!.temp_max,
            diferencia: ped !== null && rec !== null && ped !== rec ? rec - ped : null };
 }
+
+// lista para guardar: confirmada, con producto y sin el peso pendiente de lo que llegó por unidad
+const lineaLista = (l: Linea, c: ReturnType<typeof calcular>) => l.confirmada && !!l.producto_id && !c.faltaPeso;
 
 type Otra = { area: Area; productos: ProductoRecepcion[]; zonas: { codigo: string; nombre: string }[] };
 const nombreArea = (a: Area) => (a === 'BAR' ? 'bar' : 'cocina');
@@ -283,6 +286,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
   const faltaZonaOtra = !!otra && lineas.some((l) => l.producto_id && !l.zona && areaDe(l) === otra.area) && !enc.ubicacion_otra;
 
   const sinConfirmar = lineas.filter((l) => !l.confirmada).length;
+  const pendientes = lineas.filter((l) => !lineaLista(l, calculo(l)));
   const sinProducto = lineas.filter((l) => !l.producto_id).length;
   const sinPeso = lineas.filter((l) => calculo(l).faltaPeso).length;
   const sumaLineas = lineas.reduce((t, l) => t + (num(l.valor) ?? 0), 0);
@@ -560,6 +564,23 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
 
       <div className="acciones barra-guardar">
         {lineas.length > 0 && (
+          // avance de la factura: cuántas líneas están listas y un salto a la próxima que falta
+          <div className="avance-rec" role="status">
+            <span className="avance-rec-txt">
+              <b>{lineas.length - pendientes.length}/{lineas.length}</b> {lineas.length - pendientes.length === 1 ? 'lista' : 'listas'}
+              {pendientes.length > 0 && <> · <b>{pendientes.length}</b> por revisar</>}
+            </span>
+            <span className="avance-rec-barra" aria-hidden><span style={{ width: `${((lineas.length - pendientes.length) / lineas.length) * 100}%` }} /></span>
+            {pendientes.length > 0 && (
+              <button type="button" className="discreto chico" onClick={() => {
+                const el = document.getElementById(`linea-${pendientes[0].clave}`);
+                el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el?.querySelector<HTMLElement>('input:not([type=checkbox]), select, button:not(.secundario)')?.focus({ preventScroll: true });
+              }}>Siguiente pendiente ↓</button>
+            )}
+          </div>
+        )}
+        {lineas.length > 0 && (
           // siempre a la vista: la suma de las líneas contra el total que leyó la IA
           <div className="resumen-suma" role="status">
             <span>Suma <b>{pesos(sumaLineas)}</b></span>
@@ -637,8 +658,34 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
   const borde = !l.confirmada ? 'var(--aviso)' : !l.producto_id ? 'var(--error)' : undefined;
   const campo = { margin: 0, fontWeight: 400, fontSize: '.85rem' } as const;
 
+  // Una línea lista (confirmada, con producto y sin peso pendiente) se ve en un renglón: producto, lo que
+  // llegó, el valor y la zona. Se toca «Corregir» para abrirla. Las que tienen algo pendiente van abiertas.
+  const lista = lineaLista(l, c) && !eligiendo;
+  const [abierta, setAbierta] = useState(!lista);
+  useEffect(() => { if (lista) setAbierta(false); }, [lista]);
+  if (lista && !abierta && p) {
+    const zona = l.zona ? zonas.find((z) => z.codigo === l.zona)?.nombre : zonas.find((z) => z.codigo === zonaDefecto)?.nombre;
+    return (
+      <li id={`linea-${l.clave}`} className="linea-compacta">
+        <input type="checkbox" checked={elegida} onChange={marcar} aria-label={`Marcar la línea ${n}`} />
+        <span className="lc-txt">
+          <strong>{nombreDe(p)}</strong>
+          <small>
+            {l.condicion === 'NO_LLEGO' ? 'No llegó' : `Llegó ${l.recibida || '0'} ${p.unidad_compra.toLowerCase() || p.unidad_base}`}
+            {l.total_base && (p.contenido_variable || l.pesar) ? ` · ${l.total_base} ${p.unidad_base}` : ''}
+            {zona ? ` · ${zona}` : ''}{l.vencimiento ? ` · vence ${fmtFecha(l.vencimiento)}` : ''}
+          </small>
+        </span>
+        <b className="lc-valor">{c.val !== null ? pesos(c.val) : '—'}</b>
+        <Insignia tono={l.condicion === 'OK' ? 'ok' : 'aviso'}>{l.condicion === 'OK' ? 'Lista' : CONDICIONES.find((x) => x.v === l.condicion)?.t}</Insignia>
+        <button type="button" className="discreto chico" onClick={() => setAbierta(true)} aria-label={`Corregir la línea ${n}: ${nombreDe(p)}`}>Corregir</button>
+      </li>
+    );
+  }
+
   return (
-    <li style={borde ? { borderColor: borde, borderWidth: 2 } : undefined}>
+    <li id={`linea-${l.clave}`} style={borde ? { borderColor: borde, borderWidth: 2 } : undefined}>
+      {lista && <button type="button" className="discreto chico lc-cerrar" onClick={() => setAbierta(false)}>Listo, cerrar</button>}
       <div className="linea" style={{ alignItems: 'flex-start' }}>
         <div style={{ minWidth: 0 }}>
           <label style={{ display: 'inline-flex', gap: '.35rem', alignItems: 'center', margin: 0, fontWeight: 400 }}>
@@ -660,7 +707,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
         <div style={{ display: 'flex', gap: '.4rem' }}>
           {p && !eligiendo && <button type="button" className="secundario chico" onClick={() => setEligiendo(true)}>Cambiar</button>}
           <button type="button" className="secundario chico" aria-label={`Quitar línea ${n}`}
-                  onClick={async () => { if (!l.ia || await confirmar('¿Quitar esta línea? Úsalo para lo que no es insumo (domicilio, bolsas).', { aceptar: 'Quitar' })) quitar(); }}>Quitar</button>
+                  onClick={async () => { if (!l.ia || await confirmar('¿Quitar esta línea? Úselo para lo que no es insumo (domicilio, bolsas).', { aceptar: 'Quitar' })) quitar(); }}>Quitar</button>
         </div>
       </div>
 

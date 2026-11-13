@@ -40,8 +40,8 @@ export default async function PaginaBajasCarta({ searchParams }: { searchParams:
       {lista.length > 1 && (
         <nav className="segmentos" style={{ marginBottom: '1rem' }}>
           {lista.map((a) => (
-            <Link key={a} href={`/bajas/carta?area=${a}`}>
-              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>
+            <Link key={a} href={`/bajas/carta?area=${a}`} aria-current={a === area ? 'true' : undefined}>
+              <span>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>
             </Link>))}
         </nav>)}
       {puede ? (

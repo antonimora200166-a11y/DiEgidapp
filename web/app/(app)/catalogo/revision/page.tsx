@@ -4,6 +4,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, editaArea, type Area } from '@/lib/roles';
 import TarjetaPar, { type Par } from './TarjetaPar';
+import PestanasCalidad from '@/components/PestanasCalidad';
 
 export const metadata = { title: 'Revisar duplicados' };
 const POR_PAGINA = 150;
@@ -64,7 +65,8 @@ export default async function Revision({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <h1>Revisar duplicados</h1>
+      <PestanasCalidad activa="revision" esAdmin={perfil.rol === 'admin'} />
+      <h1 className="pagina-ancha titulo-gestion">Revisar duplicados</h1>
       <p className="suave">
         Posibles repetidos que dejó la migración. Decida si son <strong>el mismo insumo</strong> (se unen: nada se borra, el que sobra queda inactivo)
         o <strong>distintos</strong>. Llevas <strong>{decididos ?? 0} de {total}</strong>.
@@ -77,14 +79,14 @@ export default async function Revision({ searchParams }: { searchParams: Promise
       <nav className="segmentos" aria-label="Filtros" style={{ marginBottom: '1rem' }}>
         {valida.length > 1 && (
           <>
-            <Link href={enlace({ area: null })}><span style={area ? undefined : { background: 'var(--marca)', color: 'var(--marca-texto)' }}>Todas</span></Link>
+            <Link href={enlace({ area: null })} aria-current={area ? undefined : 'true'}><span>Todas</span></Link>
             {valida.map((a) => (
-              <Link key={a} href={enlace({ area: a })}><span style={area === a ? { background: 'var(--marca)', color: 'var(--marca-texto)' } : undefined}>{a === 'BAR' ? 'Bar' : 'Cocina'}</span></Link>
+              <Link key={a} href={enlace({ area: a })} aria-current={area === a ? 'true' : undefined}><span>{a === 'BAR' ? 'Bar' : 'Cocina'}</span></Link>
             ))}
           </>
         )}
-        <Link href={enlace({ tipo: tipo === 'DUPLICADO' ? null : 'DUPLICADO' })}>
-          <span style={tipo === 'DUPLICADO' ? { background: 'var(--marca)', color: 'var(--marca-texto)' } : undefined}>Solo duplicados exactos</span>
+        <Link href={enlace({ tipo: tipo === 'DUPLICADO' ? null : 'DUPLICADO' })} aria-current={tipo === 'DUPLICADO' ? 'true' : undefined}>
+          <span>Solo duplicados exactos</span>
         </Link>
       </nav>
 

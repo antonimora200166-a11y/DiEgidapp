@@ -61,15 +61,14 @@ export default async function Registro({ searchParams }: { searchParams: Promise
     for (const [k, x] of Object.entries(v)) if (x) p.set(k, x);
     return `/admin/registro${p.size ? `?${p}` : ''}`;
   };
-  const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' };
 
   return (
     <>
       <h1>Registro</h1>
       <nav className="segmentos" style={{ marginBottom: '1rem' }}>
-        <Link href={enlace({ ver: undefined, pag: undefined })}><span style={ver === 'actividad' ? activo : undefined}>Actividad</span></Link>
-        <Link href={enlace({ ver: 'errores', pag: undefined, q: undefined, sistema: undefined })}>
-          <span style={ver === 'errores' ? activo : undefined}>Errores{(erroresSemana ?? 0) > 0 && ` · ${erroresSemana} esta semana`}</span>
+        <Link href={enlace({ ver: undefined, pag: undefined })} aria-current={ver === 'actividad' ? 'true' : undefined}><span>Actividad</span></Link>
+        <Link href={enlace({ ver: 'errores', pag: undefined, q: undefined, sistema: undefined })} aria-current={ver === 'errores' ? 'true' : undefined}>
+          <span>Errores{(erroresSemana ?? 0) > 0 && ` · ${erroresSemana} esta semana`}</span>
         </Link>
       </nav>
 

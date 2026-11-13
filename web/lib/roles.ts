@@ -58,6 +58,7 @@ export function menuDe(p: Perfil): Opcion[] {
   else if (p.rol !== 'servicio' && p.rol !== 'auditor') m.push({ ruta: '/alertas', titulo: 'Mis alertas', detalle: 'Lo que administración le pidió revisar', icono: 'registro' });
   if (p.rol === 'admin') m.push({ ruta: '/consulta', titulo: 'Consulta', detalle: 'Ventas de Odoo, costo teórico, margen e ingeniería de menú', icono: 'existencias' });
   if (p.rol !== 'servicio') m.push({ ruta: '/catalogo', titulo: 'Catálogo', detalle: 'Buscar productos y validar los provisionales', icono: 'catalogo' });
+  if (p.rol === 'admin' || p.rol === 'auditor' || areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/catalogo/calidad', titulo: 'Calidad del catálogo', detalle: 'Verificar A/B, duplicados, unidades y clases en una bandeja', icono: 'revision' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/catalogo/nuevo', titulo: 'Crear producto', detalle: 'Alta provisional, con búsqueda de parecidos', icono: 'nuevo' });
   if (p.rol === 'admin' || p.rol === 'auditor' || areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/arranque', titulo: '¿Listo para arrancar?', detalle: 'Lo que falta para operar con la app', icono: 'arranque' });
   if (p.rol === 'admin') m.push({ ruta: '/admin/usuarios', titulo: 'Usuarios', detalle: 'Crear usuarios y asignar roles', icono: 'usuarios' });
@@ -74,7 +75,7 @@ const GRUPO_DE: Record<string, GrupoMenu> = {
   '/catalogo/nuevo': 'Operación',
   '/historial': 'Gestión', '/existencias': 'Gestión', '/pedido': 'Gestión', '/proveedores': 'Gestión', '/carta': 'Gestión',
   '/alertas': 'Gestión', '/consulta': 'Gestión',
-  '/catalogo': 'Catálogo', '/fichas': 'Catálogo',
+  '/catalogo': 'Catálogo', '/catalogo/calidad': 'Catálogo', '/fichas': 'Catálogo',
 };
 export const grupoDe = (ruta: string): GrupoMenu => GRUPO_DE[ruta] ?? 'Administración';
 

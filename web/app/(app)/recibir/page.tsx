@@ -46,8 +46,8 @@ export default async function PaginaRecibir({ searchParams }: { searchParams: Pr
       {areas.length > 1 && (
         <nav className="segmentos" style={{ marginBottom: '1rem' }}>
           {areas.map((a) => (
-            <Link key={a} href={`/recibir?area=${a}`}>
-              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>
+            <Link key={a} href={`/recibir?area=${a}`} aria-current={a === area ? 'true' : undefined}>
+              <span>
                 {a === 'BAR' ? 'Bar' : 'Cocina'}
               </span>
             </Link>

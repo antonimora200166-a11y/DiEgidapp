@@ -4,6 +4,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, editaArea } from '@/lib/roles';
 import Propuestas, { type Propuesta } from './Propuestas';
+import PestanasCalidad from '@/components/PestanasCalidad';
 
 export const metadata = { title: 'Revisar unidades' };
 
@@ -21,8 +22,8 @@ export default async function Unidades() {
 
   return (
     <>
-      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href="/catalogo">← Catálogo</Link></p>
-      <h1>Revisar unidades</h1>
+      <PestanasCalidad activa="unidades" esAdmin={perfil.rol === 'admin'} />
+      <h1 className="pagina-ancha titulo-gestion">Revisar unidades</h1>
       <p className="suave">
         Revisión del catálogo hecha con Claude el 31/10/2026: para cada insumo propone la unidad base (g, ml o und), el contenido de
         su presentación y la categoría, con la razón. <strong>Nada cambia hasta que lo acepte.</strong> Acepte por grupos las que estén

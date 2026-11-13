@@ -4,6 +4,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, editaArea } from '@/lib/roles';
 import PropuestasClase, { type PropuestaClase } from './PropuestasClase';
+import PestanasCalidad from '@/components/PestanasCalidad';
 
 export const metadata = { title: 'Clasificar insumos' };
 
@@ -17,8 +18,8 @@ export default async function Clases() {
 
   return (
     <>
-      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href="/catalogo">← Catálogo</Link></p>
-      <h1 className="pagina-ancha">Clasificar insumos</h1>
+      <PestanasCalidad activa="clases" esAdmin={perfil.rol === 'admin'} />
+      <h1 className="pagina-ancha titulo-gestion">Clasificar insumos</h1>
       <p className="suave pagina-ancha">
         Lo que se compra y no es alimento se separa en <strong>desechables</strong> (pueden ir en una ficha), <strong>aseo y limpieza</strong>
         {' '}(gasto del área), <strong>menaje</strong> y <strong>herramientas o equipos</strong> (no se gastan: se cuentan y salen por baja).

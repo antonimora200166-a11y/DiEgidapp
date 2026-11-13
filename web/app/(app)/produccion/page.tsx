@@ -30,8 +30,8 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
         {areas.length > 1 && (
           <nav className="segmentos" aria-label="Área">
             {areas.map((a) => (
-              <Link key={a} href={`/produccion?area=${a}`}>
-                <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>
+              <Link key={a} href={`/produccion?area=${a}`} aria-current={a === area ? 'true' : undefined}>
+                <span>
                   {a === 'BAR' ? 'Bar' : 'Cocina'}
                 </span>
               </Link>

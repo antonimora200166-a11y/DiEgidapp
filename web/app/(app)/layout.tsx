@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
-import { navDe, nombreRol } from '@/lib/roles';
+import { navDe, nombreRol, menuDe, grupoDe, GRUPOS_MENU } from '@/lib/roles';
+import MenuLateral from '@/components/MenuLateral';
 import { Dialogos } from '@/components/Dialogo';
 import Icono from '@/components/Icono';
 import NavInferior from '@/components/NavInferior';
@@ -15,6 +16,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
   const ruta = (await headers()).get('x-ruta') ?? '';
   if (perfil.debe_cambiar_clave && ruta !== '/cuenta') redirect('/cuenta');
   const nav = navDe(perfil);
+  const lateral = menuDe(perfil).map((o) => ({ ruta: o.ruta, titulo: o.titulo, icono: o.icono, grupo: grupoDe(o.ruta) }));
   return (
     <>
       <TemaDelRol oscuro={perfil.rol === 'jefe_bar' || perfil.rol === 'aux_bar'} />
@@ -32,6 +34,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
           </Link>
         </div>
       </header>
+      <MenuLateral opciones={lateral} grupos={GRUPOS_MENU} />
       <main className="contenido">{children}</main>
       <NavInferior principales={nav.principales} resto={nav.resto} />
       <Dialogos />

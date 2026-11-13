@@ -4,6 +4,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { editaArea, type Area } from '@/lib/roles';
 import Hoja, { type Fila } from './Hoja';
+import PestanasCalidad from '@/components/PestanasCalidad';
 
 export const metadata = { title: 'Verificar A/B' };
 
@@ -22,8 +23,8 @@ export default async function Verificar() {
 
   return (
     <>
-      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href="/catalogo">← Catálogo</Link></p>
-      <h1 className="pagina-ancha">Verificar insumos A/B</h1>
+      <PestanasCalidad activa="verificar" esAdmin={perfil.rol === 'admin'} />
+      <h1 className="pagina-ancha titulo-gestion">Verificar insumos A/B</h1>
       <p className="suave pagina-ancha">
         Con el empaque en la mano, de arriba abajo: los primeros son los que más pesan en la compra. Mire que la <strong>unidad</strong>,
         el <strong>contenido</strong> y el <strong>precio de una unidad de compra</strong> sean los reales. Si está bien, <em>Verificado</em>;

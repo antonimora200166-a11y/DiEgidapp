@@ -8,6 +8,8 @@ import Bloque2, { type Insumo, type ResumenPeriodo } from './Bloque2';
 import { pesos, pct, fecha as fechaC } from '@/lib/formato';
 import { Insignia, Cambio, tonoMeta, tonoSemaforo, type Tono } from '@/components/Insignia';
 import TarjetaCierre, { periodosPorCerrar } from '@/components/TarjetaCierre';
+import PestanasConsulta from '@/components/PestanasConsulta';
+import FiltroConsulta, { periodos } from '@/components/FiltroConsulta';
 
 export const metadata = { title: 'Consulta' };
 
@@ -32,24 +34,7 @@ type Consulta = {
 };
 type Vista = 'TODO' | 'BAR' | 'COCINA';
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
 const META_AREA: Record<Vista, number | null> = { BAR: 24, COCINA: 30, TODO: null };
-
-// Períodos a la mano: quincena y mes (actual y anterior) y todo lo cargado.
-function periodos(hoy: Date, cargas: { desde: string; hasta: string }[]) {
-  const a = hoy.getUTCFullYear(), m = hoy.getUTCMonth(), d = hoy.getUTCDate();
-  const fin = (y: number, mm: number) => new Date(Date.UTC(y, mm + 1, 0));
-  const q1 = d <= 15 ? [new Date(Date.UTC(a, m, 1)), new Date(Date.UTC(a, m, 15))] : [new Date(Date.UTC(a, m, 16)), fin(a, m)];
-  const q0 = d <= 15 ? [new Date(Date.UTC(a, m - 1, 16)), fin(a, m - 1)] : [new Date(Date.UTC(a, m, 1)), new Date(Date.UTC(a, m, 15))];
-  const lista = [
-    { t: 'Esta quincena', desde: iso(q1[0]), hasta: iso(q1[1]) },
-    { t: 'Quincena anterior', desde: iso(q0[0]), hasta: iso(q0[1]) },
-    { t: 'Este mes', desde: iso(new Date(Date.UTC(a, m, 1))), hasta: iso(fin(a, m)) },
-    { t: 'Mes anterior', desde: iso(new Date(Date.UTC(a, m - 1, 1))), hasta: iso(fin(a, m - 1)) },
-  ];
-  if (cargas.length) lista.unshift({ t: 'Todo lo cargado', desde: cargas.map((c) => c.desde).sort()[0], hasta: cargas.map((c) => c.hasta).sort().at(-1)! });
-  return lista;
-}
 
 function Variacion({ actual, antes, inverso = false, unidad = '%' }: { actual: number | null; antes: number | null; inverso?: boolean; unidad?: '%' | 'pts' }) {
   if (actual === null || antes === null || !antes) return <small>sin período anterior para comparar</small>;
@@ -61,7 +46,7 @@ const tonoCobertura = (v: number | null): Tono | null => (v === null ? null : v 
 const TEXTO_COBERTURA: Record<Tono, string> = { ok: 'Completa', aviso: 'Casi', error: 'Baja', gris: 'Sin dato' };
 const claseTono = (t: Tono | null) => (t === 'ok' ? ' sv' : t === 'aviso' ? ' sa' : t === 'error' ? ' sr' : '');
 
-export default async function ConsultaPagina({ searchParams }: { searchParams: Promise<{ desde?: string; hasta?: string; area?: string }> }) {
+export default async function ConsultaPagina({ searchParams }: { searchParams: Promise<{ desde?: string; hasta?: string; area?: string; vista?: string }> }) {
   const perfil = await perfilActual();
   if (perfil.rol !== 'admin') redirect('/');
   const sp = await searchParams;
@@ -75,7 +60,9 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
   const { data, error } = await supabase.rpc('consulta_ventas', { p_desde: desde, p_hasta: hasta, p_area: area === 'TODO' ? null : area });
   if (error) throw new Error(error.message);
   const c = data as Consulta;
-  const enlace = (cambio: Record<string, string>) => `/consulta?${new URLSearchParams({ desde, hasta, area, ...cambio })}`;
+  const vista = sp.vista === 'ventas' || sp.vista === 'real' || sp.vista === 'alertas' ? sp.vista : 'resumen';
+  // los enlaces de período y área se quedan en la pestaña abierta
+  const enlace = (cambio: Record<string, string>) => `/consulta?${new URLSearchParams({ desde, hasta, area, ...(vista === 'resumen' ? {} : { vista }), ...cambio })}`;
   const meta = META_AREA[area];
   const conVentas = c.productos.filter((p) => p.unidades - p.unidades_sin_valor > 0);
   const puntos: PuntoMatriz[] = conVentas.filter((p) => p.completa && p.margen_unit !== null)
@@ -102,7 +89,6 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
   }
   const ultimo = area !== 'TODO' ? cerrados[0] ?? null : null;
   const porCerrar = periodosPorCerrar(abiertos);
-  const elegido = opciones.find((o) => o.desde === desde && o.hasta === hasta);
   const tonoTeorico = tonoMeta(c.pct_teorico, meta);
 
   // bandeja: las alertas abiertas del área (o de todas), de mayor impacto
@@ -115,45 +101,17 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
       <h1 className="pagina-ancha titulo-gestion">Consulta</h1>
       {porCerrar.length > 0 && <TarjetaCierre periodos={porCerrar} />}
       {/* filtros compactos: período en un chip que se abre y el área en un segmento; las cifras quedan arriba */}
-      <div className="filtros-consulta">
-        <details className="chip-periodo">
-          <summary>
-            <span className="suave">Período</span> <strong>{elegido?.t ?? `${fechaC(desde)} → ${fechaC(hasta)}`}</strong> <span aria-hidden>▾</span>
-          </summary>
-          <div className="chip-periodo-menu tarjeta">
-            <nav aria-label="Períodos">
-              {opciones.map((o) => (
-                <Link key={o.t} href={enlace({ desde: o.desde, hasta: o.hasta })} aria-current={o === elegido ? 'true' : undefined}>
-                  {o.t}<small>{fechaC(o.desde)} → {fechaC(o.hasta)}</small>
-                </Link>
-              ))}
-            </nav>
-            <form method="get" className="fechas-medida">
-              <input type="hidden" name="area" value={area} />
-              <label>Desde<input type="date" name="desde" defaultValue={desde} /></label>
-              <label>Hasta<input type="date" name="hasta" defaultValue={hasta} /></label>
-              <button type="submit" className="secundario">Ver estas fechas</button>
-            </form>
-          </div>
-        </details>
-        <nav className="segmentos" aria-label="Área">
-          {(['TODO', 'BAR', 'COCINA'] as Vista[]).map((a) => (
-            <Link key={a} href={enlace({ area: a })} aria-current={a === area ? 'true' : undefined}>
-              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>
-                {a === 'TODO' ? 'Total' : a === 'BAR' ? 'Bar' : 'Cocina'}
-              </span>
-            </Link>
-          ))}
-        </nav>
-      </div>
+      <FiltroConsulta ruta="/consulta" desde={desde} hasta={hasta} area={area} opciones={opciones} fijos={vista === 'resumen' ? {} : { vista }} />
       <p className="suave" style={{ fontSize: '.82rem', margin: '.2rem 0 0' }}>
         {fechaC(c.desde)} → {fechaC(c.hasta)} · comparado con {fechaC(c.anterior.desde)} → {fechaC(c.anterior.hasta)}
       </p>
+      <PestanasConsulta activa={vista} desde={desde} hasta={hasta} area={area} alertas={alertas.length} />
 
-      {sinDatos ? (
+      {(vista === 'resumen' || vista === 'ventas') && (sinDatos ? (
         <p className="tarjeta">No hay ventas cargadas en este período. <Link href="/consulta/ventas">Cargue el reporte de Odoo</Link> o escoja «Todo lo cargado».</p>
       ) : (
         <>
+          {vista === 'resumen' && <>
           {/* ------------------------------------------------ bloque 0: tres cifras principales y las demás */}
           <h2 className="sr-only">Resumen</h2>
           <div className="cifras heroe">
@@ -197,7 +155,6 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
             </p>
           )}
           <div className="mas-consulta">
-            <Link href={`/consulta/operacion?${new URLSearchParams({ desde, hasta, area })}`} className="boton secundario chico">Inventario, compras, producción y pérdidas</Link>
             <Link href="/consulta/ventas" className="boton secundario chico">Cargar ventas de Odoo</Link>
             <Link href="/consulta/simulador" className="boton secundario chico">Simulador</Link>
             <Link href="/consulta/informe" className="boton secundario chico">Informe quincenal</Link>
@@ -212,7 +169,7 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
             <p className="suave" style={{ fontSize: '.88rem' }}>En el período hay {Number(c.combos_sin_venta).toLocaleString('es-CO')} menús Yuga a $0. Cuentan como combos: sus platos y bebidas consumen
               ingredientes sin venta en Odoo, por eso el % teórico se muestra con y sin lo que salió a $0.</p>
           )}
-          <h3>Bandeja de alertas</h3>
+          <h3>Lo más urgente de la bandeja</h3>
           {alertas.length ? (
             <ul className="renglones tarjeta" style={{ padding: '0 1rem' }}>
               {alertas.slice(0, 5).map((x) => (
@@ -224,8 +181,10 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
               ))}
             </ul>
           ) : <p className="suave">No hay alertas abiertas.</p>}
-          <p style={{ fontSize: '.88rem' }}><Link href="/alertas">Ver toda la bandeja ({alertas.length} abiertas) →</Link></p>
+          <p style={{ fontSize: '.88rem' }}><Link href={enlace({ vista: 'alertas' })}>Ver las {alertas.length} alertas abiertas →</Link></p>
+          </>}
 
+          {vista === 'ventas' && <>
           {/* ------------------------------------------------ bloque 1 */}
           <h2>Costo y margen por sección</h2>
           <div className="desborde tarjeta" style={{ padding: 0 }}>
@@ -288,11 +247,31 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
               <p className="suave" style={{ fontSize: '.8rem' }}>Solo productos que se vendieron en el período.</p>
             </section>
           </div>
+          </>}
         </>
-      )}
+      ))}
 
       {/* ------------------------------------------------ bloque 2 */}
-      <Bloque2 cerrados={cerrados} abiertos={abiertos} detalle={detalle} insumos={detalle?.insumos ?? []} area={area} />
+      {vista === 'real' && <Bloque2 cerrados={cerrados} abiertos={abiertos} detalle={detalle} insumos={detalle?.insumos ?? []} area={area} />}
+
+      {/* ------------------------------------------------ alertas: toda la bandeja abierta, de mayor impacto */}
+      {vista === 'alertas' && (
+        <section>
+          <h2>Alertas abiertas{area !== 'TODO' ? ` · ${area === 'BAR' ? 'Bar' : 'Cocina'}` : ''}</h2>
+          {alertas.length ? (
+            <ul className="renglones tarjeta" style={{ padding: '0 1rem' }}>
+              {[...alertas].sort((a, b) => Number(b.impacto ?? 0) - Number(a.impacto ?? 0)).map((x) => (
+                <li key={x.id}>
+                  <span style={{ minWidth: 0 }}><strong>{x.titulo}</strong>
+                    <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{x.estado === 'EN_CURSO' ? 'En curso' : 'Abierta'}{x.responsable ? ` · ${x.responsable}` : ' · sin responsable'}</span></span>
+                  <strong className="n">{pesos(x.impacto)}</strong>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="suave">No hay alertas abiertas.</p>}
+          <p style={{ fontSize: '.88rem' }}><Link href="/alertas" className="boton secundario chico">Asignar y resolver en Alertas →</Link></p>
+        </section>
+      )}
     </>
   );
 }

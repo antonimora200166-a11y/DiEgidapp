@@ -4,6 +4,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { editaArea, vePrecios, type Area } from '@/lib/roles';
 import PreciosFoto, { type ProductoPrecio } from './PreciosFoto';
+import PestanasCalidad from '@/components/PestanasCalidad';
 
 export const metadata = { title: 'Precios desde fotos' };
 
@@ -47,8 +48,8 @@ export default async function Precios() {
 
   return (
     <>
-      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href="/catalogo">← Catálogo</Link></p>
-      <h1 className="pagina-ancha">Precios desde fotos</h1>
+      <PestanasCalidad activa="precios" esAdmin={perfil.rol === 'admin'} />
+      <h1 className="pagina-ancha titulo-gestion">Precios desde fotos</h1>
       <p className="suave pagina-ancha">
         Suba la foto de una factura, tiquete, lista de precios o cotización. La IA saca el nombre, la cantidad y el precio de cada
         producto; usted corrige lo que haga falta y guardas. <strong>No es una recepción:</strong> no entra nada al inventario ni al
