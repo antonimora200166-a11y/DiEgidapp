@@ -77,7 +77,7 @@ export default function PrecioProducto({ id, unidadBase, unidadCompra, contenido
               </label>
             )}
             <div className="acciones">
-              <button type="submit" className="chico" disabled={enviando || !(v > 0)}>{enviando ? 'Guardando…' : 'Guardar precio'}</button>
+              <button aria-busy={enviando} type="submit" className="chico" disabled={enviando || !(v > 0)}>{enviando ? 'Guardando…' : 'Guardar precio'}</button>
               {msg && <span role="status" style={{ color: msg.ok ? 'var(--ok)' : 'var(--error)', alignSelf: 'center' }}>{msg.texto}</span>}
             </div>
           </form>

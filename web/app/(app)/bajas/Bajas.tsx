@@ -9,6 +9,7 @@ import RechazoConMotivo from '@/components/RechazoConMotivo';
 import { confirmar } from '@/components/Dialogo';
 import { useEnvio } from '@/lib/envio';
 import { pesos } from '@/lib/formato';
+import { avisar } from '@/components/Avisos';
 
 const CAUSAS = [
   { v: 'VENCIDO', t: 'Vencido' }, { v: 'DANADO', t: 'Dañado / roto' }, { v: 'DERRAME', t: 'Derrame' },
@@ -53,7 +54,7 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
                                      unidad: porId.get(l.producto_id)?.unidad_base })),
       }, envio.clave);
       setResultado(r);
-      if (r.ok) { try { localStorage.removeItem(clave); } catch { /* nada */ } window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      if (r.ok) { avisar({ texto: `Pérdida registrada · ${r.codigo}`, ver: { href: '/historial', t: 'Ver' } }); try { localStorage.removeItem(clave); } catch { /* nada */ } window.scrollTo({ top: 0, behavior: 'smooth' }); }
     });
   }
   function otra() { envio.nuevo(); setLineas([]); setObs(''); setCausa(''); setMotivo(''); setResultado(null); setFecha(hoyCali()); }
@@ -61,7 +62,7 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
   if (resultado?.ok) {
     return (
       <div className="tarjeta">
-        <p className="exito mt-0" role="status"><strong>Baja guardada: {resultado.codigo}</strong><br />
+        <p className="exito mt-0" role="status"><strong>Pérdida registrada: {resultado.codigo}</strong><br />
           {lineas.length} producto(s) salieron del kardex{total > 0 && ` por ${pesos(total)}`}.</p>
         {resultado.avisos.length > 0 && <div className="aviso"><ul className="m-0">{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
         <div className="acciones">
@@ -75,6 +76,18 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
   const bloqueado = !!resultado && !resultado.ok && !resultado.fatales.length && resultado.bloqueos.length > 0;
   return (
     <>
+      {/* en el orden en que se piensa (BAJ-02): qué se perdió, por qué, y dónde y cuándo (ya propuestos) */}
+      <h2 className="mt-0">1. ¿Qué se perdió? {lineas.length > 0 && <span className="suave fw-400">({lineas.length})</span>}</h2>
+      <LineasInventario productos={productos} zona={zona} lineas={lineas} setLineas={setLineas} />
+
+      <h2>2. ¿Por qué?</h2>
+      <div className="segmentos" role="radiogroup" aria-label="Causa de la pérdida">
+        {CAUSAS.map((c) => (
+          <label key={c.v}><input type="radio" name="causa" checked={causa === c.v} onChange={() => setCausa(c.v)} /><span>{c.t}</span></label>
+        ))}
+      </div>
+
+      <h2>3. Dónde y cuándo</h2>
       <section className="tarjeta">
         <div className="fila">
           <div>
@@ -89,33 +102,24 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
             <input id="fecha" type="date" max={hoyCali()} value={fecha} onChange={(e) => setFecha(e.target.value)} />
           </div>
         </div>
-        <label>Causa</label>
-        <div className="segmentos" role="radiogroup" aria-label="Causa de la baja">
-          {CAUSAS.map((c) => (
-            <label key={c.v}><input type="radio" name="causa" checked={causa === c.v} onChange={() => setCausa(c.v)} /><span>{c.t}</span></label>
-          ))}
-        </div>
       </section>
-
-      <h2>Productos {lineas.length > 0 && <span className="suave fw-400">({lineas.length})</span>}</h2>
-      <LineasInventario productos={productos} zona={zona} lineas={lineas} setLineas={setLineas} />
 
       <label htmlFor="obs">Observaciones <span className="ayuda">{causa === 'OTRO' ? 'obligatorias si la causa es «Otro»' : 'opcional'}</span></label>
       <textarea id="obs" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
-      {total > 0 && <p className="suave">Valor de la baja: <strong>{pesos(total)}</strong></p>}
+      {total > 0 && <p className="suave">Valor de lo perdido: <strong>{pesos(total)}</strong></p>}
 
       <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} ejemplo="Ej.: la botella se rompió antes de registrar su recepción" />
       {/* con la lista vacía no hay nada que guardar: la barra fija no aparece y no tapa el buscador */}
       {(lineas.length > 0 || bloqueado) && (
         <div className="acciones barra-guardar">
           {bloqueado ? (
-            <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
+            <button aria-busy={enviando} type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
           ) : (
-            <button type="button" disabled={enviando || !zona || !causa || !lineas.length || malas > 0 || faltaObs} onClick={() => guardar(false)}>
-              {enviando ? 'Guardando…' : `Guardar baja (${lineas.length})`}
+            <button aria-busy={enviando} type="button" disabled={enviando || !zona || !causa || !lineas.length || malas > 0 || faltaObs} onClick={() => guardar(false)}>
+              {enviando ? 'Guardando…' : `Guardar pérdida (${lineas.length})`}
             </button>
           )}
-          {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={async () => { if (await confirmar('¿Descartar esta baja?', { aceptar: 'Descartar', peligro: true })) otra(); }}>Descartar</button>}
+          {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={async () => { if (await confirmar('¿Descartar este registro de pérdida?', { aceptar: 'Descartar', peligro: true })) otra(); }}>Descartar</button>}
         </div>
       )}
       {lineas.length > 0 && (!zona || !causa || malas > 0 || faltaObs) && (

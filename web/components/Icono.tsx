@@ -24,6 +24,7 @@ const TRAZOS: Record<string, string> = {
   escanear: 'M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10',
   mas: 'M5 5h5v5H5zM14 5h5v5h-5zM5 14h5v5H5zM14 14h5v5h-5z',
   tema: 'M12 3a9 9 0 1 0 0 18zM12 3a9 9 0 0 1 0 18',
+  microfono: 'M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7',
 };
 export type NombreIcono = keyof typeof TRAZOS;
 

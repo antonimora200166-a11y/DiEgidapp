@@ -101,7 +101,7 @@ export default function PropuestasClase({ filas, soloLectura }: { filas: Propues
                           <div className="linea wrap">
                             <strong>{elegidas.length} seleccionada(s)</strong>
                             <div className="fila-flex wrap">
-                              <button type="button" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'ACEPTAR', null, limpiar)}>{enviando ? 'Aplicando…' : `Aceptar ${elegidas.length}`}</button>
+                              <button aria-busy={enviando} type="button" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'ACEPTAR', null, limpiar)}>{enviando ? 'Aplicando…' : `Aceptar ${elegidas.length}`}</button>
                               <button type="button" className="secundario" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'RECHAZAR', null, limpiar)}>Son materia prima</button>
                               <button type="button" className="secundario" disabled={enviando} onClick={limpiar}>Quitar selección</button>
                             </div>

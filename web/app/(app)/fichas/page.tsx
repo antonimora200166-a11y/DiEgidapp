@@ -4,10 +4,13 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, type Area } from '@/lib/roles';
 import ListaFichas, { type FilaFicha } from './ListaFichas';
+import SegmentoFichas from '@/components/SegmentoFichas';
 
 export const metadata = { title: 'Fichas técnicas' };
 
-export default async function Fichas() {
+export default async function Fichas({ searchParams }: { searchParams: Promise<{ tipo?: string }> }) {
+  const pedido = (await searchParams).tipo;
+  const tipo = pedido === 'BEBIDA' || pedido === 'PLATO' ? pedido : null;
   const perfil = await perfilActual();
   if (perfil.rol === 'servicio') redirect('/');
   const areas: Area[] = areasDe(perfil).length ? areasDe(perfil) : ['BAR', 'COCINA'];
@@ -27,9 +30,10 @@ export default async function Fichas() {
   return (
     <>
       <h1 className="pagina-ancha">Fichas técnicas</h1>
+      <SegmentoFichas activa={tipo ?? 'todas'} />
       <p className="suave">La receta de cada MPI, cóctel y plato: con ella se producen los lotes y se calcula el costo estándar.
-        Por defecto se ven las que les falta algo, incluidas las que no tienen ficha; quita el filtro de estado para verlas todas.
-        Con «Forma de venta» separas los cócteles de las botellas, shots, copas y reventa.</p>
+        Por defecto se ven las que les falta algo, incluidas las que no tienen ficha; quite el filtro de estado para verlas todas.
+        Con «Forma de venta» se separan los cócteles de las botellas, shots, copas y reventa.</p>
       {carta && carta.mpi.aprobadas < carta.mpi.total && (
         <Link href="/produccion/validar?fuente=cocteles" className="tarjeta pagina-ancha tarjeta-enlace">
           <span><strong>Completar las fichas de cócteles con la carta</strong><br />
@@ -44,7 +48,7 @@ export default async function Fichas() {
           <span className="boton">Continuar</span>
         </Link>
       )}
-      <ListaFichas filas={filas} variasAreas={areas.length > 1} />
+      <ListaFichas key={tipo ?? 'todas'} filas={filas} variasAreas={areas.length > 1} tipo={tipo} />
     </>
   );
 }

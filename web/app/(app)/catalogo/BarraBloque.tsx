@@ -75,7 +75,7 @@ export default function BarraBloque({ elegidos, categorias, setSel, esAdmin }: {
           <div className="linea wrap">
             <strong>{elegidos.length} seleccionado(s)</strong>
             <div className="fila-flex wrap">
-              <button type="button" disabled={enviando} onClick={() => aplicar(true)}>{enviando ? 'Aplicando…' : `Validar (${elegidos.length})`}</button>
+              <button aria-busy={enviando} type="button" disabled={enviando} onClick={() => aplicar(true)}>{enviando ? 'Aplicando…' : `Validar (${elegidos.length})`}</button>
               <button type="button" className="secundario" disabled={enviando} onClick={() => setPanel((x) => !x)}>{panel ? 'Ocultar cambios' : 'Cambiar…'}</button>
               {esAdmin && <EliminarProductos productos={elegidos} alTerminar={() => setSel(new Set())} />}
               <button type="button" className="secundario" disabled={enviando} onClick={() => { setSel(new Set()); setResultado(null); }}>Quitar selección</button>
@@ -115,7 +115,7 @@ export default function BarraBloque({ elegidos, categorias, setSel, esAdmin }: {
                 Y validarlos de una vez
               </label>
               <div className="acciones mt-2">
-                <button type="button" disabled={enviando || (!ub && !cat && !cons && !ucompra.trim() && num(contenido) === null && !validar)} onClick={() => aplicar(false)}>
+                <button aria-busy={enviando} type="button" disabled={enviando || (!ub && !cat && !cons && !ucompra.trim() && num(contenido) === null && !validar)} onClick={() => aplicar(false)}>
                   {enviando ? 'Aplicando…' : `Aplicar a ${elegidos.length}`}
                 </button>
               </div>

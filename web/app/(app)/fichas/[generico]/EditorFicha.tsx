@@ -471,7 +471,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
           </label>
         )}
         <Link className="boton secundario" href={destino}>Cancelar</Link>
-        <button type="button" disabled={enviando || !codigo.trim() || !lineas.length || (!!f && !receta && !motivo.trim()) || faltaNeto} onClick={guardar}>
+        <button aria-busy={enviando} type="button" disabled={enviando || !codigo.trim() || !lineas.length || (!!f && !receta && !motivo.trim()) || faltaNeto} onClick={guardar}>
           {enviando ? 'Guardando…' : receta ? 'Aprobar como ficha' : f ? `Guardar versión ${f.version + 1}` : 'Crear ficha'}
         </button>
         {faltaNeto && <span className="suave" style={{ fontSize: '.85rem', alignSelf: 'center' }}>Falta el neto esperado en {ub}: pese una tanda terminada.</span>}

@@ -5,6 +5,8 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, editaFicha, type Area } from '@/lib/roles';
 import PestanasProduccion from '@/components/PestanasProduccion';
 import ListaFichasProduccion, { type FilaProd } from './ListaFichasProduccion';
+import Ayuda from '@/components/Ayuda';
+import SegmentoFichas from '@/components/SegmentoFichas';
 
 export const metadata = { title: 'Producción · Fichas técnicas' };
 
@@ -25,6 +27,7 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
   return (
     <>
       <PestanasProduccion activa="fichas" area={area} />
+      <SegmentoFichas activa="MPI" area={area} />
       <div className="pagina-ancha" style={{ display: 'flex', flexWrap: 'wrap', gap: '.6rem', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.6rem' }}>
         <h1 className="m-0">Fichas técnicas · {area === 'BAR' ? 'Bar' : 'Cocina'}</h1>
         {areas.length > 1 && (
@@ -39,10 +42,10 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
           </nav>
         )}
       </div>
-      <p className="suave mt-0">
+      <Ayuda titulo="¿Para qué sirven las fichas?">
         La receta de cada MPI: con ella se produce y se calcula el costo estándar. Toque una para ver sus pasos, puntos críticos y vida útil.
         {editaFicha(perfil, area) ? ' Cada cambio que guarde crea una versión nueva.' : ' Las crea y cambia el ' + (area === 'BAR' ? 'jefe de barra' : 'chef') + '.'}
-      </p>
+      </Ayuda>
       {avance && avance.mpi.con_ficha < avance.mpi.total && (
         <Link href="/produccion/validar" className="tarjeta pagina-ancha tarjeta-enlace">
           <span><strong>Validar MPI con el recetario de cocina</strong><br />

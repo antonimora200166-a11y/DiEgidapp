@@ -10,6 +10,8 @@ import { Insignia, Cambio, tonoMeta, tonoSemaforo, type Tono } from '@/component
 import TarjetaCierre, { periodosPorCerrar } from '@/components/TarjetaCierre';
 import PestanasConsulta from '@/components/PestanasConsulta';
 import FiltroConsulta, { periodos } from '@/components/FiltroConsulta';
+import Ayuda from '@/components/Ayuda';
+import AccionesConsulta from '@/components/AccionesConsulta';
 
 export const metadata = { title: 'Consulta' };
 
@@ -98,7 +100,7 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
 
   return (
     <>
-      <h1 className="pagina-ancha titulo-gestion">Consulta</h1>
+      <AccionesConsulta area={area} />
       {porCerrar.length > 0 && <TarjetaCierre periodos={porCerrar} />}
       {/* filtros compactos: período en un chip que se abre y el área en un segmento; las cifras quedan arriba */}
       <FiltroConsulta ruta="/consulta" desde={desde} hasta={hasta} area={area} opciones={opciones} fijos={vista === 'resumen' ? {} : { vista }} />
@@ -154,13 +156,8 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
                 : <>el <Link href="/conteo">conteo inicial</Link> y el <Link href={`/consulta/cerrar?area=${area}`}>primer cierre de período</Link>.</>}
             </p>
           )}
-          <div className="mas-consulta">
-            <Link href="/consulta/ventas" className="boton secundario chico">Cargar ventas de Odoo</Link>
-            <Link href="/consulta/simulador" className="boton secundario chico">Simulador</Link>
-            <Link href="/consulta/informe" className="boton secundario chico">Informe quincenal</Link>
-          </div>
           <Exportar params={{ desde, hasta, area }} bloques={[{ bloque: 'ventas', t: 'Ventas y teórico' }, ...(area !== 'TODO' ? [{ bloque: 'periodo', t: 'Real vs. teórico' }] : [])]} />
-          <p className="suave texto-mini">Costo de cada ficha con los costos de hoy (estimado mientras no haya kardex); los cierres de período lo congelarán.</p>
+          <Ayuda titulo="¿De dónde sale el costo?">Costo de cada ficha con los costos de hoy (estimado mientras no haya kardex); los cierres de período lo congelarán.</Ayuda>
           {area === 'TODO' && c.sin_equivalencia.productos > 0 && (
             <p className="aviso">{c.sin_equivalencia.productos} producto(s) de Odoo sin equivalencia con la carta: {pesos(c.sin_equivalencia.valor)} vendidos que no entran
               en el teórico. <Link href="/consulta/ventas">Resolverlos</Link></p>
@@ -174,7 +171,7 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
             <ul className="renglones tarjeta" style={{ padding: '0 1rem' }}>
               {alertas.slice(0, 5).map((x) => (
                 <li key={x.id}>
-                  <span className="min-0"><Link href="/alertas">{x.titulo}</Link>
+                  <span className="min-0"><Link href={`/alertas#alerta-${x.id}`}>{x.titulo}</Link>
                     <span className="suave bloque texto-mini">{x.estado === 'EN_CURSO' ? 'En curso' : 'Abierta'}{x.responsable ? ` · ${x.responsable}` : ' · sin responsable'}</span></span>
                   <strong className="n">{pesos(x.impacto)}</strong>
                 </li>
@@ -188,7 +185,7 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
           {/* ------------------------------------------------ bloque 1 */}
           <h2>Costo y margen por sección</h2>
           <div className="desborde tarjeta p-0">
-            <table className="tabla">
+            <table className="tabla tabla-movil">
               <thead><tr>
                 <th>Sección</th>{area === 'TODO' && <th>Área</th>}
                 <th className="der">Und</th><th className="der">% carta</th>
@@ -199,23 +196,23 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
                 const tono = tonoMeta(s.pct_teorico, s.meta_pct);
                 return (
                   <tr key={`${s.area}-${s.seccion}`}>
-                    <td><strong>{s.seccion ?? 'Sin sección'}</strong>{s.sin_ficha_completa > 0 && <div className="suave texto-mini">{s.sin_ficha_completa} sin ficha completa</div>}</td>
-                    {area === 'TODO' && <td>{s.area === 'BAR' ? 'Bar' : 'Cocina'}</td>}
-                    <td className="der">{Number(s.unidades).toLocaleString('es-CO')}{s.unidades_sin_valor > 0 && <div className="suave texto-mini">{s.unidades_sin_valor} a $0</div>}</td>
-                    <td className="der">{pct(s.pct_carta)}</td>
-                    <td className="der"><span className="con-estado"><strong>{pct(s.pct_teorico)}</strong>{tono && <Insignia tono={tono}>{tono === 'aviso' ? 'Cerca' : undefined}</Insignia>}</span></td>
-                    <td className="der">{s.unidades_sin_valor > 0 ? pct(s.pct_teorico_con_venta) : <span className="suave">=</span>}</td>
-                    <td className="suave der">{s.meta_pct} %</td>
-                    <td className="der">{pesos(s.ventas)}</td>
-                    <td className="der">{pesos(s.margen)}</td>
-                    <td className="der">{s.margen !== null && s.ventas ? pct((s.margen / s.ventas) * 100) : '—'}</td>
+                    <td data-t="Nombre"><strong>{s.seccion ?? 'Sin sección'}</strong>{s.sin_ficha_completa > 0 && <div className="suave texto-mini">{s.sin_ficha_completa} sin ficha completa</div>}</td>
+                    {area === 'TODO' && <td data-t="Área">{s.area === 'BAR' ? 'Bar' : 'Cocina'}</td>}
+                    <td data-t="Unidades" className="der">{Number(s.unidades).toLocaleString('es-CO')}{s.unidades_sin_valor > 0 && <div className="suave texto-mini">{s.unidades_sin_valor} a $0</div>}</td>
+                    <td data-t="% carta" className="der">{pct(s.pct_carta)}</td>
+                    <td data-t="% teórico" className="der"><span className="con-estado"><strong>{pct(s.pct_teorico)}</strong>{tono && <Insignia tono={tono}>{tono === 'aviso' ? 'Cerca' : undefined}</Insignia>}</span></td>
+                    <td data-t="Sin lo de $0" className="der">{s.unidades_sin_valor > 0 ? pct(s.pct_teorico_con_venta) : <span className="suave">=</span>}</td>
+                    <td data-t="Meta" className="suave der">{s.meta_pct} %</td>
+                    <td data-t="Ventas netas" className="der">{pesos(s.ventas)}</td>
+                    <td data-t="Margen $" className="der">{pesos(s.margen)}</td>
+                    <td data-t="Margen %" className="der">{s.margen !== null && s.ventas ? pct((s.margen / s.ventas) * 100) : '—'}</td>
                   </tr>
                 );
               })}</tbody>
             </table>
           </div>
-          <p className="suave texto-mini">% carta: promedio simple de las fichas de la sección. % teórico: costo de lo vendido (unidades de Odoo × costo de la ficha) sobre las ventas netas
-            de los productos con ficha completa. Las secciones sin ficha completa no tienen %.</p>
+          <Ayuda titulo="¿Qué es cada columna?">% carta: promedio simple de las fichas de la sección. % teórico: costo de lo vendido (unidades de Odoo × costo de la ficha) sobre las ventas netas
+            de los productos con ficha completa. Las secciones sin ficha completa no tienen %.</Ayuda>
 
           <div className="dos-col pagina-ancha" style={{ alignItems: 'start' }}>
             <section>
@@ -262,7 +259,7 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
             <ul className="renglones tarjeta" style={{ padding: '0 1rem' }}>
               {[...alertas].sort((a, b) => Number(b.impacto ?? 0) - Number(a.impacto ?? 0)).map((x) => (
                 <li key={x.id}>
-                  <span className="min-0"><strong>{x.titulo}</strong>
+                  <span className="min-0"><Link href={`/alertas#alerta-${x.id}`}><strong>{x.titulo}</strong></Link>
                     <span className="suave bloque texto-mini">{x.estado === 'EN_CURSO' ? 'En curso' : 'Abierta'}{x.responsable ? ` · ${x.responsable}` : ' · sin responsable'}</span></span>
                   <strong className="n">{pesos(x.impacto)}</strong>
                 </li>

@@ -60,7 +60,7 @@ export default function Anular({ tipo, id, lineaId, etiqueta, pequeno, exigePin 
         <div className="error" role="alert"><ul className="m-0">{resultado.fatales.map((m) => <li key={m}>{m}</li>)}</ul></div>
       )}
       <div className="acciones">
-        <button type="button" disabled={enviando || motivo.trim().length < 15 || (!!exigePin && !/^[0-9]{4,6}$/.test(pin))} onClick={anular}>{enviando ? 'Anulando…' : etiqueta}</button>
+        <button aria-busy={enviando} type="button" disabled={enviando || motivo.trim().length < 15 || (!!exigePin && !/^[0-9]{4,6}$/.test(pin))} onClick={anular}>{enviando ? 'Anulando…' : etiqueta}</button>
         <button type="button" className="secundario" disabled={enviando} onClick={() => { setAbierto(false); setMotivo(''); setResultado(null); }}>Cancelar</button>
       </div>
     </div>

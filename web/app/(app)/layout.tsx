@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { navDe, nombreRol, menuDe, grupoDe, GRUPOS_MENU } from '@/lib/roles';
 import MenuLateral from '@/components/MenuLateral';
+import TituloBarra from '@/components/TituloBarra';
+import { Avisos } from '@/components/Avisos';
+import BotonRegistrar from '@/components/BotonRegistrar';
 import { Dialogos } from '@/components/Dialogo';
 import Icono from '@/components/Icono';
 import NavInferior from '@/components/NavInferior';
@@ -21,10 +24,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
     <>
       <TemaDelRol oscuro={perfil.rol === 'jefe_bar' || perfil.rol === 'aux_bar'} />
       <header className="barra">
-        <Link href="/" className="marca" aria-label="Di Égida · Inicio">
-          <span className="monograma" aria-hidden>D·É</span>
-          <span className="marca-txt"><strong>Di Égida</strong><small>Tosca Bistró · SGI</small></span>
-        </Link>
+        <TituloBarra />
         {/* Salir está en Mi cuenta: en la cabecera se tocaba sin querer */}
         <div className="barra-der">
           <BotonTema />
@@ -38,6 +38,9 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
       <main className="contenido">{children}</main>
       <NavInferior principales={nav.principales} resto={nav.resto} />
       <Dialogos />
+      <Avisos />
+      {/* solo para quien registra en operación; administración y auditoría no lo ven */}
+      {perfil.rol !== 'admin' && perfil.rol !== 'auditor' && <BotonRegistrar rutas={lateral.map((o) => o.ruta)} />}
       <CierreInactividad />
     </>
   );

@@ -231,7 +231,7 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
                 )}
                 <span className="suave">El otro queda inactivo; sus presentaciones, nombres de factura y compras pasan al que se queda.</span>
                 <div style={{ display: 'flex', gap: '.3rem' }}>
-                  <button type="button" className="mini" disabled={enviando} onClick={() => guardarUnion(f, p)}>{enviando ? 'Uniendo…' : 'Unir'}</button>
+                  <button aria-busy={enviando} type="button" className="mini" disabled={enviando} onClick={() => guardarUnion(f, p)}>{enviando ? 'Uniendo…' : 'Unir'}</button>
                   <button type="button" className="secundario mini" onClick={() => setPanel(null)}>Cancelar</button>
                 </div>
               </div>
@@ -263,7 +263,7 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
           </label>
         )}
         <div className="fila-flex">
-          <button type="button" disabled={enviando} onClick={() => guardar(f)}>{enviando ? 'Guardando…' : 'Guardar y verificar'}</button>
+          <button aria-busy={enviando} type="button" disabled={enviando} onClick={() => guardar(f)}>{enviando ? 'Guardando…' : 'Guardar y verificar'}</button>
           <button type="button" className="secundario" disabled={enviando} onClick={() => setCorrigiendo(null)}>Cancelar</button>
         </div>
       </div>
@@ -305,7 +305,7 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
                 </label>
               )}
               <div className="fila-flex">
-                <button type="button" disabled={enviando} onClick={() => guardarPrecio(f)}>{enviando ? 'Guardando…' : 'Guardar precio'}</button>
+                <button aria-busy={enviando} type="button" disabled={enviando} onClick={() => guardarPrecio(f)}>{enviando ? 'Guardando…' : 'Guardar precio'}</button>
                 <button type="button" className="secundario" onClick={() => setPanel(null)}>Cancelar</button>
               </div>
             </div>

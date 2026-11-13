@@ -24,7 +24,7 @@ export default function Redactar({ periodo_id, hay }: { periodo_id: string; hay:
     <div className="mt-2">
       {texto === null ? (
         <div className="fila-flex wrap">
-          <button type="button" className="chico" disabled={pend} onClick={conIA}>{pend ? 'Redactando…' : hay ? 'Redactar otra versión con IA' : 'Redactar con IA'}</button>
+          <button aria-busy={pend} type="button" className="chico" disabled={pend} onClick={conIA}>{pend ? 'Redactando…' : hay ? 'Redactar otra versión con IA' : 'Redactar con IA'}</button>
           <button type="button" className="chico secundario" disabled={pend} onClick={aMano}>Escribirlo a mano</button>
         </div>
       ) : (

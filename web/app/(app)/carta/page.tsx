@@ -4,6 +4,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import ListaCarta, { type PlatoCarta } from './ListaCarta';
 import ListaBaul, { type EnBaul } from './ListaBaul';
+import Ayuda from '@/components/Ayuda';
 
 export const metadata = { title: 'Carta y margen' };
 
@@ -51,12 +52,12 @@ export default async function Carta({ searchParams }: { searchParams: Promise<{ 
         </>
       ) : (
         <>
-          <p className="suave">
+          <Ayuda titulo="¿Cómo se calcula?">
             Costo de la ficha vigente con los costos de hoy, contra el precio de carta. El % de costo y el margen van sobre
             el <strong>precio neto</strong> = precio de carta ÷ {(1 + imp / 100).toLocaleString('es-CO')} (impoconsumo del {imp} %).
             Semáforo contra la meta de cada sección: verde en la meta, amarillo hasta 3 puntos encima, rojo después.
             Mientras no haya kardex, el costo es <strong>estimado</strong>.
-          </p>
+          </Ayuda>
           {filas.length ? <ListaCarta filas={filas} variasAreas={area === 'TODO'} />
             : <p className="tarjeta">Todavía no hay productos de carta en {area === 'TODO' ? 'ninguna área' : NOMBRE[area].toLowerCase()}.</p>}
         </>

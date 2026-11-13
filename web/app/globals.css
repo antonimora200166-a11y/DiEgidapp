@@ -35,6 +35,7 @@
   --radio: 8px;                /* botones y tarjetas */
   --radio-lg: 16px;            /* hojas inferiores y diálogos */
   --toque: 48px;               /* zona táctil mínima */
+  --alto-barra: 61px;          /* alto de la cabecera verde: lo que queda pegado arriba va debajo */
   --alto-nav: 0px;   /* alto de los botones de la barra inferior (solo en el celular) */
   --tapa-nav: 0px;   /* lo que tapa la barra inferior: sus botones más la franja del iPhone (safe area) */
   color-scheme: light;
@@ -587,7 +588,7 @@ button:not(.secundario):not(.discreto):not(.herramienta):not(.peligro):not(.quit
   :root { --ancho-menu: 236px; }
   :root[data-menu-plegado] { --ancho-menu: 68px; }
   .menu-lateral { display: flex; flex-direction: column; gap: .1rem; position: fixed; z-index: 9; left: 0; bottom: 0;
-                  top: var(--alto-barra, 67px); width: var(--ancho-menu); overflow-y: auto; padding: .7rem .5rem 1rem;
+                  top: var(--alto-barra); width: var(--ancho-menu); overflow-y: auto; padding: .7rem .5rem 1rem;
                   background: var(--tarjeta); border-right: 1px solid var(--borde); }
   .contenido { margin-left: calc(var(--ancho-menu) + max(0px, (100vw - var(--ancho-menu) - 760px) / 2)); margin-right: auto; }
   .contenido:has(.pagina-ancha) { margin-left: var(--ancho-menu); margin-right: 0; max-width: min(1280px, calc(100vw - var(--ancho-menu))); }
@@ -630,7 +631,7 @@ button:not(.secundario):not(.discreto):not(.herramienta):not(.peligro):not(.quit
 @media (pointer: coarse) { .avance-rec .discreto { min-height: var(--toque); } }
 
 /* Consulta: pestañas fijas bajo la cabecera, que se deslizan de lado en el celular (CONS-02) */
-.pestanas-consulta { position: sticky; top: var(--alto-barra, 67px); z-index: 8; display: flex; gap: .2rem; overflow-x: auto; scrollbar-width: none;
+.pestanas-consulta { position: sticky; top: var(--alto-barra); z-index: 8; display: flex; gap: .2rem; overflow-x: auto; scrollbar-width: none;
                      margin: .8rem 0 .9rem; padding: .3rem 0; background: var(--fondo); border-bottom: 1px solid var(--borde); }
 .pestanas-consulta::-webkit-scrollbar { display: none; }
 .pestanas-consulta a { flex: none; display: inline-flex; align-items: center; gap: .35rem; min-height: var(--toque); padding: 0 .85rem;
@@ -697,3 +698,129 @@ button:not(.secundario):not(.discreto):not(.herramienta):not(.peligro):not(.quit
                   margin-bottom: 1rem !important; border-color: var(--tinta) !important; }
 /* resultado de una búsqueda dentro de una lista: botón plano, a todo lo ancho y alineado a la izquierda */
 .opcion-lista { width: 100% !important; justify-content: flex-start !important; text-align: left !important; border: 0 !important; color: inherit !important; }
+
+/* ---------------------------------------------------------------- Fase 3 · global */
+/* GEN-07: en cada pantalla, «‹» para volver y su nombre en la cabecera */
+.barra { padding-top: max(.35rem, env(safe-area-inset-top)); padding-bottom: .35rem; }
+.barra .volver { display: grid; place-items: center; width: var(--toque); height: var(--toque); margin-left: -.6rem; font-size: 2rem; line-height: 1;
+                 color: var(--marca-texto); border-radius: var(--radio); }
+.barra .volver:hover { background: rgb(255 255 255 / .08); }
+.barra a.monograma { text-decoration: none; font-size: 1.35rem; }
+.barra .titulo-barra { font-family: var(--fuente-titulos); font-size: 1.3rem; font-weight: 600; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barra .marca { min-width: 0; }
+@media (max-width: 420px) { .barra .quien > span { display: none; } }   /* en el celular la cuenta queda como ícono */
+
+/* GEN-09: confirmación breve al guardar, abajo y sobre la barra inferior */
+.avisos { position: fixed; z-index: 30; left: 50%; transform: translateX(-50%); bottom: calc(var(--tapa-nav) + 1rem); display: grid; gap: .4rem;
+          width: min(460px, calc(100vw - 2rem)); pointer-events: none; }
+.aviso-flotante { pointer-events: auto; display: flex; align-items: center; gap: .6rem; padding: .55rem .6rem .55rem .9rem; border-radius: var(--radio);
+                  background: var(--cabecera); color: var(--marca-texto); box-shadow: var(--sombra); border-left: 4px solid var(--dorado); animation: subir .2s ease-out; }
+.aviso-flotante.error { border-left-color: var(--error); }
+.af-icono { font-weight: 800; color: var(--dorado-claro); }
+.aviso-flotante.error .af-icono { color: #E8907F; }
+.af-texto { flex: 1; font-size: .9rem; }
+.af-ver { color: var(--dorado-claro); font-weight: 600; font-size: .88rem; white-space: nowrap; }
+.af-cerrar { min-height: 40px; min-width: 40px; padding: 0; background: none; border: 0; color: inherit; font-size: 1.3rem; }
+@media (prefers-reduced-motion: reduce) { .aviso-flotante { animation: none; } }
+/* GEN-09: «Guardando…» con indicador que gira y botón bloqueado */
+button[aria-busy='true'] { position: relative; cursor: progress; }
+button[aria-busy='true']::before { content: ''; width: 1em; height: 1em; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
+                                  animation: girar .7s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { button[aria-busy='true']::before { animation: none; } }
+
+/* GEN-11: explicaciones largas plegadas */
+.ayuda-plegable { margin: .3rem 0 .8rem; font-size: .875rem; color: var(--suave); }
+.ayuda-plegable > summary { display: inline-flex; align-items: center; gap: .4rem; min-height: 40px; cursor: pointer; list-style: none; color: var(--dorado-texto); font-weight: 600; }
+.ayuda-plegable > summary::-webkit-details-marker { display: none; }
+.ap-i { display: inline-grid; place-items: center; width: 1.25rem; height: 1.25rem; border-radius: 50%; border: 1.5px solid currentColor; font-size: .75rem; font-style: italic; font-family: var(--fuente-titulos); }
+.ap-cuerpo { padding: .2rem 0 .3rem 1.65rem; }
+.ap-cuerpo p { margin: .3rem 0; }
+
+/* ---------------------------------------------------------------- Fase 3 · Inicio */
+/* INI-03: lo registrado hoy, en cifras que llevan al detalle */
+.franja-hoy { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; margin-top: .7rem; }
+.franja-hoy .sec-tit { margin: 0; flex-basis: 100%; }
+.franja-hoy a { display: inline-flex; align-items: baseline; gap: .35rem; min-height: var(--toque); padding: .3rem .9rem; border-radius: var(--radio);
+                border: 1px solid var(--borde); background: var(--tarjeta); text-decoration: none; color: var(--suave); }
+.franja-hoy a b { font-size: 1.35rem; color: var(--texto); font-weight: 600; }
+/* INI-04: «+ Registrar» al pulgar (celular e iPad vertical), escondido donde hay barra de guardar */
+.boton-registrar { display: none; }
+@media (max-width: 900px) {
+  .boton-registrar { display: inline-flex; position: fixed; z-index: 19; right: 1rem; bottom: calc(var(--tapa-nav) + 1rem); min-height: 56px;
+                     padding: 0 1.2rem 0 1rem; border-radius: 999px; box-shadow: var(--sombra), 0 4px 14px rgb(0 0 0 / .25); border: 1px solid var(--dorado); }
+  .boton-registrar .icono { width: 1.3rem; height: 1.3rem; }
+  body:has(.barra-guardar, .barra-accion, .barra-bloque) .boton-registrar { display: none; }
+}
+
+/* ---------------------------------------------------------------- Fase 3 · Recibir */
+/* REC-05: pasos de la lectura con la miniatura de la foto */
+.lectura-ia { display: grid; grid-template-columns: auto 1fr; gap: .3rem .8rem; align-items: start; margin-top: .7rem; padding: .7rem;
+              border: 1px solid var(--borde); border-radius: var(--radio); background: var(--tenue); }
+.lectura-mini { grid-row: span 2; width: 64px; height: 84px; object-fit: cover; border-radius: var(--radio-sm); border: 1px solid var(--borde); }
+.lectura-ia ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .2rem; font-size: .9rem; color: var(--suave); }
+.lectura-ia li.hecho { color: var(--ok); }
+.lectura-ia li.en-curso { color: var(--texto); font-weight: 600; }
+.lectura-ia li.en-curso::before { content: ''; display: inline-block; width: .8em; height: .8em; margin-right: .4rem; border-radius: 50%;
+                                  border: 2px solid currentColor; border-right-color: transparent; animation: girar .7s linear infinite; vertical-align: -.05em; }
+@media (prefers-reduced-motion: reduce) { .lectura-ia li.en-curso::before { animation: none; } }
+.lectura-ia > span { grid-column: 1 / -1; }
+.lectura-ia:not(:has(img)) { grid-template-columns: 1fr; }
+/* REC-07: encabezado resumido */
+.resumen-enc { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+
+/* ---------------------------------------------------------------- Fase 3 · Producir */
+/* PROD-06: menú ⋯ con las acciones que no se tocan sin querer */
+.menu-mas { position: relative; display: inline-block; }
+.menu-mas > summary { list-style: none; display: inline-grid; place-items: center; min-width: var(--toque); min-height: 40px; border-radius: var(--radio);
+                      cursor: pointer; color: var(--suave); font-size: 1.3rem; letter-spacing: .1em; }
+.menu-mas > summary::-webkit-details-marker { display: none; }
+.menu-mas > summary:hover { background: color-mix(in srgb, var(--tinta) 8%, transparent); }
+.menu-mas[open] > button { position: absolute; z-index: 6; top: 100%; left: 0; white-space: nowrap; background: var(--tarjeta); box-shadow: var(--sombra); }
+/* PROD-07: cifras en vivo encima de los botones */
+.barra-accion { flex-wrap: wrap; }
+.resumen-vivo { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .5rem; font-size: .88rem; color: var(--suave); }
+.resumen-vivo b { color: var(--texto); }
+/* PROD-09: destino propuesto */
+.destino-propuesto { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .6rem .7rem; border-radius: var(--radio);
+                     background: var(--tenue); border: 1px solid var(--borde); }
+
+/* ---------------------------------------------------------------- Fase 3 · Contar */
+.hoja-cab { position: sticky; top: var(--alto-barra); z-index: 5; background: var(--fondo); padding: .5rem 0; }
+
+/* CON-04: micrófono grande al pulgar; mientras escucha, en dorado */
+.boton-voz { min-height: 56px; min-width: 56px; border-radius: 999px; padding: 0 1rem; background: var(--tarjeta); color: var(--tinta); border: 2px solid var(--tinta); }
+.boton-voz .icono { width: 1.4rem; height: 1.4rem; }
+.boton-voz.escuchando { background: var(--dorado); color: var(--cabecera); border-color: var(--dorado); animation: latir 1.2s ease-in-out infinite; }
+@keyframes latir { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--dorado) 30%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .boton-voz.escuchando { animation: none; } }
+
+/* ---------------------------------------------------------------- Fase 3 · Carta */
+button.editar-precio { min-height: 36px; min-width: 36px; padding: 0 .45rem; margin-left: .3rem; background: transparent; border: 1px solid var(--borde);
+                 color: var(--suave); font-weight: 500; font-size: .95rem; }
+button.editar-precio:hover:not(:disabled) { background: color-mix(in srgb, var(--tinta) 8%, transparent); color: var(--texto); filter: none; border-color: var(--borde-control); }
+@media (pointer: coarse) { button.editar-precio { min-height: var(--toque); min-width: var(--toque); } }
+
+/* ---------------------------------------------------------------- Fase 3 · Consulta */
+/* CONS-04: título con el menú «Acciones» a la derecha */
+.cab-consulta { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
+.cab-consulta h1 { margin-bottom: .6rem; }
+.menu-acciones { position: relative; }
+.menu-acciones > summary { list-style: none; display: inline-flex; align-items: center; gap: .35rem; min-height: var(--toque); padding: 0 1rem;
+                           border: 1px solid var(--tinta); border-radius: var(--radio); color: var(--tinta); font-weight: 600; cursor: pointer; }
+.menu-acciones > summary::-webkit-details-marker { display: none; }
+.menu-acciones > nav { position: absolute; z-index: 15; right: 0; top: calc(100% + .3rem); width: min(300px, calc(100vw - 2rem)); padding: .4rem;
+                       display: grid; box-shadow: var(--sombra); }
+.menu-acciones > nav a { display: block; padding: .5rem .6rem; border-radius: var(--radio-sm); text-decoration: none; font-weight: 600; }
+.menu-acciones > nav a:hover { background: color-mix(in srgb, var(--tinta) 8%, transparent); }
+.menu-acciones > nav a small { display: block; font-weight: 400; color: var(--suave); font-size: .8rem; }
+/* CONS-05: la alerta abierta desde Consulta se resalta */
+.alerta-item:target { box-shadow: 0 0 0 2px var(--dorado); scroll-margin-top: 80px; }
+
+/* ---------------------------------------------------------------- Fase 3 · Calidad del catálogo */
+/* CAL-02: la tarjeta con foco se decide con el teclado */
+.par-revision:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
+.atajos { align-self: center; margin-left: auto; }
+.atajos kbd { display: inline-block; min-width: 1.4em; padding: 0 .3em; border: 1px solid var(--borde-control); border-radius: var(--radio-sm);
+              font: 600 .75rem var(--fuente); text-align: center; color: var(--texto); }
+@media (pointer: coarse) { .atajos { display: none; } }

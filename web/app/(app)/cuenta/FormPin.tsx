@@ -22,7 +22,7 @@ export default function FormPin({ tiene }: { tiene: boolean }) {
       <label htmlFor="pin-repetido">Repítalo</label>
       <input id="pin-repetido" name="repetido" type="password" inputMode="numeric" autoComplete="off" pattern="[0-9]{4,6}" maxLength={6} required />
       {estado.error && <p className="error" role="alert">{estado.error}</p>}
-      <div className="acciones"><button type="submit" disabled={enviando}>{enviando ? 'Guardando…' : tiene ? 'Cambiar PIN' : 'Guardar PIN'}</button></div>
+      <div className="acciones"><button aria-busy={enviando} type="submit" disabled={enviando}>{enviando ? 'Guardando…' : tiene ? 'Cambiar PIN' : 'Guardar PIN'}</button></div>
     </form>
   );
 }

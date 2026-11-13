@@ -15,6 +15,7 @@ import { Revisiones } from '@/components/RechazoConMotivo';
 import { useEnvio } from '@/lib/envio';
 import { Insignia } from '@/components/Insignia';
 import { pesos as fmtPesos, fecha as fmtFecha } from '@/lib/formato';
+import { avisar } from '@/components/Avisos';
 
 export type ProductoRecepcion = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -140,6 +141,14 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
   const envio = useEnvio();
   const [claveOtra, setClaveOtra] = useState(() => crypto.randomUUID());
   const camara = useRef<HTMLInputElement>(null);
+  // encabezado resumido (REC-07): al terminar la lectura de la IA, si quedó completo; «Editar» lo abre
+  const [resumirEnc, setResumirEnc] = useState(false);
+  const [buscarProv, setBuscarProv] = useState('');
+  // proveedores recientes de esta área en este equipo (REC-09)
+  const claveProv = `sgi-recibir-prov:${area}`;
+  const [idsRecientes, setIdsRecientes] = useState<string[]>([]);
+  useEffect(() => { try { setIdsRecientes(JSON.parse(localStorage.getItem(claveProv) || '[]')); } catch { /* nada */ } }, [claveProv]);
+  const recientes = idsRecientes.map((id) => proveedores.find((p) => p.id === id)).filter((p): p is { id: string; nombre: string } => !!p).slice(0, 4);
   const galeria = useRef<HTMLInputElement>(null);
 
   // borrador en este equipo: bloquear el celular o recargar no borra la recepción a medias
@@ -286,6 +295,12 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
   const faltaZonaOtra = !!otra && lineas.some((l) => l.producto_id && !l.zona && areaDe(l) === otra.area) && !enc.ubicacion_otra;
 
   const sinConfirmar = lineas.filter((l) => !l.confirmada).length;
+  // encabezado completo: proveedor, zona, número (salvo sin soporte) y la zona de la otra área si hace falta
+  const encCompleto = !!enc.proveedor_id && !!enc.ubicacion && (!!enc.documento || enc.tipo_soporte === 'SIN_SOPORTE') && !faltaZonaOtra;
+  // al terminar una lectura de la IA, si el encabezado quedó completo se ve resumido
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (propuesta && encCompleto) setResumirEnc(true); }, [propuesta]);
+  const encontradosProv = buscarProv.trim().length < 2 ? [] : listaProv.filter((p) => sinTildes(p.nombre).includes(sinTildes(buscarProv.trim()))).slice(0, 6);
   const pendientes = lineas.filter((l) => !lineaLista(l, calculo(l)));
   const sinProducto = lineas.filter((l) => !l.producto_id).length;
   const sinPeso = lineas.filter((l) => calculo(l).faltaPeso).length;
@@ -347,6 +362,8 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       }
       try { localStorage.removeItem(clave); } catch { /* nada */ }
       setResultado({ ok: true, id: null, codigo: codigos.join(' y '), fatales: [], bloqueos: [], avisos });
+      if (enc.proveedor_id) { const ids = [enc.proveedor_id, ...idsRecientes.filter((x) => x !== enc.proveedor_id)].slice(0, 6); setIdsRecientes(ids); try { localStorage.setItem(claveProv, JSON.stringify(ids)); } catch { /* nada */ } }
+      avisar({ texto: `${codigos.length > 1 ? 'Recepciones guardadas' : 'Recepción guardada'} · ${codigos.join(' y ')}`, ver: { href: '/historial', t: 'Ver' } });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
@@ -386,12 +403,23 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
         <input ref={camara} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { void tomarFoto(e.target.files?.[0]); e.target.value = ''; }} />
         <input ref={galeria} type="file" accept="image/*,application/pdf" hidden onChange={(e) => { void tomarFoto(e.target.files?.[0]); e.target.value = ''; }} />
         <div className="acciones mt-0">
-          <button type="button" disabled={!!estadoFoto} onClick={() => camara.current?.click()}>
+          <button aria-busy={estadoFoto === 'subiendo'} type="button" disabled={!!estadoFoto} onClick={() => camara.current?.click()}>
             {estadoFoto === 'subiendo' ? 'Subiendo foto…' : estadoFoto === 'leyendo' ? 'Leyendo factura…' : foto ? 'Tomar otra foto' : 'Tomar foto'}
           </button>
           <button type="button" className="secundario" disabled={!!estadoFoto} onClick={() => galeria.current?.click()}>Elegir archivo</button>
         </div>
-        {estadoFoto === 'leyendo' && <p className="suave texto-nota" role="status">Esto toma entre 10 y 40 segundos. No cierre la pantalla.</p>}
+        {estadoFoto && (
+          // mientras sube y lee: los pasos a la vista con la foto al lado (REC-05)
+          <div className="lectura-ia" role="status">
+            {vista && <img src={vista} alt="Foto de la factura" className="lectura-mini" />}
+            <ol>
+              <li className={estadoFoto === 'subiendo' ? 'en-curso' : 'hecho'}>{estadoFoto === 'subiendo' ? 'Subiendo la foto…' : '✓ Foto subida'}</li>
+              <li className={estadoFoto === 'leyendo' ? 'en-curso' : ''}>Leyendo la factura{estadoFoto === 'leyendo' ? '…' : ''}</li>
+              <li>Proponiendo proveedor y líneas</li>
+            </ol>
+            <span className="suave texto-mini">Toma entre 10 y 40 segundos. No cierre la pantalla; puede ir eligiendo el proveedor.</span>
+          </div>
+        )}
         {errorFoto && <p className="error" role="alert">{errorFoto}</p>}
         {foto && !estadoFoto && (
           <p className="suave" style={{ fontSize: '.85rem', marginBottom: 0 }}>
@@ -402,11 +430,42 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       </section>
 
       {/* ------------------------------------------------ encabezado */}
+      {resumirEnc && encCompleto ? (
+        // la IA (o la persona) ya llenó el encabezado: se ve como resumen y se toca «Editar» para cambiarlo (REC-07)
+        <section className="tarjeta resumen-enc" style={{ marginTop: '.75rem' }}>
+          <span>
+            <strong>{listaProv.find((p) => p.id === enc.proveedor_id)?.nombre ?? 'Proveedor'}</strong>
+            <small className="suave bloque">
+              {enc.tipo_soporte === 'FACTURA' ? 'Factura' : enc.tipo_soporte === 'REMISION' ? 'Remisión' : 'Sin soporte'}
+              {enc.documento ? ` ${enc.documento}` : ''} · {fmtFecha(enc.fecha)} · {zonas.find((z) => z.codigo === enc.ubicacion)?.nombre}
+            </small>
+          </span>
+          <button type="button" className="discreto chico" onClick={() => setResumirEnc(false)}>Editar</button>
+        </section>
+      ) : (
       <section className="tarjeta" style={{ marginTop: '.75rem' }}>
         <strong>2. Proveedor y documento</strong>
         <label htmlFor="prov">Proveedor</label>
-        <select id="prov" value={enc.proveedor_id} onChange={(e) => ponerEnc({ proveedor_id: e.target.value })}>
-          <option value="">— Elija de la lista —</option>
+        {recientes.length > 0 && !enc.proveedor_id && (
+          // los últimos proveedores de esta área, a un toque (REC-09)
+          <div className="chips-sel mb-1" aria-label="Proveedores recientes">
+            {recientes.map((p) => <button key={p.id} type="button" onClick={() => ponerEnc({ proveedor_id: p.id })}>{p.nombre}</button>)}
+          </div>
+        )}
+        {!enc.proveedor_id && (
+          <>
+            <input type="search" placeholder="Buscar proveedor…" value={buscarProv} onChange={(e) => setBuscarProv(e.target.value)} aria-label="Buscar proveedor" />
+            {encontradosProv.length > 0 && (
+              <ul className="lista mt-1">
+                {encontradosProv.map((p) => (
+                  <li key={p.id} className="p-0"><button type="button" className="secundario opcion-lista" onClick={() => { ponerEnc({ proveedor_id: p.id }); setBuscarProv(''); }}>{p.nombre}</button></li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+        <select id="prov" className="mt-1" value={enc.proveedor_id} onChange={(e) => ponerEnc({ proveedor_id: e.target.value })}>
+          <option value="">— o elija de la lista completa —</option>
           {listaProv.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
         {notaProveedor && <span className="ayuda" role="status">{notaProveedor}</span>}
@@ -418,7 +477,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
               {provLeido.sugeridos.map((x) => (
                 <button key={x.id} type="button" className="secundario chico" onClick={() => { ponerEnc({ proveedor_id: x.id }); setProvLeido(null); }}>{x.nombre}</button>
               ))}
-              <button type="button" className="chico" disabled={creandoProv} onClick={() => nuevoProveedor(provLeido.nombre, provLeido.nit)}>
+              <button aria-busy={creandoProv} type="button" className="chico" disabled={creandoProv} onClick={() => nuevoProveedor(provLeido.nombre, provLeido.nit)}>
                 {creandoProv ? 'Creando…' : `Crear «${provLeido.nombre}»`}
               </button>
             </div>
@@ -465,7 +524,9 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
             </select>
           </div>
         )}
+        {encCompleto && <button type="button" className="discreto chico mt-2" onClick={() => setResumirEnc(true)}>Listo, cerrar</button>}
       </section>
+      )}
 
       {/* ------------------------------------------------ líneas */}
       <h2>3. Productos {lineas.length > 0 && <span className="suave fw-400">({lineas.length})</span>}</h2>
@@ -592,11 +653,11 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
           </div>
         )}
         {bloqueado ? (
-          <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>
+          <button aria-busy={enviando} type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>
             {enviando ? 'Guardando…' : 'Guardar con este motivo'}
           </button>
         ) : (
-          <button type="button" disabled={enviando || !!estadoFoto || !lineas.length || sinConfirmar > 0 || sinProducto > 0 || sinPeso > 0 || faltaZona || faltaZonaOtra}
+          <button aria-busy={enviando} type="button" disabled={enviando || !!estadoFoto || !lineas.length || sinConfirmar > 0 || sinProducto > 0 || sinPeso > 0 || faltaZona || faltaZonaOtra}
                   onClick={() => guardar(false)}>
             {enviando ? 'Guardando…' : `Guardar recepción (${lineas.length})`}
           </button>
@@ -931,7 +992,7 @@ function CrearRapido({ area, otraArea, l, listo, cancelar }: { area: Area; otraA
         </div>
       )}
       <div className="acciones mt-2">
-        <button type="button" className="chico" disabled={enviando || nombre.trim().length < 3 || (bloqueado && motivo.trim().length < 15)} onClick={crear}>
+        <button aria-busy={enviando} type="button" className="chico" disabled={enviando || nombre.trim().length < 3 || (bloqueado && motivo.trim().length < 15)} onClick={crear}>
           {enviando ? 'Creando…' : bloqueado ? 'Crear con este motivo' : 'Crear y usar'}
         </button>
         <button type="button" className="discreto chico" onClick={cancelar}>Cancelar</button>

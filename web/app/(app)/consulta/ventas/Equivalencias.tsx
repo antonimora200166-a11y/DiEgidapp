@@ -60,7 +60,7 @@ function Fila({ f, carta }: { f: SinEquivalencia; carta: ProductoCarta[] }) {
       {tipo === 'COMBO' && <button type="button" className="secundario mini" onClick={() => setPartes((p) => [...p, ''])}>+ Otro producto del combo</button>}
       {f.sugerido && tipo === 'PRODUCTO' && partes[0] === f.sugerido_id && <span className="suave texto-mini">Sugerido por el nombre (parecido {Math.round(Number(f.parecido) * 100)} %)</span>}
       {error && <span style={{ color: 'var(--error)', fontSize: '.85rem' }}>{error}</span>}
-      <div><button type="button" className="mini" disabled={enviando} onClick={guardar}>{enviando ? 'Guardando…' : 'Guardar'}</button></div>
+      <div><button aria-busy={enviando} type="button" className="mini" disabled={enviando} onClick={guardar}>{enviando ? 'Guardando…' : 'Guardar'}</button></div>
     </li>
   );
 }

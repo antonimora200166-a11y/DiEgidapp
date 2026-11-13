@@ -8,6 +8,7 @@ import LineasInventario, { baseDe, type LineaInv, type ProductoSaldo } from '@/c
 import RechazoConMotivo from '@/components/RechazoConMotivo';
 import { useEnvio } from '@/lib/envio';
 import { confirmar } from '@/components/Dialogo';
+import { avisar } from '@/components/Avisos';
 
 type Zona = { codigo: string; nombre: string; area: Area };
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
@@ -21,6 +22,21 @@ function OpcionesZonas({ zonas, excepto }: { zonas: Zona[]; excepto?: string }) 
 export default function Trasladar({ zonas, productos }: { zonas: Zona[]; productos: Record<string, ProductoSaldo[]> }) {
   const [origen, setOrigen] = useState('');
   const [destino, setDestino] = useState('');
+  // las rutas de siempre (TRA-01): las últimas zonas de salida y de llegada, a un toque
+  const [recientes, setRecientes] = useState<{ sale: string[]; llega: string[] }>({ sale: [], llega: [] });
+  useEffect(() => { try { const r = JSON.parse(localStorage.getItem('sgi-trasladar-zonas') || 'null'); if (r) setRecientes(r); } catch { /* nada */ } }, []);
+  function recordar(o: string, d: string) {
+    const r = { sale: [o, ...recientes.sale.filter((x) => x !== o)].slice(0, 3), llega: [d, ...recientes.llega.filter((x) => x !== d)].slice(0, 3) };
+    setRecientes(r); try { localStorage.setItem('sgi-trasladar-zonas', JSON.stringify(r)); } catch { /* nada */ }
+  }
+  const chips = (codigos: string[], actual: string, elegir: (z: string) => void, excepto?: string) => {
+    const zs = codigos.filter((c) => c !== excepto && zonas.some((z) => z.codigo === c));
+    return zs.length > 0 && (
+      <div className="chips-sel mt-1">
+        {zs.map((c) => <button key={c} type="button" aria-pressed={actual === c} onClick={() => elegir(c)}>{nombre(c)}</button>)}
+      </div>
+    );
+  };
   const [fecha, setFecha] = useState(hoyCali());
   const [lineas, setLineas] = useState<LineaInv[]>([]);
   const [obs, setObs] = useState('');
@@ -44,12 +60,13 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
     try { localStorage.setItem(clave, JSON.stringify({ origen, destino, lineas, obs })); } catch { /* nada */ }
   }, [cargado, origen, destino, lineas, obs]);
 
-  async function cambiarOrigen(z: string) {
+  async function cambiarOrigen(z: string): Promise<boolean> {   // false si la persona no quiso cambiar de área
     const nueva = zonas.find((x) => x.codigo === z)?.area;
-    if (lineas.length && nueva !== area && !(await confirmar('Esa zona es de otra área: se quitan los productos escritos.', { titulo: '¿Seguir?', aceptar: 'Cambiar de zona' }))) return;
+    if (lineas.length && nueva !== area && !(await confirmar('Esa zona es de otra área: se quitan los productos escritos.', { titulo: '¿Seguir?', aceptar: 'Cambiar de zona' }))) return false;
     if (nueva !== area) setLineas([]);
     setOrigen(z);
     if (destino === z) setDestino('');
+    return true;
   }
 
   const malas = lineas.filter((l) => baseDe(l, porId.get(l.producto_id)) === null).length;
@@ -64,7 +81,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
                                      unidad: porId.get(l.producto_id)?.unidad_base })),
       }, envio.clave);
       setResultado(r);
-      if (r.ok) { try { localStorage.removeItem(clave); } catch { /* nada */ } window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      if (r.ok) { recordar(origen, destino); avisar({ texto: `Traslado guardado · ${r.codigo}`, ver: { href: '/historial', t: 'Ver' } }); try { localStorage.removeItem(clave); } catch { /* nada */ } window.scrollTo({ top: 0, behavior: 'smooth' }); }
     });
   }
   function otro() { envio.nuevo(); setLineas([]); setObs(''); setMotivo(''); setResultado(null); setFecha(hoyCali()); }
@@ -95,6 +112,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
               <option value="">— Zona —</option>
               <OpcionesZonas zonas={zonas} />
             </select>
+            {chips(recientes.sale, origen, (z) => { void cambiarOrigen(z); })}
           </div>
           <div>
             <label className="mt-0" htmlFor="destino">Llega a</label>
@@ -102,8 +120,14 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
               <option value="">— Zona —</option>
               <OpcionesZonas zonas={zonas} excepto={origen} />
             </select>
+            {chips(recientes.llega, destino, setDestino, origen)}
           </div>
         </div>
+        {origen && destino && (
+          <button type="button" className="discreto chico mt-1" onClick={async () => { const o = origen, d = destino; if (await cambiarOrigen(d)) setDestino(o); }}>
+            ⇄ Invertir: de {nombre(destino)} a {nombre(origen)}
+          </button>
+        )}
         <label htmlFor="fecha">Fecha</label>
         <input id="fecha" type="date" max={hoyCali()} value={fecha} onChange={(e) => setFecha(e.target.value)} style={{ maxWidth: 200 }} />
       </section>
@@ -121,9 +145,9 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
       {(lineas.length > 0 || bloqueado) && (
         <div className="acciones barra-guardar">
           {bloqueado ? (
-            <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
+            <button aria-busy={enviando} type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
           ) : (
-            <button type="button" disabled={enviando || !origen || !destino || !lineas.length || malas > 0} onClick={() => guardar(false)}>
+            <button aria-busy={enviando} type="button" disabled={enviando || !origen || !destino || !lineas.length || malas > 0} onClick={() => guardar(false)}>
               {enviando ? 'Guardando…' : `Guardar traslado (${lineas.length})`}
             </button>
           )}

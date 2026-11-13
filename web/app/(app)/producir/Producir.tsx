@@ -13,6 +13,8 @@ import Escaner from '@/components/Escaner';
 import Icono from '@/components/Icono';
 import { leerCodigo } from '@/lib/escaneo';
 import { fecha as fmtFecha } from '@/lib/formato';
+import { avisar } from '@/components/Avisos';
+import { Insignia } from '@/components/Insignia';
 
 type UB = 'g' | 'ml' | 'und';
 export type Mpi = {
@@ -106,7 +108,8 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   const [retomado, setRetomado] = useState<string | null>(null);   // día en que se empezó un borrador viejo
   // el día en que se empezó el borrador; al retomar uno viejo y seguir, pasa a ser hoy
   const diaBorrador = retomado ?? hoyCali();
-  const [llenado, setLlenado] = useState<string | null>(null);     // ingrediente que se acaba de llenar con «Pesé»
+  const [llenado, setLlenado] = useState<string | null>(null);
+  const [cambiarDestino, setCambiarDestino] = useState(false);   // la zona y conservación propuestas se ven como tarjeta     // ingrediente que se acaba de llenar con «Pesé»
   useEffect(() => {
     try {
       const b = JSON.parse(localStorage.getItem(clave) || 'null');
@@ -246,7 +249,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
           factor: ins?.factor_g === null ? num(c.factor) : null, ubicacion: sinCosto ? null : c.zona || null, nota: c.nota || null, lote_origen: c.lote_origen ?? null })),
       }, envio.clave);
       setResultado(r);
-      if (r.ok) { try { localStorage.removeItem(clave); } catch { /* nada */ } setPaso(5); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      if (r.ok) { avisar({ texto: `Lote guardado · ${r.codigo}`, ver: { href: `/produccion/lotes/${encodeURIComponent(r.codigo ?? '')}`, t: 'Ver lote' } }); try { localStorage.removeItem(clave); } catch { /* nada */ } setPaso(5); window.scrollTo({ top: 0, behavior: 'smooth' }); }
     });
   }
   function empezarDeNuevo() {
@@ -481,7 +484,12 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                     {c.linea_ficha !== null ? <>Ficha: {c.esperado_und !== null ? `${fmtCantidad(c.esperado_und)} und` : g(c.esperado_g)}</> : 'Agregado'}
                     {c.nota && <> · {c.nota}</>}
                   </div>
-                  <button type="button" className="discreto mini" onClick={() => setConsumos((cs) => cs.filter((x) => x.clave !== c.clave))}>Quitar</button>
+                  <details className="menu-mas">
+                    <summary aria-label={`Más opciones de ${c.generico}`}>⋯</summary>
+                    <button type="button" className="secundario peligro chico" onClick={async () => {
+                      if (await confirmar(`¿Quitar ${c.generico} de este lote?`, { aceptar: 'Quitar', peligro: true })) setConsumos((cs) => cs.filter((x) => x.clave !== c.clave));
+                    }}>Quitar ingrediente</button>
+                  </details>
                 </div>
                 <div style={{ display: 'grid', gap: '.35rem', minWidth: 0 }}>
                   {opciones.length > 1 ? (
@@ -554,6 +562,10 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
           )}
         </section>
         <div className="barra-accion">
+          <div className="resumen-vivo" role="status">
+            Entrada <b>{g(calc.entrada)}</b>{consumos.reduce((t, c) => t + (c.esperado_g ?? 0), 0) > 0 && <> de <b>{g(consumos.reduce((t, c) => t + (c.esperado_g ?? 0), 0))}</b> en la ficha</>}
+            {pendientesPeso > 0 && <> · faltan {pendientesPeso}</>}
+          </div>
           <button type="button" className="secundario" onClick={() => setPaso(conIndicaciones ? 2 : 1)}>Atrás</button>
           <button type="button" className="principal" disabled={!consumos.length || bloqueados > 0 || pendientesPeso > 0 || !!retomado} onClick={() => setPaso(4)}>
             {bloqueados ? `Resuelva ${bloqueados} ingrediente(s) en rojo` : pendientesPeso ? `Falta pesar ${pendientesPeso}` : 'Seguir al neto'}
@@ -633,6 +645,15 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
           </section>
           <section className="tarjeta">
             <h2 className="sec-tit">Dónde queda guardado</h2>
+            {destino && !cambiarDestino && (conservacion || !ficha?.almacenamientos.length) ? (
+              <div className="destino-propuesto">
+                <span>
+                  <strong>Queda en {nombreZona(destino)}</strong>
+                  <small className="suave bloque">{conservacion ? `${conservacion}${vida ? ` · ${vida} d` : ''}` : 'Sin vida útil en la ficha'}{venceEl ? ` · vence ${fechaCorta(venceEl)}` : ''}</small>
+                </span>
+                <button type="button" className="discreto chico" onClick={() => setCambiarDestino(true)}>Cambiar</button>
+              </div>
+            ) : (<>
             <select aria-label="Zona donde queda" value={destino} onChange={(e) => {
               setDestino(e.target.value);
               const c = conservacionDeZona(nombreZona(e.target.value));
@@ -649,6 +670,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                 ))}
               </div>
             ) : <p className="suave" style={{ fontSize: '.85rem', marginBottom: 0 }}>La ficha no tiene vida útil: el lote quedará sin fecha de vencimiento.</p>}
+            </>)}
           </section>
           <details className="tarjeta">
             <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Tiempo y observaciones (opcional)</summary>
@@ -686,8 +708,12 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
         </div>
       </div>
       <div className="barra-accion">
+        <div className="resumen-vivo" role="status">
+          Rendimiento <b>{calc.rendimiento !== null ? `${r2(calc.rendimiento * 100)} %` : '—'}</b>{rendFicha && <> · ficha {r2(rendFicha * 100)} %</>}
+          {calc.desvioPp !== null && (calc.alerta ? <Insignia tono="aviso">Fuera de rango</Insignia> : <Insignia tono="ok">En rango</Insignia>)}
+        </div>
         <button type="button" className="secundario" onClick={() => setPaso(3)}>Atrás</button>
-        <button type="button" className="principal" disabled={!listo4 || enviando || !!retomado} onClick={guardar}>
+        <button aria-busy={enviando} type="button" className="principal" disabled={!listo4 || enviando || !!retomado} onClick={guardar}>
           {enviando ? 'Guardando…' : !netoG ? 'Falta el neto' : !destino ? 'Falta dónde queda' : netoBaseFalta ? 'Complete el neto' : 'Guardar lote'}
         </button>
       </div>

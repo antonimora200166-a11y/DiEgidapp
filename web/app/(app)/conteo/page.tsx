@@ -5,6 +5,7 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, puedeOperar, type Area } from '@/lib/roles';
 import { fecha as fmtFecha } from '@/lib/formato';
 import { Insignia } from '@/components/Insignia';
+import Ayuda from '@/components/Ayuda';
 
 export const metadata = { title: 'Contar' };
 
@@ -30,10 +31,8 @@ export default async function Conteo() {
     <>
       <h1>Contar</h1>
       <p className="suave">Elija la zona que va a recorrer. Cuente lo que ve; lo que no cuente no cambia.</p>
-      <p className="suave texto-nota">
-        Programa de conteos: clase A cada semana, B cada 15 días, C cada mes, desde el último conteo de cada producto en su zona.
-        {totalToca > 0 ? <> Hoy tocan <strong>{totalToca}</strong> producto(s).</> : ' Hoy no toca ninguno.'}
-      </p>
+      <p className="suave texto-nota m-0">{totalToca > 0 ? <>Hoy toca contar <strong>{totalToca}</strong> producto(s).</> : 'Hoy no toca contar ninguno.'}</p>
+      <Ayuda titulo="¿Cada cuánto se cuenta?">Clase A cada semana, B cada 15 días y C cada mes, desde el último conteo de cada producto en su zona.</Ayuda>
       {areas.map((a) => (
         <section key={a}>
           {areas.length > 1 && <h2>{a === 'BAR' ? 'Bar' : 'Cocina'}</h2>}

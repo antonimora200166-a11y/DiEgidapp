@@ -41,7 +41,7 @@ export default async function Lotes({ searchParams }: { searchParams: Promise<{ 
         <Link key={l.id} href={`/produccion/lotes/${encodeURIComponent(l.codigo)}`} className={`${l.estado === 'VENCIDO' ? 'error' : 'aviso'} pagina-ancha`}
               style={{ display: 'block', textDecoration: 'none', marginBottom: '.5rem' }}>
           <strong>{l.mpi} · {l.codigo} {l.estado === 'VENCIDO' ? 'venció' : l.vence === hoy ? 'vence hoy' : 'vence pronto'}{l.vence ? ` (${fmtFecha(l.vence)})` : ''}</strong>
-          {' '}· quedan {Number(l.restante).toLocaleString('es-CO')} {l.unidad_base}. {l.estado === 'VENCIDO' ? 'Regístrelo como baja.' : 'Úsalo primero.'}
+          {' '}· quedan {Number(l.restante).toLocaleString('es-CO')} {l.unidad_base}. {l.estado === 'VENCIDO' ? 'Regístrelo como baja.' : 'Úselo primero.'}
         </Link>
       ))}
       <ListaLotes filas={filas} hoy={hoy} vePesos={perfil.rol === 'admin'} />

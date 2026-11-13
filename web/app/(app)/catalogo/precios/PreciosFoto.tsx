@@ -494,7 +494,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                           )}
                           {nv.error && <div className="aviso">{nv.error}</div>}
                           <div className="fila-flex">
-                            <button type="button" disabled={nv.enviando} onClick={() => crear(f, l)}>{nv.enviando ? 'Creando…' : 'Crear y usar en esta línea'}</button>
+                            <button aria-busy={nv.enviando} type="button" disabled={nv.enviando} onClick={() => crear(f, l)}>{nv.enviando ? 'Creando…' : 'Crear y usar en esta línea'}</button>
                             <button type="button" className="secundario" onClick={() => cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: null }))}>Cancelar</button>
                           </div>
                         </div>
@@ -579,7 +579,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
 
           {f.estado === 'listo' && f.lineas.length > 0 && (
             <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.4rem' }}>
-              <button type="button" disabled={guardando === f.id} onClick={() => guardar(f)}>
+              <button aria-busy={guardando === f.id} type="button" disabled={guardando === f.id} onClick={() => guardar(f)}>
                 {guardando === f.id ? 'Guardando…' : `Guardar precios (${f.lineas.filter((l) => !l.ignorar && !aBase(l, l.producto_id ? porId.get(l.producto_id) : undefined).problema && numero(l.valor) > 0).length})`}
               </button>
               {(() => {

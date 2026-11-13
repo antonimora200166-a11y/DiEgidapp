@@ -192,7 +192,7 @@ export default function Propuestas({ filas, categorias, soloLectura, esAdmin }: 
                           <div className="linea wrap">
                             <strong>{elegidas.length} seleccionada(s)</strong>
                             <div className="fila-flex wrap">
-                              <button type="button" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'ACEPTAR', null, limpiar)}>{enviando ? 'Aplicando…' : `Aceptar ${elegidas.length}`}</button>
+                              <button aria-busy={enviando} type="button" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'ACEPTAR', null, limpiar)}>{enviando ? 'Aplicando…' : `Aceptar ${elegidas.length}`}</button>
                               <button type="button" className="secundario" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'RECHAZAR', null, limpiar)}>Rechazar {elegidas.length}</button>
                               {esAdmin && <EliminarProductos productos={[...new Set(elegidas.map((p) => p.producto_id))].map((id) => ({ id }))} alTerminar={limpiar} etiqueta={`Eliminar los productos (${new Set(elegidas.map((p) => p.producto_id)).size})`} />}
                               <button type="button" className="secundario" disabled={enviando} onClick={limpiar}>Quitar selección</button>

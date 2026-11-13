@@ -12,6 +12,7 @@ import RegistrarTara from './RegistrarTara';
 import { Revisiones } from '@/components/RechazoConMotivo';
 import { useEnvio } from '@/lib/envio';
 import { fecha as fmtFecha } from '@/lib/formato';
+import { avisar } from '@/components/Avisos';
 
 export type ProductoHoja = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -141,6 +142,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       if (r.ok) {
+        avisar({ texto: `Conteo guardado · ${r.codigo}`, ver: { href: '/existencias', t: 'Ver existencias' } });
         envio.nuevo();
         try { localStorage.removeItem(clave); localStorage.removeItem(`${clave}:recontar`); } catch { /* nada */ }
         setCapturas({});
@@ -255,7 +257,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
       )}
       {lista.length > 0 && (
         <>
-          <div style={{ position: 'sticky', top: 56, zIndex: 5, background: 'var(--fondo)', padding: '.5rem 0' }}>
+          <div className="hoja-cab">
             <div className="fila" style={{ gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
               <input aria-label="Buscar en la hoja" placeholder="Buscar en esta zona…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
               <label style={{ margin: 0, fontWeight: 400, display: 'flex', gap: '.4rem', alignItems: 'center', whiteSpace: 'nowrap' }}>
@@ -271,12 +273,6 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
                     <input type="checkbox" checked={soloTocan} onChange={(e) => setSoloTocan(e.target.checked)} />
                     Solo los que toca contar hoy ({tocan})
                   </label>
-                )}
-                {vozDisponible && (
-                  <button type="button" className={escuchando ? 'chico' : 'secundario chico'} onClick={dictar}
-                          aria-pressed={escuchando}>
-                    {escuchando ? '■ Dejar de escuchar' : '🎤 Contar por voz'}
-                  </button>
                 )}
               </div>
             )}
@@ -305,10 +301,6 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
                 <button type="button" className="discreto mini mt-1" onClick={() => setPorAsociar(null)}>Cancelar</button>
               </div>
             )}
-            <div style={{ height: 6, background: 'var(--borde)', borderRadius: 99, overflow: 'hidden', marginTop: '.5rem' }} aria-hidden>
-              <div style={{ width: `${Math.round((contados.length / lista.length) * 100)}%`, height: '100%', background: 'var(--ok)' }} />
-            </div>
-            <div className="suave" style={{ fontSize: '.85rem', marginTop: '.2rem' }}>{contados.length} de {lista.length} contados</div>
           </div>
 
           <ul className="lista">
@@ -380,12 +372,29 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
             </div>
           )}
           <div className="acciones barra-guardar">
-            <button type="button" onClick={guardar} disabled={enviando || !contados.length}>
+            {/* avance del recorrido y atajo a lo que falta (CON-03) */}
+            <div className="avance-rec" role="status">
+              <span className="avance-rec-txt"><b>{contados.length}</b> de {lista.length} contados</span>
+              <span className="avance-rec-barra" aria-hidden><span style={{ width: `${Math.round((contados.length / lista.length) * 100)}%` }} /></span>
+              {contados.length < lista.length && (
+                <button type="button" className="discreto chico" aria-pressed={soloFaltan} onClick={() => { setSoloFaltan((x) => !x); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+                  {soloFaltan ? 'Ver todos' : `Ver los ${lista.length - contados.length} que faltan`}
+                </button>
+              )}
+            </div>
+            {vozDisponible && (
+              // micrófono grande, al pulgar (CON-04)
+              <button type="button" className={`boton-voz${escuchando ? ' escuchando' : ''}`} onClick={dictar} aria-pressed={escuchando}
+                      aria-label={escuchando ? 'Dejar de escuchar' : 'Contar por voz'}>
+                <Icono nombre="microfono" />{escuchando ? 'Escuchando…' : 'Voz'}
+              </button>
+            )}
+            <button aria-busy={enviando} type="button" onClick={guardar} disabled={enviando || !contados.length}>
               {enviando ? 'Guardando…' : `Guardar conteo (${contados.length})`}
             </button>
             {contados.length > 0 && (
               <button type="button" className="secundario" disabled={enviando}
-                      onClick={async () => { if (await confirmar('¿Borrar todo lo que has contado en esta zona?', { aceptar: 'Borrar', peligro: true })) setCapturas({}); }}>
+                      onClick={async () => { if (await confirmar('¿Borrar todo lo que ha contado en esta zona?', { aceptar: 'Borrar', peligro: true })) setCapturas({}); }}>
                 Empezar de nuevo
               </button>
             )}

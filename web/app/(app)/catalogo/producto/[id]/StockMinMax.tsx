@@ -29,7 +29,7 @@ export default function StockMinMax({ id, minimo, maximo, unidad }: { id: string
         </label>
       </div>
       <div className="acciones mt-2">
-        <button type="submit" className="secundario chico" disabled={enviando || !cambio}>{enviando ? 'Guardando…' : 'Guardar mínimo y máximo'}</button>
+        <button aria-busy={enviando} type="submit" className="secundario chico" disabled={enviando || !cambio}>{enviando ? 'Guardando…' : 'Guardar mínimo y máximo'}</button>
         {msg && <span role="status" style={{ color: msg.ok ? 'var(--ok)' : 'var(--error)', alignSelf: 'center' }}>{msg.texto}</span>}
       </div>
     </form>

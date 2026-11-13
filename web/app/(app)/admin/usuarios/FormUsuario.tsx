@@ -43,7 +43,7 @@ export default function FormUsuario() {
       )}
       {estado.error && <p className="error" role="alert">{estado.error}</p>}
       {estado.ok && <p className="exito" role="status">{estado.ok}</p>}
-      <div className="acciones"><button type="submit" disabled={enviando}>{enviando ? 'Creando…' : 'Crear usuario'}</button></div>
+      <div className="acciones"><button aria-busy={enviando} type="submit" disabled={enviando}>{enviando ? 'Creando…' : 'Crear usuario'}</button></div>
     </form>
   );
 }

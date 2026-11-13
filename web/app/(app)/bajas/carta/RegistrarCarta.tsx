@@ -5,6 +5,7 @@ import RechazoConMotivo from '@/components/RechazoConMotivo';
 import { registrarBajaCarta, type ResultadoCarta } from './acciones';
 import { useEnvio } from '@/lib/envio';
 import { pesos } from '@/lib/formato';
+import { avisar } from '@/components/Avisos';
 
 type Persona = { id: string; nombre: string; rol: string; autoriza: boolean };
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
@@ -49,6 +50,7 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo, exige
         pin_autoriza: exigePin && autoriza ? pin : null, confirmados: envio.confirmados,
         motivo_forzado: conMotivo || motivo.trim().length >= 15 ? motivo : null }, envio.clave);
       setResultado(r);
+      if (r.ok) avisar({ texto: `Registrado · ${r.codigo ?? ''}`.replace(/ · $/, ''), ver: { href: '/historial', t: 'Ver' } });
       if (r.ok || r.pin) setPin('');
     });
   }
@@ -146,9 +148,9 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo, exige
       <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} ejemplo="Ej.: la botella está en la barra pero no se ha trasladado en la app" />
       <div className="acciones">
         {bloqueado ? (
-          <button type="button" disabled={pend || motivo.trim().length < 15} onClick={() => guardar(true)}>{pend ? 'Guardando…' : 'Guardar con este motivo'}</button>
+          <button aria-busy={pend} type="button" disabled={pend || motivo.trim().length < 15} onClick={() => guardar(true)}>{pend ? 'Guardando…' : 'Guardar con este motivo'}</button>
         ) : (
-          <button type="button" disabled={pend || !!falta} onClick={() => guardar(false)}>{pend ? 'Guardando…' : 'Guardar'}</button>
+          <button aria-busy={pend} type="button" disabled={pend || !!falta} onClick={() => guardar(false)}>{pend ? 'Guardando…' : 'Guardar'}</button>
         )}
       </div>
       {falta && (tipo || producto) && <p className="suave texto-nota">{falta}</p>}

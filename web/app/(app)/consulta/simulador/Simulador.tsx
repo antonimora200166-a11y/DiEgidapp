@@ -121,7 +121,7 @@ export default function Simulador({ producto, base, mezcla, desde, hasta }: { pr
         <input value={nota} onChange={(e) => setNota(e.target.value)} placeholder="por qué se propone" maxLength={300} />
       </label>
       <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '.6rem' }}>
-        <button type="button" disabled={!cambio || pend} onClick={guardar}>{pend ? 'Guardando…' : 'Guardar como propuesta'}</button>
+        <button aria-busy={pend} type="button" disabled={!cambio || pend} onClick={guardar}>{pend ? 'Guardando…' : 'Guardar como propuesta'}</button>
         <button type="button" className="secundario" disabled={pend} onClick={() => { setPrecio(base.precio ? String(base.precio) : ''); setCant({}); setUnidades(''); setMsg(null); }}>Volver a lo de hoy</button>
         {msg && <span role="status" style={{ color: msg.ok ? 'var(--ok)' : 'var(--error)' }}>{msg.texto}</span>}
       </div>

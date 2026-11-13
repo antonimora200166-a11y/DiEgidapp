@@ -58,7 +58,7 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <h2 className="m-0">Riesgos de abastecimiento</h2>
           {puedeAnalizar && (
-            <button type="button" disabled={analizando} onClick={analizar}>
+            <button aria-busy={analizando} type="button" disabled={analizando} onClick={analizar}>
               {analizando ? 'Analizando… (1 a 3 minutos)' : '🔎 Analizar riesgos ahora'}
             </button>
           )}

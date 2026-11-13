@@ -49,7 +49,7 @@ export default function RegistrarTara({ productoId, nombre, contenido, unidad, o
           Peso (g)
           <input inputMode="decimal" value={peso} onChange={(e) => setPeso(e.target.value)} />
         </label>
-        <button type="button" className="chico" disabled={enviando} onClick={guardar}>{enviando ? 'Guardando…' : 'Guardar tara'}</button>
+        <button aria-busy={enviando} type="button" className="chico" disabled={enviando} onClick={guardar}>{enviando ? 'Guardando…' : 'Guardar tara'}</button>
       </div>
       {msg && <div className={msg.ok ? 'exito' : 'error'} role="status" style={{ marginTop: '.4rem', fontSize: '.85rem' }}>{msg.texto}</div>}
       {!msg?.ok && <button type="button" className="discreto mini mt-1" onClick={() => setAbierto(false)}>Cancelar</button>}

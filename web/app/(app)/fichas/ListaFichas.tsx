@@ -17,7 +17,7 @@ const forma = (f: FilaFicha) => (f.tipo === 'MPI' ? 'MPI' : f.forma_venta ?? 'PR
 export const estadoFicha = (f: FilaFicha) =>
   !f.ficha_id ? 'Sin ficha' : f.faltan > 0 ? 'Líneas por completar' : f.tipo === 'MPI' && f.neto_esperado === null ? 'Sin neto esperado' : 'Completa';
 
-export default function ListaFichas({ filas, variasAreas }: { filas: FilaFicha[]; variasAreas: boolean }) {
+export default function ListaFichas({ filas, variasAreas, tipo = null }: { filas: FilaFicha[]; variasAreas: boolean; tipo?: 'BEBIDA' | 'PLATO' | null }) {
   const grupos: Grupo<FilaFicha>[] = [
     ...(variasAreas ? [{ clave: 'area', titulo: 'Área', valor: (f: FilaFicha) => f.area, opciones: [{ v: 'BAR', t: 'Bar' }, { v: 'COCINA', t: 'Cocina' }] }] : []),
     { clave: 'estado', titulo: 'Estado', valor: estadoFicha,
@@ -55,8 +55,8 @@ export default function ListaFichas({ filas, variasAreas }: { filas: FilaFicha[]
     { k: 'abrir', t: '', ver: (f) => <Link href={`/fichas/${f.generico_id}`} className="boton secundario mini">{f.ficha_id ? 'Abrir' : 'Crear ficha'}</Link> },
   ];
   return (
-    <VistaFiltrable clave="fichas" filas={filas} id={(f) => f.generico_id} buscar={(f) => `${f.codigo ?? ''} ${f.nombre}`}
-                    grupos={grupos} columnas={columnas} agrupar={agrupar} filtrosIniciales={{ estado: ['Líneas por completar', 'Sin neto esperado', 'Sin ficha'] }}
+    <VistaFiltrable clave={tipo ? `fichas-${tipo}` : 'fichas'} filas={filas} id={(f) => f.generico_id} buscar={(f) => `${f.codigo ?? ''} ${f.nombre}`}
+                    grupos={grupos} columnas={columnas} agrupar={agrupar} filtrosIniciales={tipo ? { tipo: [tipo] } : { estado: ['Líneas por completar', 'Sin neto esperado', 'Sin ficha'] }}
                     vacio="No hay fichas con estos filtros. ✔" />
   );
 }

@@ -6,6 +6,7 @@ import Exportar from '../Exportar';
 import PestanasConsulta from '@/components/PestanasConsulta';
 import FiltroConsulta, { periodos, hoyCali } from '@/components/FiltroConsulta';
 import { pesos as fmtPesos, fecha as corta } from '@/lib/formato';
+import AccionesConsulta from '@/components/AccionesConsulta';
 const pesos = (n: unknown) => fmtPesos(n as number | null);
 
 export const metadata = { title: 'Consulta · Operación' };
@@ -68,7 +69,7 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <h1 className="pagina-ancha titulo-gestion">Consulta</h1>
+      <AccionesConsulta area={area} />
       <FiltroConsulta ruta="/consulta/operacion" desde={desde} hasta={hasta} area={area} fijos={{ bloque }}
                       opciones={[{ t: 'Últimos 30 días', desde: hace(29), hasta: hoy }, ...periodos(hoyCali())]} />
       <PestanasConsulta activa={bloque} desde={desde} hasta={hasta} area={area} />

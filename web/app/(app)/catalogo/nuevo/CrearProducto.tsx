@@ -159,7 +159,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
 
           {!generico && (
             <div className="tarjeta mt-3">
-              <label htmlFor="nombre">Nombre genérico <span className="ayuda">sin marca ni tamaño: «Azúcar morena», «Ginebra»</span></label>
+              <label htmlFor="nombre">¿Qué es? <span className="ayuda">el nombre sin marca ni tamaño: «Azúcar morena», «Ginebra»</span></label>
               <input id="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={busqueda} />
               <div className="fila">
                 <div>
@@ -170,7 +170,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
                   <span className="ayuda">{TIPOS_INSUMO.find((o) => o.v === tipo)?.ayuda}</span>
                 </div>
                 <div>
-                  <label htmlFor="ub">Unidad base <span className="ayuda">en qué se cuenta y costea</span></label>
+                  <label htmlFor="ub">¿En qué lo cuenta? <span className="ayuda">así se pesa, se mide y se costea en la app</span></label>
                   <select id="ub" value={ubNueva} onChange={(e) => setUbNueva(e.target.value as Ub)}>
                     <option value="g">gramos (g)</option>
                     <option value="ml">mililitros (ml)</option>
@@ -191,14 +191,14 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
             <input id="marca" value={marca} onChange={(e) => setMarca(e.target.value)} />
             <div className="fila">
               <div>
-                <label htmlFor="envase">Se compra en</label>
+                <label htmlFor="envase">¿Cómo lo compra?</label>
                 <select id="envase" value={envase} onChange={(e) => setEnvase(e.target.value)}>
                   {ENVASES.map((x) => <option key={x.etiqueta} value={x.etiqueta}>{x.etiqueta}</option>)}
                 </select>
               </div>
               {!granel && !(ub === 'und' && envase === 'Unidad') && (
                 <div>
-                  <label htmlFor="contenido">Cada {envase.toLowerCase()} trae <span className="ayuda">factor de compra</span></label>
+                  <label htmlFor="contenido">¿Cuánto trae cada {envase.toLowerCase()}?</label>
                   <div className="fila-flex">
                     <input id="contenido" inputMode="decimal" value={contenido} onChange={(e) => setContenido(e.target.value)}
                            disabled={variable} required={!variable} style={{ flex: 1 }} />
@@ -206,6 +206,8 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
                       {unidades.map((x) => <option key={x.u} value={x.u}>{x.u}</option>)}
                     </select>
                   </div>
+                  {/* ejemplo en vivo: lo que la app va a entender */}
+                  {!variable && contenido.trim() !== '' && <span className="ayuda">1 {envase.toLowerCase()} = {contenido.trim()} {unidadContenido}</span>}
                 </div>
               )}
             </div>
@@ -236,7 +238,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
           )}
 
           <div className="acciones">
-            <button type="submit" disabled={enviando}>{enviando ? 'Guardando…' : 'Crear como provisional'}</button>
+            <button aria-busy={enviando} type="submit" disabled={enviando}>{enviando ? 'Guardando…' : 'Crear como provisional'}</button>
           </div>
         </>
       )}

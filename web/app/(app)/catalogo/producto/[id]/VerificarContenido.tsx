@@ -15,7 +15,7 @@ export default function VerificarContenido({ id, texto, verificado }: { id: stri
       <strong>Contenido sin verificar:</strong> la app cuenta cada unidad como {texto}. Mire una unidad real (etiqueta o báscula) y confírmelo.
       {error && <p className="error" style={{ margin: '.4rem 0 0' }}>{error}</p>}
       <div className="acciones mt-1">
-        <button type="button" className="chico" disabled={pend} onClick={() => start(async () => {
+        <button aria-busy={pend} type="button" className="chico" disabled={pend} onClick={() => start(async () => {
           const r = await verificarContenido(id);
           if (r.ok) setHecho(fmtFecha(new Date())); else setError(r.error ?? 'No se pudo verificar.');
         })}>{pend ? 'Guardando…' : `Sí, trae ${texto}`}</button>

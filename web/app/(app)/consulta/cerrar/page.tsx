@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
-import CerrarPeriodo from './CerrarPeriodo';
+import CerrarPeriodo, { type ResumenAbierto } from './CerrarPeriodo';
 
 export const metadata = { title: 'Cerrar período' };
 
@@ -12,7 +12,7 @@ export default async function CerrarPeriodoPagina({ searchParams }: { searchPara
   const area = (await searchParams).area === 'COCINA' ? 'COCINA' : 'BAR';
   const supabase = await supabaseServidor();
   const { data } = await supabase.rpc('consulta_periodos', { p_area: area });
-  const p = data as { cerrados: { hasta: string }[]; abiertos: { desde: string; hasta: string }[] } | null;
+  const p = data as { cerrados: { hasta: string }[]; abiertos: ({ desde: string; hasta: string } & NonNullable<ResumenAbierto>)[] } | null;
   const ultimo = p?.cerrados?.[0]?.hasta;
   const abierto = p?.abiertos?.[0];
   const sig = (s: string) => { const d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); };
@@ -34,7 +34,7 @@ export default async function CerrarPeriodoPagina({ searchParams }: { searchPara
       {!ultimo && !abierto ? (
         <p className="tarjeta">Todavía no hay kardex en esta área: el primer período empieza con el conteo inicial.</p>
       ) : (
-        <CerrarPeriodo area={area} desde={ultimo ? sig(ultimo) : abierto!.desde} hastaSugerido={hoy} desdeFijo={!!ultimo} />
+        <CerrarPeriodo area={area} desde={ultimo ? sig(ultimo) : abierto!.desde} hastaSugerido={hoy} desdeFijo={!!ultimo} resumen={abierto ?? null} />
       )}
     </>
   );

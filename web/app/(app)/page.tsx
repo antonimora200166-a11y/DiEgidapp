@@ -84,9 +84,12 @@ export default async function Inicio() {
               ))}
             </ul>
           ) : <p className="exito mt-0">Nada pendiente por ahora. ✔</p>}
-          <p className="suave" style={{ fontSize: '.85rem', margin: '.5rem 0 0' }}>
-            Registrado hoy: {hecho.rec} {plural(hecho.rec, 'recepción', 'recepciones')} · {hecho.lotes} {plural(hecho.lotes, 'lote', 'lotes')}.
-          </p>
+          {/* lo hecho en el turno, en cifras (INI-03) */}
+          <div className="franja-hoy" aria-label="Registrado hoy">
+            <span className="sec-tit">Registrado hoy</span>
+            <Link href="/historial"><b>{hecho.rec}</b> {plural(hecho.rec, 'recepción', 'recepciones')}</Link>
+            <Link href="/produccion/lotes"><b>{hecho.lotes}</b> {plural(hecho.lotes, 'lote', 'lotes')}</Link>
+          </div>
         </section>
       )}
 

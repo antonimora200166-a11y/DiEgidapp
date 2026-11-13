@@ -1,5 +1,5 @@
 'use client';
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import type { Resultado } from '@/lib/catalogo';
 import { decidirPar } from './acciones';
 
@@ -75,17 +75,33 @@ export default function TarjetaPar({ par }: { par: Par }) {
   const ladoVa = eligiendo === 'A' ? par.b : par.a;
   const p = eligiendo && ubDistinta ? pregunta(ladoQueda.generico!.unidad_base, ladoVa.generico!.unidad_base) : null;
   const x = num(respuesta);
+  // CAL-02: en computador se decide con el teclado sobre la tarjeta (M = son el mismo, D = son distintos) y,
+  // al decidir, el foco pasa solo al siguiente par
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (!resultado?.ok) return;
+    const siguiente = ref.current?.parentElement?.querySelector<HTMLElement>('li[data-par="pendiente"]');
+    siguiente?.focus();
+    siguiente?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [resultado]);
+  const tecla = (e: React.KeyboardEvent) => {
+    if (enviando || eligiendo || (e.target as HTMLElement).closest('input, textarea, select, button')) return;
+    const k = e.key.toLowerCase();
+    if (k === 'm') { e.preventDefault(); if (mismoGenerico || !par.b.generico || !par.a.generico) decidir('FUSIONAR', 'A'); else unir('A'); }
+    if (k === 'd') { e.preventDefault(); decidir('SEPARAR'); }
+  };
 
   if (resultado?.ok) {
     return (
-      <li className="tarjeta exito m-0">
+      <li ref={ref} data-par="decidido" className="tarjeta exito m-0">
         <strong>{par.a.nombre}</strong> / <strong>{par.b.nombre}</strong>: decidido.
         {resultado.avisos.length > 0 && <span className="suave"> {resultado.avisos.join(' ')}</span>}
       </li>
     );
   }
   return (
-    <li className="tarjeta m-0">
+    <li ref={ref} data-par="pendiente" tabIndex={0} onKeyDown={tecla} className="tarjeta m-0 par-revision"
+        aria-label={`Par: ${par.a.nombre} y ${par.b.nombre}. Teclas: M son el mismo, D son distintos`}>
       <div className="linea" style={{ marginBottom: '.6rem' }}>
         <span className="suave">{par.tipo === 'DUPLICADO' ? 'Duplicado exacto' : 'Se parecen'} · sugerencia: <strong>{par.propuesta === 'FUSIONAR' ? 'son el mismo' : par.propuesta === 'SEPARAR' ? 'son distintos' : 'revisar'}</strong></span>
         <span className="pct">{Math.round(par.parecido * 100)} %</span>
@@ -116,7 +132,7 @@ export default function TarjetaPar({ par }: { par: Par }) {
           </div>
           <span className="ayuda">Péselo si puede (un limón, una botella llena sin el envase). Si el lado que se absorbe ya tiene kardex, no se puede cambiar su unidad.</span>
           <div className="acciones">
-            <button type="button" disabled={enviando || !x || x <= 0} onClick={() => decidir('FUSIONAR', eligiendo!, p.factor(x!))}>
+            <button aria-busy={enviando} type="button" disabled={enviando || !x || x <= 0} onClick={() => decidir('FUSIONAR', eligiendo!, p.factor(x!))}>
               {enviando ? 'Uniendo…' : 'Unir con esta equivalencia'}
             </button>
             <button type="button" className="secundario" disabled={enviando} onClick={() => setEligiendo(null)}>Cancelar</button>
@@ -139,6 +155,7 @@ export default function TarjetaPar({ par }: { par: Par }) {
             </>
           )}
           <button type="button" disabled={enviando} onClick={() => decidir('SEPARAR')} className="secundario">Son distintos</button>
+          <span className="atajos suave texto-mini">Teclado: <kbd>M</kbd> son el mismo · <kbd>D</kbd> son distintos</span>
         </div>
       )}
     </li>

@@ -42,7 +42,7 @@ function Tarjeta({ a, admin, responsables }: { a: Alerta; admin: boolean; respon
   const vencida = abierta && a.fecha_compromiso && a.fecha_compromiso < new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
   return (
-    <li className="tarjeta" style={{ display: 'grid', gap: '.45rem', borderLeft: `4px solid ${COLOR_ESTADO[a.estado]}` }}>
+    <li id={`alerta-${a.id}`} className="tarjeta alerta-item" style={{ display: 'grid', gap: '.45rem', borderLeft: `4px solid ${COLOR_ESTADO[a.estado]}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.6rem', flexWrap: 'wrap', alignItems: 'baseline' }}>
         <span className="suave texto-mini">{REGLA[a.regla] ?? a.regla}{a.area && ` · ${a.area === 'BAR' ? 'Bar' : 'Cocina'}`}
           {!a.vigente && abierta && ' · ya no se detecta'}</span>

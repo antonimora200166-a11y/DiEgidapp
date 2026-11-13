@@ -52,8 +52,10 @@ function Precio({ f }: { f: PlatoCarta }) {
     return (
       <span className="nowrap">
         {f.precio ? pesos(f.precio) : <span className="suave">—</span>}
-        <button type="button" className="discreto mini" onClick={() => { setValor(f.precio ? String(f.precio) : ''); setAbierto(true); }}>
-          {f.precio ? 'Cambiar' : 'Poner'}</button>
+        {/* acción neutra con lápiz (CAR-01): el rojo queda para lo que está mal */}
+        <button type="button" className="discreto editar-precio" onClick={() => { setValor(f.precio ? String(f.precio) : ''); setAbierto(true); }}
+                aria-label={f.precio ? `Cambiar el precio de ${f.nombre}` : `Poner el precio de ${f.nombre}`} title={f.precio ? 'Cambiar precio' : 'Poner precio'}>
+          {f.precio ? '✎' : '+ Poner'}</button>
       </span>
     );
   }
@@ -133,7 +135,7 @@ function AlBaul({ elegidas, limpiar }: { elegidas: PlatoCarta[]; limpiar: () => 
         <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo (opcional)" aria-label="Motivo"
                  style={{ minWidth: 180, flex: '1 1 180px' }} />
-          <button type="button" disabled={enviando} onClick={llevar}>{enviando ? 'Moviendo…' : `Llevar ${elegidas.length} al baúl`}</button>
+          <button aria-busy={enviando} type="button" disabled={enviando} onClick={llevar}>{enviando ? 'Moviendo…' : `Llevar ${elegidas.length} al baúl`}</button>
           <button type="button" className="secundario" disabled={enviando} onClick={limpiar}>Quitar selección</button>
         </div>
       </div>
@@ -180,20 +182,20 @@ export default function ListaCarta({ filas, variasAreas }: { filas: PlatoCarta[]
     { v: 'estado', t: 'Ficha', valor: (f) => ESTADO[f.estado_ficha] },
   ];
   const columnas: Columna<PlatoCarta>[] = [
-    { k: 'codigo', t: 'Código', orden: (f) => f.codigo, ver: (f) => <span className="suave" style={{ fontSize: '.8rem', fontFamily: 'ui-monospace, monospace' }}>{f.codigo}</span> },
+    { k: 'codigo', t: 'Código', def: false, orden: (f) => f.codigo, ver: (f) => <span className="suave" style={{ fontSize: '.8rem', fontFamily: 'ui-monospace, monospace' }}>{f.codigo}</span> },
     { k: 'nombre', t: 'Nombre', orden: (f) => f.nombre, ver: (f) => <strong>{f.nombre}</strong> },
     { k: 'seccion', t: 'Sección', orden: seccion, ver: (f) => <span className="texto-nota">{seccion(f)}</span> },
-    { k: 'ficha', t: 'Ficha', orden: (f) => f.estado_ficha, ver: (f) => <Estado f={f} /> },
+    { k: 'ficha', t: 'Ficha', def: false, orden: (f) => f.estado_ficha, ver: (f) => <Estado f={f} /> },
     { k: 'costo', t: 'Costo', der: true, orden: (f) => f.costo, ver: (f) => (f.estado_ficha === 'SIN_FICHA' ? <span className="suave">—</span> : pesos(f.costo)) },
     { k: 'precio', t: 'Precio carta', der: true, orden: (f) => f.precio, ver: (f) => <Precio f={f} /> },
-    { k: 'neto', t: 'Precio neto', der: true, orden: (f) => f.precio_neto, ver: (f) => pesos(f.precio_neto === null ? null : Math.round(f.precio_neto)) },
+    { k: 'neto', t: 'Precio neto', def: false, der: true, orden: (f) => f.precio_neto, ver: (f) => pesos(f.precio_neto === null ? null : Math.round(f.precio_neto)) },
     { k: 'pct', t: '% costo', der: true, orden: (f) => f.pct_costo, ver: (f) => (
       f.pct_costo === null ? <span className="suave">—</span>
         : <span className="con-estado"><strong>{pct(f.pct_costo)}</strong>
             {f.semaforo && <Insignia tono={tonoSemaforo(f.semaforo)!}>{f.semaforo === 'AMARILLO' ? 'Cerca' : SEMAFORO[f.semaforo]}</Insignia>}</span>) },
     { k: 'margen', t: 'Margen $', der: true, orden: (f) => f.margen, ver: (f) => pesos(f.margen) },
-    { k: 'margen_pct', t: 'Margen %', der: true, orden: (f) => f.margen_pct, ver: (f) => pct(f.margen_pct) },
-    { k: 'meta', t: 'Meta', der: true, orden: (f) => f.meta_pct, ver: (f) => <span className="suave">{Number(f.meta_pct).toLocaleString('es-CO')} %</span> },
+    { k: 'margen_pct', t: 'Margen %', def: false, der: true, orden: (f) => f.margen_pct, ver: (f) => pct(f.margen_pct) },
+    { k: 'meta', t: 'Meta', def: false, der: true, orden: (f) => f.meta_pct, ver: (f) => <span className="suave">{Number(f.meta_pct).toLocaleString('es-CO')} %</span> },
   ];
   return (
     <VistaFiltrable clave="carta-margen" filas={filas} id={(f) => f.generico_id} buscar={(f) => `${f.nombre} ${f.codigo} ${f.seccion ?? ''}`}

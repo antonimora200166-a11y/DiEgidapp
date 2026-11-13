@@ -133,7 +133,7 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
         {ficha.estado === 'PROVISIONAL' && (
           <button type="button" disabled={enviando} onClick={() => guardar(true)}>Guardar y validar</button>
         )}
-        <button type="submit" disabled={enviando} className={ficha.estado === 'PROVISIONAL' ? 'secundario' : undefined}>
+        <button aria-busy={enviando} type="submit" disabled={enviando} className={ficha.estado === 'PROVISIONAL' ? 'secundario' : undefined}>
           {enviando ? 'Guardando…' : 'Guardar cambios'}
         </button>
         <Link href="/catalogo" className="boton secundario">Volver al catálogo</Link>
