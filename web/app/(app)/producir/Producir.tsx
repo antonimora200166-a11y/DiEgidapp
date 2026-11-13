@@ -12,6 +12,7 @@ import { useEnvio } from '@/lib/envio';
 import Escaner from '@/components/Escaner';
 import Icono from '@/components/Icono';
 import { leerCodigo } from '@/lib/escaneo';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 type UB = 'g' | 'ml' | 'und';
 export type Mpi = {
@@ -47,7 +48,7 @@ const pesos = (n: number | null, dec?: number) => n === null ? '—' : '$' + n.t
 const g = (n: number | null) => (n === null ? '—' : `${fmtCantidad(Math.round(n))} g`);
 const sinTildes = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const r2 = (n: number) => Math.round(n * 100) / 100;
-const fechaCorta = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+const fechaCorta = (d: string) => fmtFecha(d);
 const PASOS = ['MPI y tanda', 'Indicaciones', 'Pesos reales', 'Neto y responsable'];
 const conservacionDeZona = (nombre: string): Almacenamiento['conservacion'] | null =>
   /congel/i.test(nombre) ? 'Congelado' : /(nevera|refri|fr[ií]o|cuarto)/i.test(nombre) ? 'Refrigerado' : null;
@@ -102,11 +103,20 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   // ---------------------------------------------------------------- borrador en este equipo
   const clave = `sgi-producir2:${area}`;
   const [cargado, setCargado] = useState(false);
+  const [retomado, setRetomado] = useState<string | null>(null);   // día en que se empezó un borrador viejo
+  // el día en que se empezó el borrador; al retomar uno viejo y seguir, pasa a ser hoy
+  const diaBorrador = retomado ?? hoyCali();
+  const [llenado, setLlenado] = useState<string | null>(null);     // ingrediente que se acaba de llenar con «Pesé»
   useEffect(() => {
     try {
       const b = JSON.parse(localStorage.getItem(clave) || 'null');
       if (b?.mpiId && datos.mpis.some((m) => m.producto_id === b.mpiId)) {
-        setMpiId(b.mpiId); setPaso(b.paso ?? 1); setFecha(b.fecha ?? hoyCali()); setTandas(b.tandas ?? '1'); setConsumos(b.consumos ?? []);
+        // un lote empezado otro día no se guarda con aquella fecha sin que la persona lo decida:
+        // se pone la de hoy y se avisa que es un borrador viejo
+        const dia = b.dia ?? b.fecha;
+        const deOtroDia = !!dia && dia !== hoyCali();
+        if (deOtroDia) setRetomado(dia);
+        setMpiId(b.mpiId); setPaso(b.paso ?? 1); setFecha(deOtroDia ? hoyCali() : b.fecha ?? hoyCali()); setTandas(b.tandas ?? '1'); setConsumos(b.consumos ?? []);
         setNeto(b.neto ?? ''); setUnidades(b.unidades ?? ''); setNetoFactor(b.netoFactor ?? ''); setResponsable(b.responsable ?? perfilId);
         setDestino(b.destino ?? ''); setConservacion(b.conservacion ?? ''); setTiempo(b.tiempo ?? ''); setObs(b.obs ?? '');
       }
@@ -117,9 +127,9 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   useEffect(() => {
     if (!cargado || resultado?.ok) return;
     try {
-      if (mpiId) localStorage.setItem(clave, JSON.stringify({ mpiId, paso, fecha, tandas, consumos, neto, unidades, netoFactor, responsable, destino, conservacion, tiempo, obs }));
+      if (mpiId) localStorage.setItem(clave, JSON.stringify({ dia: diaBorrador, mpiId, paso, fecha, tandas, consumos, neto, unidades, netoFactor, responsable, destino, conservacion, tiempo, obs }));
     } catch { /* sin almacenamiento */ }
-  }, [clave, cargado, resultado, mpiId, paso, fecha, tandas, consumos, neto, unidades, netoFactor, responsable, destino, conservacion, tiempo, obs]);
+  }, [clave, cargado, resultado, diaBorrador, mpiId, paso, fecha, tandas, consumos, neto, unidades, netoFactor, responsable, destino, conservacion, tiempo, obs]);
 
   // ---------------------------------------------------------------- elegir MPI y escalar la ficha
   // la marca que pide la ficha; si no pide ninguna, la que más hay
@@ -246,14 +256,36 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
     try { localStorage.removeItem(clave); } catch { /* nada */ }
   }
 
+  // Con ficha sin puntos críticos ni alérgenos (o sin ficha) el paso «Indicaciones» sobra: su aviso
+  // sale como banda en el paso de pesos y se ahorra un toque.
+  const conIndicaciones = !!ficha && (ficha.puntos.length > 0 || ficha.alergenos.length > 0);
+  const pasos = PASOS.map((t, i) => ({ n: i + 1, t })).filter((x) => conIndicaciones || x.n !== 2);
+  const pasoVisible = !conIndicaciones && paso === 2 ? 3 : paso;
+  const actual = Math.max(0, pasos.findIndex((x) => x.n === pasoVisible));
+  const despuesDe1 = conIndicaciones ? 2 : 3;
+  // barra fina de avance: cada tramo hecho se toca para volver a ese paso
   const barra = (
-    <ol className="pasos-prod" aria-label="Pasos">
-      {PASOS.map((t, i) => (
-        <li key={t} className={i + 1 === paso ? 'on' : i + 1 < paso ? 'ya' : ''}>
-          <button type="button" disabled={!mpi || i + 1 > paso || paso === 5} onClick={() => setPaso(i + 1)}>{i + 1}. {t}</button>
-        </li>
-      ))}
-    </ol>
+    <div className="avance-prod">
+      <div className="avance-txt"><strong>{pasos[actual]?.t}</strong><span className="suave">Paso {actual + 1} de {pasos.length}</span></div>
+      <ol aria-label="Pasos">
+        {pasos.map((x, i) => (
+          <li key={x.n} className={i === actual ? 'on' : i < actual ? 'ya' : ''}>
+            <button type="button" disabled={!mpi || i >= actual || paso === 5} onClick={() => setPaso(x.n)}
+                    aria-label={`Paso ${i + 1}: ${x.t}${i < actual ? ' (hecho, volver)' : i === actual ? ' (actual)' : ''}`} />
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+  // aviso de borrador de otro día: se decide antes de seguir
+  const avisoRetomado = retomado && (
+    <div className="aviso retomado" role="alert">
+      <span>Retomaste un lote empezado el <strong>{fechaCorta(retomado)}</strong>. Quedó con la fecha de hoy, {fechaCorta(hoyCali())}.</span>
+      <div className="acciones" style={{ marginTop: '.5rem' }}>
+        <button type="button" onClick={() => setRetomado(null)}>Seguir con este</button>
+        <button type="button" className="secundario" onClick={() => { setRetomado(null); empezarDeNuevo(); }}>Empezar de nuevo</button>
+      </div>
+    </div>
   );
 
   // ---------------------------------------------------------------- 5. guardado
@@ -299,32 +331,42 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   // ---------------------------------------------------------------- 1. MPI y tanda
   if (!mpi) {
     const ps = sinTildes(buscarMpi.trim()).split(/\s+/).filter(Boolean);
-    const opciones = datos.mpis.filter((m) => !ps.length || ps.every((w) => sinTildes(`${m.generico} ${m.codigo} ${m.ficha_codigo ?? ''}`).includes(w)));
+    // lo más reciente primero: lo que se produce seguido queda arriba
+    const opciones = datos.mpis.filter((m) => !ps.length || ps.every((w) => sinTildes(`${m.generico} ${m.codigo} ${m.ficha_codigo ?? ''}`).includes(w)))
+      .sort((a, b) => (b.ultimo_lote ?? '').localeCompare(a.ultimo_lote ?? '') || a.generico.localeCompare(b.generico, 'es'));
+    const deSiempre = ps.length ? [] : opciones.filter((m) => m.ultimo_lote).slice(0, 6);
+    const resto = opciones.filter((m) => !deSiempre.includes(m));
+    const boton = (m: Mpi) => (
+      <button key={m.producto_id} type="button" className="secundario" onClick={() => elegirMpi(m)}>
+        <strong>{m.generico}</strong>
+        <span>{m.ficha_codigo ? `Ficha ${m.ficha_codigo}` : 'Sin ficha'}{m.ultimo_lote ? ` · último ${fechaCorta(m.ultimo_lote)}` : ''}</span>
+      </button>
+    );
     return (
       <>
-        {barra}
         <input className="buscar-grande" aria-label="Buscar MPI" placeholder="¿Qué vas a producir? Sirope, zumo, #5…" value={buscarMpi} onChange={(e) => setBuscarMpi(e.target.value)} />
-        <div className="rejilla-mpi">
-          {opciones.slice(0, 40).map((m) => (
-            <button key={m.producto_id} type="button" className="secundario" onClick={() => elegirMpi(m)}>
-              <strong>{m.generico}</strong>
-              <span>{m.ficha_codigo ? `Ficha ${m.ficha_codigo}` : 'Sin ficha'}{m.ultimo_lote ? ` · último ${fechaCorta(m.ultimo_lote)}` : ''}</span>
-            </button>
-          ))}
-        </div>
+        {deSiempre.length > 0 && (
+          <>
+            <h2 className="sec-tit">Lo de siempre</h2>
+            <div className="rejilla-mpi" style={{ marginBottom: '1rem' }}>{deSiempre.map(boton)}</div>
+            <h2 className="sec-tit">Todas</h2>
+          </>
+        )}
+        <div className="rejilla-mpi">{resto.slice(0, 40).map(boton)}</div>
         {!opciones.length && <p className="suave">Nada coincide.</p>}
-        {opciones.length > 40 && <p className="suave">Hay {opciones.length}: escribe para buscar.</p>}
+        {resto.length > 40 && <p className="suave">Hay {opciones.length}: escribe para buscar.</p>}
       </>
     );
   }
 
   const cabecera = (
-    <div className="tarjeta" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginBottom: '.9rem', borderColor: 'var(--marca)' }}>
-      <div>
-        <strong style={{ fontSize: '1.15rem' }}>{mpi.generico}</strong>
-        <div className="cod">{mpi.codigo}{ficha ? ` · ficha ${ficha.codigo} v${ficha.version}` : ' · sin ficha técnica'} · ×{fmtCantidad(k)}</div>
+    // una sola línea con lo que se produce; marca la pantalla para ocultar pestañas y título (CSS :has)
+    <div className="cab-mpi producir-con-mpi">
+      <div style={{ minWidth: 0 }}>
+        <strong>{mpi.generico}</strong>
+        <span className="suave">{ficha ? `Ficha ${ficha.codigo} v${ficha.version}` : 'Sin ficha técnica'} · ×{fmtCantidad(k)}</span>
       </div>
-      <button type="button" className="secundario chico" onClick={async () => {
+      <button type="button" className="discreto chico" onClick={async () => {
         if (consumos.some((c) => c.gramos) && !(await confirmar('¿Cambiar de producto? Se pierden los pesos escritos.', { aceptar: 'Cambiar' }))) return;
         empezarDeNuevo();
       }}>Cambiar</button>
@@ -334,7 +376,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   if (paso === 1) {
     return (
       <>
-        {barra}{cabecera}
+        {cabecera}{barra}{avisoRetomado}
         <div className="dos-col pagina-ancha">
           <section className="tarjeta">
             <h2 className="sec-tit">¿Cuánto vas a hacer?</h2>
@@ -368,19 +410,21 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                 ))}
                 {ficha.neto_esperado && <li><span>Neto esperado</span><strong className="n">{mpi.unidad_base === 'g' ? g(ficha.neto_esperado * k) : `${fmtCantidad(r2(ficha.neto_esperado * k))} ${mpi.unidad_base}`}</strong></li>}
               </ul>
-            ) : <div className="vacio">{mpi.generico} no tiene ficha técnica: en el paso 3 agregas los ingredientes a mano. <Link href={`/fichas/${mpi.generico_id}`}>Ver o crear la ficha</Link></div>}
-            <button type="button" style={{ width: '100%', minHeight: 56, marginTop: '.8rem' }} disabled={!(k > 0)} onClick={() => setPaso(2)}>Seguir</button>
+            ) : <div className="vacio">{mpi.generico} no tiene ficha técnica: en el paso de pesos agregas los ingredientes a mano. <Link href={`/fichas/${mpi.generico_id}`}>Ver o crear la ficha</Link></div>}
           </section>
+        </div>
+        <div className="barra-accion">
+          <button type="button" className="principal" disabled={!(k > 0) || !!retomado} onClick={() => setPaso(despuesDe1)}>Seguir</button>
         </div>
       </>
     );
   }
 
   // ---------------------------------------------------------------- 2. indicaciones
-  if (paso === 2) {
+  if (paso === 2 && conIndicaciones) {
     return (
       <>
-        {barra}{cabecera}
+        {cabecera}{barra}{avisoRetomado}
         <section className="tarjeta" style={{ maxWidth: 760 }}>
           <h2 style={{ marginTop: 0 }}>Indicaciones importantes</h2>
           {!ficha ? (
@@ -397,22 +441,29 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             <div className="punto" style={{ fontSize: '1.05rem' }}><span className="pill aviso">Alérgenos</span>
               <span>{ficha.alergenos.length ? ficha.alergenos.join(', ') : <span className="suave">Ninguno declarado</span>}</span></div>
           )}
-          <div style={{ display: 'flex', gap: '.6rem', marginTop: '1rem' }}>
-            <button type="button" className="secundario" onClick={() => setPaso(1)}>Atrás</button>
-            <button type="button" style={{ flex: 1, minHeight: 56 }} onClick={() => setPaso(3)}>Entendido, empezar</button>
-          </div>
         </section>
+        <div className="barra-accion">
+          <button type="button" className="secundario" onClick={() => setPaso(1)}>Atrás</button>
+          <button type="button" className="principal" disabled={!!retomado} onClick={() => setPaso(3)}>Entendido, empezar</button>
+        </div>
       </>
     );
   }
 
   // ---------------------------------------------------------------- 3. pesos reales
-  if (paso === 3) {
+  if (paso === 3 || paso === 2) {
     const ps = sinTildes(buscarInsumo.trim()).split(/\s+/).filter(Boolean);
     const opcionesInsumo = buscarInsumo.trim().length < 2 ? [] : datos.insumos.filter((i) => i.producto_id !== mpiId && ps.every((w) => sinTildes(`${i.generico} ${i.marca} ${i.presentacion} ${i.codigo}`).includes(w))).slice(0, 8);
     return (
       <>
-        {barra}{cabecera}
+        {cabecera}{barra}{avisoRetomado}
+        {!conIndicaciones && (
+          <p className="aviso banda-prod">
+            <strong>{ficha ? 'Ficha sin puntos críticos.' : 'Sin ficha técnica.'}</strong>{' '}
+            {ficha ? `No tiene temperaturas, tiempos ni cuidados de higiene registrados. Avísale al ${area === 'BAR' ? 'jefe de barra' : 'chef'} para que los complete.`
+              : `No hay indicaciones registradas para ${mpi.generico}.`}
+          </p>
+        )}
         <section className="tarjeta pagina-ancha">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '.6rem', flexWrap: 'wrap' }}>
             <h2 style={{ margin: 0 }}>Pesa cada ingrediente</h2>
@@ -450,12 +501,17 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                   </span>}
                 </div>
                 <div style={{ display: 'grid', gap: '.35rem' }}>
-                  <label className="peso-grande">
-                    <input inputMode="decimal" value={c.gramos} aria-label={`Peso real de ${c.generico} en gramos`} placeholder={c.esperado_g !== null ? fmtCantidad(Math.round(c.esperado_g)) : '0'}
+                  {/* vacío se ve vacío: lo esperado va pequeño y tenue, para no confundirlo con un peso escrito */}
+                  <label className={`peso-grande${llenado === c.clave ? ' recien' : ''}`}>
+                    <input inputMode="decimal" value={c.gramos} aria-label={`Peso real de ${c.generico} en gramos`}
+                           placeholder={c.esperado_g !== null ? `esperado ${fmtCantidad(Math.round(c.esperado_g))}` : 'pesa aquí'}
                            onChange={(e) => poner(c.clave, { gramos: e.target.value })} />
                     <span>g</span>
                   </label>
-                  {c.esperado_g !== null && !gr && <button type="button" className="secundario mini" onClick={() => poner(c.clave, { gramos: String(Math.round(c.esperado_g!)) })}>Pesé {fmtCantidad(Math.round(c.esperado_g))} g</button>}
+                  {c.esperado_g !== null && !gr && <button type="button" className="secundario mini" onClick={() => {
+                    poner(c.clave, { gramos: String(Math.round(c.esperado_g!)) });
+                    setLlenado(c.clave); setTimeout(() => setLlenado((x) => (x === c.clave ? null : x)), 900);
+                  }}>Pesé {fmtCantidad(Math.round(c.esperado_g))} g</button>}
                   {ins?.unidad_base === 'und' && !sinCosto && (
                     <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>¿Cuántas unidades?
                       <input inputMode="decimal" value={c.unidades} onChange={(e) => poner(c.clave, { unidades: e.target.value })} placeholder={c.esperado_und !== null ? String(c.esperado_und) : ''} />
@@ -496,13 +552,13 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
               ))}
             </ul>
           )}
-          <div style={{ display: 'flex', gap: '.6rem', marginTop: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button type="button" className="secundario" onClick={() => setPaso(2)}>Atrás</button>
-            <button type="button" style={{ flex: 1, minHeight: 56 }} disabled={!consumos.length || bloqueados > 0 || pendientesPeso > 0} onClick={() => setPaso(4)}>
-              {bloqueados ? `Resuelve ${bloqueados} ingrediente(s) en rojo` : pendientesPeso ? `Falta pesar ${pendientesPeso}` : 'Seguir al neto'}
-            </button>
-          </div>
         </section>
+        <div className="barra-accion">
+          <button type="button" className="secundario" onClick={() => setPaso(conIndicaciones ? 2 : 1)}>Atrás</button>
+          <button type="button" className="principal" disabled={!consumos.length || bloqueados > 0 || pendientesPeso > 0 || !!retomado} onClick={() => setPaso(4)}>
+            {bloqueados ? `Resuelve ${bloqueados} ingrediente(s) en rojo` : pendientesPeso ? `Falta pesar ${pendientesPeso}` : 'Seguir al neto'}
+          </button>
+        </div>
       </>
     );
   }
@@ -512,14 +568,14 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   const pideMotivo = resultadoMalo && !resultado.fatales.length && resultado.bloqueos.length > 0;
   return (
     <>
-      {barra}{cabecera}
+      {cabecera}{barra}{avisoRetomado}
       <div className="dos-col pagina-ancha">
         <div className="pila">
           <section className="tarjeta">
             <h2 className="sec-tit">Neto obtenido · pesado al final, sin recipiente</h2>
             <label className="peso-grande" style={{ maxWidth: 320 }}>
               <input inputMode="decimal" value={neto} onChange={(e) => setNeto(e.target.value)} aria-label="Neto obtenido en gramos"
-                     placeholder={ficha?.neto_esperado && mpi.unidad_base === 'g' ? fmtCantidad(Math.round(ficha.neto_esperado * k)) : '0'} />
+                     placeholder={ficha?.neto_esperado && mpi.unidad_base === 'g' ? `esperado ${fmtCantidad(Math.round(ficha.neto_esperado * k))}` : 'pesa aquí'} />
               <span>g</span>
             </label>
             {mpi.unidad_base === 'und' && (
@@ -627,11 +683,13 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
               <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Qué pasó (mínimo 15 letras)" />
             </label>
           )}
-          <button type="button" style={{ minHeight: 60, fontSize: '1.1rem' }} disabled={!listo4 || enviando} onClick={guardar}>
-            {enviando ? 'Guardando…' : !netoG ? 'Falta el neto' : !destino ? 'Falta dónde queda' : netoBaseFalta ? 'Completa el neto' : 'Guardar lote'}
-          </button>
-          <button type="button" className="secundario" onClick={() => setPaso(3)}>Atrás</button>
         </div>
+      </div>
+      <div className="barra-accion">
+        <button type="button" className="secundario" onClick={() => setPaso(3)}>Atrás</button>
+        <button type="button" className="principal" disabled={!listo4 || enviando || !!retomado} onClick={guardar}>
+          {enviando ? 'Guardando…' : !netoG ? 'Falta el neto' : !destino ? 'Falta dónde queda' : netoBaseFalta ? 'Completa el neto' : 'Guardar lote'}
+        </button>
       </div>
     </>
   );

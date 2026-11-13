@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import RegistrarSW from '@/components/RegistrarSW';
 import ReportarErrores from '@/components/ReportarErrores';
+import { SCRIPT_TEMA } from '@/lib/tema';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -20,7 +21,8 @@ export const viewport: Viewport = {
 
 export default function Raiz({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es-CO">
+    <html lang="es-CO" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} /></head>
       <body>
         {children}
         <RegistrarSW />

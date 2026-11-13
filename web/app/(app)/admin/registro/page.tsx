@@ -61,7 +61,7 @@ export default async function Registro({ searchParams }: { searchParams: Promise
     for (const [k, x] of Object.entries(v)) if (x) p.set(k, x);
     return `/admin/registro${p.size ? `?${p}` : ''}`;
   };
-  const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' };
+  const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' };
 
   return (
     <>

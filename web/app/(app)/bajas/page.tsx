@@ -5,8 +5,10 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, puedeOperar, type Area } from '@/lib/roles';
 import type { ProductoSaldo } from '@/components/LineasInventario';
 import Bajas from './Bajas';
+import PestanasPerdida from '@/components/PestanasPerdida';
+import { fecha as fmtFecha } from '@/lib/formato';
 
-export const metadata = { title: 'Bajas' };
+export const metadata = { title: 'Reportar pérdida' };
 const CAUSAS: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado / roto', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro', CORTESIA: 'Cortesía', MAL_HECHO: 'Mal hecho' };
 
 export default async function PaginaBajas({ searchParams }: { searchParams: Promise<{ area?: string }> }) {
@@ -27,14 +29,14 @@ export default async function PaginaBajas({ searchParams }: { searchParams: Prom
 
   return (
     <>
-      <h1>Bajas</h1>
-      <p className="suave">Lo que se bota o ya no sirve: sale del kardex al costo promedio.</p>
-      <p><Link href={`/bajas/carta?area=${area}`} className="boton secundario chico">Cortesía o mal hecho de la carta →</Link></p>
+      <h1>Reportar pérdida</h1>
+      <PestanasPerdida activa="insumos" area={area} />
+      <p className="suave" style={{ marginTop: 0 }}>Lo que se bota o ya no sirve: sale del kardex al costo promedio.</p>
       {areas.length > 1 && (
         <nav className="segmentos" style={{ marginBottom: '1rem' }}>
           {areas.map((a) => (
             <Link key={a} href={`/bajas?area=${a}`}>
-              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' } : undefined}>
+              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>
                 {a === 'BAR' ? 'Bar' : 'Cocina'}
               </span>
             </Link>
@@ -44,13 +46,13 @@ export default async function PaginaBajas({ searchParams }: { searchParams: Prom
       <Bajas key={area} area={area} productos={(productos ?? []) as ProductoSaldo[]} zonas={zonas ?? []} />
       {!!recientes?.length && (
         <>
-          <h2>Últimas bajas</h2>
+          <h2>Últimas pérdidas</h2>
           <ul className="lista">
             {recientes.map((b) => (
               <li key={b.id} className="linea">
                 <span><span className="cod">{b.codigo}</span><br />{CAUSAS[b.causa] ?? b.causa} · {zonas?.find((z) => z.codigo === b.ubicacion)?.nombre ?? b.ubicacion}</span>
                 <span className="suave" style={{ fontSize: '.85rem', textAlign: 'right' }}>
-                  {new Date(b.fecha + 'T12:00:00').toLocaleDateString('es-CO')}
+                  {fmtFecha(b.fecha)}
                   {b.forzada && <><br /><span className="etiqueta provisional">forzada</span></>}
                 </span>
               </li>

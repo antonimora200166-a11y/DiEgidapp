@@ -13,6 +13,8 @@ import Icono from '@/components/Icono';
 import { asociarCodigo, leerCodigo } from '@/lib/escaneo';
 import { Revisiones } from '@/components/RechazoConMotivo';
 import { useEnvio } from '@/lib/envio';
+import { Insignia } from '@/components/Insignia';
+import { pesos as fmtPesos } from '@/lib/formato';
 
 export type ProductoRecepcion = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -41,7 +43,10 @@ type Foto = { ruta: string; tipo: string };
 
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
 const num = (s: string) => { const n = Number(s.replace(/\$|\s/g, '').replace(',', '.')); return s.trim() === '' || !Number.isFinite(n) ? null : n; };
-const pesos = (n: number, dec = 0) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: dec, minimumFractionDigits: dec });
+const pesos = (n: number, dec = 0) => fmtPesos(n, dec);
+// zona por defecto que se usó la última vez en cada área, recordada en este equipo
+const zonaGuardada = (a: Area) => { try { return localStorage.getItem(`sgi-recibir-zona:${a}`) ?? ''; } catch { return ''; } };
+const guardarZona = (a: Area, z: string) => { try { if (z) localStorage.setItem(`sgi-recibir-zona:${a}`, z); } catch { /* nada */ } };
 const sinTildes = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const nombreDe = (p: ProductoRecepcion) => `${p.generico}${p.marca ? ` · ${p.marca}` : ''}`;
 const CONDICIONES: { v: Condicion; t: string }[] = [
@@ -140,10 +145,22 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
   useEffect(() => {
     try {
       const b = JSON.parse(localStorage.getItem(clave) || 'null');
-      if (b) { setEnc(b.enc); setLineas(b.lineas); setFoto(b.foto); setPropuesta(b.propuesta); setTotalFactura(b.totalFactura); setNotaIA(b.notaIA); }
+      if (b) { setEnc({ ...b.enc, ...(b.enc?.ubicacion ? {} : zonasRecordadas()) }); setLineas(b.lineas); setFoto(b.foto); setPropuesta(b.propuesta); setTotalFactura(b.totalFactura); setNotaIA(b.notaIA); }
+      else setEnc((e) => ({ ...e, ...zonasRecordadas() }));
     } catch { /* borrador dañado: se empieza de cero */ }
     setCargado(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave]);
+  // la zona elegida queda para la próxima factura del área
+  useEffect(() => { guardarZona(area, enc.ubicacion); }, [area, enc.ubicacion]);
+  useEffect(() => { if (otra && enc.ubicacion_otra) guardarZona(otra.area, enc.ubicacion_otra); }, [otra, enc.ubicacion_otra]);
+  function zonasRecordadas(): Partial<Encabezado> {
+    const z = zonaGuardada(area), zo = otra ? zonaGuardada(otra.area) : '';
+    return {
+      ...(zonas.some((x) => x.codigo === z) ? { ubicacion: z } : {}),
+      ...(otra && otra.zonas.some((x) => x.codigo === zo) ? { ubicacion_otra: zo } : {}),
+    };
+  }
   useEffect(() => {
     if (!cargado) return;
     try { localStorage.setItem(clave, JSON.stringify({ enc, lineas, foto, propuesta, totalFactura, notaIA })); } catch { /* sin almacenamiento */ }
@@ -270,6 +287,15 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
   const sinPeso = lineas.filter((l) => calculo(l).faltaPeso).length;
   const sumaLineas = lineas.reduce((t, l) => t + (num(l.valor) ?? 0), 0);
   const descuadre = totalFactura && sumaLineas ? Math.abs(sumaLineas - totalFactura) / totalFactura > 0.01 : false;
+  // Líneas de la IA que cuadran solas: producto reconocido por su nombre (no adivinado por la IA), cantidad y
+  // valor escritos, sin peso pendiente, sin diferencia con lo pedido y con un precio parecido al de siempre.
+  // La persona las confirma de una vez con un toque; las dudosas se revisan una por una.
+  const cuadran = lineas.filter((l) => {
+    if (l.confirmada || !l.producto_id) return false;
+    const c = calculo(l);
+    return (c.rec ?? 0) > 0 && (c.val ?? 0) > 0 && !c.faltaPeso && c.diferencia === null && !c.caliente
+      && l.ia_sugerido?.producto_id !== l.producto_id && (c.desvio === null || Math.abs(c.desvio) <= 25);
+  });
 
   function payload(conMotivo: boolean, g: Area, ruta: string | null) {
     return {
@@ -323,7 +349,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
 
   function empezarDeNuevo() {
     envio.nuevo(); setClaveOtra(crypto.randomUUID());
-    setEnc(vacio); setLineas([]); setFoto(null); setVista(null); setPropuesta(null); setTotalFactura(null);
+    setEnc({ ...vacio, ...zonasRecordadas() }); setLineas([]); setFoto(null); setVista(null); setPropuesta(null); setTotalFactura(null);
     setNotaIA(null); setNotaProveedor(null); setProvLeido(null); setMotivo(''); setResultado(null); setErrorFoto(null);
   }
 
@@ -440,7 +466,19 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       {/* ------------------------------------------------ líneas */}
       <h2>3. Productos {lineas.length > 0 && <span className="suave" style={{ fontWeight: 400 }}>({lineas.length})</span>}</h2>
       {sinConfirmar > 0 && (
-        <p className="aviso">La IA propuso {sinConfirmar === 1 ? '1 línea' : `${sinConfirmar} líneas`} sin confirmar. Revisa producto, cantidad y valor contra la factura y toca «Confirmar».</p>
+        <div className="aviso confirmar-bloque">
+          <span>La IA propuso {sinConfirmar === 1 ? '1 línea' : `${sinConfirmar} líneas`} sin confirmar. Revisa producto, cantidad y valor contra la factura.</span>
+          {cuadran.length > 0 && (
+            <>
+              <button type="button" onClick={() => { const ks = new Set(cuadran.map((l) => l.clave)); setLineas((ls) => ls.map((l) => (ks.has(l.clave) ? { ...l, confirmada: true } : l))); }}>
+                ✓ Confirmar {cuadran.length === 1 ? 'la que cuadra' : `las ${cuadran.length} que cuadran`}
+              </button>
+              <span className="ayuda">Producto reconocido, cantidad y valor escritos, y precio parecido al de siempre.
+                {sinConfirmar - cuadran.length === 1 && ' La otra revísala a mano.'}
+                {sinConfirmar - cuadran.length > 1 && ` Las otras ${sinConfirmar - cuadran.length} revísalas una por una.`}</span>
+            </>
+          )}
+        </div>
       )}
       <ul className="lista">
         {lineas.map((l, i) => (
@@ -457,7 +495,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
         <div className="barra-bloque" style={{ marginTop: '.6rem' }}>
           <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <strong>{elegidas.size} marcado(s) →</strong>
-            <select value={zonaGrupo} onChange={(e) => setZonaGrupo(e.target.value)} style={{ flex: '1 1 180px', minHeight: 40 }} aria-label="Zona para los marcados">
+            <select value={zonaGrupo} onChange={(e) => setZonaGrupo(e.target.value)} style={{ flex: '1 1 180px' }} aria-label="Zona para los marcados">
               <option value="">— Guardar en… —</option>
               <optgroup label={`Zonas de ${nombreArea(area)}`}>{zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}</option>)}</optgroup>
               {otra && <optgroup label={`Zonas de ${nombreArea(otra.area)}`}>{otra.zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}</option>)}</optgroup>}
@@ -497,12 +535,6 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
           <button type="button" className="discreto mini" style={{ marginTop: '.4rem' }} onClick={() => setPorAsociar(null)}>Cancelar</button>
         </div>
       )}
-      {lineas.length > 0 && (
-        <p className="suave" style={{ fontSize: '.9rem' }}>
-          Suma de las líneas: <strong>{pesos(sumaLineas)}</strong>
-          {totalFactura !== null && <> · total de la factura: <strong>{pesos(totalFactura)}</strong></>}
-        </p>
-      )}
       {descuadre && <p className="aviso">La suma de las líneas no cuadra con el total de la factura. Revisa IVA, descuentos o una línea que falte.</p>}
 
       <label htmlFor="obs">Observaciones <span className="ayuda">opcional</span></label>
@@ -527,6 +559,17 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       )}
 
       <div className="acciones barra-guardar">
+        {lineas.length > 0 && (
+          // siempre a la vista: la suma de las líneas contra el total que leyó la IA
+          <div className="resumen-suma" role="status">
+            <span>Suma <b>{pesos(sumaLineas)}</b></span>
+            {totalFactura !== null && <>
+              <span>Factura <b>{pesos(totalFactura)}</b></span>
+              <span>Diferencia <b>{pesos(sumaLineas - totalFactura)}</b></span>
+              {descuadre ? <Insignia tono="aviso">No cuadra</Insignia> : <Insignia tono="ok">Cuadra</Insignia>}
+            </>}
+          </div>
+        )}
         {bloqueado ? (
           <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>
             {enviando ? 'Guardando…' : 'Guardar con este motivo'}
@@ -599,12 +642,12 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
       <div className="linea" style={{ alignItems: 'flex-start' }}>
         <div style={{ minWidth: 0 }}>
           <label style={{ display: 'inline-flex', gap: '.35rem', alignItems: 'center', margin: 0, fontWeight: 400 }}>
-            <input type="checkbox" checked={elegida} onChange={marcar} style={{ width: 20, minHeight: 20 }} aria-label={`Marcar la línea ${n}`} />
+            <input type="checkbox" checked={elegida} onChange={marcar} aria-label={`Marcar la línea ${n}`} />
             <span className="suave" style={{ fontSize: '.8rem' }}>Línea {n}{l.ia ? ' · leída por la IA' : ''}</span>
           </label>
           {l.nombre_factura && <div className="suave" style={{ fontSize: '.85rem' }}>Factura: «{l.nombre_factura}»</div>}
           {p && !eligiendo && l.ia_sugerido?.producto_id === p.producto_id && (
-            <div className="suave" style={{ fontSize: '.82rem', color: 'var(--marca)' }}>Elegido por la IA: {l.ia_sugerido.razon} Revísalo.</div>
+            <div className="suave" style={{ fontSize: '.82rem', color: 'var(--tinta)' }}>Elegido por la IA: {l.ia_sugerido.razon} Revísalo.</div>
           )}
           {p && !eligiendo && (
             <div>
@@ -672,7 +715,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
             <p className="suave" style={{ fontSize: '.85rem' }}>No está en el catálogo.{' '}
               <button type="button" className="discreto mini" onClick={() => setCreando(true)}>Crear «{nombreSugerido(buscar)}»</button></p>
           )}
-          {p && <button type="button" className="secundario" style={{ marginTop: '.4rem', minHeight: 36 }} onClick={() => setEligiendo(false)}>Dejar {nombreDe(p)}</button>}
+          {p && <button type="button" className="secundario" style={{ marginTop: '.4rem' }} onClick={() => setEligiendo(false)}>Dejar {nombreDe(p)}</button>}
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import Exportar from '../Exportar';
 import Redactar from './Redactar';
+import { pesos, pct, fecha as fechaC } from '@/lib/formato';
 
 export const metadata = { title: 'Informe quincenal' };
 
@@ -21,9 +22,6 @@ type Cifras = {
 };
 type Informe = { id: string; version: number; resumen: string; modelo: string | null; generado_por: string | null; generado_en: string };
 
-const pesos = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }));
-const pct = (n: number | null | undefined) => (n == null ? '—' : `${Number(n).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
-const fechaC = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 const CLASE: Record<string, string> = { VERDE: ' sv', AMARILLO: ' sa', ROJO: ' sr' };
 
 export default async function InformePagina({ searchParams }: { searchParams: Promise<{ periodo?: string }> }) {

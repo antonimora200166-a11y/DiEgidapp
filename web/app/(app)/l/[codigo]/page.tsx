@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { loteEtiqueta } from '@/lib/escaneo';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export const metadata = { title: 'Lote' };
-const fecha = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+const fecha = (d: string) => fmtFecha(d);
 
 // A esta página lleva el QR de la etiqueta: qué es, cuándo se hizo y hasta cuándo sirve.
 export default async function Lote({ params }: { params: Promise<{ codigo: string }> }) {

@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { fijarEquivalencia } from './acciones';
+import { pesos } from '@/lib/formato';
 
 export type SinEquivalencia = {
   clave: string; codigo_odoo: string | null; nombre_odoo: string; categoria: string | null; unidades: number; valor_neto: number;
@@ -9,7 +10,6 @@ export type SinEquivalencia = {
 };
 export type ProductoCarta = { id: string; codigo: string; nombre: string; area: 'BAR' | 'COCINA' };
 
-const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 const TIPOS = [
   { v: 'PRODUCTO', t: 'Es un producto de la carta' },
   { v: 'COMBO', t: 'Es un combo (varios productos)' },

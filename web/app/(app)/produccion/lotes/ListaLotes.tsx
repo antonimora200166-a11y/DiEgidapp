@@ -3,6 +3,7 @@ import Link from 'next/link';
 import VistaFiltrable, { type Columna, type Grupo } from '@/components/VistaFiltrable';
 import { pesos } from '@/lib/fichas';
 import { ESTADO_LOTE, type EstadoLote as Estado } from '@/lib/lotes';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export type FilaLote = {
   id: string; codigo: string; fecha: string; registrado_en: string | null; generico_id: string; mpi: string; unidad_base: string; area: string;
@@ -12,7 +13,7 @@ export type FilaLote = {
 };
 
 const n = (x: number | null, d = 0) => (x === null || x === undefined ? '—' : Number(x).toLocaleString('es-CO', { maximumFractionDigits: d }));
-const corta = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' });
+const corta = (d: string) => fmtFecha(d);
 const dias = (a: string, b: string) => Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 864e5);
 
 // vePesos: costo del lote y $/g solo para administración

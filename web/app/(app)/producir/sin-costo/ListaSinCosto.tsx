@@ -1,5 +1,7 @@
 'use client';
 import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/components/VistaFiltrable';
+import { pesos } from '@/lib/formato';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export type LoteSinCosto = {
   origen: 'APP' | 'HISTÓRICO'; id: string; codigo: string; fecha: string; mpi: string; unidad: string; neto: number | null;
@@ -20,7 +22,6 @@ function tipoMotivo(m: string) {
   return 'Sin costo';
 }
 const insumo = (m: string) => (m.includes(': ') && !m.startsWith('El ') && !m.startsWith('No ') ? m.split(': ')[0] : null);
-const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 export default function ListaSinCosto({ filas }: { filas: LoteSinCosto[] }) {
   const grupos: Grupo<LoteSinCosto>[] = [
@@ -38,7 +39,7 @@ export default function ListaSinCosto({ filas }: { filas: LoteSinCosto[] }) {
   ];
   const columnas: Columna<LoteSinCosto>[] = [
     { k: 'codigo', t: 'Lote', orden: (f) => f.codigo, ver: (f) => <span className="cod">{f.codigo}</span> },
-    { k: 'fecha', t: 'Fecha', orden: (f) => f.fecha, ver: (f) => <span style={{ whiteSpace: 'nowrap' }}>{new Date(f.fecha + 'T12:00:00').toLocaleDateString('es-CO')}</span> },
+    { k: 'fecha', t: 'Fecha', orden: (f) => f.fecha, ver: (f) => <span style={{ whiteSpace: 'nowrap' }}>{fmtFecha(f.fecha)}</span> },
     { k: 'mpi', t: 'MPI', orden: (f) => f.mpi, ver: (f) => <strong>{f.mpi}</strong> },
     { k: 'neto', t: 'Neto', der: true, orden: (f) => f.neto, ver: (f) => (f.neto ? `${Number(f.neto).toLocaleString('es-CO')} ${f.unidad}` : '—') },
     { k: 'costo', t: 'Costo parcial', der: true, orden: (f) => f.costo_total, ver: (f) => (f.costo_total ? pesos(Number(f.costo_total)) : '—') },

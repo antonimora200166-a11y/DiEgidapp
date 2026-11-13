@@ -5,6 +5,7 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, type Area } from '@/lib/roles';
 import PestanasProduccion from '@/components/PestanasProduccion';
 import ListaLotes, { type FilaLote } from './ListaLotes';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export const metadata = { title: 'Producción · Lotes' };
 
@@ -30,7 +31,7 @@ export default async function Lotes({ searchParams }: { searchParams: Promise<{ 
           <nav className="segmentos" aria-label="Área">
             {areas.map((a) => (
               <Link key={a} href={`/produccion/lotes?area=${a}`}>
-                <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' } : undefined}>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>
+                <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>
               </Link>
             ))}
           </nav>
@@ -39,7 +40,7 @@ export default async function Lotes({ searchParams }: { searchParams: Promise<{ 
       {alertas.map((l) => (
         <Link key={l.id} href={`/produccion/lotes/${encodeURIComponent(l.codigo)}`} className={`${l.estado === 'VENCIDO' ? 'error' : 'aviso'} pagina-ancha`}
               style={{ display: 'block', textDecoration: 'none', marginBottom: '.5rem' }}>
-          <strong>{l.mpi} · {l.codigo} {l.estado === 'VENCIDO' ? 'venció' : l.vence === hoy ? 'vence hoy' : 'vence pronto'}{l.vence ? ` (${new Date(l.vence + 'T12:00:00').toLocaleDateString('es-CO')})` : ''}</strong>
+          <strong>{l.mpi} · {l.codigo} {l.estado === 'VENCIDO' ? 'venció' : l.vence === hoy ? 'vence hoy' : 'vence pronto'}{l.vence ? ` (${fmtFecha(l.vence)})` : ''}</strong>
           {' '}· quedan {Number(l.restante).toLocaleString('es-CO')} {l.unidad_base}. {l.estado === 'VENCIDO' ? 'Regístralo como baja.' : 'Úsalo primero.'}
         </Link>
       ))}

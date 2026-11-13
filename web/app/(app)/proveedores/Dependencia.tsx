@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { analizarRiesgos, type AnalisisGuardado } from './acciones';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export type DatosDependencia = {
   desde: string; hasta: string; total: number; n_proveedores: number; hhi: number | null;
@@ -13,7 +14,7 @@ export type DatosDependencia = {
 
 const pesos = (n: number) => `$${Math.round(n).toLocaleString('es-CO')}`;
 // fechas sin hora («2026-11-04»): se leen en UTC para no correrse un día por la zona horaria
-const fechaCorta = (s: string) => new Date(s).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const fechaCorta = (s: string) => fmtFecha(s);
 const fechaHora = (s: string) => new Date(s).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' });
 const COLOR = { alto: 'var(--error)', medio: 'var(--aviso)', bajo: 'var(--ok)' };
 const TIPO: Record<string, string> = { concentracion: 'Dependencia', temporada: 'Temporada', clima: 'Clima', logistica: 'Transporte y vías',
@@ -121,7 +122,7 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
               <span>{p.participacion} % · {pesos(p.gasto)}</span>
             </div>
             <div style={{ height: 6, background: 'var(--borde)', borderRadius: 3, margin: '.2rem 0' }}>
-              <div style={{ width: `${Math.min(100, p.participacion)}%`, height: '100%', background: p.participacion >= 25 ? 'var(--error)' : 'var(--marca)', borderRadius: 3 }} />
+              <div style={{ width: `${Math.min(100, p.participacion)}%`, height: '100%', background: p.participacion >= 25 ? 'var(--error)' : 'var(--tinta)', borderRadius: 3 }} />
             </div>
             <div className="suave" style={{ fontSize: '.8rem' }}>
               {p.insumos} insumo(s){p.insumos_solo_el ? ` · ${p.insumos_solo_el} solo se los compramos a él` : ''} · {p.compras} compra(s) · última {fechaCorta(p.ultima)}

@@ -45,7 +45,7 @@ export function menuDe(p: Perfil): Opcion[] {
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/recibir', titulo: 'Recibir', detalle: 'Mercancía de proveedores, con foto de la factura', icono: 'recibir' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/produccion', titulo: 'Producción', detalle: 'Fichas técnicas, producir lotes y su trazabilidad', icono: 'producir' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/trasladar', titulo: 'Trasladar', detalle: 'Mover mercancía entre zonas: bodega → barra', icono: 'trasladar' });
-  if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/bajas', titulo: 'Bajas', detalle: 'Lo vencido o dañado, cortesías y mal hechos', icono: 'bajas' });
+  if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/bajas', titulo: 'Reportar pérdida', detalle: 'Lo que se dañó o venció, cortesías y mal hechos', icono: 'bajas' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/conteo', titulo: 'Contar', detalle: 'Conteo por zona (y el conteo inicial)', icono: 'contar' });
   if (p.rol !== 'servicio') m.push({ ruta: '/historial', titulo: 'Historial', detalle: 'Lo registrado, y anular lo que quedó mal', icono: 'historial' });
   if (p.rol !== 'servicio') m.push({ ruta: '/existencias', titulo: 'Existencias', detalle: 'Qué hay en cada zona y cuánto vale', icono: 'existencias' });
@@ -66,13 +66,37 @@ export function menuDe(p: Perfil): Opcion[] {
   return m;
 }
 
-// Barra inferior del celular: Inicio y las cuatro pantallas de más uso que el rol tenga.
-const PRIORIDAD = ['/recibir', '/produccion', '/conteo', '/historial', '/existencias', '/catalogo', '/fichas', '/admin/registro'];
-const CORTO: Record<string, string> = { '/produccion': 'Producir', '/conteo': 'Contar', '/fichas': 'Fichas', '/admin/registro': 'Registro' };
-export function navDe(p: Perfil) {
+// Cómo se agrupan las pantallas en Inicio: lo que se registra, lo que se revisa, el catálogo y la administración.
+export type GrupoMenu = 'Operación' | 'Gestión' | 'Catálogo' | 'Administración';
+export const GRUPOS_MENU: GrupoMenu[] = ['Operación', 'Gestión', 'Catálogo', 'Administración'];
+const GRUPO_DE: Record<string, GrupoMenu> = {
+  '/recibir': 'Operación', '/produccion': 'Operación', '/trasladar': 'Operación', '/bajas': 'Operación', '/conteo': 'Operación',
+  '/catalogo/nuevo': 'Operación',
+  '/historial': 'Gestión', '/existencias': 'Gestión', '/pedido': 'Gestión', '/proveedores': 'Gestión', '/carta': 'Gestión',
+  '/alertas': 'Gestión', '/consulta': 'Gestión',
+  '/catalogo': 'Catálogo', '/fichas': 'Catálogo',
+};
+export const grupoDe = (ruta: string): GrupoMenu => GRUPO_DE[ruta] ?? 'Administración';
+
+// Barra inferior del celular: Inicio, las tres pantallas de más uso de su modo y «Más» con el resto.
+// Operación (barra y cocina) registra; administración consulta; auditoría revisa.
+const PRINCIPALES: Record<'operacion' | 'gestion' | 'auditoria', string[]> = {
+  operacion: ['/recibir', '/produccion', '/conteo'],
+  gestion: ['/consulta', '/alertas', '/carta'],
+  auditoria: ['/historial', '/existencias', '/admin/registro'],
+};
+const CORTO: Record<string, string> = {
+  '/produccion': 'Producir', '/conteo': 'Contar', '/fichas': 'Fichas', '/admin/registro': 'Registro', '/carta': 'Carta', '/alertas': 'Alertas',
+  '/bajas': 'Pérdida',
+};
+export type OpcionNav = { ruta: string; titulo: string; icono: string };
+export function navDe(p: Perfil): { principales: OpcionNav[]; resto: Opcion[] } {
   const menu = menuDe(p);
-  const elegidas = PRIORIDAD.map((r) => menu.find((o) => o.ruta === r)).filter((o): o is Opcion => !!o).slice(0, 4);
-  return [{ ruta: '/', titulo: 'Inicio', icono: 'inicio' }, ...elegidas.map((o) => ({ ruta: o.ruta, titulo: CORTO[o.ruta] ?? o.titulo, icono: o.icono }))];
+  const modo = p.rol === 'admin' ? 'gestion' : p.rol === 'auditor' ? 'auditoria' : 'operacion';
+  const elegidas = PRINCIPALES[modo].map((r) => menu.find((o) => o.ruta === r)).filter((o): o is Opcion => !!o);
+  const principales = [{ ruta: '/', titulo: 'Inicio', icono: 'inicio' },
+    ...elegidas.map((o) => ({ ruta: o.ruta, titulo: CORTO[o.ruta] ?? o.titulo, icono: o.icono }))];
+  return { principales, resto: menu.filter((o) => !elegidas.includes(o)) };
 }
 
 // Se entra con usuario corto; Supabase Auth guarda un correo interno.

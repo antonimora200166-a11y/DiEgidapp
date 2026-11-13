@@ -1,20 +1,20 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { pesos } from '@/lib/formato';
 
 // Ingeniería de menú (Kasavana y Smith, 1982): popularidad × margen $ por unidad.
 // Popular: participación ≥ 70 % de la participación pareja (1/N). Margen alto: ≥ margen promedio
 // ponderado por las unidades vendidas.
 export type PuntoMatriz = { generico_id: string; nombre: string; seccion: string | null; unidades: number; margen_unit: number; pct_carta: number | null };
 type Cuadrante = 'Estrella' | 'Caballo' | 'Rompecabezas' | 'Perro';
-const COLOR: Record<Cuadrante, string> = { Estrella: 'var(--ok)', Caballo: 'var(--aviso)', Rompecabezas: 'var(--marca)', Perro: 'var(--error)' };
+const COLOR: Record<Cuadrante, string> = { Estrella: 'var(--ok)', Caballo: 'var(--aviso)', Rompecabezas: 'var(--tinta)', Perro: 'var(--error)' };
 const QUE_HACER: Record<Cuadrante, string> = {
   Estrella: 'Se vende mucho y deja buen margen: cuidar la receta y la presentación.',
   Caballo: 'Se vende mucho pero deja poco: revisar receta o subir precio con cuidado.',
   Rompecabezas: 'Deja buen margen pero se vende poco: moverlo en la carta o recomendarlo.',
   Perro: 'Se vende poco y deja poco: pensar en sacarlo o rehacerlo.',
 };
-const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 export default function Matriz({ puntos }: { puntos: PuntoMatriz[] }) {
   const [sel, setSel] = useState<string | null>(null);

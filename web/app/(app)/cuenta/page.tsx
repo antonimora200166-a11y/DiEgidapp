@@ -4,6 +4,7 @@ import FormClave from './FormClave';
 import Icono from '@/components/Icono';
 import { salir } from '../../login/acciones';
 import FormPin from './FormPin';
+import { SelectorTema } from '@/components/Tema';
 import { supabaseServidor } from '@/lib/supabase/server';
 
 export const metadata = { title: 'Mi cuenta' };
@@ -20,6 +21,9 @@ export default async function Cuenta() {
       {perfil.debe_cambiar_clave && (
         <p className="aviso">Entraste con una contraseña temporal. Antes de seguir, ponle una tuya: lo que registres queda a tu nombre.</p>
       )}
+      <h2>Tema</h2>
+      <SelectorTema />
+      <p className="suave" style={{ fontSize: '.88rem' }}>Se guarda en este equipo. «Automático» sigue al celular o iPad; en la barra conviene «Oscuro».</p>
       <h2>Cambiar contraseña</h2>
       <FormClave temporal={perfil.debe_cambiar_clave} />
       <p className="suave" style={{ fontSize: '.88rem' }}>¿La olvidaste? Pídele a administración que te dé una temporal desde la pantalla Usuarios.</p>

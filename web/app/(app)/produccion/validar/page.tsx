@@ -65,7 +65,7 @@ export default async function Validar({ searchParams }: { searchParams: Promise<
       <nav className="segmentos pagina-ancha" aria-label="Pasos" style={{ marginBottom: '1rem' }}>
         {tabs.map((t, i) => (
           <Link key={t} href={q(t)}>
-            <span style={t === tab ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' } : undefined}>
+            <span style={t === tab ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>
               {i + 1}. {t === 'ingredientes' ? 'Ingredientes' : t === 'mpi' ? F.resultados : F.recetas} · {nPend[t]}
             </span>
           </Link>

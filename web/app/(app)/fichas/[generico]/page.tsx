@@ -6,6 +6,7 @@ import { puedeOperar } from '@/lib/roles';
 import { cant, fechaLarga, pct, pesos, textoPresentacion, tipoPunto } from '@/lib/fichas';
 import PestanasProduccion from '@/components/PestanasProduccion';
 import type { DatosFicha } from './EditorFicha';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export const metadata = { title: 'Ficha técnica' };
 const TIPO: Record<string, string> = { MPI: 'Producción (MPI)', BEBIDA: 'Cóctel o bebida', PLATO: 'Plato' };
@@ -47,7 +48,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
 
       {baul?.en_baul && (
         <p className="aviso">Esta ficha está en el <strong>baúl</strong>
-          {baul.baul_desde && <> desde el {new Date(baul.baul_desde).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' })}</>}{baul.baul_motivo && <> ({baul.baul_motivo})</>}:
+          {baul.baul_desde && <> desde el {fmtFecha(baul.baul_desde)}</>}{baul.baul_motivo && <> ({baul.baul_motivo})</>}:
           no se vende, no sale en la carta ni en las listas.{' '}
           {vePesos && <Link href={`/carta?area=${baul.area}&vista=baul`}>Ir al baúl</Link>}</p>
       )}

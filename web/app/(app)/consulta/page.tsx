@@ -5,6 +5,9 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import Matriz, { type PuntoMatriz } from './Matriz';
 import Exportar from './Exportar';
 import Bloque2, { type Insumo, type ResumenPeriodo } from './Bloque2';
+import { pesos, pct, fecha as fechaC } from '@/lib/formato';
+import { Insignia, Cambio, tonoMeta, tonoSemaforo, type Tono } from '@/components/Insignia';
+import TarjetaCierre, { periodosPorCerrar } from '@/components/TarjetaCierre';
 
 export const metadata = { title: 'Consulta' };
 
@@ -29,12 +32,8 @@ type Consulta = {
 };
 type Vista = 'TODO' | 'BAR' | 'COCINA';
 
-const pesos = (n: number | null | undefined) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }));
-const pct = (n: number | null | undefined) => (n === null || n === undefined ? '—' : `${Number(n).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
-const fechaC = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const META_AREA: Record<Vista, number | null> = { BAR: 24, COCINA: 30, TODO: null };
-const semaforo = (v: number | null, meta: number | null, banda = 3) => (v === null || meta === null ? '' : v <= meta ? ' sv' : v <= meta + banda ? ' sa' : ' sr');
 
 // Períodos a la mano: quincena y mes (actual y anterior) y todo lo cargado.
 function periodos(hoy: Date, cargas: { desde: string; hasta: string }[]) {
@@ -55,9 +54,12 @@ function periodos(hoy: Date, cargas: { desde: string; hasta: string }[]) {
 function Variacion({ actual, antes, inverso = false, unidad = '%' }: { actual: number | null; antes: number | null; inverso?: boolean; unidad?: '%' | 'pts' }) {
   if (actual === null || antes === null || !antes) return <small>sin período anterior para comparar</small>;
   const dif = unidad === '%' ? (actual / antes - 1) * 100 : actual - antes;
-  const bueno = inverso ? dif <= 0 : dif >= 0;
-  return <small style={{ color: bueno ? 'var(--ok)' : 'var(--error)' }}>{dif > 0 ? '+' : ''}{dif.toLocaleString('es-CO', { maximumFractionDigits: 1 })} {unidad === '%' ? '%' : 'pts'} vs. anterior</small>;
+  return <Cambio dif={dif} unidad={unidad === '%' ? '%' : 'pts'} inverso={inverso} />;
 }
+// cobertura de fichas: más es mejor
+const tonoCobertura = (v: number | null): Tono | null => (v === null ? null : v >= 95 ? 'ok' : v >= 80 ? 'aviso' : 'error');
+const TEXTO_COBERTURA: Record<Tono, string> = { ok: 'Completa', aviso: 'Casi', error: 'Baja', gris: 'Sin dato' };
+const claseTono = (t: Tono | null) => (t === 'ok' ? ' sv' : t === 'aviso' ? ' sa' : t === 'error' ? ' sr' : '');
 
 export default async function ConsultaPagina({ searchParams }: { searchParams: Promise<{ desde?: string; hasta?: string; area?: string }> }) {
   const perfil = await perfilActual();
@@ -99,6 +101,9 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
     }
   }
   const ultimo = area !== 'TODO' ? cerrados[0] ?? null : null;
+  const porCerrar = periodosPorCerrar(abiertos);
+  const elegido = opciones.find((o) => o.desde === desde && o.hasta === hasta);
+  const tonoTeorico = tonoMeta(c.pct_teorico, meta);
 
   // bandeja: las alertas abiertas del área (o de todas), de mayor impacto
   const { data: al } = await supabase.rpc('alertas_lista', { p_todas: false });
@@ -108,66 +113,97 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
   return (
     <>
       <h1 className="pagina-ancha">Consulta</h1>
-      <div className="tarjeta" style={{ display: 'grid', gap: '.6rem', marginBottom: '1rem' }}>
-        <nav className="segmentos" style={{ gap: '.4rem' }}>
-          {opciones.map((o) => (
-            <Link key={o.t} href={enlace({ desde: o.desde, hasta: o.hasta })}>
-              <span style={o.desde === desde && o.hasta === hasta ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' } : undefined}>{o.t}</span>
+      {porCerrar.length > 0 && <TarjetaCierre periodos={porCerrar} />}
+      {/* filtros compactos: período en un chip que se abre y el área en un segmento; las cifras quedan arriba */}
+      <div className="filtros-consulta">
+        <details className="chip-periodo">
+          <summary>
+            <span className="suave">Período</span> <strong>{elegido?.t ?? `${fechaC(desde)} → ${fechaC(hasta)}`}</strong> <span aria-hidden>▾</span>
+          </summary>
+          <div className="chip-periodo-menu tarjeta">
+            <nav aria-label="Períodos">
+              {opciones.map((o) => (
+                <Link key={o.t} href={enlace({ desde: o.desde, hasta: o.hasta })} aria-current={o === elegido ? 'true' : undefined}>
+                  {o.t}<small>{fechaC(o.desde)} → {fechaC(o.hasta)}</small>
+                </Link>
+              ))}
+            </nav>
+            <form method="get" className="fechas-medida">
+              <input type="hidden" name="area" value={area} />
+              <label>Desde<input type="date" name="desde" defaultValue={desde} /></label>
+              <label>Hasta<input type="date" name="hasta" defaultValue={hasta} /></label>
+              <button type="submit" className="secundario">Ver estas fechas</button>
+            </form>
+          </div>
+        </details>
+        <nav className="segmentos" aria-label="Área">
+          {(['TODO', 'BAR', 'COCINA'] as Vista[]).map((a) => (
+            <Link key={a} href={enlace({ area: a })} aria-current={a === area ? 'true' : undefined}>
+              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>
+                {a === 'TODO' ? 'Total' : a === 'BAR' ? 'Bar' : 'Cocina'}
+              </span>
             </Link>
           ))}
         </nav>
-        <form method="get" style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label style={{ margin: 0 }}>Desde<input type="date" name="desde" defaultValue={desde} /></label>
-          <label style={{ margin: 0 }}>Hasta<input type="date" name="hasta" defaultValue={hasta} /></label>
-          <label style={{ margin: 0 }}>Área
-            <select name="area" defaultValue={area}><option value="TODO">Total</option><option value="BAR">Bar</option><option value="COCINA">Cocina</option></select>
-          </label>
-          <button type="submit" className="secundario">Ver</button>
-          <Link href={`/consulta/operacion?${new URLSearchParams({ desde, hasta, area })}`} className="boton secundario" style={{ marginLeft: 'auto' }}>Inventario, compras, producción y pérdidas</Link>
-          <Link href="/consulta/ventas" className="boton secundario">Cargar ventas de Odoo</Link>
-          <Link href="/consulta/simulador" className="boton secundario">Simulador</Link>
-          <Link href="/consulta/informe" className="boton secundario">Informe quincenal</Link>
-        </form>
-        <span className="suave" style={{ fontSize: '.85rem' }}>
-          {fechaC(c.desde)} → {fechaC(c.hasta)} · comparado con {fechaC(c.anterior.desde)} → {fechaC(c.anterior.hasta)}.
-          Costo de cada ficha con los costos de hoy (estimado mientras no haya kardex); los cierres de período lo congelarán.
-        </span>
-        <Exportar params={{ desde, hasta, area }} bloques={[{ bloque: 'ventas', t: 'Ventas y teórico' }, ...(area !== 'TODO' ? [{ bloque: 'periodo', t: 'Real vs. teórico' }] : [])]} />
       </div>
+      <p className="suave" style={{ fontSize: '.82rem', margin: '.2rem 0 0' }}>
+        {fechaC(c.desde)} → {fechaC(c.hasta)} · comparado con {fechaC(c.anterior.desde)} → {fechaC(c.anterior.hasta)}
+      </p>
 
       {sinDatos ? (
         <p className="tarjeta">No hay ventas cargadas en este período. <Link href="/consulta/ventas">Carga el reporte de Odoo</Link> o escoge «Todo lo cargado».</p>
       ) : (
         <>
-          {/* ------------------------------------------------ bloque 0 */}
-          <h2>Resumen</h2>
-          <div className="cifras anchas">
+          {/* ------------------------------------------------ bloque 0: tres cifras principales y las demás */}
+          <h2 className="sr-only">Resumen</h2>
+          <div className="cifras heroe">
             <div className="cifra"><span>Ventas netas</span><b>{pesos(c.ventas_netas)}</b><Variacion actual={c.ventas_netas} antes={c.anterior.ventas_netas} /></div>
-            <div className={`cifra${semaforo(c.pct_teorico, meta)}`}><span>% costo teórico</span><b>{pct(c.pct_teorico)}</b>
-              <small>{meta !== null ? `meta ${meta} % · ` : ''}sin lo de $0: {pct(c.pct_teorico_con_venta)}</small></div>
+            <div className={`cifra${claseTono(tonoTeorico)}`}><span>% costo teórico</span><b>{pct(c.pct_teorico)}</b>
+              <small>{meta !== null ? `meta ${meta} % · ` : ''}sin lo de $0: {pct(c.pct_teorico_con_venta)}</small>
+              {tonoTeorico && <Insignia tono={tonoTeorico} />}</div>
             {ultimo ? (
+              <div className={`cifra${claseTono(tonoSemaforo(ultimo.semaforo))}`}>
+                <span>Real vs. teórico</span><b>{ultimo.variacion_pp === null ? '—' : `${ultimo.variacion_pp > 0 ? '+' : ''}${ultimo.variacion_pp.toLocaleString('es-CO')} pts`}</b>
+                <small>{pesos(ultimo.cmv_real - ultimo.cmv_teorico)} · no explicado {pesos(ultimo.no_explicado)}</small>
+                {tonoSemaforo(ultimo.semaforo) && <Insignia tono={tonoSemaforo(ultimo.semaforo)!} />}</div>
+            ) : (
+              <div className={`cifra${claseTono(tonoCobertura(c.cobertura_pct))}`}>
+                <span>Cobertura de fichas</span><b>{pct(c.cobertura_pct)}</b><small>de lo vendido tiene ficha completa</small>
+                {tonoCobertura(c.cobertura_pct) && <Insignia tono={tonoCobertura(c.cobertura_pct)!}>{TEXTO_COBERTURA[tonoCobertura(c.cobertura_pct)!]}</Insignia>}</div>
+            )}
+          </div>
+          <div className="cifras anchas secundarias">
+            {ultimo && (
               <>
                 <div className="cifra"><span>% costo real</span><b>{pct(ultimo.pct_real)}</b><small>último cierre · teórico {pct(ultimo.pct_teorico)}</small></div>
-                <div className={`cifra${ultimo.semaforo === 'VERDE' ? ' sv' : ultimo.semaforo === 'AMARILLO' ? ' sa' : ultimo.semaforo === 'ROJO' ? ' sr' : ''}`}>
-                  <span>Real vs. teórico</span><b>{ultimo.variacion_pp === null ? '—' : `${ultimo.variacion_pp > 0 ? '+' : ''}${ultimo.variacion_pp.toLocaleString('es-CO')} pts`}</b>
-                  <small>{pesos(ultimo.cmv_real - ultimo.cmv_teorico)} · no explicado {pesos(ultimo.no_explicado)}</small></div>
                 <div className="cifra"><span>Pérdidas reportadas</span><b>{pesos(ultimo.perdidas)}</b><small>bajas del último cierre</small></div>
                 <div className="cifra"><span>Inventario</span><b>{pesos(ultimo.inv_final)}</b>
                   <small>{ultimo.cmv_real > 0 ? `${Math.round(ultimo.inv_final / (ultimo.cmv_real / ((new Date(ultimo.hasta).getTime() - new Date(ultimo.desde).getTime()) / 864e5 + 1)))} días de inventario` : 'al último cierre'}</small></div>
-              </>
-            ) : (
-              <>
-                <div className="cifra"><span>% costo real</span><b>—</b><small>{area === 'TODO' ? 'escoge Bar o Cocina' : 'falta el primer cierre de período'}</small></div>
-                <div className="cifra"><span>Real vs. teórico</span><b>—</b><small>se calcula al cerrar el período</small></div>
-                <div className="cifra"><span>Pérdidas reportadas</span><b>—</b><small>salen de las bajas del kardex</small></div>
-                <div className="cifra"><span>Inventario</span><b>—</b><small>valor y días: con el conteo inicial</small></div>
+                <div className={`cifra${claseTono(tonoCobertura(c.cobertura_pct))}`}>
+                  <span>Cobertura de fichas</span><b>{pct(c.cobertura_pct)}</b><small>de lo vendido tiene ficha completa</small>
+                  {tonoCobertura(c.cobertura_pct) && <Insignia tono={tonoCobertura(c.cobertura_pct)!}>{TEXTO_COBERTURA[tonoCobertura(c.cobertura_pct)!]}</Insignia>}</div>
               </>
             )}
-            <div className={`cifra${c.cobertura_pct === null ? '' : c.cobertura_pct >= 95 ? ' sv' : c.cobertura_pct >= 80 ? ' sa' : ' sr'}`}>
-              <span>Cobertura de fichas</span><b>{pct(c.cobertura_pct)}</b><small>de lo vendido tiene ficha completa</small></div>
             <div className="cifra"><span>Salió a $0</span><b>{pesos(c.costo_sin_venta)}</b>
               <small>{Number(c.unidades_sin_valor).toLocaleString('es-CO')} und (menús Yuga, cortesías)</small></div>
           </div>
+          {!ultimo && (
+            // las cifras que aún no tienen dato, juntas y con lo que las destraba
+            <p className="aviso falta-datos">
+              <strong>Falta para ver costo real, real vs. teórico, pérdidas e inventario:</strong>{' '}
+              {area === 'TODO'
+                ? <>escoge <Link href={enlace({ area: 'BAR' })}>Bar</Link> o <Link href={enlace({ area: 'COCINA' })}>Cocina</Link>.</>
+                : <>el <Link href="/conteo">conteo inicial</Link> y el <Link href={`/consulta/cerrar?area=${area}`}>primer cierre de período</Link>.</>}
+            </p>
+          )}
+          <div className="mas-consulta">
+            <Link href={`/consulta/operacion?${new URLSearchParams({ desde, hasta, area })}`} className="boton secundario chico">Inventario, compras, producción y pérdidas</Link>
+            <Link href="/consulta/ventas" className="boton secundario chico">Cargar ventas de Odoo</Link>
+            <Link href="/consulta/simulador" className="boton secundario chico">Simulador</Link>
+            <Link href="/consulta/informe" className="boton secundario chico">Informe quincenal</Link>
+          </div>
+          <Exportar params={{ desde, hasta, area }} bloques={[{ bloque: 'ventas', t: 'Ventas y teórico' }, ...(area !== 'TODO' ? [{ bloque: 'periodo', t: 'Real vs. teórico' }] : [])]} />
+          <p className="suave" style={{ fontSize: '.8rem' }}>Costo de cada ficha con los costos de hoy (estimado mientras no haya kardex); los cierres de período lo congelarán.</p>
           {area === 'TODO' && c.sin_equivalencia.productos > 0 && (
             <p className="aviso">{c.sin_equivalencia.productos} producto(s) de Odoo sin equivalencia con la carta: {pesos(c.sin_equivalencia.valor)} vendidos que no entran
               en el teórico. <Link href="/consulta/ventas">Resolverlos</Link></p>
@@ -201,15 +237,15 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
                 <th style={{ textAlign: 'right' }}>Ventas netas</th><th style={{ textAlign: 'right' }}>Margen $</th><th style={{ textAlign: 'right' }}>Margen %</th>
               </tr></thead>
               <tbody>{c.secciones.map((s) => {
-                const color = (v: number | null) => (v === null ? undefined : v <= s.meta_pct ? 'var(--ok)' : v <= s.meta_pct + 3 ? 'var(--aviso)' : 'var(--error)');
+                const tono = tonoMeta(s.pct_teorico, s.meta_pct);
                 return (
                   <tr key={`${s.area}-${s.seccion}`}>
                     <td><strong>{s.seccion ?? 'Sin sección'}</strong>{s.sin_ficha_completa > 0 && <div className="suave" style={{ fontSize: '.78rem' }}>{s.sin_ficha_completa} sin ficha completa</div>}</td>
                     {area === 'TODO' && <td>{s.area === 'BAR' ? 'Bar' : 'Cocina'}</td>}
                     <td style={{ textAlign: 'right' }}>{Number(s.unidades).toLocaleString('es-CO')}{s.unidades_sin_valor > 0 && <div className="suave" style={{ fontSize: '.78rem' }}>{s.unidades_sin_valor} a $0</div>}</td>
                     <td style={{ textAlign: 'right' }}>{pct(s.pct_carta)}</td>
-                    <td style={{ textAlign: 'right' }}><strong style={{ color: color(s.pct_teorico) }}>{pct(s.pct_teorico)}</strong></td>
-                    <td style={{ textAlign: 'right', color: color(s.pct_teorico_con_venta) }}>{s.unidades_sin_valor > 0 ? pct(s.pct_teorico_con_venta) : <span className="suave">=</span>}</td>
+                    <td style={{ textAlign: 'right' }}><span className="con-estado"><strong>{pct(s.pct_teorico)}</strong>{tono && <Insignia tono={tono}>{tono === 'aviso' ? 'Cerca' : undefined}</Insignia>}</span></td>
+                    <td style={{ textAlign: 'right' }}>{s.unidades_sin_valor > 0 ? pct(s.pct_teorico_con_venta) : <span className="suave">=</span>}</td>
                     <td style={{ textAlign: 'right' }} className="suave">{s.meta_pct} %</td>
                     <td style={{ textAlign: 'right' }}>{pesos(s.ventas)}</td>
                     <td style={{ textAlign: 'right' }}>{pesos(s.margen)}</td>
@@ -247,7 +283,7 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
               <h2>Top 10 con peor % costo</h2>
               <table className="tabla"><thead><tr><th>Producto</th><th style={{ textAlign: 'right' }}>% costo</th><th style={{ textAlign: 'right' }}>Meta</th></tr></thead>
                 <tbody>{topCosto.map((p) => <tr key={p.generico_id}><td><Link href={`/fichas/${p.generico_id}`}>{p.nombre}</Link></td>
-                  <td style={{ textAlign: 'right', color: Number(p.pct_carta) <= p.meta_pct ? 'var(--ok)' : Number(p.pct_carta) <= p.meta_pct + 3 ? 'var(--aviso)' : 'var(--error)' }}><strong>{pct(p.pct_carta)}</strong></td>
+                  <td style={{ textAlign: 'right' }}><span className="con-estado"><strong>{pct(p.pct_carta)}</strong><Insignia tono={tonoMeta(Number(p.pct_carta), p.meta_pct)!}>{tonoMeta(Number(p.pct_carta), p.meta_pct) === 'aviso' ? 'Cerca' : undefined}</Insignia></span></td>
                   <td style={{ textAlign: 'right' }} className="suave">{p.meta_pct} %</td></tr>)}</tbody></table>
               <p className="suave" style={{ fontSize: '.8rem' }}>Solo productos que se vendieron en el período.</p>
             </section>

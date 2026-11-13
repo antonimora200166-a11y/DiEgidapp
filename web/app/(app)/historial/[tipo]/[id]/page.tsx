@@ -4,6 +4,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { CAUSA, CONDICION, NOMBRE_TIPO, cant, pesos, pesosU } from '../../comun';
 import Anular from './Anular';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export const metadata = { title: 'Documento' };
 
@@ -34,7 +35,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
 
   // Encabezado: los datos que importan de cada tipo, en orden
   const filas: [string, string][] = ([
-    ['Fecha', new Date(s(e.fecha) + 'T12:00:00').toLocaleDateString('es-CO')],
+    ['Fecha', fmtFecha(s(e.fecha))],
     ...(tipo === 'RECEPCION' ? [['Proveedor', s(e.proveedor)], ['Documento', `${s(e.documento) || 'sin número'} (${s(e.soporte).toLowerCase()})`],
                                 ['Zona', s(e.zona)], ['Recibió', s(e.recibe)], ['Foto de la factura', e.con_foto ? 'sí' : 'no']] : []),
     ...(tipo === 'LOTE' ? [['Producto', s(e.producto)], ['Zona', s(e.zona)], ['Ficha', s(e.ficha) || 'sin ficha'],
@@ -56,7 +57,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
       {tipo === 'LOTE' && <p style={{ marginTop: '-.5rem' }}><Link href={`/l/${encodeURIComponent(s(e.codigo))}/etiqueta`}>Imprimir etiquetas con QR →</Link></p>}
 
       {anulado && (
-        <p className="aviso"><strong>Anulado</strong> por {d.anulacion!.usuario ?? '—'} el {new Date(d.anulacion!.en).toLocaleDateString('es-CO')}: {d.anulacion!.motivo}</p>
+        <p className="aviso"><strong>Anulado</strong> por {d.anulacion!.usuario ?? '—'} el {fmtFecha(d.anulacion!.en)}: {d.anulacion!.motivo}</p>
       )}
       <section className="tarjeta">
         <table className="tabla"><tbody>
@@ -87,7 +88,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
                       {CONDICION[s(l.condicion)] ?? s(l.condicion)}
                       {!!l.sello && ` · sello ${l.sello === 'SI' ? 'intacto' : l.sello === 'NO' ? 'roto' : 'no aplica'}`}
                       {l.temperatura !== null && ` · ${cant(n(l.temperatura))} °C`}
-                      {!!l.vencimiento && ` · vence ${new Date(s(l.vencimiento) + 'T12:00:00').toLocaleDateString('es-CO')}`}
+                      {!!l.vencimiento && ` · vence ${fmtFecha(s(l.vencimiento))}`}
                       {Array.isArray(l.hallazgos) && l.hallazgos.length > 0 && ` · ${(l.hallazgos as string[]).join(', ')}`}
                       {!!l.anulada && ' · línea anulada'}
                     </span>

@@ -7,7 +7,7 @@ import ListaBaul, { type EnBaul } from './ListaBaul';
 
 export const metadata = { title: 'Carta y margen' };
 
-const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' };
+const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' };
 type Vista = 'BAR' | 'COCINA' | 'TODO';
 const NOMBRE: Record<Vista, string> = { BAR: 'Bar', COCINA: 'Cocina', TODO: 'Todo' };
 

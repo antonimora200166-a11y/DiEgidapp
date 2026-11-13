@@ -1,6 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { verificarContenido } from './acciones-verificar';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 // «Sí, cada unidad trae esto»: el contenido verificado deja de pedirse en conteos y recepciones.
 // Si alguien cambia el contenido, la verificación se pierde (la base lo hace sola).
@@ -16,7 +17,7 @@ export default function VerificarContenido({ id, texto, verificado }: { id: stri
       <div className="acciones" style={{ marginTop: '.4rem' }}>
         <button type="button" className="chico" disabled={pend} onClick={() => start(async () => {
           const r = await verificarContenido(id);
-          if (r.ok) setHecho(new Date().toLocaleDateString('es-CO')); else setError(r.error ?? 'No se pudo verificar.');
+          if (r.ok) setHecho(fmtFecha(new Date())); else setError(r.error ?? 'No se pudo verificar.');
         })}>{pend ? 'Guardando…' : `Sí, trae ${texto}`}</button>
       </div>
     </div>

@@ -7,10 +7,10 @@ import Simulador from './Simulador';
 import Propuestas, { type Propuesta } from './Propuestas';
 import ElegirProducto from './ElegirProducto';
 import Exportar from '../Exportar';
+import { fecha as fechaC } from '@/lib/formato';
 
 export const metadata = { title: 'Simulador de carta' };
 
-const fechaC = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default async function SimuladorPagina({ searchParams }: { searchParams: Promise<{ producto?: string; desde?: string; hasta?: string }> }) {
   const perfil = await perfilActual();

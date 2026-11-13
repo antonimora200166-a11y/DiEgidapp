@@ -26,7 +26,7 @@ export default async function PaginaPedido({ searchParams }: { searchParams: Pro
         <nav className="segmentos" style={{ marginBottom: '1rem' }}>
           {areas.map((a) => (
             <Link key={a} href={`/pedido?area=${a}`}>
-              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' } : undefined}>
+              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>
                 {a === 'BAR' ? 'Bar' : 'Cocina'}
               </span>
             </Link>

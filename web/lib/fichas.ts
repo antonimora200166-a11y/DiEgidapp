@@ -1,3 +1,4 @@
+import { pesos as fmtPesos, fecha as fmtFecha } from './formato';
 // Formatos y tipos compartidos de las fichas técnicas (lista, detalle y editor).
 
 export type Almacenamiento = { conservacion: 'Ambiente' | 'Refrigerado' | 'Congelado'; vida_util_dias: number; nota?: string | null };
@@ -22,7 +23,7 @@ export const pesos = (n: number | null | undefined, dec?: number) => {
   if (n === null || n === undefined || !Number.isFinite(Number(n))) return '—';
   const v = Number(n);
   const d = dec ?? (Math.abs(v) < 100 ? 2 : 0);
-  return '$' + v.toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d });
+  return fmtPesos(v, d);
 };
 export const pct = (r: number | null | undefined) =>
   r === null || r === undefined ? '—' : `${(Number(r) * 100).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
@@ -30,7 +31,7 @@ export const cant = (n: number | null | undefined) =>
   n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CO', { maximumFractionDigits: 2 });
 export const vidaUtil = (a: Almacenamiento[]) =>
   a.map((x) => `${x.vida_util_dias} d ${x.conservacion === 'Refrigerado' ? 'refrig.' : x.conservacion === 'Congelado' ? 'cong.' : 'amb.'}`).join(' · ');
-export const fechaLarga = (d: string) => new Date(d.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+export const fechaLarga = (d: string) => fmtFecha(d.slice(0, 10));
 
 
 // Cómo se porciona y empaca lo que sale de una tanda (200 g y 150 g; 22 porciones de 3 tapas)

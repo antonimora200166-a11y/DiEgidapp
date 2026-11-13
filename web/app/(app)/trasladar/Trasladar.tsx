@@ -117,16 +117,19 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
       <textarea id="obs" rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
 
       <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} ejemplo="Ej.: la mercancía llegó directo a la barra y la recepción se registró en bodega" />
-      <div className="acciones barra-guardar">
-        {bloqueado ? (
-          <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
-        ) : (
-          <button type="button" disabled={enviando || !origen || !destino || !lineas.length || malas > 0} onClick={() => guardar(false)}>
-            {enviando ? 'Guardando…' : `Guardar traslado (${lineas.length})`}
-          </button>
-        )}
-        {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={async () => { if (await confirmar('¿Descartar este traslado?', { aceptar: 'Descartar', peligro: true })) otro(); }}>Descartar</button>}
-      </div>
+      {/* con la lista vacía no hay nada que guardar: la barra fija no aparece y no tapa el buscador */}
+      {(lineas.length > 0 || bloqueado) && (
+        <div className="acciones barra-guardar">
+          {bloqueado ? (
+            <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
+          ) : (
+            <button type="button" disabled={enviando || !origen || !destino || !lineas.length || malas > 0} onClick={() => guardar(false)}>
+              {enviando ? 'Guardando…' : `Guardar traslado (${lineas.length})`}
+            </button>
+          )}
+          {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={async () => { if (await confirmar('¿Descartar este traslado?', { aceptar: 'Descartar', peligro: true })) otro(); }}>Descartar</button>}
+        </div>
+      )}
       {lineas.length > 0 && (!destino || malas > 0) && (
         <p className="suave" style={{ fontSize: '.85rem' }}>{!destino ? 'Elige a qué zona llega. ' : ''}{malas > 0 ? `Falta la cantidad en ${malas} producto(s).` : ''}</p>
       )}

@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, puedeOperar, type Area } from '@/lib/roles';
+import { fecha as fmtFecha } from '@/lib/formato';
+import { Insignia } from '@/components/Insignia';
 
 export const metadata = { title: 'Contar' };
 
@@ -35,27 +37,30 @@ export default async function Conteo() {
       {areas.map((a) => (
         <section key={a}>
           {areas.length > 1 && <h2>{a === 'BAR' ? 'Bar' : 'Cocina'}</h2>}
-          <nav className="menu">
-            {porArea(a).map((z) => {
-              const u = ultimo(z.codigo);
-              const n = nAsignados(z.codigo);
-              const t = toca(z.codigo);
-              return (
-                <Link key={z.codigo} href={`/conteo/${z.codigo}`} className="tarjeta">
-                  <strong>{z.nombre}</strong>
-                  <span>{n ? `${n} productos` : 'Todo el catálogo del área'}</span>
-                  <span style={{ display: 'block' }}>
-                    {u ? `Último: ${new Date(u.fecha + 'T12:00:00').toLocaleDateString('es-CO')}${u.tipo === 'INICIAL' ? ' (inicial)' : ''}` : 'Sin conteos todavía'}
-                  </span>
-                  {t && t.tocan > 0 && (
-                    <span className="etiqueta provisional" style={{ marginTop: '.3rem' }}>
-                      Toca hoy: {t.tocan}{[t.tocan_a && ` A ${t.tocan_a}`, t.tocan_b && ` B ${t.tocan_b}`, t.tocan_c && ` C ${t.tocan_c}`].filter(Boolean).join(' ·')}
+          {/* de lo urgente a lo demás: primero las zonas donde toca contar hoy, luego las que llevan más sin contarse */}
+          <ul className="zonas-conteo">
+            {porArea(a).map((z) => ({ z, u: ultimo(z.codigo), n: nAsignados(z.codigo), t: toca(z.codigo)?.tocan ?? 0, d: toca(z.codigo) }))
+              .sort((x, y) => (y.t - x.t) || (x.u?.fecha ?? '').localeCompare(y.u?.fecha ?? '') || x.z.nombre.localeCompare(y.z.nombre, 'es'))
+              .map(({ z, u, n, t, d }) => (
+                <li key={z.codigo}>
+                  <Link href={`/conteo/${z.codigo}`} className={t > 0 ? 'toca' : undefined}>
+                    <span className="zc-nombre">
+                      <strong>{z.nombre}</strong>
+                      <small>
+                        {u ? `Último: ${fmtFecha(u.fecha)}${u.tipo === 'INICIAL' ? ' (inicial)' : ''}` : 'Sin contar todavía'}
+                        {n ? ` · ${n} ${n === 1 ? 'producto' : 'productos'}` : ''}
+                      </small>
                     </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
+                    {t > 0 && d && (
+                      <Insignia tono="aviso" titulo={[d.tocan_a && `A ${d.tocan_a}`, d.tocan_b && `B ${d.tocan_b}`, d.tocan_c && `C ${d.tocan_c}`].filter(Boolean).join(' · ')}>
+                        Toca hoy: {t}
+                      </Insignia>
+                    )}
+                    <span aria-hidden className="zc-flecha">›</span>
+                  </Link>
+                </li>
+              ))}
+          </ul>
         </section>
       ))}
     </>

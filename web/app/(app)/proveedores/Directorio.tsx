@@ -2,6 +2,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { editarProveedor } from './acciones';
+import { fecha } from '@/lib/formato';
 
 export type FichaProveedor = {
   id: string; nombre: string; nit: string | null; activo: boolean; unido_en: string | null; alias: string[];
@@ -9,7 +10,6 @@ export type FichaProveedor = {
 };
 
 const normal = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
-const fecha = (s: string | null) => (s ? new Date(s).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }) : 'nunca');
 
 export default function Directorio({ proveedores, soloLectura }: { proveedores: FichaProveedor[]; soloLectura: boolean }) {
   const router = useRouter();

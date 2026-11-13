@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/components/VistaFiltrable';
 import { fijarPrecio, moverAlBaul } from './acciones';
+import { pesos, pct } from '@/lib/formato';
+import { Insignia, tonoSemaforo, type Tono } from '@/components/Insignia';
 
 // Una fila de public.carta_margen: producto final con su ficha, costo, precio y meta.
 export type Ingrediente = {
@@ -21,12 +23,9 @@ export type PlatoCarta = {
   ingredientes: Ingrediente[];
 };
 
-const pesos = (n: number | null) => (n === null ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }));
-const pct = (n: number | null) => (n === null ? '—' : `${Number(n).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
 const num = (s: string) => { const n = Number(s.replace(/[.$\s]/g, '').replace(',', '.')); return s.trim() === '' || !Number.isFinite(n) ? null : n; };
 const ESTADO = { COMPLETA: 'Completa', PARCIAL: 'Parcial', SIN_FICHA: 'Sin ficha' } as const;
 const SEMAFORO = { VERDE: 'En meta', AMARILLO: 'Cerca de la meta', ROJO: 'Sobre la meta' } as const;
-const COLOR = { VERDE: 'var(--ok)', AMARILLO: 'var(--aviso)', ROJO: 'var(--error)' } as const;
 const semaforo = (f: PlatoCarta) => (f.semaforo ? SEMAFORO[f.semaforo]
   : f.estado_ficha !== 'COMPLETA' ? 'Sin % (ficha incompleta)' : 'Sin % (sin precio)');
 
@@ -143,6 +142,30 @@ function AlBaul({ elegidas, limpiar }: { elegidas: PlatoCarta[]; limpiar: () => 
   );
 }
 
+// Franja de arriba: cuántos están en la meta, cerca o sobre ella. Tocar una cifra filtra la tabla.
+function FranjaMeta({ filas, elegido, filtrar }: { filas: PlatoCarta[]; elegido: string[]; filtrar: (v: string[]) => void }) {
+  const items: { v: string; tono: Tono; t: string; n: number }[] = [
+    { v: SEMAFORO.VERDE, tono: 'ok', t: 'En meta', n: filas.filter((f) => f.semaforo === 'VERDE').length },
+    { v: SEMAFORO.AMARILLO, tono: 'aviso', t: 'Cerca', n: filas.filter((f) => f.semaforo === 'AMARILLO').length },
+    { v: SEMAFORO.ROJO, tono: 'error', t: 'Sobre la meta', n: filas.filter((f) => f.semaforo === 'ROJO').length },
+  ];
+  const sinPct = filas.filter((f) => !f.semaforo).length;
+  return (
+    <div className="franja" role="group" aria-label="Contra la meta: toca para filtrar">
+      {items.map((i) => {
+        const activo = elegido.length === 1 && elegido[0] === i.v;
+        return (
+          <button key={i.v} type="button" className={`franja-item${activo ? ' activa' : ''}`} aria-pressed={activo}
+                  onClick={() => filtrar(activo ? [] : [i.v])}>
+            <b>{i.n}</b><Insignia tono={i.tono}>{i.t}</Insignia>
+          </button>
+        );
+      })}
+      <span className="franja-nota suave">{sinPct ? `${sinPct} sin % (ficha incompleta o sin precio)` : 'Todos tienen %'}{elegido.length ? ' · toca de nuevo para ver todos' : ' · toca una cifra para filtrar'}</span>
+    </div>
+  );
+}
+
 export default function ListaCarta({ filas, variasAreas }: { filas: PlatoCarta[]; variasAreas: boolean }) {
   const seccion = (f: PlatoCarta) => f.seccion ?? 'Sin sección';
   const grupos: Grupo<PlatoCarta>[] = [
@@ -166,10 +189,8 @@ export default function ListaCarta({ filas, variasAreas }: { filas: PlatoCarta[]
     { k: 'neto', t: 'Precio neto', der: true, orden: (f) => f.precio_neto, ver: (f) => pesos(f.precio_neto === null ? null : Math.round(f.precio_neto)) },
     { k: 'pct', t: '% costo', der: true, orden: (f) => f.pct_costo, ver: (f) => (
       f.pct_costo === null ? <span className="suave">—</span>
-        : <strong style={{ color: f.semaforo ? COLOR[f.semaforo] : undefined, display: 'inline-flex', gap: '.3rem', alignItems: 'center' }}>
-            <span aria-hidden style={{ width: '.6rem', height: '.6rem', borderRadius: '50%', background: 'currentColor' }} />{pct(f.pct_costo)}
-            <span className="sr-only">{f.semaforo ? SEMAFORO[f.semaforo] : ''}</span>
-          </strong>) },
+        : <span className="con-estado"><strong>{pct(f.pct_costo)}</strong>
+            {f.semaforo && <Insignia tono={tonoSemaforo(f.semaforo)!}>{f.semaforo === 'AMARILLO' ? 'Cerca' : SEMAFORO[f.semaforo]}</Insignia>}</span>) },
     { k: 'margen', t: 'Margen $', der: true, orden: (f) => f.margen, ver: (f) => pesos(f.margen) },
     { k: 'margen_pct', t: 'Margen %', der: true, orden: (f) => f.margen_pct, ver: (f) => pct(f.margen_pct) },
     { k: 'meta', t: 'Meta', der: true, orden: (f) => f.meta_pct, ver: (f) => <span className="suave">{Number(f.meta_pct).toLocaleString('es-CO')} %</span> },
@@ -178,6 +199,7 @@ export default function ListaCarta({ filas, variasAreas }: { filas: PlatoCarta[]
     <VistaFiltrable clave="carta-margen" filas={filas} id={(f) => f.generico_id} buscar={(f) => `${f.nombre} ${f.codigo} ${f.seccion ?? ''}`}
                     grupos={grupos} columnas={columnas} agrupar={agrupar} vacio="Nada coincide con estos filtros."
                     detalle={(f) => <Ingredientes f={f} />}
+                    resumen={({ filas: todas, filtros, filtrar }) => <FranjaMeta filas={todas} elegido={filtros.semaforo ?? []} filtrar={(v) => filtrar('semaforo', v)} />}
                     seleccionable={() => true}
                     acciones={(elegidas, limpiar) => <AlBaul elegidas={elegidas} limpiar={limpiar} />}
                     pie={(vis) => {

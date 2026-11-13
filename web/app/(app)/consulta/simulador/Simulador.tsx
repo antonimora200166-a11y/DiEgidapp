@@ -3,9 +3,8 @@ import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { simular, type MezclaSim, type ProductoSim, type Semaforo } from '@/lib/simulador';
 import { guardarPropuesta } from './acciones';
+import { pesos, pct } from '@/lib/formato';
 
-const pesos = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }));
-const pct = (n: number | null | undefined) => (n == null ? '—' : `${n.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
 const CLASE: Record<string, string> = { VERDE: ' sv', AMARILLO: ' sa', ROJO: ' sr' };
 const cls = (s: Semaforo) => CLASE[s ?? ''] ?? '';
 const num = (s: string) => { const n = Number(s.replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) ? n : null; };

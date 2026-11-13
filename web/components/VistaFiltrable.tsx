@@ -25,13 +25,15 @@ const lista = (x: string | string[] | null) => (x === null ? [] : Array.isArray(
 type Estado = { f: Record<string, string[]>; q: string; agrupar: string | null; cols: string[] | null; orden: string | null; desc: boolean };
 
 export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, columnas, agrupar = [], seleccionable, acciones,
-  pie, detalle, filtrosIniciales, porPagina = 200, vacio = 'Nada coincide con estos filtros.' }: {
+  pie, detalle, resumen, filtrosIniciales, porPagina = 200, vacio = 'Nada coincide con estos filtros.' }: {
   clave: string; filas: T[]; id: (f: T) => string; buscar: (f: T) => string;
   grupos: Grupo<T>[]; columnas: Columna<T>[]; agrupar?: Agrupar<T>[];
   seleccionable?: (f: T) => boolean;
   acciones?: (elegidas: T[], limpiar: () => void) => React.ReactNode;
   pie?: (visibles: T[]) => React.ReactNode;
   detalle?: (f: T) => React.ReactNode;                  // al tocar la fila se abre debajo
+  // franja arriba de la lista (cifras que filtran al tocarlas): recibe los filtros y cómo cambiarlos
+  resumen?: (api: { filas: T[]; filtros: Record<string, string[]>; filtrar: (grupo: string, valores: string[]) => void }) => React.ReactNode;
   filtrosIniciales?: Record<string, string[]>; porPagina?: number; vacio?: string;
 }) {
   const [abiertas, setAbiertas] = useState<Set<string>>(new Set());
@@ -112,10 +114,11 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
 
   return (
     <>
+      {resumen?.({ filas, filtros: e.f, filtrar: (g, v) => setE((x) => ({ ...x, f: { ...x.f, [g]: v } })) })}
       <div ref={caja} style={{ display: 'grid', gap: '.5rem', margin: '.4rem 0 .8rem', position: 'relative' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem', alignItems: 'center', border: '1px solid var(--borde)', borderRadius: 10, padding: '.35rem', background: 'var(--tarjeta)' }}>
           {chips.map((c) => (
-            <span key={c.g.clave + c.v} className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--marca)' }}>
+            <span key={c.g.clave + c.v} className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--tinta)' }}>
               <span className="suave" style={{ fontWeight: 400 }}>{c.g.titulo}:</span> {c.t}
               <button type="button" aria-label={`Quitar ${c.t}`} onClick={() => alternar(c.g, c.v)} className="quitar">×</button>
             </span>

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { registrarCobro } from './acciones';
+import { pesos, fecha } from '@/lib/formato';
 
 export type FilaBajaCarta = {
   baja_id: string; codigo: string; area: 'BAR' | 'COCINA'; fecha: string; tipo: 'CORTESIA' | 'MAL_HECHO'; producto: string; unidades: number;
@@ -9,8 +10,6 @@ export type FilaBajaCarta = {
   cobro_en: string | null; observaciones: string | null; registrado_por: string | null; forzada: boolean; anulada: boolean;
 };
 
-const pesos = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }));
-const fecha = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 const ESTADO: Record<string, { t: string; c: string }> = {
   PENDIENTE: { t: 'por cobrar', c: 'provisional' }, DESCONTADO: { t: 'descontado', c: 'validado' }, CONDONADO: { t: 'condonado', c: 'inactivo' },
 };

@@ -4,10 +4,10 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import CargarVentas from './CargarVentas';
 import Equivalencias, { type ProductoCarta, type SinEquivalencia } from './Equivalencias';
+import { fecha } from '@/lib/formato';
 
 export const metadata = { title: 'Cargar ventas' };
 
-const fecha = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 
 // Ventas de Odoo: cada lunes se sube el reporte de la semana. Solo administración (decisión 06/11/2026).
 export default async function CargarVentasPagina() {

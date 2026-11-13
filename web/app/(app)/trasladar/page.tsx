@@ -4,6 +4,7 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, puedeOperar, type Area } from '@/lib/roles';
 import type { ProductoSaldo } from '@/components/LineasInventario';
 import Trasladar from './Trasladar';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export const metadata = { title: 'Trasladar' };
 
@@ -38,7 +39,7 @@ export default async function PaginaTrasladar() {
               <li key={t.id} className="linea">
                 <span><span className="cod">{t.codigo}</span><br />{nombre(t.origen)} → {nombre(t.destino)}</span>
                 <span className="suave" style={{ fontSize: '.85rem', textAlign: 'right' }}>
-                  {new Date(t.fecha + 'T12:00:00').toLocaleDateString('es-CO')}
+                  {fmtFecha(t.fecha)}
                   {t.forzado && <><br /><span className="etiqueta provisional">forzado</span></>}
                 </span>
               </li>

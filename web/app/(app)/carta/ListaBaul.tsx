@@ -4,13 +4,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Columna, type Grupo } from '@/components/VistaFiltrable';
 import { sacarDelBaul } from './acciones';
+import { pesos, fecha } from '@/lib/formato';
 
 export type EnBaul = {
   generico_id: string; nombre: string; tipo: 'BEBIDA' | 'PLATO'; carta: string | null; ficha_codigo: string | null;
   precio: number | null; desde: string | null; motivo: string | null;
 };
-const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
-const fecha = (s: string | null) => (s ? new Date(s).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
 
 // Lo que está en el baúl: la ficha se guarda tal cual; «Sacar» la devuelve a la carta.
 export default function ListaBaul({ filas, puede }: { filas: EnBaul[]; puede: boolean }) {

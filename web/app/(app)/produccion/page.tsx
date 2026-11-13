@@ -31,7 +31,7 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
           <nav className="segmentos" aria-label="Área">
             {areas.map((a) => (
               <Link key={a} href={`/produccion?area=${a}`}>
-                <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' } : undefined}>
+                <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>
                   {a === 'BAR' ? 'Bar' : 'Cocina'}
                 </span>
               </Link>
@@ -44,7 +44,7 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
         {editaFicha(perfil, area) ? ' Cada cambio que guardes crea una versión nueva.' : ' Las crea y cambia el ' + (area === 'BAR' ? 'jefe de barra' : 'chef') + '.'}
       </p>
       {avance && avance.mpi.con_ficha < avance.mpi.total && (
-        <Link href="/produccion/validar" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--marca)' }}>
+        <Link href="/produccion/validar" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--tinta)' }}>
           <span><strong>Validar MPI con el recetario de cocina</strong><br />
             <span className="suave">{avance.mpi.con_ficha} de {avance.mpi.total} MPI con ficha. Empareja ingredientes, elige recetas y apruébalas.</span></span>
           <span className="boton">Continuar</span>

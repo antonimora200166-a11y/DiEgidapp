@@ -73,7 +73,7 @@ export default function BarraFiltros({ areas, categorias }: { areas: string[]; c
       <form onSubmit={(e) => { e.preventDefault(); ir({ q: q.trim() || null }); }}
             style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem', alignItems: 'center', border: '1px solid var(--borde)', borderRadius: 10, padding: '.35rem', background: 'var(--tarjeta)' }}>
         {chips.map((c) => (
-          <span key={c.g.clave + c.v} className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--marca)' }}>
+          <span key={c.g.clave + c.v} className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--tinta)' }}>
             <span className="suave" style={{ fontWeight: 400 }}>{c.g.titulo}:</span> {c.t}
             <button type="button" aria-label={`Quitar ${c.t}`} onClick={() => alternar(c.g, c.v)}
                     className="quitar">×</button>

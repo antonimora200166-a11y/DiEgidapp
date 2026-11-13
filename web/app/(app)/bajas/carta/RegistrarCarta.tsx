@@ -4,10 +4,10 @@ import type { Area } from '@/lib/roles';
 import RechazoConMotivo from '@/components/RechazoConMotivo';
 import { registrarBajaCarta, type ResultadoCarta } from './acciones';
 import { useEnvio } from '@/lib/envio';
+import { pesos } from '@/lib/formato';
 
 type Persona = { id: string; nombre: string; rol: string; autoriza: boolean };
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
-const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 const sinTilde = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export default function RegistrarCarta({ area, carta, zonas, personas, yo, exigePin }: {

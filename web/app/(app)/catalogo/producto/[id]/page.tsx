@@ -8,6 +8,7 @@ import StockMinMax from './StockMinMax';
 import PrecioProducto from './PrecioProducto';
 import VerificarContenido from './VerificarContenido';
 import { ENVASES } from '@/lib/catalogo';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export const metadata = { title: 'Producto' };
 
@@ -37,7 +38,7 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
     supabase.from('costos_producto').select('costo_promedio, actualizado_en').eq('producto_id', fila.id).maybeSingle(),
     supabase.from('movimientos').select('id', { count: 'exact', head: true }).eq('producto_id', fila.id),
   ]);
-  const fechaCorta = (d: string) => new Date(d).toLocaleDateString('es-CO', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
+  const fechaCorta = (d: string) => fmtFecha(d.slice(0, 10));
   const actual = kardex?.costo_promedio != null
     ? { cu: Number(kardex.costo_promedio), fuente: '', fecha: fechaCorta(kardex.actualizado_en as string), deKardex: true }
     : ref ? { cu: Number(ref.costo_unitario_base), fuente: ref.fuente as string, fecha: ref.calculado_en ? fechaCorta(ref.calculado_en as string) : null, deKardex: false } : null;
@@ -59,7 +60,7 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
       {fila.contenido_base != null && !fila.contenido_variable && (
         <VerificarContenido id={fila.id}
           texto={`${Number(fila.contenido_base).toLocaleString('es-CO')} ${fila.generico.unidad_base} por ${(ENVASES.find((e) => e.unidad === fila.unidad_compra)?.etiqueta ?? 'unidad').toLowerCase()}`}
-          verificado={fila.contenido_verificado_en ? new Date(fila.contenido_verificado_en).toLocaleDateString('es-CO') : null} />
+          verificado={fila.contenido_verificado_en ? fmtFecha(fila.contenido_verificado_en) : null} />
       )}
       {fila.generico.tipo === 'SIN_COSTO' && (
         <p className="suave" style={{ fontSize: '.88rem' }}>Sin costo: no lleva precio y suma $0 en las fichas{(enFicha ?? 0) > 0 ? ` (está en ${enFicha} línea${enFicha === 1 ? '' : 's'} de ficha)` : ''}.</p>

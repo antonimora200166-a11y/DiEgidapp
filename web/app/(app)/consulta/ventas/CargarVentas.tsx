@@ -2,8 +2,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { guardarVentas, leerReporte, type Lectura } from './acciones';
+import { pesos } from '@/lib/formato';
 
-const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 const fecha = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' });
 
 // 1 · subir el Excel de Odoo  2 · ver lo que trae y si cuadra  3 · guardar

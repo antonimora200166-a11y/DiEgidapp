@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { decidirPropuesta } from './acciones';
+import { pesos, pct, fecha } from '@/lib/formato';
 
 export type Propuesta = {
   id: string; codigo: string; generico_id: string; nombre: string; area: 'BAR' | 'COCINA'; precio_actual: number | null; precio_nuevo: number;
@@ -12,9 +13,6 @@ export type Propuesta = {
   decidida_por: string | null; decidida_en: string | null; motivo: string | null; precio_aplicado: boolean; precio_hoy: number | null;
 };
 
-const pesos = (n: number | null | undefined) => (n == null ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }));
-const pct = (n: number | null | undefined) => (n == null ? '—' : `${Number(n).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
-const fecha = (s: string) => new Date(s).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' });
 
 function Decidir({ p }: { p: Propuesta }) {
   const [aplicar, setAplicar] = useState(p.precio_nuevo !== p.precio_actual);

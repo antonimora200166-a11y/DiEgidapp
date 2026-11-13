@@ -5,6 +5,7 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { pesos } from '@/lib/fichas';
 import { ESTADO_LOTE } from '@/lib/lotes';
 import PestanasProduccion from '@/components/PestanasProduccion';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export const metadata = { title: 'Lote' };
 
@@ -22,7 +23,7 @@ type HistInsumo = { linea: number; producto: string; tipo: string; cantidad: num
 type HistDestino = { codigo: string; fecha: string; mpi: string; cantidad: number | null; unidad: string };
 
 const num = (x: unknown, d = 0) => (x === null || x === undefined ? '—' : Number(x).toLocaleString('es-CO', { maximumFractionDigits: d }));
-const fecha = (d: unknown) => (d ? new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+const fecha = (d: unknown) => (d ? fmtFecha(String(d).slice(0, 10)) : '—');
 const CAUSA: Record<string, string> = { VENCIDO: 'vencido', DANADO: 'dañado', DERRAME: 'derrame', MAL_ESTADO: 'mal estado', OTRO: 'otro' };
 const TIPO_DESTINO: Record<string, string> = { SALIDA_A_PRODUCCION: 'Producción', SALIDA_BAJA: 'Baja', TRASLADO_SALIDA: 'Traslado', AJUSTE_CONTEO_NEGATIVO: 'Ajuste de conteo', SALIDA_VENTA: 'Venta' };
 

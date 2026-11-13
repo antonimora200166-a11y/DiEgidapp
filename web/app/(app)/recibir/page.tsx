@@ -4,6 +4,7 @@ import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, puedeOperar, type Area } from '@/lib/roles';
 import Recibir, { type ProductoRecepcion } from './Recibir';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export const metadata = { title: 'Recibir' };
 // la lectura de la factura con IA puede tardar
@@ -46,7 +47,7 @@ export default async function PaginaRecibir({ searchParams }: { searchParams: Pr
         <nav className="segmentos" style={{ marginBottom: '1rem' }}>
           {areas.map((a) => (
             <Link key={a} href={`/recibir?area=${a}`}>
-              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' } : undefined}>
+              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>
                 {a === 'BAR' ? 'Bar' : 'Cocina'}
               </span>
             </Link>
@@ -66,7 +67,7 @@ export default async function PaginaRecibir({ searchParams }: { searchParams: Pr
                   {(r.proveedores as unknown as { nombre: string } | null)?.nombre ?? '—'}
                 </span>
                 <span className="suave" style={{ fontSize: '.85rem', textAlign: 'right' }}>
-                  {new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-CO')}
+                  {fmtFecha(r.fecha)}
                   {r.forzada && <><br /><span className="etiqueta provisional">forzada</span></>}
                 </span>
               </li>

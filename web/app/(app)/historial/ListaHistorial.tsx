@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/components/VistaFiltrable';
 import { NOMBRE_TIPO, pesos } from './comun';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export type FilaHistorial = { tipo: string; id: string; codigo: string; fecha: string; registrado_en: string; detalle: string; lineas: number;
                               valor: number | null; usuario: string | null; forzado: boolean; anulado: boolean; area: 'BAR' | 'COCINA' };
@@ -23,7 +24,7 @@ export default function ListaHistorial({ filas, variasAreas, vePesos }: { filas:
     ...(variasAreas ? [{ v: 'area', t: 'Área', valor: (f: FilaHistorial) => (f.area === 'BAR' ? 'Bar' : 'Cocina') }] : []),
   ];
   const columnas: Columna<FilaHistorial>[] = [
-    { k: 'fecha', t: 'Fecha', orden: (f) => f.registrado_en, ver: (f) => <span style={{ whiteSpace: 'nowrap' }}>{new Date(f.fecha + 'T12:00:00').toLocaleDateString('es-CO')}</span> },
+    { k: 'fecha', t: 'Fecha', orden: (f) => f.registrado_en, ver: (f) => <span style={{ whiteSpace: 'nowrap' }}>{fmtFecha(f.fecha)}</span> },
     { k: 'tipo', t: 'Documento', orden: (f) => f.tipo, ver: (f) => NOMBRE_TIPO[f.tipo]?.singular ?? f.tipo },
     { k: 'codigo', t: 'Código', orden: (f) => f.codigo, ver: (f) => <Link href={`/historial/${f.tipo.toLowerCase()}/${f.id}`} className="cod">{f.codigo}</Link> },
     { k: 'detalle', t: 'Detalle', ver: (f) => <span style={f.anulado ? { textDecoration: 'line-through' } : undefined}>{f.detalle}</span> },

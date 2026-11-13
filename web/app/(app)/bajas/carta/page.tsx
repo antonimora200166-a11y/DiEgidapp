@@ -5,6 +5,7 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, puedeOperar, type Area } from '@/lib/roles';
 import RegistrarCarta from './RegistrarCarta';
 import ListaBajasCarta, { type FilaBajaCarta } from './ListaBajasCarta';
+import PestanasPerdida from '@/components/PestanasPerdida';
 
 export const metadata = { title: 'Cortesías y mal hechos' };
 
@@ -31,16 +32,16 @@ export default async function PaginaBajasCarta({ searchParams }: { searchParams:
 
   return (
     <>
-      <p style={{ margin: '0 0 .3rem' }}><Link href={`/bajas?area=${area}`}>← Bajas</Link></p>
-      <h1>Cortesías y mal hechos</h1>
-      <p className="suave">Se registran como producto de la carta («2 Gin Sour»): la app descarga del kardex los ingredientes de su ficha y guarda quién
+      <h1>Reportar pérdida</h1>
+      <PestanasPerdida activa="carta" area={area} />
+      <p className="suave" style={{ marginTop: 0 }}>Se registran como producto de la carta («2 Gin Sour»): la app descarga del kardex los ingredientes de su ficha y guarda quién
         lo autorizó y quién responde por el costo.</p>
       <p className="aviso" style={{ fontSize: '.9rem' }}>Las cortesías se registran solo aquí: no las marques a $0 en Odoo, porque contarían dos veces.</p>
       {lista.length > 1 && (
         <nav className="segmentos" style={{ marginBottom: '1rem' }}>
           {lista.map((a) => (
             <Link key={a} href={`/bajas/carta?area=${a}`}>
-              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' } : undefined}>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>
+              <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>
             </Link>))}
         </nav>)}
       {puede ? (

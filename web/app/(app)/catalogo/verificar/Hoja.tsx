@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/components/VistaFiltrable';
 import { NOMBRE_CLASE, type Clase } from '@/lib/clases';
 import { corregirYVerificar, fijarCosto, marcarParecido, quitarRepetido, unir, verificar, type Correccion } from './acciones';
+import { fecha } from '@/lib/formato';
 
 type Parecido = { generico_id: string; nombre: string; unidad_base: string; parecido: number };
 type Hermano = { producto_id: string; codigo: string; marca: string; presentacion: string };
@@ -39,7 +40,6 @@ const numero = (t: string) => {
   if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(x)) return Number(x.replace(/\./g, '').replace(',', '.'));
   return Number(x.replace(',', '.'));
 };
-const fecha = (s: string | null) => (s ? new Date(s).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'UTC' }) : '');
 
 // vePesos: precios y costos solo para administración (la base ya los manda vacíos a los demás)
 export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas: Fila[]; soloLectura: boolean; vePesos: boolean }) {

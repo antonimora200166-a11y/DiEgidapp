@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { pesos, pct, fecha as corta } from '@/lib/formato';
+import { Insignia, tonoSemaforo } from '@/components/Insignia';
 
 // Bloque 2 · Real vs. teórico. CMV real = inventario inicial + recepciones + traslados entrantes −
 // traslados salientes − inventario final; teórico + pérdidas + no explicado = real.
@@ -12,11 +14,9 @@ export type ResumenPeriodo = {
 export type Insumo = { generico_id: string; nombre: string; unidad_base: string; teorico_q: number; real_q: number; teorico_valor: number; real_valor: number; dif_valor: number;
   desglose?: { generico_id: string; nombre: string; unidades: number; q: number }[] };
 
-const pesos = (n: number | null | undefined) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }));
-const pct = (n: number | null | undefined) => (n === null || n === undefined ? '—' : `${Number(n).toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
 const cant = (n: number) => Number(n).toLocaleString('es-CO', { maximumFractionDigits: 1 });
-const corta = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 const COLOR = { VERDE: 'var(--ok)', AMARILLO: 'var(--aviso)', ROJO: 'var(--error)' } as const;
+const SEMAFORO_TXT = { VERDE: 'En rango', AMARILLO: 'Vigilar', ROJO: 'Fuera' } as const;
 const CAUSA: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro',
   CORTESIA: 'Cortesía', MAL_HECHO: 'Mal hecho', MERMA: 'Merma', ROTURA: 'Rotura' };
 
@@ -68,7 +68,7 @@ function Cascada({ r }: { r: ResumenPeriodo }) {
     { t: 'Teórico', v: r.cmv_teorico, base: 0, c: 'var(--ok)' },
     { t: 'Pérdidas', v: r.perdidas, base: r.cmv_teorico, c: 'var(--aviso)' },
     { t: 'No explicado', v: r.no_explicado, base: r.cmv_teorico + r.perdidas, c: 'var(--error)' },
-    { t: 'Real', v: r.cmv_real, base: 0, c: 'var(--marca)' },
+    { t: 'Real', v: r.cmv_real, base: 0, c: 'var(--tinta)' },
   ];
   const tope = Math.max(1, ...pasos.map((p) => Math.max(p.base, p.base + p.v))) * 1.12;
   const y = (v: number) => 200 - (v / tope) * 180;
@@ -117,6 +117,7 @@ export default function Bloque2({ cerrados, abiertos, detalle, insumos, area }: 
                 <strong style={{ color: detalle.semaforo ? COLOR[detalle.semaforo] : undefined }}>
                   {detalle.variacion_pp === null ? '—' : `${detalle.variacion_pp > 0 ? '+' : ''}${detalle.variacion_pp.toLocaleString('es-CO')} puntos`}
                 </strong>{' '}
+                {tonoSemaforo(detalle.semaforo) && <Insignia tono={tonoSemaforo(detalle.semaforo)!}>{SEMAFORO_TXT[detalle.semaforo!]}</Insignia>}{' '}
                 <span className="suave">real {pct(detalle.pct_real)} contra teórico {pct(detalle.pct_teorico)} · {pesos(detalle.cmv_real - detalle.cmv_teorico)}</span>
               </p>
             </section>
@@ -173,7 +174,8 @@ export default function Bloque2({ cerrados, abiertos, detalle, insumos, area }: 
                   <td>{corta(p.desde)} → {corta(p.hasta)}</td>{area === 'TODO' && <td>{p.area === 'BAR' ? 'Bar' : 'Cocina'}</td>}
                   <td style={{ textAlign: 'right' }}>{pct(p.pct_teorico)}</td><td style={{ textAlign: 'right' }}>{pct(p.pct_real)}</td>
                   <td style={{ textAlign: 'right' }}><strong style={{ color: p.semaforo ? COLOR[p.semaforo] : undefined }}>
-                    {p.variacion_pp === null ? '—' : `${p.variacion_pp > 0 ? '+' : ''}${p.variacion_pp.toLocaleString('es-CO')} pts`}</strong></td>
+                    {p.variacion_pp === null ? '—' : `${p.variacion_pp > 0 ? '+' : ''}${p.variacion_pp.toLocaleString('es-CO')} pts`}</strong>
+                    {tonoSemaforo(p.semaforo) && <> <Insignia tono={tonoSemaforo(p.semaforo)!}>{SEMAFORO_TXT[p.semaforo!]}</Insignia></>}</td>
                   <td style={{ textAlign: 'right' }}>{pesos(p.no_explicado)}</td>
                   <td>{p.id ? <span className="etiqueta validado">cerrado</span> : <span className="etiqueta provisional">abierto</span>}</td>
                 </tr>

@@ -1,12 +1,13 @@
 'use client';
 import { useState } from 'react';
+import { pesos } from '@/lib/formato';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export type LineaPedido = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; unidad_compra: string;
   saldo_unidades: number; minimo: number; maximo: number | null; pedir: number; tiene_kardex: boolean;
   proveedor: string | null; ultima_compra: string | null; costo_unidad: number | null;
 };
-const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 // la marca no se repite cuando ya va en el nombre (o al revés)
 const nombre = (l: LineaPedido) => {
   const g = l.generico.toLowerCase(), m = l.marca.toLowerCase();
@@ -23,7 +24,7 @@ export default function Pedido({ lineas }: { lineas: LineaPedido[] }) {
   const n = (id: string) => { const x = Number((cant[id] ?? '').replace(',', '.')); return Number.isFinite(x) && x > 0 ? x : 0; };
 
   async function copiar(prov: string, ls: LineaPedido[]) {
-    const texto = [`Pedido Di Égida — ${new Date().toLocaleDateString('es-CO')}`, '',
+    const texto = [`Pedido Di Égida — ${fmtFecha(new Date())}`, '',
       ...ls.filter((l) => n(l.producto_id) > 0).map((l) => `• ${n(l.producto_id)} ${l.unidad_compra.toLowerCase()} — ${nombre(l)}`), '', 'Gracias.'].join('\n');
     try { await navigator.clipboard.writeText(texto); setCopiado(prov); setTimeout(() => setCopiado(null), 2500); }
     catch { window.prompt('Copia el pedido:', texto); }
@@ -49,7 +50,7 @@ export default function Pedido({ lineas }: { lineas: LineaPedido[] }) {
                         Hay {Number(l.saldo_unidades).toLocaleString('es-CO')} · mínimo {Number(l.minimo).toLocaleString('es-CO')}
                         {l.maximo !== null && ` · máximo ${Number(l.maximo).toLocaleString('es-CO')}`}
                         {l.costo_unidad !== null && ` · ${pesos(Number(l.costo_unidad))} c/u`}
-                        {l.ultima_compra && ` · última compra ${new Date(l.ultima_compra + 'T12:00:00').toLocaleDateString('es-CO')}`}
+                        {l.ultima_compra && ` · última compra ${fmtFecha(l.ultima_compra)}`}
                       </div>
                     </div>
                     <label style={{ margin: 0, fontWeight: 400, fontSize: '.8rem', display: 'flex', alignItems: 'center', gap: '.4rem', flex: 'none', marginLeft: 'auto' }}>

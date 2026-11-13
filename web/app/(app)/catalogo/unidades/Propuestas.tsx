@@ -35,7 +35,7 @@ const cant = (n: number | null | undefined) => (n === null || n === undefined ? 
 // «actual → propuesta» solo en lo que cambia
 const celda = (actual: React.ReactNode, nuevo: React.ReactNode | undefined) => (
   nuevo === undefined ? <span className="suave">{actual}</span>
-    : <span><span className="suave" style={{ textDecoration: 'line-through' }}>{actual}</span> → <strong style={{ color: 'var(--marca)' }}>{nuevo}</strong></span>
+    : <span><span className="suave" style={{ textDecoration: 'line-through' }}>{actual}</span> → <strong style={{ color: 'var(--tinta)' }}>{nuevo}</strong></span>
 );
 const almacen = (cons?: string | null, vida?: number | null) => [cons, vida && `${vida} d`].filter(Boolean).join(' · ');
 

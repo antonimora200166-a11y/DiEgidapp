@@ -8,12 +8,12 @@ import LineasInventario, { baseDe, valorDe, type LineaInv, type ProductoSaldo } 
 import RechazoConMotivo from '@/components/RechazoConMotivo';
 import { confirmar } from '@/components/Dialogo';
 import { useEnvio } from '@/lib/envio';
+import { pesos } from '@/lib/formato';
 
 const CAUSAS = [
   { v: 'VENCIDO', t: 'Vencido' }, { v: 'DANADO', t: 'Dañado / roto' }, { v: 'DERRAME', t: 'Derrame' },
   { v: 'MAL_ESTADO', t: 'Mal estado' }, { v: 'OTRO', t: 'Otro' }] as const;
 const hoyCali = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
-const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 export default function Bajas({ area, productos, zonas }: { area: Area; productos: ProductoSaldo[]; zonas: { codigo: string; nombre: string }[] }) {
   const porId = new Map(productos.map((p) => [p.producto_id, p]));
@@ -105,16 +105,19 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
       {total > 0 && <p className="suave">Valor de la baja: <strong>{pesos(total)}</strong></p>}
 
       <RechazoConMotivo resultado={resultado} motivo={motivo} setMotivo={setMotivo} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} ejemplo="Ej.: la botella se rompió antes de registrar su recepción" />
-      <div className="acciones barra-guardar">
-        {bloqueado ? (
-          <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
-        ) : (
-          <button type="button" disabled={enviando || !zona || !causa || !lineas.length || malas > 0 || faltaObs} onClick={() => guardar(false)}>
-            {enviando ? 'Guardando…' : `Guardar baja (${lineas.length})`}
-          </button>
-        )}
-        {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={async () => { if (await confirmar('¿Descartar esta baja?', { aceptar: 'Descartar', peligro: true })) otra(); }}>Descartar</button>}
-      </div>
+      {/* con la lista vacía no hay nada que guardar: la barra fija no aparece y no tapa el buscador */}
+      {(lineas.length > 0 || bloqueado) && (
+        <div className="acciones barra-guardar">
+          {bloqueado ? (
+            <button type="button" disabled={enviando || motivo.trim().length < 15} onClick={() => guardar(true)}>{enviando ? 'Guardando…' : 'Guardar con este motivo'}</button>
+          ) : (
+            <button type="button" disabled={enviando || !zona || !causa || !lineas.length || malas > 0 || faltaObs} onClick={() => guardar(false)}>
+              {enviando ? 'Guardando…' : `Guardar baja (${lineas.length})`}
+            </button>
+          )}
+          {lineas.length > 0 && <button type="button" className="secundario" disabled={enviando} onClick={async () => { if (await confirmar('¿Descartar esta baja?', { aceptar: 'Descartar', peligro: true })) otra(); }}>Descartar</button>}
+        </div>
+      )}
       {lineas.length > 0 && (!zona || !causa || malas > 0 || faltaObs) && (
         <p className="suave" style={{ fontSize: '.85rem' }}>
           {!zona ? 'Elige la zona. ' : ''}{!causa ? 'Elige la causa. ' : ''}

@@ -3,6 +3,7 @@ import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { accionAlerta, historialAlerta, revisarAlertas, type Evento } from './acciones';
+import { pesos, fecha } from '@/lib/formato';
 
 export type Alerta = {
   id: string; regla: string; area: 'BAR' | 'COCINA' | null; titulo: string; detalle: string | null; enlace: string | null;
@@ -20,8 +21,6 @@ export const REGLA: Record<string, string> = {
 const ESTADO = { ABIERTA: 'Abierta', EN_CURSO: 'En curso', RESUELTA: 'Resuelta' } as const;
 const COLOR_ESTADO = { ABIERTA: 'var(--error)', EN_CURSO: 'var(--aviso)', RESUELTA: 'var(--ok)' } as const;
 const ACCION: Record<string, string> = { CREADA: 'Detectada', ASIGNADA: 'Asignada a', COMENTARIO: 'Comentó', EN_CURSO: 'En curso', RESUELTA: 'Resuelta', REABIERTA: 'Reabierta', ACTUALIZADA: 'Actualizada' };
-const pesos = (n: number) => n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
-const fecha = (s: string) => new Date(s.length === 10 ? s + 'T12:00:00' : s).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' });
 const ir = (e: string) => (e.startsWith('/fichas') ? 'Ir a la ficha' : e.startsWith('/produccion') ? 'Ir al lote' : e.startsWith('/historial/recepcion') ? 'Ir a la recepción'
   : e.startsWith('/consulta/ventas') ? 'Ir a Cargar ventas' : e.startsWith('/consulta') ? 'Ir al período' : e.startsWith('/catalogo') ? 'Ir al insumo' : 'Abrir');
 
@@ -120,7 +119,7 @@ export default function ListaAlertas({ alertas, admin, responsables, revisar }: 
           {([['abiertas', `Abiertas (${cuenta('ABIERTA')})`], ['curso', `En curso (${cuenta('EN_CURSO')})`], ['resueltas', `Resueltas (${cuenta('RESUELTA')})`], ['todas', 'Todas']] as const).map(([v, t]) => (
             <button key={v} type="button" className="chip-boton" onClick={() => setEstado(v)}
                     style={{ minHeight: 40, padding: '.4rem .8rem', borderRadius: 999, border: '1px solid var(--borde)',
-                             background: estado === v ? 'var(--marca)' : 'var(--tarjeta)', color: estado === v ? 'var(--marca-texto)' : 'var(--texto)' }}>{t}</button>
+                             background: estado === v ? 'var(--tinta)' : 'var(--tarjeta)', color: estado === v ? 'var(--marca-texto)' : 'var(--texto)' }}>{t}</button>
           ))}
         </nav>
         <select value={regla} onChange={(e) => setRegla(e.target.value)} aria-label="Tipo de alerta" style={{ width: 'auto' }}>

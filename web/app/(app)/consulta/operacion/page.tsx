@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { perfilActual } from '@/lib/sesion';
 import { supabaseServidor } from '@/lib/supabase/server';
 import Exportar from '../Exportar';
+import { pesos as fmtPesos, fecha as corta } from '@/lib/formato';
+const pesos = (n: unknown) => fmtPesos(n as number | null);
 
 export const metadata = { title: 'Consulta · Operación' };
 
@@ -14,10 +16,8 @@ const RPC: Record<Bloque, string> = { inventario: 'consulta_inventario', compras
 const CAUSA: Record<string, string> = { VENCIDO: 'Vencido', DANADO: 'Dañado', DERRAME: 'Derrame', MAL_ESTADO: 'Mal estado', OTRO: 'Otro', CORTESIA: 'Cortesía', MAL_HECHO: 'Mal hecho' };
 const HALLAZGO: Record<string, string> = { H03: 'sin precio', H09: 'cantidad dudosa', H12: 'precio fuera de banda' };
 
-const pesos = (n: unknown) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }));
 const pesos2 = (n: unknown) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const num = (n: unknown, d = 0) => (n === null || n === undefined ? '—' : Number(n).toLocaleString('es-CO', { maximumFractionDigits: d }));
-const corta = (s: string) => new Date(s.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 type Fila = Record<string, unknown>;
 const D = 'right' as const;
 
@@ -64,7 +64,7 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
   const d = (data ?? {}) as Record<string, unknown>;
   const lista = (k: string) => (d[k] ?? []) as Fila[];
   const enlace = (c: Record<string, string>) => `/consulta/operacion?${new URLSearchParams({ desde, hasta, area, bloque, ...c })}`;
-  const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' };
+  const activo = { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' };
 
   return (
     <>
@@ -172,9 +172,9 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
                   <div key={String(s.mpi)} className="tarjeta" style={{ padding: '.6rem' }}>
                     <strong style={{ fontSize: '.9rem' }}>{String(s.mpi)}</strong>
                     <svg viewBox="0 0 260 90" style={{ width: '100%', height: 'auto', display: 'block' }} role="img" aria-label={`$/g de ${s.mpi}`}>
-                      <polyline fill="none" stroke="var(--marca)" strokeWidth="2"
+                      <polyline fill="none" stroke="var(--tinta)" strokeWidth="2"
                                 points={pts.map((p, i) => `${10 + (i * 240) / Math.max(1, pts.length - 1)},${80 - (Number(p.costo_g) / max) * 70}`).join(' ')} />
-                      {pts.map((p, i) => <circle key={p.codigo} cx={10 + (i * 240) / Math.max(1, pts.length - 1)} cy={80 - (Number(p.costo_g) / max) * 70} r="3" fill="var(--marca)"><title>{`${corta(p.fecha)}: ${pesos(p.costo_g)}/g`}</title></circle>)}
+                      {pts.map((p, i) => <circle key={p.codigo} cx={10 + (i * 240) / Math.max(1, pts.length - 1)} cy={80 - (Number(p.costo_g) / max) * 70} r="3" fill="var(--tinta)"><title>{`${corta(p.fecha)}: ${pesos(p.costo_g)}/g`}</title></circle>)}
                     </svg>
                     <span className="suave" style={{ fontSize: '.8rem' }}>{corta(pts[0].fecha)}: {pesos2(pts[0].costo_g)}/g → {corta(pts[pts.length - 1].fecha)}: {pesos2(pts[pts.length - 1].costo_g)}/g</span>
                   </div>

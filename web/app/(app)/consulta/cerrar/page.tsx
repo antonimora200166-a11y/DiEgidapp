@@ -25,7 +25,7 @@ export default async function CerrarPeriodoPagina({ searchParams }: { searchPara
       <nav className="segmentos" style={{ marginBottom: '1rem' }}>
         {(['BAR', 'COCINA'] as const).map((a) => (
           <Link key={a} href={`/consulta/cerrar?area=${a}`}>
-            <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--marca)' } : undefined}>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>
+            <span style={a === area ? { background: 'var(--marca)', color: 'var(--marca-texto)', borderColor: 'var(--tinta)' } : undefined}>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>
           </Link>
         ))}
       </nav>

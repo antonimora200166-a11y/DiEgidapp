@@ -11,6 +11,7 @@ import { confirmar } from '@/components/Dialogo';
 import RegistrarTara from './RegistrarTara';
 import { Revisiones } from '@/components/RechazoConMotivo';
 import { useEnvio } from '@/lib/envio';
+import { fecha as fmtFecha } from '@/lib/formato';
 
 export type ProductoHoja = {
   producto_id: string; codigo: string; generico: string; marca: string; presentacion: string; categoria: string;
@@ -322,7 +323,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
                       <div className="suave" style={{ fontSize: '.85rem' }}>
                         {p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}
                         {!inicial && p.clase_abc && <> · clase {p.clase_abc}</>}
-                        {!inicial && (p.ultimo_conteo ? <> · contado el {new Date(p.ultimo_conteo + 'T12:00:00').toLocaleDateString('es-CO')}</> : p.tiene_kardex && <> · sin contar aquí</>)}
+                        {!inicial && (p.ultimo_conteo ? <> · contado el {fmtFecha(p.ultimo_conteo)}</> : p.tiene_kardex && <> · sin contar aquí</>)}
                       </div>
                       {p.producto_id in recontar && <div style={{ color: 'var(--error)', fontSize: '.85rem', fontWeight: 600 }}>Recuéntalo</div>}
                       {!inicial && p.toca && !(p.producto_id in recontar) && <span className="etiqueta provisional" style={{ fontSize: '.75rem' }}>toca hoy</span>}

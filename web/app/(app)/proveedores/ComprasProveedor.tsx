@@ -1,6 +1,7 @@
 'use client';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { fecha } from '@/lib/formato';
 
 export type CompraProveedor = {
   proveedor_id: string; proveedor: string; nit: string | null; producto_id: string; codigo: string; generico: string; marca: string;
@@ -10,7 +11,6 @@ export type CompraProveedor = {
 
 const normal = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
 const pesos = (n: number | null) => (n == null ? '—' : `$${Number(n).toLocaleString('es-CO', { maximumFractionDigits: Math.abs(Number(n)) < 10 ? 2 : 0 })}`);
-const fecha = (s: string) => new Date(s).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'UTC' });
 const ORIGEN = { RECEPCION: 'recepción', FOTO: 'foto', SHEET: 'libro anterior' };
 
 export default function ComprasProveedor({ filas }: { filas: CompraProveedor[] }) {
