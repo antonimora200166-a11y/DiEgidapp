@@ -26,7 +26,7 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
     <>
       <PestanasProduccion activa="fichas" area={area} />
       <div className="pagina-ancha" style={{ display: 'flex', flexWrap: 'wrap', gap: '.6rem', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.6rem' }}>
-        <h1 style={{ margin: 0 }}>Fichas técnicas · {area === 'BAR' ? 'Bar' : 'Cocina'}</h1>
+        <h1 className="m-0">Fichas técnicas · {area === 'BAR' ? 'Bar' : 'Cocina'}</h1>
         {areas.length > 1 && (
           <nav className="segmentos" aria-label="Área">
             {areas.map((a) => (
@@ -39,12 +39,12 @@ export default async function Produccion({ searchParams }: { searchParams: Promi
           </nav>
         )}
       </div>
-      <p className="suave" style={{ marginTop: 0 }}>
+      <p className="suave mt-0">
         La receta de cada MPI: con ella se produce y se calcula el costo estándar. Toque una para ver sus pasos, puntos críticos y vida útil.
         {editaFicha(perfil, area) ? ' Cada cambio que guarde crea una versión nueva.' : ' Las crea y cambia el ' + (area === 'BAR' ? 'jefe de barra' : 'chef') + '.'}
       </p>
       {avance && avance.mpi.con_ficha < avance.mpi.total && (
-        <Link href="/produccion/validar" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--tinta)' }}>
+        <Link href="/produccion/validar" className="tarjeta pagina-ancha tarjeta-enlace">
           <span><strong>Validar MPI con el recetario de cocina</strong><br />
             <span className="suave">{avance.mpi.con_ficha} de {avance.mpi.total} MPI con ficha. Empareje ingredientes, elija recetas y apruébelas.</span></span>
           <span className="boton">Continuar</span>

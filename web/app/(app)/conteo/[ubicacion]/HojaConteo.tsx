@@ -215,11 +215,11 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
   if (resultado?.ok) {
     return (
       <div className="tarjeta">
-        <p className="exito" role="status" style={{ marginTop: 0 }}>
+        <p className="exito mt-0" role="status">
           <strong>Conteo guardado: {resultado.codigo}</strong><br />
           {inicial ? `${resultado.ajustes ?? 0} producto(s) abrieron su kardex.` : `${resultado.ajustes ?? 0} diferencia(s) quedaron como ajuste.`}
         </p>
-        {resultado.avisos.length > 0 && <div className="aviso"><ul style={{ margin: 0 }}>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
+        {resultado.avisos.length > 0 && <div className="aviso"><ul className="m-0">{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
         <div className="acciones">
           <Link className="boton" href="/existencias">Ver existencias</Link>
           <Link className="boton secundario" href="/conteo">Contar otra zona</Link>
@@ -244,7 +244,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
           {haceInicial ? ' Elija «Conteo inicial» arriba.' : ' Lo hace el jefe del área o administración; después ya se puede contar aquí.'}
         </p>
       ) : sinKardex.length > 0 && (
-        <p className="suave" style={{ fontSize: '.88rem' }}>{sinKardex.length} producto(s) de esta zona aún no tienen kardex: entran en el conteo inicial.</p>
+        <p className="suave texto-nota">{sinKardex.length} producto(s) de esta zona aún no tienen kardex: entran en el conteo inicial.</p>
       )}
 
       {Object.keys(recontar).length > 0 && (
@@ -259,7 +259,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
             <div className="fila" style={{ gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
               <input aria-label="Buscar en la hoja" placeholder="Buscar en esta zona…" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
               <label style={{ margin: 0, fontWeight: 400, display: 'flex', gap: '.4rem', alignItems: 'center', whiteSpace: 'nowrap' }}>
-                <input type="checkbox" checked={soloFaltan} onChange={(e) => setSoloFaltan(e.target.checked)} style={{ width: 22, minHeight: 22 }} />
+                <input type="checkbox" checked={soloFaltan} onChange={(e) => setSoloFaltan(e.target.checked)} />
                 Solo sin contar
               </label>
             </div>
@@ -268,7 +268,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
                 <button type="button" className="secundario chico" onClick={() => { setOido(null); setEscaneando(true); }}><Icono nombre="escanear" /> Escanear</button>
                 {tocan > 0 && (
                   <label style={{ margin: 0, fontWeight: 400, display: 'flex', gap: '.4rem', alignItems: 'center' }}>
-                    <input type="checkbox" checked={soloTocan} onChange={(e) => setSoloTocan(e.target.checked)} style={{ width: 22, minHeight: 22 }} />
+                    <input type="checkbox" checked={soloTocan} onChange={(e) => setSoloTocan(e.target.checked)} />
                     Solo los que toca contar hoy ({tocan})
                   </label>
                 )}
@@ -292,8 +292,8 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
             {porAsociar && (
               <div className="tarjeta" style={{ marginTop: '.5rem', padding: '.7rem' }}>
                 <strong>Código nuevo <span className="cod">{porAsociar}</span>: ¿qué producto es?</strong>
-                <div className="suave" style={{ fontSize: '.82rem' }}>Elíjalo una vez y la app lo reconoce en adelante.</div>
-                <input autoFocus value={buscarAsociar} onChange={(e) => setBuscarAsociar(e.target.value)} placeholder="Buscar en esta zona…" style={{ marginTop: '.4rem' }} />
+                <div className="suave texto-mini">Elíjalo una vez y la app lo reconoce en adelante.</div>
+                <input className="mt-1" autoFocus value={buscarAsociar} onChange={(e) => setBuscarAsociar(e.target.value)} placeholder="Buscar en esta zona…" />
                 <div style={{ display: 'grid', gap: '.3rem', marginTop: '.4rem', maxHeight: 220, overflowY: 'auto' }}>
                   {lista.filter((p) => !buscarAsociar.trim() || nombreDe(p).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
                     .includes(buscarAsociar.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''))).slice(0, 8).map((p) => (
@@ -302,7 +302,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
                     </button>
                   ))}
                 </div>
-                <button type="button" className="discreto mini" style={{ marginTop: '.4rem' }} onClick={() => setPorAsociar(null)}>Cancelar</button>
+                <button type="button" className="discreto mini mt-1" onClick={() => setPorAsociar(null)}>Cancelar</button>
               </div>
             )}
             <div style={{ height: 6, background: 'var(--borde)', borderRadius: 99, overflow: 'hidden', marginTop: '.5rem' }} aria-hidden>
@@ -317,16 +317,16 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
               const t = total(p, c);
               return (
                 <li key={p.producto_id} style={p.producto_id in recontar ? { borderColor: 'var(--error)', borderWidth: 2 } : cuenta(c) ? { borderColor: 'var(--ok)' } : undefined}>
-                  <div className="linea" style={{ alignItems: 'flex-start' }}>
+                  <div className="linea arriba">
                     <div>
                       <strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}
-                      <div className="suave" style={{ fontSize: '.85rem' }}>
+                      <div className="suave texto-nota">
                         {p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}
                         {!inicial && p.clase_abc && <> · clase {p.clase_abc}</>}
                         {!inicial && (p.ultimo_conteo ? <> · contado el {fmtFecha(p.ultimo_conteo)}</> : p.tiene_kardex && <> · sin contar aquí</>)}
                       </div>
                       {p.producto_id in recontar && <div style={{ color: 'var(--error)', fontSize: '.85rem', fontWeight: 600 }}>Recuéntelo</div>}
-                      {!inicial && p.toca && !(p.producto_id in recontar) && <span className="etiqueta provisional" style={{ fontSize: '.75rem' }}>toca hoy</span>}
+                      {!inicial && p.toca && !(p.producto_id in recontar) && <span className="etiqueta provisional texto-mini">toca hoy</span>}
                     </div>
                     <button type="button" className="secundario chico"
                             onClick={() => setCapturas((x) => ({ ...x, [p.producto_id]: { cerradas: '', suelto: '0', peso: '' } }))}>
@@ -335,18 +335,18 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: `repeat(${1 + (porCerradas(p) ? 1 : 0) + (tara(p) ? 1 : 0)}, minmax(0, 1fr))`, gap: '.5rem', marginTop: '.5rem' }}>
                     {porCerradas(p) && (
-                      <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>
+                      <label className="campo">
                         Cerradas ({p.unidad_compra.toLowerCase()} de {fmtCantidad(p.contenido_base!)} {p.unidad_base})
                         {noVerificado.has(p.producto_id) && <span className="etiqueta provisional" style={{ fontSize: '.72rem', marginLeft: '.3rem' }} title="Nadie ha confirmado cuánto trae cada unidad">contenido sin verificar</span>}
                         <input inputMode="decimal" value={c?.cerradas ?? ''} onChange={(e) => poner(p.producto_id, 'cerradas', e.target.value)} />
                       </label>
                     )}
-                    <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>
+                    <label className="campo">
                       {porCerradas(p) ? `Abierto / suelto (${p.unidad_base})` : `Cantidad (${p.unidad_base})`}
                       <input inputMode="decimal" value={c?.suelto ?? ''} onChange={(e) => poner(p.producto_id, 'suelto', e.target.value)} />
                     </label>
                     {tara(p) && (
-                      <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>
+                      <label className="campo">
                         Botella abierta: peso (g)
                         <input inputMode="decimal" value={c?.peso ?? ''} onChange={(e) => poner(p.producto_id, 'peso', e.target.value)} />
                       </label>
@@ -390,7 +390,7 @@ export default function HojaConteo({ ubicacion, productos, haceInicial, sinVerif
               </button>
             )}
           </div>
-          <p className="suave" style={{ fontSize: '.82rem' }}>Lo que va contando se guarda en este equipo hasta que guarde el conteo, aunque cierre la página.</p>
+          <p className="suave texto-mini">Lo que va contando se guarda en este equipo hasta que guarde el conteo, aunque cierre la página.</p>
         </>
       )}
     </>

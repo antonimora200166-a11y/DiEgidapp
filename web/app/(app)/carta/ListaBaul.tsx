@@ -27,7 +27,7 @@ export default function ListaBaul({ filas, puede }: { filas: EnBaul[]; puede: bo
   const columnas: Columna<EnBaul>[] = [
     { k: 'nombre', t: 'Nombre', orden: (f) => f.nombre, ver: (f) => (
       <div><Link href={`/fichas/${f.generico_id}`}><strong>{f.nombre}</strong></Link>
-        {f.carta && <div className="suave" style={{ fontSize: '.8rem' }}>{f.carta}</div>}</div>) },
+        {f.carta && <div className="suave texto-mini">{f.carta}</div>}</div>) },
     { k: 'ficha', t: 'Ficha', ver: (f) => (f.ficha_codigo ? <span className="cod">{f.ficha_codigo}</span> : <span className="suave">sin ficha</span>) },
     { k: 'precio', t: 'Último precio', der: true, def: false, orden: (f) => f.precio, ver: (f) => (f.precio ? pesos(Number(f.precio)) : <span className="suave">—</span>) },
     { k: 'desde', t: 'En el baúl desde', orden: (f) => f.desde, ver: (f) => fecha(f.desde) },
@@ -35,15 +35,15 @@ export default function ListaBaul({ filas, puede }: { filas: EnBaul[]; puede: bo
   ];
   return (
     <>
-      {error && <p className="tarjeta" style={{ color: 'var(--error)' }}>{error}</p>}
+      {error && <p className="tarjeta c-error">{error}</p>}
       <VistaFiltrable clave="carta-baul" filas={filas} id={(f) => f.generico_id} buscar={(f) => `${f.nombre} ${f.carta ?? ''} ${f.motivo ?? ''}`}
                       grupos={grupos} columnas={columnas} vacio="Nada coincide con estos filtros."
                       seleccionable={puede ? () => true : undefined}
                       acciones={(elegidas, limpiar) => (
                         <div className="barra-bloque">
-                          <div className="linea" style={{ flexWrap: 'wrap' }}>
+                          <div className="linea wrap">
                             <strong>{elegidas.length} seleccionado(s)</strong>
-                            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                            <div className="fila-flex wrap">
                               <button type="button" disabled={enviando} onClick={() => sacar(elegidas.map((f) => f.generico_id), limpiar)}>
                                 {enviando ? 'Sacando…' : `Devolver ${elegidas.length} a la carta`}</button>
                               <button type="button" className="secundario" disabled={enviando} onClick={limpiar}>Quitar selección</button>

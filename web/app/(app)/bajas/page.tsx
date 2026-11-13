@@ -31,9 +31,9 @@ export default async function PaginaBajas({ searchParams }: { searchParams: Prom
     <>
       <h1>Reportar pérdida</h1>
       <PestanasPerdida activa="insumos" area={area} />
-      <p className="suave" style={{ marginTop: 0 }}>Lo que se bota o ya no sirve: sale del kardex al costo promedio.</p>
+      <p className="suave mt-0">Lo que se bota o ya no sirve: sale del kardex al costo promedio.</p>
       {areas.length > 1 && (
-        <nav className="segmentos" style={{ marginBottom: '1rem' }}>
+        <nav className="segmentos mb-3">
           {areas.map((a) => (
             <Link key={a} href={`/bajas?area=${a}`} aria-current={a === area ? 'true' : undefined}>
               <span>
@@ -51,7 +51,7 @@ export default async function PaginaBajas({ searchParams }: { searchParams: Prom
             {recientes.map((b) => (
               <li key={b.id} className="linea">
                 <span><span className="cod">{b.codigo}</span><br />{CAUSAS[b.causa] ?? b.causa} · {zonas?.find((z) => z.codigo === b.ubicacion)?.nombre ?? b.ubicacion}</span>
-                <span className="suave" style={{ fontSize: '.85rem', textAlign: 'right' }}>
+                <span className="suave texto-nota der">
                   {fmtFecha(b.fecha)}
                   {b.forzada && <><br /><span className="etiqueta provisional">forzada</span></>}
                 </span>

@@ -22,7 +22,7 @@ export default async function EditarFicha({ params }: { params: Promise<{ generi
   return (
     <>
       {d.resultado.tipo === 'MPI' && <PestanasProduccion activa="fichas" area={d.resultado.area} />}
-      <p style={{ margin: '0 0 .3rem' }}><Link href={`/fichas/${generico}`}>← {d.resultado.nombre}</Link></p>
+      <p className="m-0 mb-1"><Link href={`/fichas/${generico}`}>← {d.resultado.nombre}</Link></p>
       <h1 style={{ marginBottom: '.3rem' }}>{d.ficha ? 'Editar' : 'Crear'} ficha · {d.resultado.nombre}</h1>
       <EditorFicha key={d.ficha?.id ?? 'nueva'} datos={d} />
     </>

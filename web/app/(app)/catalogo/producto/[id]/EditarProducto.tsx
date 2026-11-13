@@ -57,8 +57,8 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
   return (
     <form onSubmit={(e) => { e.preventDefault(); guardar(false); }}>
       <div className="tarjeta">
-        <h2 style={{ marginTop: 0 }}>Genérico <span className="cod">{g.codigo}</span></h2>
-        <p className="suave" style={{ marginTop: 0, fontSize: '.88rem' }}>Lo que cambies aquí aplica a todas las presentaciones de este genérico.</p>
+        <h2 className="mt-0">Genérico <span className="cod">{g.codigo}</span></h2>
+        <p className="suave mt-0 texto-nota">Lo que cambies aquí aplica a todas las presentaciones de este genérico.</p>
         <label htmlFor="nombre">Nombre genérico <span className="ayuda">sin marca ni tamaño</span></label>
         <input id="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required minLength={3} />
         <div className="fila">
@@ -98,8 +98,8 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
         </div>
       </div>
 
-      <div className="tarjeta" style={{ marginTop: '1rem' }}>
-        <h2 style={{ marginTop: 0 }}>Presentación <span className="cod">{ficha.codigo}</span></h2>
+      <div className="tarjeta mt-3">
+        <h2 className="mt-0">Presentación <span className="cod">{ficha.codigo}</span></h2>
         <label htmlFor="marca">Marca <span className="ayuda">vacío si no tiene</span></label>
         <input id="marca" value={marca} onChange={(e) => setMarca(e.target.value)} />
         <label htmlFor="presentacion">Presentación <span className="ayuda">«Botella 750 ml», «Bolsa 1.000 g», «Granel»</span></label>
@@ -115,7 +115,7 @@ export default function EditarProducto({ ficha, categorias, ubBloqueada }: {
           </div>
         </div>
         <label style={{ fontWeight: 400, display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-          <input type="checkbox" checked={variable} onChange={(e) => setVariable(e.target.checked)} style={{ width: 22, minHeight: 22 }} />
+          <input type="checkbox" checked={variable} onChange={(e) => setVariable(e.target.checked)} />
           El contenido cambia en cada compra (se pesa al recibir)
         </label>
       </div>

@@ -67,7 +67,7 @@ export default async function Inicio() {
 
       {resumen && (
         <section aria-labelledby="hoy">
-          <h2 id="hoy" style={{ marginTop: '.5rem' }}>Hoy</h2>
+          <h2 className="mt-2" id="hoy">Hoy</h2>
           {pendientes.length ? (
             <ul className="pendientes">
               {pendientes.map((p) => (
@@ -83,7 +83,7 @@ export default async function Inicio() {
                 </li>
               ))}
             </ul>
-          ) : <p className="exito" style={{ marginTop: 0 }}>Nada pendiente por ahora. ✔</p>}
+          ) : <p className="exito mt-0">Nada pendiente por ahora. ✔</p>}
           <p className="suave" style={{ fontSize: '.85rem', margin: '.5rem 0 0' }}>
             Registrado hoy: {hecho.rec} {plural(hecho.rec, 'recepción', 'recepciones')} · {hecho.lotes} {plural(hecho.lotes, 'lote', 'lotes')}.
           </p>

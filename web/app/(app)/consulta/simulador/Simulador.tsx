@@ -49,7 +49,7 @@ export default function Simulador({ producto, base, mezcla, desde, hasta }: { pr
 
   return (
     <section className="tarjeta" style={{ marginBottom: '1.2rem' }}>
-      <h2 style={{ marginTop: 0 }}>{producto.nombre}</h2>
+      <h2 className="mt-0">{producto.nombre}</h2>
       <p className="suave" style={{ marginTop: '-.4rem', fontSize: '.88rem' }}>
         {producto.area === 'BAR' ? 'Bar' : 'Cocina'} · {producto.seccion ?? 'sin sección'} · meta {base.meta_pct ?? '—'} %
         {base.banda_pp ? ` (amarillo hasta ${(base.meta_pct ?? 0) + base.banda_pp} %)` : ''} · <Link href={`/fichas/${producto.generico_id}`}>Abrir la ficha</Link>
@@ -75,30 +75,30 @@ export default function Simulador({ producto, base, mezcla, desde, hasta }: { pr
             </label>)}
         </div>
         <div>
-          <strong style={{ fontSize: '.9rem' }}>Receta (cantidad por unidad vendida)</strong>
+          <strong className="texto-nota">Receta (cantidad por unidad vendida)</strong>
           {base.lineas.length === 0 ? <p className="suave">Sin ficha.</p> : (
-            <table className="tabla" style={{ fontSize: '.9rem' }}>
-              <thead><tr><th>Ingrediente</th><th style={{ textAlign: 'right' }}>Hoy</th><th style={{ textAlign: 'right' }}>Nueva</th><th style={{ textAlign: 'right' }}>Costo</th></tr></thead>
+            <table className="tabla texto-nota">
+              <thead><tr><th>Ingrediente</th><th className="der">Hoy</th><th className="der">Nueva</th><th className="der">Costo</th></tr></thead>
               <tbody>{base.lineas.map((l) => {
                 const n = cantidades[l.generico_id];
                 const costo = l.costo == null ? null : n == null ? l.costo : l.cantidad > 0 ? l.costo * n / l.cantidad : 0;
                 return (
                   <tr key={l.generico_id}>
                     <td>{l.nombre}</td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{l.cantidad.toLocaleString('es-CO')} {l.unidad}</td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td className="der nowrap">{l.cantidad.toLocaleString('es-CO')} {l.unidad}</td>
+                    <td className="der">
                       <input aria-label={`Cantidad nueva de ${l.nombre}`} inputMode="decimal" style={{ width: '5.5rem', minHeight: 34, textAlign: 'right' }}
                              placeholder={l.cantidad.toLocaleString('es-CO')} value={cant[l.generico_id] ?? ''}
                              onChange={(e) => setCant((c) => ({ ...c, [l.generico_id]: e.target.value }))} />
                     </td>
-                    <td style={{ textAlign: 'right' }}>{l.costo == null ? <span className="suave">sin costo</span> : pesos(costo)}</td>
+                    <td className="der">{l.costo == null ? <span className="suave">sin costo</span> : pesos(costo)}</td>
                   </tr>);
               })}</tbody>
             </table>)}
         </div>
       </div>
 
-      <h3 style={{ marginBottom: '.4rem' }}>Resultado</h3>
+      <h3 className="mb-1">Resultado</h3>
       <div className="cifras">
         <div className="cifra"><span>Costo por unidad</span><b>{pesos(r.costo_nuevo)}</b><small>hoy {pesos(r.costo_actual)}</small>
           <Dif antes={r.costo_actual} ahora={r.costo_nuevo} inverso unidad="$" /></div>
@@ -114,8 +114,8 @@ export default function Simulador({ producto, base, mezcla, desde, hasta }: { pr
             <Dif antes={r.area.margen_periodo_actual} ahora={r.area.margen_periodo_nuevo} unidad="$" /></div>
         </>}
       </div>
-      {!mezcla && <p className="suave" style={{ fontSize: '.85rem' }}>No hay ventas cargadas en el período de referencia: no se calcula el efecto sobre el área.</p>}
-      {mezcla && mezcla.unidades === 0 && <p className="suave" style={{ fontSize: '.85rem' }}>Este producto no se vendió en el período de referencia.</p>}
+      {!mezcla && <p className="suave texto-nota">No hay ventas cargadas en el período de referencia: no se calcula el efecto sobre el área.</p>}
+      {mezcla && mezcla.unidades === 0 && <p className="suave texto-nota">Este producto no se vendió en el período de referencia.</p>}
 
       <label style={{ display: 'block', marginTop: '.6rem' }}>Nota de la propuesta (opcional)
         <input value={nota} onChange={(e) => setNota(e.target.value)} placeholder="por qué se propone" maxLength={300} />

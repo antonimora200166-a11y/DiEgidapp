@@ -24,7 +24,7 @@ export default async function ConteoZona({ params }: { params: Promise<{ ubicaci
 
   return (
     <>
-      <p style={{ margin: '0 0 .3rem' }}><Link href="/conteo">← Zonas</Link></p>
+      <p className="m-0 mb-1"><Link href="/conteo">← Zonas</Link></p>
       <h1>{zona.nombre}</h1>
       <HojaConteo ubicacion={zona.codigo} productos={(data ?? []) as ProductoHoja[]} haceInicial={haceInicial}
                   sinVerificar={((sinVer ?? []) as { producto_id: string }[]).map((x) => x.producto_id)} />

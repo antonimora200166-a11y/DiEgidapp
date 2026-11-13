@@ -51,8 +51,7 @@ export function Dialogos() {
           <p style={{ margin: 0, whiteSpace: 'pre-line' }}>{p.mensaje}</p>
           {p.tipo === 'texto' && (
             <>
-              <textarea autoFocus rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={p.op.placeholder}
-                        style={{ marginTop: '.8rem' }} aria-label={p.mensaje} />
+              <textarea className="mt-3" autoFocus rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={p.op.placeholder} aria-label={p.mensaje} />
               {min > 1 && <span className="ayuda">{corto ? `Mínimo ${min} caracteres (van ${texto.trim().length}).` : '✔'}</span>}
             </>
           )}

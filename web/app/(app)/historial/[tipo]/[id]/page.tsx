@@ -52,7 +52,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
 
   return (
     <>
-      <p style={{ margin: '0 0 .3rem' }}><Link href="/historial">← Historial</Link></p>
+      <p className="m-0 mb-1"><Link href="/historial">← Historial</Link></p>
       <h1>{NOMBRE_TIPO[tipo].singular} <span className="cod" style={{ fontSize: '1rem' }}>{s(e.codigo)}</span></h1>
       {tipo === 'LOTE' && <p style={{ marginTop: '-.5rem' }}><Link href={`/l/${encodeURIComponent(s(e.codigo))}/etiqueta`}>Imprimir etiquetas con QR →</Link></p>}
 
@@ -63,11 +63,11 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
         <table className="tabla"><tbody>
           {filas.map(([k, v]) => <tr key={k}><th style={{ width: '40%' }}>{k}</th><td>{v}</td></tr>)}
         </tbody></table>
-        {!!e.observaciones && <p style={{ marginBottom: 0 }}><strong>Observaciones:</strong> {s(e.observaciones)}</p>}
-        {!!e.motivo_forzado && <p className="suave" style={{ marginBottom: 0 }}><strong>Se forzó:</strong> {s(e.motivo_forzado)}</p>}
+        {!!e.observaciones && <p className="mb-0"><strong>Observaciones:</strong> {s(e.observaciones)}</p>}
+        {!!e.motivo_forzado && <p className="suave mb-0"><strong>Se forzó:</strong> {s(e.motivo_forzado)}</p>}
         {Array.isArray(e.avisos) && e.avisos.length > 0 && (
-          <details style={{ marginTop: '.6rem' }}><summary className="suave">Avisos al guardar ({e.avisos.length})</summary>
-            <ul>{(e.avisos as string[]).map((a) => <li key={a} style={{ fontSize: '.88rem' }}>{a}</li>)}</ul></details>
+          <details className="mt-2"><summary className="suave">Avisos al guardar ({e.avisos.length})</summary>
+            <ul>{(e.avisos as string[]).map((a) => <li className="texto-nota" key={a}>{a}</li>)}</ul></details>
         )}
       </section>
 
@@ -75,16 +75,16 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
       <ul className="lista">
         {d.lineas.map((l) => (
           <li key={s(l.linea)} style={l.anulada ? { opacity: 0.6 } : undefined}>
-            <div className="linea" style={{ alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 0 }}>
+            <div className="linea arriba">
+              <div className="min-0">
                 <strong style={l.anulada ? { textDecoration: 'line-through' } : undefined}>{s(l.producto)}</strong>
-                {!!l.presentacion && <div className="suave" style={{ fontSize: '.85rem' }}>{s(l.presentacion)}</div>}
+                {!!l.presentacion && <div className="suave texto-nota">{s(l.presentacion)}</div>}
                 <div style={{ fontSize: '.9rem', marginTop: '.2rem' }}>
                   {tipo === 'RECEPCION' && <>
                     {cant(n(l.recibida))} {s(l.unidad_compra).toLowerCase()}{n(l.pedida) !== null && n(l.pedida) !== n(l.recibida) && ` (pedido ${cant(n(l.pedida))})`}
                     {' '}= {cant(n(l.cantidad_base))} {ub(l)}
                     {l.valor !== null && <> · {pesos(Number(l.valor))}{l.costo_unitario !== null && ` · ${pesosU(Number(l.costo_unitario))}/${ub(l)}`}</>}
-                    <span className="suave" style={{ display: 'block', fontSize: '.82rem' }}>
+                    <span className="suave bloque texto-mini">
                       {CONDICION[s(l.condicion)] ?? s(l.condicion)}
                       {!!l.sello && ` · sello ${l.sello === 'SI' ? 'intacto' : l.sello === 'NO' ? 'roto' : 'no aplica'}`}
                       {l.temperatura !== null && ` · ${cant(n(l.temperatura))} °C`}
@@ -103,7 +103,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
                     {n(l.diferencia) ? <> · <strong>{Number(l.diferencia) > 0 ? '+' : ''}{cant(n(l.diferencia))}</strong>{l.costo !== null && ` (${pesos(Number(l.costo))})`}</> : ' · sin diferencia'}
                   </>}
                 </div>
-                {!!(l.observaciones || l.nota) && <div className="suave" style={{ fontSize: '.82rem' }}>{s(l.observaciones || l.nota)}</div>}
+                {!!(l.observaciones || l.nota) && <div className="suave texto-mini">{s(l.observaciones || l.nota)}</div>}
               </div>
               {tipo === 'RECEPCION' && d.puede_anular && !anulado && !l.anulada && d.lineas.length > 1 && (
                 <Anular tipo={tipo} id={d.id} lineaId={s(l.id)} etiqueta="Anular línea" pequeno exigePin={exigePin === true} />
@@ -116,7 +116,7 @@ export default async function DetalleDocumento({ params }: { params: Promise<{ t
       {!anulado && (
         d.puede_anular
           ? <div className="acciones"><Anular tipo={tipo} id={d.id} etiqueta={`Anular ${NOMBRE_TIPO[tipo].singular.toLowerCase()}`} exigePin={exigePin === true} /></div>
-          : <p className="suave" style={{ fontSize: '.88rem' }}>Si hay un error, pídale al jefe del área o a administración que lo anule desde aquí.</p>
+          : <p className="suave texto-nota">Si hay un error, pídale al jefe del área o a administración que lo anule desde aquí.</p>
       )}
     </>
   );

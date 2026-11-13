@@ -65,10 +65,10 @@ export default function Matriz({ puntos }: { puntos: PuntoMatriz[] }) {
           <strong>{elegido.nombre}</strong> · <span style={{ color: COLOR[cuad(elegido)] }}>{cuad(elegido)}</span>
           <div className="suave">{elegido.unidades.toLocaleString('es-CO')} und ({(elegido.unidades / total * 100).toFixed(1)} %) · margen {pesos(elegido.margen_unit)} por unidad
             {elegido.pct_carta !== null && ` · ${elegido.pct_carta.toLocaleString('es-CO')} % de costo`}</div>
-          <div style={{ marginTop: '.3rem' }}>{QUE_HACER[cuad(elegido)]}</div>
+          <div className="mt-1">{QUE_HACER[cuad(elegido)]}</div>
           <Link href={`/fichas/${elegido.generico_id}`} className="mini">Abrir la ficha</Link> · <Link href={`/consulta/simulador?producto=${elegido.generico_id}`} className="mini">Simular precio o receta</Link>
         </div>
-      ) : <p className="suave" style={{ fontSize: '.85rem' }}>Toque un punto para ver el producto.</p>}
+      ) : <p className="suave texto-nota">Toque un punto para ver el producto.</p>}
     </div>
   );
 }

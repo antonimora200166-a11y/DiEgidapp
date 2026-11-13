@@ -26,7 +26,7 @@ const D = 'right' as const;
 function Tabla({ cols, filas, vacio }: { cols: { t: string; v: (f: Fila) => React.ReactNode; der?: boolean }[]; filas: Fila[]; vacio: string }) {
   if (!filas.length) return <p className="suave">{vacio}</p>;
   return (
-    <div className="desborde tarjeta" style={{ padding: 0 }}>
+    <div className="desborde tarjeta p-0">
       <table className="tabla">
         <thead><tr>{cols.map((c) => <th key={c.t} style={c.der ? { textAlign: D } : undefined}>{c.t}</th>)}</tr></thead>
         <tbody>{filas.map((f, i) => <tr key={i}>{cols.map((c) => <td key={c.t} style={c.der ? { textAlign: D, whiteSpace: 'nowrap' } : undefined}>{c.v(f)}</td>)}</tr>)}</tbody>
@@ -124,8 +124,8 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
           <Tabla vacio="Ningún insumo subió contra el período anterior (o no se compró en los dos)." filas={lista('subidas')} cols={[
             { t: 'Insumo', v: (f) => <Link href={`/catalogo/generico/${f.generico_id}`}>{String(f.nombre)}</Link> },
             { t: 'Antes', der: true, v: (f) => `${pesos2(f.cu_antes)}/${f.unidad}` }, { t: 'Ahora', der: true, v: (f) => `${pesos2(f.cu)}/${f.unidad}` },
-            { t: 'Subió', der: true, v: (f) => <strong style={{ color: 'var(--error)' }}>+{num(f.pct, 1)} %</strong> }, { t: 'Impacto', der: true, v: (f) => pesos(f.impacto) }]} />
-          <p className="suave" style={{ fontSize: '.82rem' }}>Costo promedio por unidad base del período contra el anterior de igual largo. Impacto: la diferencia × lo que se gastó de ese insumo según las ventas y las fichas.</p>
+            { t: 'Subió', der: true, v: (f) => <strong className="c-error">+{num(f.pct, 1)} %</strong> }, { t: 'Impacto', der: true, v: (f) => pesos(f.impacto) }]} />
+          <p className="suave texto-mini">Costo promedio por unidad base del período contra el anterior de igual largo. Impacto: la diferencia × lo que se gastó de ese insumo según las ventas y las fichas.</p>
           <h2>Pedido contra recibido</h2>
           <Tabla vacio="Todo llegó como se pidió." filas={lista('pedido_vs_recibido')} cols={[
             { t: 'Fecha', v: (f) => corta(String(f.fecha)) }, { t: 'Recepción', v: (f) => <Link href={`/historial/recepcion/${f.recepcion_id}`} className="cod">{String(f.recepcion)}</Link> },
@@ -160,13 +160,13 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
                 const max = Math.max(...pts.map((p) => Number(p.costo_g))) * 1.1 || 1;
                 return (
                   <div key={String(s.mpi)} className="tarjeta" style={{ padding: '.6rem' }}>
-                    <strong style={{ fontSize: '.9rem' }}>{String(s.mpi)}</strong>
+                    <strong className="texto-nota">{String(s.mpi)}</strong>
                     <svg viewBox="0 0 260 90" style={{ width: '100%', height: 'auto', display: 'block' }} role="img" aria-label={`$/g de ${s.mpi}`}>
                       <polyline fill="none" stroke="var(--tinta)" strokeWidth="2"
                                 points={pts.map((p, i) => `${10 + (i * 240) / Math.max(1, pts.length - 1)},${80 - (Number(p.costo_g) / max) * 70}`).join(' ')} />
                       {pts.map((p, i) => <circle key={p.codigo} cx={10 + (i * 240) / Math.max(1, pts.length - 1)} cy={80 - (Number(p.costo_g) / max) * 70} r="3" fill="var(--tinta)"><title>{`${corta(p.fecha)}: ${pesos(p.costo_g)}/g`}</title></circle>)}
                     </svg>
-                    <span className="suave" style={{ fontSize: '.8rem' }}>{corta(pts[0].fecha)}: {pesos2(pts[0].costo_g)}/g → {corta(pts[pts.length - 1].fecha)}: {pesos2(pts[pts.length - 1].costo_g)}/g</span>
+                    <span className="suave texto-mini">{corta(pts[0].fecha)}: {pesos2(pts[0].costo_g)}/g → {corta(pts[pts.length - 1].fecha)}: {pesos2(pts[pts.length - 1].costo_g)}/g</span>
                   </div>
                 );
               })}
@@ -176,7 +176,7 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
           <Tabla vacio="Sin lotes." filas={lista('responsables')} cols={[
             { t: 'Responsable', v: (f) => String(f.responsable) }, { t: 'Lotes', der: true, v: (f) => num(f.lotes) },
             { t: 'Fuera de banda', der: true, v: (f) => num(f.fuera_banda) }, { t: 'Desvío prom.', der: true, v: (f) => `${num(f.desvio, 1)} pp` }]} />
-          <p className="suave" style={{ fontSize: '.82rem' }}>Los lotes históricos de los Sheets no traen responsable.</p>
+          <p className="suave texto-mini">Los lotes históricos de los Sheets no traen responsable.</p>
           <h2>Vencidos sin consumir</h2>
           <Tabla vacio="Ningún lote se venció con saldo." filas={lista('vencidos_sin_consumir')} cols={[
             { t: 'Lote', v: (f) => <Link href={`/produccion/lotes/${encodeURIComponent(String(f.codigo))}`} className="cod">{String(f.codigo)}</Link> },
@@ -191,7 +191,7 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
             <div className="cifra"><span>Pérdidas del período</span><b>{pesos(d.total)}</b><small>bajas del kardex</small></div>
           </div>
           {!Number(d.total) && <p className="suave">Sin bajas en el período.</p>}
-          <p style={{ fontSize: '.9rem' }}><Link href="/bajas/carta">Cortesías y mal hechos: quién autorizó, quién responde y lo que falta por cobrar →</Link></p>
+          <p className="texto-nota"><Link href="/bajas/carta">Cortesías y mal hechos: quién autorizó, quién responde y lo que falta por cobrar →</Link></p>
           <div className="dos-col pagina-ancha">
             <section><h2>Por causa</h2><Barras filas={lista('por_causa')} etiqueta={(f) => CAUSA[String(f.causa)] ?? String(f.causa)} valor={(f) => Number(f.valor)} /></section>
             <section><h2>Tendencia</h2><Barras filas={lista('tendencia')} etiqueta={(f) => `${corta(String(f.desde))} – ${corta(String(f.hasta))}`} valor={(f) => Number(f.valor)} /></section>
@@ -202,7 +202,7 @@ export default async function Operacion({ searchParams }: { searchParams: Promis
           <h2>Productos con más pérdida</h2>
           <Tabla vacio="Sin bajas." filas={lista('por_producto')} cols={[
             { t: 'Producto', v: (f) => String(f.producto) }, { t: 'Cantidad', der: true, v: (f) => `${num(f.cantidad, 1)} ${f.unidad}` }, { t: 'Valor', der: true, v: (f) => pesos(f.valor) }]} />
-          <p className="suave" style={{ fontSize: '.85rem' }}>Cortesías y mal hechos (con quién autorizó y el valor a cargo del responsable) se registran en la app en una etapa aparte;
+          <p className="suave texto-nota">Cortesías y mal hechos (con quién autorizó y el valor a cargo del responsable) se registran en la app en una etapa aparte;
             hoy las bajas traen las causas vencido, dañado, derrame, mal estado y otro.</p>
         </>
       )}

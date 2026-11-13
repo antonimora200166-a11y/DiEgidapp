@@ -40,7 +40,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
       <div className="producir-cab">
       <h1 className="pagina-ancha">Producir</h1>
       {areas.length > 1 && (
-        <nav className="segmentos" style={{ marginBottom: '1rem' }}>
+        <nav className="segmentos mb-3">
           {areas.map((a) => (
             <Link key={a} href={`/producir?area=${a}`} aria-current={a === area ? 'true' : undefined}>
               <span>
@@ -66,7 +66,7 @@ export default async function PaginaProducir({ searchParams }: { searchParams: P
                     <span className="cod">{l.codigo}</span><br />
                     {g?.nombre ?? '—'} · {Number(l.neto_base).toLocaleString('es-CO')} {g?.unidad_base}
                   </span>
-                  <span className="suave" style={{ fontSize: '.85rem', textAlign: 'right' }}>
+                  <span className="suave texto-nota der">
                     {fmtFecha(l.fecha)}<br />
                     {vePrecios(perfil) && l.estado_costo !== 'COMPLETO' && <span className="etiqueta provisional">sin costo completo</span>}
                   </span>

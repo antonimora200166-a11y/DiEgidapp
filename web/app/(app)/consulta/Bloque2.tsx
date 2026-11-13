@@ -38,11 +38,11 @@ function FilaInsumo({ i, acum }: { i: Insumo; acum: string }) {
           </details>
         ) : i.nombre}
       </td>
-      <td style={{ textAlign: 'right' }}>{cant(i.teorico_q)} {i.unidad_base}</td>
-      <td style={{ textAlign: 'right' }}>{cant(i.real_q)} {i.unidad_base}</td>
+      <td className="der">{cant(i.teorico_q)} {i.unidad_base}</td>
+      <td className="der">{cant(i.real_q)} {i.unidad_base}</td>
       <td style={{ textAlign: 'right', color: d > 0 ? 'var(--error)' : 'var(--ok)' }}>{d > 0 ? '+' : ''}{cant(d)} {i.unidad_base}</td>
       <td style={{ textAlign: 'right', color: i.dif_valor > 0 ? 'var(--error)' : 'var(--ok)' }}>{pesos(i.dif_valor)}</td>
-      <td style={{ textAlign: 'right' }} className="suave">{acum}</td>
+      <td className="suave der">{acum}</td>
     </tr>
   );
 }
@@ -50,10 +50,10 @@ function FilaInsumo({ i, acum }: { i: Insumo; acum: string }) {
 function TablaInsumos({ filas, total, desde }: { filas: Insumo[]; total: number; desde: number }) {
   let acum = desde;
   return (
-    <div className="desborde tarjeta" style={{ padding: 0 }}>
+    <div className="desborde tarjeta p-0">
       <table className="tabla">
-        <thead><tr><th>Insumo</th><th style={{ textAlign: 'right' }}>Teórico</th><th style={{ textAlign: 'right' }}>Real</th>
-          <th style={{ textAlign: 'right' }}>Diferencia</th><th style={{ textAlign: 'right' }}>Dif. $</th><th style={{ textAlign: 'right' }}>% acum.</th></tr></thead>
+        <thead><tr><th>Insumo</th><th className="der">Teórico</th><th className="der">Real</th>
+          <th className="der">Diferencia</th><th className="der">Dif. $</th><th className="der">% acum.</th></tr></thead>
         <tbody>{filas.map((i) => {
           acum += Math.abs(i.dif_valor);
           return <FilaInsumo key={i.generico_id} i={i} acum={`${total ? Math.round((acum / total) * 100) : 0} %`} />;
@@ -98,14 +98,14 @@ export default function Bloque2({ cerrados, abiertos, detalle, insumos, area }: 
       <h2>Real vs. teórico</h2>
       {!detalle ? (
         <div className="tarjeta">
-          <p style={{ marginTop: 0 }}>{area === 'TODO' ? 'Escoja Bar o Cocina para ver el detalle de un período.'
+          <p className="mt-0">{area === 'TODO' ? 'Escoja Bar o Cocina para ver el detalle de un período.'
             : 'Todavía no hay kardex en esta área. Con el conteo inicial empieza el período, y con el conteo de cierre del jefe de bar se cierra.'}</p>
-          <p className="suave" style={{ marginBottom: 0 }}>CMV real = inventario inicial + recepciones + traslados de otras áreas − traslados a otras áreas − inventario final.
+          <p className="suave mb-0">CMV real = inventario inicial + recepciones + traslados de otras áreas − traslados a otras áreas − inventario final.
             Teórico = unidades vendidas en Odoo × costo de la ficha. Lo que no cuadra, descontadas las pérdidas reportadas, es lo no explicado.</p>
         </div>
       ) : (
         <>
-          <p className="suave" style={{ fontSize: '.88rem' }}>
+          <p className="suave texto-nota">
             {detalle.id ? `Período cerrado del ${corta(detalle.desde)} al ${corta(detalle.hasta)}${detalle.forzado ? ' (cerrado sin el conteo completo)' : ''}: sus cifras quedaron congeladas.`
               : `Período abierto del ${corta(detalle.desde)} a hoy: cifras provisionales, cambian hasta el cierre.`}
             {detalle.fichas_incompletas > 0 && ` ${detalle.fichas_incompletas} producto(s) vendidos sin ficha completa no entran en el teórico.`}
@@ -113,7 +113,7 @@ export default function Bloque2({ cerrados, abiertos, detalle, insumos, area }: 
           <div className="dos-col pagina-ancha" style={{ alignItems: 'start' }}>
             <section>
               <Cascada r={detalle} />
-              <p style={{ margin: '.3rem 0' }}>
+              <p className="mt-1 mb-1">
                 <strong style={{ color: detalle.semaforo ? COLOR[detalle.semaforo] : undefined }}>
                   {detalle.variacion_pp === null ? '—' : `${detalle.variacion_pp > 0 ? '+' : ''}${detalle.variacion_pp.toLocaleString('es-CO')} puntos`}
                 </strong>{' '}
@@ -124,18 +124,18 @@ export default function Bloque2({ cerrados, abiertos, detalle, insumos, area }: 
             <section>
               <table className="tabla" style={{ fontSize: '.92rem' }}>
                 <tbody>
-                  <tr><td>Inventario inicial</td><td style={{ textAlign: 'right' }}>{pesos(detalle.inv_inicial)}</td></tr>
-                  <tr><td>+ Recepciones</td><td style={{ textAlign: 'right' }}>{pesos(detalle.compras)}</td></tr>
-                  <tr><td>+ Traslados de otras áreas</td><td style={{ textAlign: 'right' }}>{pesos(detalle.traslados_entrada)}</td></tr>
-                  <tr><td>− Traslados a otras áreas</td><td style={{ textAlign: 'right' }}>{pesos(detalle.traslados_salida)}</td></tr>
-                  <tr><td>− Inventario final</td><td style={{ textAlign: 'right' }}>{pesos(detalle.inv_final)}</td></tr>
-                  <tr><td><strong>= CMV real</strong></td><td style={{ textAlign: 'right' }}><strong>{pesos(detalle.cmv_real)}</strong></td></tr>
+                  <tr><td>Inventario inicial</td><td className="der">{pesos(detalle.inv_inicial)}</td></tr>
+                  <tr><td>+ Recepciones</td><td className="der">{pesos(detalle.compras)}</td></tr>
+                  <tr><td>+ Traslados de otras áreas</td><td className="der">{pesos(detalle.traslados_entrada)}</td></tr>
+                  <tr><td>− Traslados a otras áreas</td><td className="der">{pesos(detalle.traslados_salida)}</td></tr>
+                  <tr><td>− Inventario final</td><td className="der">{pesos(detalle.inv_final)}</td></tr>
+                  <tr><td><strong>= CMV real</strong></td><td className="der"><strong>{pesos(detalle.cmv_real)}</strong></td></tr>
                   <tr><td className="suave">Teórico · pérdidas · no explicado</td>
-                    <td style={{ textAlign: 'right' }} className="suave">{pesos(detalle.cmv_teorico)} · {pesos(detalle.perdidas)} · {pesos(detalle.no_explicado)}</td></tr>
+                    <td className="suave der">{pesos(detalle.cmv_teorico)} · {pesos(detalle.perdidas)} · {pesos(detalle.no_explicado)}</td></tr>
                 </tbody>
               </table>
               {Object.keys(detalle.perdidas_por_causa ?? {}).length > 0 && (
-                <p className="suave" style={{ fontSize: '.85rem' }}>Pérdidas: {Object.entries(detalle.perdidas_por_causa).map(([k, v]) => `${CAUSA[k] ?? k} ${pesos(v)}`).join(' · ')}</p>
+                <p className="suave texto-nota">Pérdidas: {Object.entries(detalle.perdidas_por_causa).map(([k, v]) => `${CAUSA[k] ?? k} ${pesos(v)}`).join(' · ')}</p>
               )}
             </section>
           </div>
@@ -149,34 +149,34 @@ export default function Bloque2({ cerrados, abiertos, detalle, insumos, area }: 
               <>
                 <TablaInsumos filas={top} total={total} desde={0} />
                 {resto.length > 0 && (
-                  <details style={{ marginTop: '.5rem' }}>
+                  <details className="mt-2">
                     <summary style={{ cursor: 'pointer' }}>Ver los otros {resto.length} insumos</summary>
-                    <div style={{ marginTop: '.5rem' }}><TablaInsumos filas={resto} total={total} desde={enTop} /></div>
+                    <div className="mt-2"><TablaInsumos filas={resto} total={total} desde={enTop} /></div>
                   </details>
                 )}
               </>
             );
           })() : <p className="suave">Sin consumo de insumos en el período.</p>}
-          <p className="suave" style={{ fontSize: '.8rem' }}>Teórico: lo vendido en Odoo × la cantidad de cada ficha. Real: lo que el conteo encontró de menos (las botellas abiertas, pesadas).
+          <p className="suave texto-mini">Teórico: lo vendido en Odoo × la cantidad de cada ficha. Real: lo que el conteo encontró de menos (las botellas abiertas, pesadas).
             Toque el nombre de un insumo para ver de qué cócteles, shots o botellas sale su teórico. Ordenados por la diferencia en pesos.</p>
         </>
       )}
 
       <h3>Períodos</h3>
       {cerrados.length || abiertos.length ? (
-        <div className="desborde tarjeta" style={{ padding: 0 }}>
+        <div className="desborde tarjeta p-0">
           <table className="tabla">
-            <thead><tr><th>Período</th>{area === 'TODO' && <th>Área</th>}<th style={{ textAlign: 'right' }}>% teórico</th><th style={{ textAlign: 'right' }}>% real</th>
-              <th style={{ textAlign: 'right' }}>Variación</th><th style={{ textAlign: 'right' }}>No explicado</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Período</th>{area === 'TODO' && <th>Área</th>}<th className="der">% teórico</th><th className="der">% real</th>
+              <th className="der">Variación</th><th className="der">No explicado</th><th>Estado</th></tr></thead>
             <tbody>
               {[...abiertos, ...cerrados].map((p) => (
                 <tr key={`${p.area}-${p.desde}`}>
                   <td>{corta(p.desde)} → {corta(p.hasta)}</td>{area === 'TODO' && <td>{p.area === 'BAR' ? 'Bar' : 'Cocina'}</td>}
-                  <td style={{ textAlign: 'right' }}>{pct(p.pct_teorico)}</td><td style={{ textAlign: 'right' }}>{pct(p.pct_real)}</td>
-                  <td style={{ textAlign: 'right' }}><strong style={{ color: p.semaforo ? COLOR[p.semaforo] : undefined }}>
+                  <td className="der">{pct(p.pct_teorico)}</td><td className="der">{pct(p.pct_real)}</td>
+                  <td className="der"><strong style={{ color: p.semaforo ? COLOR[p.semaforo] : undefined }}>
                     {p.variacion_pp === null ? '—' : `${p.variacion_pp > 0 ? '+' : ''}${p.variacion_pp.toLocaleString('es-CO')} pts`}</strong>
                     {tonoSemaforo(p.semaforo) && <> <Insignia tono={tonoSemaforo(p.semaforo)!}>{SEMAFORO_TXT[p.semaforo!]}</Insignia></>}</td>
-                  <td style={{ textAlign: 'right' }}>{pesos(p.no_explicado)}</td>
+                  <td className="der">{pesos(p.no_explicado)}</td>
                   <td>{p.id ? <span className="etiqueta validado">cerrado</span> : <span className="etiqueta provisional">abierto</span>}</td>
                 </tr>
               ))}
@@ -184,7 +184,7 @@ export default function Bloque2({ cerrados, abiertos, detalle, insumos, area }: 
           </table>
         </div>
       ) : <p className="suave">Todavía no hay períodos.</p>}
-      <p className="suave" style={{ fontSize: '.82rem' }}>Semáforo: verde hasta 1 punto de diferencia, amarillo hasta 3, rojo más de 3.{' '}
+      <p className="suave texto-mini">Semáforo: verde hasta 1 punto de diferencia, amarillo hasta 3, rojo más de 3.{' '}
         <Link href={`/consulta/cerrar${area !== 'TODO' ? `?area=${area}` : ''}`}>Cerrar un período →</Link></p>
     </>
   );

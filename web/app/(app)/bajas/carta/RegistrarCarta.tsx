@@ -56,11 +56,11 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo, exige
 
   if (resultado?.ok) {
     return (
-      <div className="tarjeta" style={{ marginBottom: '1rem' }}>
-        <p className="exito" role="status" style={{ marginTop: 0 }}><strong>{tipo === 'CORTESIA' ? 'Cortesía' : 'Mal hecho'} guardado: {resultado.codigo}</strong><br />
+      <div className="tarjeta mb-3">
+        <p className="exito mt-0" role="status"><strong>{tipo === 'CORTESIA' ? 'Cortesía' : 'Mal hecho'} guardado: {resultado.codigo}</strong><br />
           {unidades} × {producto?.nombre}: {resultado.lineas} ingrediente(s) salieron del kardex
           {resultado.costo_mp != null && ` por ${pesos(resultado.costo_mp)}`}{cargo && responsable ? `, a cargo de ${personas.find((p) => p.id === responsable)?.nombre}` : ''}.</p>
-        {resultado.avisos.length > 0 && <div className="aviso"><ul style={{ margin: 0 }}>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
+        {resultado.avisos.length > 0 && <div className="aviso"><ul className="m-0">{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
         <button type="button" onClick={otro}>Registrar otro</button>
       </div>
     );
@@ -84,10 +84,10 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo, exige
         <>
           <input id="producto" value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Escriba el nombre: negroni, burrata…" autoComplete="off" />
           {opciones.length > 0 && (
-            <div className="chips-sel" style={{ marginTop: '.4rem' }}>
+            <div className="chips-sel mt-1">
               {opciones.map((o) => <button key={o.id} type="button" onClick={() => setProducto(o)}>{o.nombre}</button>)}
             </div>)}
-          {buscar.trim().length >= 2 && !opciones.length && <p className="suave" style={{ fontSize: '.85rem' }}>No hay productos de la carta con ese nombre.</p>}
+          {buscar.trim().length >= 2 && !opciones.length && <p className="suave texto-nota">No hay productos de la carta con ese nombre.</p>}
         </>
       )}
 
@@ -151,7 +151,7 @@ export default function RegistrarCarta({ area, carta, zonas, personas, yo, exige
           <button type="button" disabled={pend || !!falta} onClick={() => guardar(false)}>{pend ? 'Guardando…' : 'Guardar'}</button>
         )}
       </div>
-      {falta && (tipo || producto) && <p className="suave" style={{ fontSize: '.85rem' }}>{falta}</p>}
+      {falta && (tipo || producto) && <p className="suave texto-nota">{falta}</p>}
     </section>
   );
 }

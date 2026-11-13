@@ -16,14 +16,14 @@ export default async function EstadoIA({ searchParams }: { searchParams: Promise
     <li className={ok === null ? undefined : ok ? 'p-info' : 'p-urgente'}>
       <div style={{ display: 'flex', gap: '.6rem', padding: '.7rem .85rem', border: '1px solid var(--borde)', borderRadius: 10, background: 'var(--tarjeta)' }}>
         <span aria-hidden style={{ fontWeight: 800, color: ok === null ? 'var(--suave)' : ok ? 'var(--ok)' : 'var(--error)' }}>{ok === null ? '·' : ok ? '✓' : '✕'}</span>
-        <span><strong>{titulo}</strong><br /><span className="suave" style={{ fontSize: '.9rem' }}>{texto}</span></span>
+        <span><strong>{titulo}</strong><br /><span className="suave texto-nota">{texto}</span></span>
       </div>
     </li>
   );
 
   return (
     <>
-      <p style={{ margin: '0 0 .3rem' }}><Link href="/admin/registro">← Registro</Link></p>
+      <p className="m-0 mb-1"><Link href="/admin/registro">← Registro</Link></p>
       <h1>Lectura de facturas con IA</h1>
       <ul className="lista">
         {fila(e.variable, 'Variable ANTHROPIC_API_KEY en Vercel',
@@ -42,7 +42,7 @@ export default async function EstadoIA({ searchParams }: { searchParams: Promise
         {e.clave === 'ok' && e.prueba !== 'ok' && <Link className="boton" href="/admin/ia?probar=1">Probar con un mensaje</Link>}
         <Link className="boton secundario" href="/admin/ia">Volver a revisar</Link>
       </div>
-      <p className="suave" style={{ fontSize: '.85rem' }}>Si cambia la clave en Vercel, haga Redeploy: la app solo la lee al desplegarse.</p>
+      <p className="suave texto-nota">Si cambia la clave en Vercel, haga Redeploy: la app solo la lee al desplegarse.</p>
     </>
   );
 }

@@ -44,7 +44,7 @@ function Tarjeta({ a, admin, responsables }: { a: Alerta; admin: boolean; respon
   return (
     <li className="tarjeta" style={{ display: 'grid', gap: '.45rem', borderLeft: `4px solid ${COLOR_ESTADO[a.estado]}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.6rem', flexWrap: 'wrap', alignItems: 'baseline' }}>
-        <span className="suave" style={{ fontSize: '.8rem' }}>{REGLA[a.regla] ?? a.regla}{a.area && ` · ${a.area === 'BAR' ? 'Bar' : 'Cocina'}`}
+        <span className="suave texto-mini">{REGLA[a.regla] ?? a.regla}{a.area && ` · ${a.area === 'BAR' ? 'Bar' : 'Cocina'}`}
           {!a.vigente && abierta && ' · ya no se detecta'}</span>
         <span style={{ display: 'flex', gap: '.5rem', alignItems: 'baseline' }}>
           {admin && a.impacto !== null && <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{pesos(Number(a.impacto))}</strong>}
@@ -52,13 +52,13 @@ function Tarjeta({ a, admin, responsables }: { a: Alerta; admin: boolean; respon
         </span>
       </div>
       <strong>{a.titulo}</strong>
-      {a.detalle && <span className="suave" style={{ fontSize: '.88rem' }}>{a.detalle}</span>}
-      <span className="suave" style={{ fontSize: '.82rem' }}>
+      {a.detalle && <span className="suave texto-nota">{a.detalle}</span>}
+      <span className="suave texto-mini">
         {a.responsable ? <>Responsable: <strong style={{ color: 'var(--texto)' }}>{a.responsable}</strong></> : 'Sin responsable'}
         {a.fecha_compromiso && <span style={{ color: vencida ? 'var(--error)' : undefined }}> · para el {fecha(a.fecha_compromiso)}{vencida ? ' (vencida)' : ''}</span>}
         {' '}· detectada el {fecha(a.detectada_en)}
       </span>
-      {a.causa && <span style={{ fontSize: '.88rem' }}><strong>Causa:</strong> {a.causa}</span>}
+      {a.causa && <span className="texto-nota"><strong>Causa:</strong> {a.causa}</span>}
       <div style={{ display: 'flex', gap: '.35rem', flexWrap: 'wrap' }}>
         {a.enlace && <Link className="boton secundario mini" href={a.enlace}>{ir(a.enlace)}</Link>}
         {admin && abierta && <button type="button" className="secundario mini" onClick={() => setPanel(panel === 'asignar' ? null : 'asignar')}>Asignar</button>}
@@ -73,7 +73,7 @@ function Tarjeta({ a, admin, responsables }: { a: Alerta; admin: boolean; respon
           <label style={{ margin: 0, flex: '1 1 180px' }}>Responsable
             <select value={resp} onChange={(e) => setResp(e.target.value)}><option value="">Escoja…</option>
               {responsables.map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}</select></label>
-          <label style={{ margin: 0 }}>Para el<input type="date" value={fechaC} onChange={(e) => setFechaC(e.target.value)} /></label>
+          <label className="m-0">Para el<input type="date" value={fechaC} onChange={(e) => setFechaC(e.target.value)} /></label>
           <button type="button" className="mini" disabled={enviando || !resp} onClick={() => hacer({ id: a.id, accion: 'ASIGNAR', responsable_id: resp, fecha: fechaC || null })}>Guardar</button>
         </div>
       )}
@@ -87,7 +87,7 @@ function Tarjeta({ a, admin, responsables }: { a: Alerta; admin: boolean; respon
         </div>
       )}
       {panel === 'historial' && (
-        historial ? <ul className="renglones" style={{ fontSize: '.85rem' }}>{historial.map((e, i) => (
+        historial ? <ul className="renglones texto-nota">{historial.map((e, i) => (
           <li key={i}><span><strong>{ACCION[e.accion] ?? e.accion}</strong>{e.texto && <> · {e.texto}</>}</span>
             <span className="suave n">{e.usuario ?? 'Sistema'} · {fecha(e.en)}</span></li>))}</ul>
           : <span className="suave">Cargando…</span>
@@ -132,14 +132,14 @@ export default function ListaAlertas({ alertas, admin, responsables, revisar }: 
           </select>
         )}
         {admin && revisar && (
-          <button type="button" className="secundario" style={{ marginLeft: 'auto' }} disabled={enviando}
+          <button type="button" className="secundario ml-auto" disabled={enviando}
                   onClick={() => iniciar(async () => { const r = await revisarAlertas(revisar.desde, revisar.hasta);
                     setMsg(r.ok ? `Revisión hecha: ${r.nuevas} alerta(s) nueva(s).` : r.error ?? 'No se pudo revisar.'); router.refresh(); })}>
             {enviando ? 'Revisando…' : 'Revisar alertas ahora'}</button>
         )}
       </div>
-      {msg && <p className="exito" role="status" style={{ marginTop: 0 }}>{msg}</p>}
-      {admin && <p className="suave" style={{ fontSize: '.88rem' }}>{vis.length} alerta(s){total > 0 && <> · impacto estimado <strong>{pesos(total)}</strong></>}. Ordenadas por impacto.</p>}
+      {msg && <p className="exito mt-0" role="status">{msg}</p>}
+      {admin && <p className="suave texto-nota">{vis.length} alerta(s){total > 0 && <> · impacto estimado <strong>{pesos(total)}</strong></>}. Ordenadas por impacto.</p>}
       {vis.length ? (
         <ul className="pila" style={{ listStyle: 'none', padding: 0, margin: 0 }}>{vis.map((a) => <Tarjeta key={a.id} a={a} admin={admin} responsables={responsables} />)}</ul>
       ) : <p className="tarjeta">{admin ? 'No hay alertas con estos filtros.' : 'No tiene alertas asignadas en este estado.'}</p>}

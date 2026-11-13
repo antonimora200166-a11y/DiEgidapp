@@ -36,7 +36,7 @@ export default async function Etiqueta({ params, searchParams }: { params: Promi
   return (
     <>
       <div className="no-imprimir">
-        <p style={{ margin: '0 0 .3rem' }}><Link href={`/l/${encodeURIComponent(l.codigo)}`}>← Lote</Link></p>
+        <p className="m-0 mb-1"><Link href={`/l/${encodeURIComponent(l.codigo)}`}>← Lote</Link></p>
         <h1>Etiqueta de {l.mpi}</h1>
         <p className="suave">Una por envase. Se imprimen {n}; cambie la cantidad si hace falta.</p>
         <form className="acciones" style={{ marginTop: 0, alignItems: 'center' }}>

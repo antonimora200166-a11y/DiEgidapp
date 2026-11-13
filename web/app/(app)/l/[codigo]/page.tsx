@@ -18,7 +18,7 @@ export default async function Lote({ params }: { params: Promise<{ codigo: strin
 
   return (
     <>
-      <p style={{ margin: '0 0 .3rem' }}><Link href="/producir">← Producir</Link></p>
+      <p className="m-0 mb-1"><Link href="/producir">← Producir</Link></p>
       <h1>{l.mpi}</h1>
       <p className="suave"><span className="cod">{l.codigo}</span> · {l.area === 'BAR' ? 'Bar' : 'Cocina'} · {l.zona}</p>
       {l.anulado && <p className="error">Este lote fue anulado: no lo uses.</p>}

@@ -36,10 +36,10 @@ export default function Repetidos({ pares, soloLectura }: { pares: Par[]; soloLe
         const [nq, nv] = q === p.a_id ? [p.a_nombre, p.b_nombre] : [p.b_nombre, p.a_nombre];
         return (
           <section key={clave(p)} className="tarjeta" style={{ marginBottom: '.5rem', display: 'grid', gap: '.4rem' }}>
-            <div className="suave" style={{ fontSize: '.82rem' }}>{p.motivo} · parecido {Math.round(p.parecido * 100)} %</div>
+            <div className="suave texto-mini">{p.motivo} · parecido {Math.round(p.parecido * 100)} %</div>
             {[{ id: p.a_id, nombre: p.a_nombre, compras: p.a_compras }, { id: p.b_id, nombre: p.b_nombre, compras: p.b_compras }].map((x) => (
-              <label key={x.id} style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400 }}>
-                {!soloLectura && <input type="radio" name={clave(p)} checked={q === x.id} style={{ width: 18, minHeight: 18 }}
+              <label className="check" key={x.id}>
+                {!soloLectura && <input type="radio" name={clave(p)} checked={q === x.id}
                                         onChange={() => setQueda((s) => ({ ...s, [clave(p)]: x.id }))} />}
                 <strong>{x.nombre}</strong> <span className="suave">· {x.compras} compra(s) registradas</span>
               </label>

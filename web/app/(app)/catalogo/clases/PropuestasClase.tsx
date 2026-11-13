@@ -53,7 +53,7 @@ export default function PropuestasClase({ filas, soloLectura }: { filas: Propues
     { k: 'generico', t: 'Insumo', orden: (p) => p.generico, ver: (p) => (
       <div style={{ minWidth: 170 }}>
         <strong>{p.generico}</strong>
-        <div className="suave" style={{ fontSize: '.82rem' }}><span className="cod">{p.codigo}</span> · {p.area === 'BAR' ? 'Bar' : 'Cocina'} · {p.categoria ?? 'sin categoría'}</div>
+        <div className="suave texto-mini"><span className="cod">{p.codigo}</span> · {p.area === 'BAR' ? 'Bar' : 'Cocina'} · {p.categoria ?? 'sin categoría'}</div>
       </div>) },
     { k: 'clase', t: 'Clase propuesta', orden: (p) => p.clase, ver: (p) => (
       soloLectura || p.estado !== 'PENDIENTE'
@@ -73,7 +73,7 @@ export default function PropuestasClase({ filas, soloLectura }: { filas: Propues
         {p.estado !== 'PENDIENTE' && <div className="suave" style={{ marginTop: '.2rem' }}>{ESTADO[p.estado].toLowerCase()}{p.decidido_por ? ` · ${p.decidido_por}` : ''}</div>}
       </div>) },
     { k: 'acciones', t: '', ver: (p) => (!soloLectura && p.estado === 'PENDIENTE' ? (
-      <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
+      <div className="fila-flex wrap">
         <button className="mini" type="button" disabled={enviando} onClick={() => decidir([p.id], 'ACEPTAR')}>Aceptar</button>
         <button type="button" className="secundario mini" disabled={enviando} onClick={() => decidir([p.id], 'RECHAZAR')}>Es materia prima</button>
       </div>) : null) },
@@ -98,9 +98,9 @@ export default function PropuestasClase({ filas, soloLectura }: { filas: Propues
                       vacio="No quedan propuestas con estos filtros. ✔"
                       acciones={(elegidas, limpiar) => (
                         <div className="barra-bloque">
-                          <div className="linea" style={{ flexWrap: 'wrap' }}>
+                          <div className="linea wrap">
                             <strong>{elegidas.length} seleccionada(s)</strong>
-                            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                            <div className="fila-flex wrap">
                               <button type="button" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'ACEPTAR', null, limpiar)}>{enviando ? 'Aplicando…' : `Aceptar ${elegidas.length}`}</button>
                               <button type="button" className="secundario" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'RECHAZAR', null, limpiar)}>Son materia prima</button>
                               <button type="button" className="secundario" disabled={enviando} onClick={limpiar}>Quitar selección</button>

@@ -30,8 +30,8 @@ export default function ListaLotes({ filas, hoy, vePesos }: { filas: FilaLote[];
   ];
   const columnas: Columna<FilaLote>[] = [
     { k: 'codigo', t: 'Lote', orden: (l) => l.fecha + l.codigo, ver: (l) => (
-      <Link href={`/produccion/lotes/${encodeURIComponent(l.codigo)}`} style={{ textDecoration: 'none' }}>
-        <span className="cod" style={{ display: 'block' }}>{l.codigo}</span><span style={{ fontSize: '.85rem' }}>{corta(l.fecha)}</span>
+      <Link className="sin-subrayado" href={`/produccion/lotes/${encodeURIComponent(l.codigo)}`}>
+        <span className="cod bloque">{l.codigo}</span><span className="texto-nota">{corta(l.fecha)}</span>
       </Link>) },
     { k: 'mpi', t: 'MPI', orden: (l) => l.mpi, ver: (l) => <Link href={`/produccion/lotes/${encodeURIComponent(l.codigo)}`}><strong>{l.mpi}</strong></Link> },
     { k: 'resp', t: 'Responsable', orden: (l) => l.responsable, ver: (l) => l.responsable ?? <span className="suave">—</span> },
@@ -49,7 +49,7 @@ export default function ListaLotes({ filas, hoy, vePesos }: { filas: FilaLote[];
   return (
     <VistaFiltrable clave="produccion-lotes" filas={filas} id={(l) => l.id} buscar={(l) => `${l.codigo} ${l.mpi} ${l.responsable ?? ''}`}
                     grupos={grupos} columnas={columnas.filter((c) => vePesos || !['costo', 'cg'].includes(c.k))}
-                    pie={(v) => <p className="suave" style={{ fontSize: '.82rem' }}>{v.length} de {filas.length} lotes. Los «Histórico» vienen de SGI-COSTOS: solo consulta, sin existencia.</p>}
+                    pie={(v) => <p className="suave texto-mini">{v.length} de {filas.length} lotes. Los «Histórico» vienen de SGI-COSTOS: solo consulta, sin existencia.</p>}
                     vacio="Ningún lote coincide con estos filtros." />
   );
 }

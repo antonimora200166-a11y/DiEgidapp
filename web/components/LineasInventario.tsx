@@ -61,16 +61,16 @@ export default function LineasInventario({ productos, zona, lineas, setLineas, o
           const b = baseDe(l, p), hay = saldoEn(p, zona), v = valorDe(l, p);
           return (
             <li key={l.clave} style={b !== null && b > hay ? { borderColor: 'var(--aviso)', borderWidth: 2 } : undefined}>
-              <div className="linea" style={{ alignItems: 'flex-start' }}>
-                <div style={{ minWidth: 0 }}>
+              <div className="linea arriba">
+                <div className="min-0">
                   <strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}
-                  <div className="suave" style={{ fontSize: '.85rem' }}>{p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}</div>
+                  <div className="suave texto-nota">{p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}</div>
                 </div>
                 <button type="button" className="secundario chico" aria-label={`Quitar ${p.generico}`}
                         onClick={() => setLineas((ls) => ls.filter((x) => x.clave !== l.clave))}>Quitar</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '.5rem', marginTop: '.5rem', alignItems: 'end' }}>
-                <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Cantidad
+                <label className="campo">Cantidad
                   <input inputMode="decimal" value={l.cantidad} onChange={(e) => poner(l.clave, { cantidad: e.target.value })} />
                 </label>
                 {porCompra(p) ? (
@@ -91,7 +91,7 @@ export default function LineasInventario({ productos, zona, lineas, setLineas, o
                 )}
               </div>
               {b !== null && zona && b > hay && (
-                <div className="aviso" style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
+                <div className="aviso aviso-chico">
                   El kardex no tiene tanto en esta zona: al guardar le pedirá un motivo.
                 </div>
               )}
@@ -102,10 +102,10 @@ export default function LineasInventario({ productos, zona, lineas, setLineas, o
       <label htmlFor="buscar-producto">Agregar producto</label>
       <input id="buscar-producto" placeholder="Buscar en el catálogo…" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
       {opciones.length > 0 && (
-        <ul className="lista" style={{ marginTop: '.4rem' }}>
+        <ul className="lista mt-1">
           {opciones.map((p) => (
-            <li key={p.producto_id} style={{ padding: 0 }}>
-              <button type="button" className="secundario" style={{ width: '100%', textAlign: 'left', border: 0, color: 'inherit' }} onClick={() => agregar(p)}>
+            <li className="p-0" key={p.producto_id}>
+              <button type="button" className="secundario opcion-lista" onClick={() => agregar(p)}>
                 <strong>{p.generico}</strong> <span className="suave">· {[p.marca, p.presentacion].filter(Boolean).join(' · ')}
                   {zona && saldoEn(p, zona) !== 0 && ` · hay ${fmtCantidad(saldoEn(p, zona))} ${p.unidad_base}`}</span>
               </button>
@@ -113,7 +113,7 @@ export default function LineasInventario({ productos, zona, lineas, setLineas, o
           ))}
         </ul>
       )}
-      {buscar.trim().length >= 2 && !opciones.length && <p className="suave" style={{ fontSize: '.85rem' }}>Nada coincide.</p>}
+      {buscar.trim().length >= 2 && !opciones.length && <p className="suave texto-nota">Nada coincide.</p>}
     </>
   );
 }

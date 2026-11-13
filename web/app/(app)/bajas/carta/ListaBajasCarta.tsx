@@ -61,10 +61,10 @@ export default function ListaBajasCarta({ filas, esAdmin }: { filas: FilaBajaCar
           <div className="cifra sa"><span>Por cobrar</span><b>{pesos(pendientes.reduce((s, f) => s + Number(f.costo_mp ?? 0), 0))}</b><small>{pendientes.length} pendientes</small></div>
         </div>)}
       {esAdmin && porPersona.size > 0 && (
-        <table className="tabla" style={{ marginBottom: '1rem' }}>
-          <thead><tr><th>Responsable</th><th style={{ textAlign: 'right' }}>Pendientes</th><th style={{ textAlign: 'right' }}>Por cobrar</th></tr></thead>
+        <table className="tabla mb-3">
+          <thead><tr><th>Responsable</th><th className="der">Pendientes</th><th className="der">Por cobrar</th></tr></thead>
           <tbody>{[...porPersona.values()].sort((a, b) => b.total - a.total).map((p) => (
-            <tr key={p.nombre}><td>{p.nombre}</td><td style={{ textAlign: 'right' }}>{p.n}</td><td style={{ textAlign: 'right' }}>{pesos(p.total)}</td></tr>))}</tbody>
+            <tr key={p.nombre}><td>{p.nombre}</td><td className="der">{p.n}</td><td className="der">{pesos(p.total)}</td></tr>))}</tbody>
         </table>)}
       {esAdmin && pendientes.length > 0 && (
         <div className="chips-sel" style={{ marginBottom: '.6rem' }}>
@@ -81,7 +81,7 @@ export default function ListaBajasCarta({ filas, esAdmin }: { filas: FilaBajaCar
                 {f.a_cargo && ESTADO[f.estado_cobro] && <span className={`etiqueta ${ESTADO[f.estado_cobro].c}`}>{ESTADO[f.estado_cobro].t}</span>}
                 {f.forzada && <span className="etiqueta provisional">forzada</span>}
                 {f.anulada && <span className="etiqueta inactivo">anulada</span>}
-                <small className="suave" style={{ marginLeft: 'auto' }}><span className="cod">{f.codigo}</span> · {fecha(f.fecha)}</small>
+                <small className="suave ml-auto"><span className="cod">{f.codigo}</span> · {fecha(f.fecha)}</small>
               </div>
               <div className="suave" style={{ fontSize: '.88rem', marginTop: '.2rem' }}>
                 {f.autorizado_por && <>Autorizó {f.autorizado_por} · </>}
@@ -89,8 +89,8 @@ export default function ListaBajasCarta({ filas, esAdmin }: { filas: FilaBajaCar
                 Registró {f.registrado_por ?? '—'}
                 {esAdmin && <> · costo {pesos(f.costo_mp)}{f.costo_estimado ? ' (estimado)' : ''}</>}
               </div>
-              {f.observaciones && <div style={{ fontSize: '.88rem' }}>{f.observaciones}</div>}
-              {f.cobro_en && <div className="suave" style={{ fontSize: '.85rem' }}>{ESTADO[f.estado_cobro]?.t ?? f.estado_cobro} por {f.cobro_por ?? '—'}{f.cobro_nota ? ` · ${f.cobro_nota}` : ''}</div>}
+              {f.observaciones && <div className="texto-nota">{f.observaciones}</div>}
+              {f.cobro_en && <div className="suave texto-nota">{ESTADO[f.estado_cobro]?.t ?? f.estado_cobro} por {f.cobro_por ?? '—'}{f.cobro_nota ? ` · ${f.cobro_nota}` : ''}</div>}
               {esAdmin && f.a_cargo && !f.anulada && <Cobro f={f} />}
             </li>))}
         </ul>)}

@@ -35,9 +35,9 @@ export default function Pedido({ lineas }: { lineas: LineaPedido[] }) {
       {[...porProveedor.entries()].map(([prov, ls]) => {
         const total = ls.reduce((t, l) => t + n(l.producto_id) * Number(l.costo_unidad ?? 0), 0);
         return (
-          <section key={prov} className="tarjeta" style={{ marginBottom: '1rem' }}>
+          <section key={prov} className="tarjeta mb-3">
             <div className="linea" style={{ display: 'flex', justifyContent: 'space-between', gap: '.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0 }}>{prov} <span className="suave" style={{ fontWeight: 400, fontSize: '.9rem' }}>· {ls.length}</span></h2>
+              <h2 className="m-0">{prov} <span className="suave" style={{ fontWeight: 400, fontSize: '.9rem' }}>· {ls.length}</span></h2>
               <button type="button" className="chico" onClick={() => copiar(prov, ls)}>{copiado === prov ? '✔ Copiado' : 'Copiar pedido'}</button>
             </div>
             <ul className="lista" style={{ marginTop: '.7rem' }}>
@@ -46,7 +46,7 @@ export default function Pedido({ lineas }: { lineas: LineaPedido[] }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.5rem .75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                     <div style={{ flex: '1 1 210px', minWidth: 0 }}>
                       <strong>{nombre(l)}</strong>
-                      <div className="suave" style={{ fontSize: '.82rem' }}>
+                      <div className="suave texto-mini">
                         Hay {Number(l.saldo_unidades).toLocaleString('es-CO')} · mínimo {Number(l.minimo).toLocaleString('es-CO')}
                         {l.maximo !== null && ` · máximo ${Number(l.maximo).toLocaleString('es-CO')}`}
                         {l.costo_unidad !== null && ` · ${pesos(Number(l.costo_unidad))} c/u`}
@@ -62,7 +62,7 @@ export default function Pedido({ lineas }: { lineas: LineaPedido[] }) {
                 </li>
               ))}
             </ul>
-            {total > 0 && <p className="suave" style={{ margin: '.6rem 0 0', fontSize: '.88rem' }}>Valor aproximado con el último precio: <strong>{pesos(total)}</strong></p>}
+            {total > 0 && <p className="suave mt-2 mb-0 texto-nota">Valor aproximado con el último precio: <strong>{pesos(total)}</strong></p>}
           </section>
         );
       })}

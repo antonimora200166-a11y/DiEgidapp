@@ -38,14 +38,14 @@ export default async function SimuladorPagina({ searchParams }: { searchParams: 
 
   return (
     <>
-      <p style={{ margin: '0 0 .3rem' }}><Link href="/consulta">← Consulta</Link></p>
+      <p className="m-0 mb-1"><Link href="/consulta">← Consulta</Link></p>
       <h1 className="pagina-ancha titulo-gestion">Simulador de carta</h1>
       <p className="suave">Pruebe un precio nuevo o cantidades nuevas en la ficha y mire el % de costo, el margen y el efecto sobre el % teórico del área
         con las ventas del {fechaC(desde)} al {fechaC(hasta)}. Nada cambia en la carta hasta que apruebe una propuesta.</p>
       <form method="get" className="no-imprimir" style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
         {prod && <input type="hidden" name="producto" value={prod.generico_id} />}
-        <label style={{ margin: 0 }}>Ventas desde<input type="date" name="desde" defaultValue={desde} /></label>
-        <label style={{ margin: 0 }}>Hasta<input type="date" name="hasta" defaultValue={hasta} /></label>
+        <label className="m-0">Ventas desde<input type="date" name="desde" defaultValue={desde} /></label>
+        <label className="m-0">Hasta<input type="date" name="hasta" defaultValue={hasta} /></label>
         <button type="submit" className="secundario chico">Cambiar referencia</button>
       </form>
       <ElegirProducto opciones={opciones} actual={prod?.generico_id ?? ''} desde={desde} hasta={hasta} />

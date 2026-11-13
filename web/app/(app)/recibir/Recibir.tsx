@@ -360,11 +360,11 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
   if (resultado?.ok) {
     return (
       <div className="tarjeta">
-        <p className="exito" role="status" style={{ marginTop: 0 }}>
+        <p className="exito mt-0" role="status">
           <strong>{resultado.codigo?.includes(' y ') ? 'Recepciones guardadas' : 'Recepción guardada'}: {resultado.codigo}</strong><br />
           Las existencias y el costo promedio de cada producto ya se actualizaron.
         </p>
-        {resultado.avisos.length > 0 && <div className="aviso"><ul style={{ margin: 0 }}>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
+        {resultado.avisos.length > 0 && <div className="aviso"><ul className="m-0">{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
         <div className="acciones">
           <button type="button" onClick={empezarDeNuevo}>Recibir otra</button>
           <Link className="boton secundario" href="/existencias">Ver existencias</Link>
@@ -381,24 +381,24 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       <section className="tarjeta">
         <strong>1. Foto de la factura</strong>
         <p className="suave" style={{ margin: '.3rem 0 .6rem', fontSize: '.9rem' }}>
-          La IA la lee y propone proveedor, documento y líneas. Tú confirmas o corriges cada una antes de guardar.
+          La IA la lee y propone proveedor, documento y líneas. Usted confirma o corrige cada una antes de guardar.
         </p>
         <input ref={camara} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { void tomarFoto(e.target.files?.[0]); e.target.value = ''; }} />
         <input ref={galeria} type="file" accept="image/*,application/pdf" hidden onChange={(e) => { void tomarFoto(e.target.files?.[0]); e.target.value = ''; }} />
-        <div className="acciones" style={{ marginTop: 0 }}>
+        <div className="acciones mt-0">
           <button type="button" disabled={!!estadoFoto} onClick={() => camara.current?.click()}>
             {estadoFoto === 'subiendo' ? 'Subiendo foto…' : estadoFoto === 'leyendo' ? 'Leyendo factura…' : foto ? 'Tomar otra foto' : 'Tomar foto'}
           </button>
           <button type="button" className="secundario" disabled={!!estadoFoto} onClick={() => galeria.current?.click()}>Elegir archivo</button>
         </div>
-        {estadoFoto === 'leyendo' && <p className="suave" role="status" style={{ fontSize: '.88rem' }}>Esto toma entre 10 y 40 segundos. No cierre la pantalla.</p>}
+        {estadoFoto === 'leyendo' && <p className="suave texto-nota" role="status">Esto toma entre 10 y 40 segundos. No cierre la pantalla.</p>}
         {errorFoto && <p className="error" role="alert">{errorFoto}</p>}
         {foto && !estadoFoto && (
           <p className="suave" style={{ fontSize: '.85rem', marginBottom: 0 }}>
             ✓ Foto guardada{vista && <> · <a href={vista} target="_blank" rel="noreferrer">verla</a></>}
           </p>
         )}
-        {notaIA && <p className="aviso" style={{ marginBottom: 0 }}><strong>Revise:</strong> {notaIA}</p>}
+        {notaIA && <p className="aviso mb-0"><strong>Revise:</strong> {notaIA}</p>}
       </section>
 
       {/* ------------------------------------------------ encabezado */}
@@ -425,7 +425,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
           </div>
         )}
         {!enc.proveedor_id && !provLeido && (
-          <button type="button" className="discreto mini" style={{ marginTop: '.3rem' }} disabled={creandoProv} onClick={() => nuevoProveedor(null, null)}>+ Proveedor nuevo</button>
+          <button type="button" className="discreto mini mt-1" disabled={creandoProv} onClick={() => nuevoProveedor(null, null)}>+ Proveedor nuevo</button>
         )}
         <div className="fila">
           <div>
@@ -455,10 +455,10 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
           </div>
         </div>
         {otra && deLaOtra > 0 && (
-          <div className="aviso" style={{ marginBottom: 0 }}>
+          <div className="aviso mb-0">
             <strong>Esta factura trae {deLaOtra} producto(s) de {nombreArea(otra.area)}.</strong> Al guardar se registran dos recepciones,
             una por área, con la misma foto y el mismo número.
-            <label htmlFor="zona-otra" style={{ marginTop: '.5rem' }}>Zona por defecto de lo de {nombreArea(otra.area)}</label>
+            <label className="mt-2" htmlFor="zona-otra">Zona por defecto de lo de {nombreArea(otra.area)}</label>
             <select id="zona-otra" value={enc.ubicacion_otra ?? ''} onChange={(e) => ponerEnc({ ubicacion_otra: e.target.value })}>
               <option value="">— Zona de {nombreArea(otra.area)} —</option>
               {otra.zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}</option>)}
@@ -468,7 +468,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       </section>
 
       {/* ------------------------------------------------ líneas */}
-      <h2>3. Productos {lineas.length > 0 && <span className="suave" style={{ fontWeight: 400 }}>({lineas.length})</span>}</h2>
+      <h2>3. Productos {lineas.length > 0 && <span className="suave fw-400">({lineas.length})</span>}</h2>
       {sinConfirmar > 0 && (
         <div className="aviso confirmar-bloque">
           <span>La IA propuso {sinConfirmar === 1 ? '1 línea' : `${sinConfirmar} líneas`} sin confirmar. Revise producto, cantidad y valor contra la factura.</span>
@@ -496,7 +496,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
         ))}
       </ul>
       {elegidas.size > 0 && (
-        <div className="barra-bloque" style={{ marginTop: '.6rem' }}>
+        <div className="barra-bloque mt-2">
           <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <strong>{elegidas.size} marcado(s) →</strong>
             <select value={zonaGrupo} onChange={(e) => setZonaGrupo(e.target.value)} style={{ flex: '1 1 180px' }} aria-label="Zona para los marcados">
@@ -515,7 +515,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
           {otra && <span className="ayuda">Una zona de {nombreArea(area)} solo se aplica a lo de {nombreArea(area)}, y una de {nombreArea(otra.area)} a lo suyo.</span>}
         </div>
       )}
-      <div className="acciones" style={{ marginTop: '.6rem' }}>
+      <div className="acciones mt-2">
         <button type="button" className="secundario" onClick={() => setLineas((ls) => [...ls, nueva()])}>+ Agregar producto</button>
         <button type="button" className="secundario" onClick={() => { setLeido(null); setEscaneando(true); }}><Icono nombre="escanear" /> Escanear</button>
       </div>
@@ -524,8 +524,8 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
       {porAsociar && (
         <div className="tarjeta" style={{ marginTop: '.6rem', padding: '.7rem' }}>
           <strong>Código nuevo <span className="cod">{porAsociar}</span>: ¿qué producto es?</strong>
-          <div className="suave" style={{ fontSize: '.82rem' }}>Elíjalo una vez y la app lo reconoce en adelante.</div>
-          <input autoFocus value={buscarAsociar} onChange={(e) => setBuscarAsociar(e.target.value)} placeholder="Buscar en el catálogo…" style={{ marginTop: '.4rem' }} />
+          <div className="suave texto-mini">Elíjalo una vez y la app lo reconoce en adelante.</div>
+          <input className="mt-1" autoFocus value={buscarAsociar} onChange={(e) => setBuscarAsociar(e.target.value)} placeholder="Buscar en el catálogo…" />
           <div style={{ display: 'grid', gap: '.3rem', marginTop: '.4rem', maxHeight: 220, overflowY: 'auto' }}>
             {buscarAsociar.trim().length >= 2 && productos.filter((x) => {
               const t = sinTildes(`${x.generico} ${x.marca} ${x.presentacion} ${x.codigo}`);
@@ -536,7 +536,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
               </button>
             ))}
           </div>
-          <button type="button" className="discreto mini" style={{ marginTop: '.4rem' }} onClick={() => setPorAsociar(null)}>Cancelar</button>
+          <button type="button" className="discreto mini mt-1" onClick={() => setPorAsociar(null)}>Cancelar</button>
         </div>
       )}
       {descuadre && <p className="aviso">La suma de las líneas no cuadra con el total de la factura. Revise IVA, descuentos o una línea que falte.</p>}
@@ -609,7 +609,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
         )}
       </div>
       {(sinProducto > 0 || sinConfirmar > 0 || sinPeso > 0 || faltaZona || faltaZonaOtra) && lineas.length > 0 && (
-        <p className="suave" style={{ fontSize: '.85rem' }}>
+        <p className="suave texto-nota">
           {sinProducto > 0 ? `Falta elegir el producto en ${sinProducto} línea(s), o quitarla si no es un insumo. ` : ''}
           {sinConfirmar > 0 ? `Falta confirmar ${sinConfirmar} línea(s) propuesta(s) por la IA. ` : ''}
           {sinPeso > 0 ? `Falta pesar ${sinPeso} línea(s) que llegaron por unidad. ` : ''}
@@ -656,7 +656,6 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
   }
 
   const borde = !l.confirmada ? 'var(--aviso)' : !l.producto_id ? 'var(--error)' : undefined;
-  const campo = { margin: 0, fontWeight: 400, fontSize: '.85rem' } as const;
 
   // Una línea lista (confirmada, con producto y sin peso pendiente) se ve en un renglón: producto, lo que
   // llegó, el valor y la zona. Se toca «Corregir» para abrirla. Las que tienen algo pendiente van abiertas.
@@ -686,13 +685,13 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
   return (
     <li id={`linea-${l.clave}`} style={borde ? { borderColor: borde, borderWidth: 2 } : undefined}>
       {lista && <button type="button" className="discreto chico lc-cerrar" onClick={() => setAbierta(false)}>Listo, cerrar</button>}
-      <div className="linea" style={{ alignItems: 'flex-start' }}>
-        <div style={{ minWidth: 0 }}>
+      <div className="linea arriba">
+        <div className="min-0">
           <label style={{ display: 'inline-flex', gap: '.35rem', alignItems: 'center', margin: 0, fontWeight: 400 }}>
             <input type="checkbox" checked={elegida} onChange={marcar} aria-label={`Marcar la línea ${n}`} />
-            <span className="suave" style={{ fontSize: '.8rem' }}>Línea {n}{l.ia ? ' · leída por la IA' : ''}</span>
+            <span className="suave texto-mini">Línea {n}{l.ia ? ' · leída por la IA' : ''}</span>
           </label>
-          {l.nombre_factura && <div className="suave" style={{ fontSize: '.85rem' }}>Factura: «{l.nombre_factura}»</div>}
+          {l.nombre_factura && <div className="suave texto-nota">Factura: «{l.nombre_factura}»</div>}
           {p && !eligiendo && l.ia_sugerido?.producto_id === p.producto_id && (
             <div className="suave" style={{ fontSize: '.82rem', color: 'var(--tinta)' }}>Elegido por la IA: {l.ia_sugerido.razon} Revíselo.</div>
           )}
@@ -700,11 +699,11 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
             <div>
               <strong>{nombreDe(p)}</strong>
               {p.area && p.area !== area && <span className="etiqueta provisional" style={{ marginLeft: '.4rem' }}>va a {nombreArea(p.area)}</span>}
-              <div className="suave" style={{ fontSize: '.85rem' }}>{p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}</div>
+              <div className="suave texto-nota">{p.presentacion}{p.estado === 'PROVISIONAL' && ' · provisional'}</div>
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '.4rem' }}>
+        <div className="fila-flex">
           {p && !eligiendo && <button type="button" className="secundario chico" onClick={() => setEligiendo(true)}>Cambiar</button>}
           <button type="button" className="secundario chico" aria-label={`Quitar línea ${n}`}
                   onClick={async () => { if (!l.ia || await confirmar('¿Quitar esta línea? Úselo para lo que no es insumo (domicilio, bolsas).', { aceptar: 'Quitar' })) quitar(); }}>Quitar</button>
@@ -712,25 +711,25 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
       </div>
 
       {(eligiendo || !p) && (
-        <div style={{ marginTop: '.5rem' }}>
+        <div className="mt-2">
           {!p && l.nombre_factura && !creando && (
             <div className="aviso" style={{ margin: '0 0 .5rem', padding: '.5rem .7rem', fontSize: '.9rem' }}>
               <strong>«{l.nombre_factura}» no está con ese nombre en el catálogo{otraArea ? '' : ` de ${nombreArea(area)}`}.</strong>{' '}
               {l.ia_sugerido?.producto_id && porId.get(l.ia_sugerido.producto_id) ? (
-                <span style={{ display: 'block', marginTop: '.3rem' }}>
+                <span className="bloque mt-1">
                   La IA cree que es <strong>{nombreDe(porId.get(l.ia_sugerido.producto_id)!)}</strong>
                   {l.ia_sugerido.confianza !== 'alta' && ' (no está segura)'}: {l.ia_sugerido.razon}{' '}
-                  <button type="button" className="chico" style={{ marginTop: '.3rem' }} onClick={() => elegir(porId.get(l.ia_sugerido!.producto_id!)!)}>
+                  <button type="button" className="chico mt-1" onClick={() => elegir(porId.get(l.ia_sugerido!.producto_id!)!)}>
                     Sí, es {porId.get(l.ia_sugerido.producto_id)!.generico}
                   </button>
                 </span>
               ) : l.ia_sugerido ? (
-                <span style={{ display: 'block', marginTop: '.3rem' }}>La IA: {l.ia_sugerido.razon}</span>
+                <span className="bloque mt-1">La IA: {l.ia_sugerido.razon}</span>
               ) : null}
-              <span style={{ display: 'block', marginTop: '.3rem' }}>
+              <span className="bloque mt-1">
                 {sugeridos.length ? 'Otros parecidos están abajo; si ninguno es, créelo.' : 'No se parece a ningún producto: créelo o búsquelo con otro nombre.'}
               </span>
-              <div style={{ marginTop: '.4rem' }}>
+              <div className="mt-1">
                 <button type="button" className="chico" onClick={() => setCreando(true)}>+ Crear «{nombreSugerido(l.nombre_factura)}»</button>
               </div>
             </div>
@@ -738,7 +737,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
           {creando && <CrearRapido area={area} otraArea={otraArea} l={l} cancelar={() => setCreando(false)}
                                    listo={(x) => { creado(x); setCreando(false); elegir(x); }} />}
           {sugeridos.length > 0 && (
-            <div className="segmentos" style={{ marginBottom: '.4rem' }}>
+            <div className="segmentos mb-1">
               {sugeridos.map((x) => (
                 <button key={x.producto_id} type="button" className="secundario chico" style={{ textAlign: 'left' }} onClick={() => elegir(x)}>
                   {nombreDe(x)} <span className="suave">· {x.presentacion}{x.area && x.area !== area ? ` · ${nombreArea(x.area)}` : ''}</span>
@@ -748,10 +747,10 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
           )}
           <input aria-label={`Buscar producto de la línea ${n}`} placeholder="Buscar en el catálogo…" value={buscar} onChange={(e) => setBuscar(e.target.value)} autoFocus={!l.ia} />
           {opciones.length > 0 && (
-            <ul className="lista" style={{ marginTop: '.4rem' }}>
+            <ul className="lista mt-1">
               {opciones.map((x) => (
-                <li key={x.producto_id} style={{ padding: 0 }}>
-                  <button type="button" className="secundario" style={{ width: '100%', textAlign: 'left', border: 0, color: 'inherit' }} onClick={() => elegir(x)}>
+                <li className="p-0" key={x.producto_id}>
+                  <button type="button" className="secundario opcion-lista" onClick={() => elegir(x)}>
                     <strong>{nombreDe(x)}</strong> <span className="suave">· {x.presentacion}{x.area && x.area !== area ? ` · ${nombreArea(x.area)}` : ''}</span>
                   </button>
                 </li>
@@ -759,34 +758,34 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
             </ul>
           )}
           {buscar.trim().length >= 2 && !opciones.length && (
-            <p className="suave" style={{ fontSize: '.85rem' }}>No está en el catálogo.{' '}
+            <p className="suave texto-nota">No está en el catálogo.{' '}
               <button type="button" className="discreto mini" onClick={() => setCreando(true)}>Crear «{nombreSugerido(buscar)}»</button></p>
           )}
-          {p && <button type="button" className="secundario" style={{ marginTop: '.4rem' }} onClick={() => setEligiendo(false)}>Dejar {nombreDe(p)}</button>}
+          {p && <button type="button" className="secundario mt-1" onClick={() => setEligiendo(false)}>Dejar {nombreDe(p)}</button>}
         </div>
       )}
 
       {p && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '.5rem', marginTop: '.6rem' }}>
-            <label style={campo}>Pedido ({p.unidad_compra.toLowerCase() || p.unidad_base})
+            <label className="campo">Pedido ({p.unidad_compra.toLowerCase() || p.unidad_base})
               <input inputMode="decimal" value={l.pedida} onChange={(e) => poner({ pedida: e.target.value })} />
             </label>
-            <label style={campo}>Llegó ({p.unidad_compra.toLowerCase() || p.unidad_base})
+            <label className="campo">Llegó ({p.unidad_compra.toLowerCase() || p.unidad_base})
               <input inputMode="decimal" value={l.recibida} onChange={(e) => poner({ recibida: e.target.value })} />
             </label>
-            <label style={campo}>Valor línea ($)
+            <label className="campo">Valor línea ($)
               <input inputMode="decimal" value={l.valor} onChange={(e) => poner({ valor: e.target.value })} />
             </label>
           </div>
-          <label style={{ ...campo, marginTop: '.5rem' }}>Se guarda en
+          <label className="campo mt-2">Se guarda en
             <select value={l.zona ?? ''} onChange={(e) => poner({ zona: e.target.value })}>
               <option value="">{zonaDefecto ? `${zonas.find((z) => z.codigo === zonaDefecto)?.nombre ?? zonaDefecto} (la zona por defecto)` : '— la zona por defecto —'}</option>
               {zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}{zonaDe[p.producto_id] === z.codigo ? ' · su lugar habitual' : ''}</option>)}
             </select>
           </label>
           {(p.contenido_variable || l.pesar) && (
-            <label style={{ ...campo, marginTop: '.5rem' }}>
+            <label className="campo mt-2">
               {l.pesar ? <strong style={{ color: c.faltaPeso ? 'var(--aviso)' : undefined }}>Péselo: peso total que llegó ({p.unidad_base}) *</strong>
                 : <>Peso o volumen total que llegó ({p.unidad_base})</>}
               <input inputMode="decimal" value={l.total_base} onChange={(e) => poner({ total_base: e.target.value })}
@@ -797,12 +796,12 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
           )}
           {l.nota && <div className="suave" style={{ fontSize: '.8rem', marginTop: '.3rem' }}>{l.nota}</div>}
           {c.diferencia !== null && !l.obs.trim() && (
-            <div className="aviso" style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
+            <div className="aviso aviso-chico">
               Diferencia de {c.diferencia > 0 ? '+' : ''}{fmtCantidad(c.diferencia)} frente a lo pedido. Escriba qué pasó en observaciones.
             </div>
           )}
 
-          <div className="segmentos" role="radiogroup" aria-label={`Estado de la línea ${n}`} style={{ marginTop: '.6rem' }}>
+          <div className="segmentos mt-2" role="radiogroup" aria-label={`Estado de la línea ${n}`}>
             {CONDICIONES.map((x) => (
               <label key={x.v}>
                 <input type="radio" name={`cond-${l.clave}`} checked={l.condicion === x.v}
@@ -813,7 +812,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
           </div>
 
           {p.exige_sello && (
-            <div className="segmentos" role="radiogroup" aria-label={`Sello de la línea ${n}`} style={{ marginTop: '.5rem' }}>
+            <div className="segmentos mt-2" role="radiogroup" aria-label={`Sello de la línea ${n}`}>
               <span className="suave" style={{ border: 0, background: 'none', padding: '.5rem .2rem', minHeight: 0 }}>Sello:</span>
               {([['SI', 'Intacto'], ['NO', 'Roto'], ['NA', 'No aplica']] as const).map(([v, t]) => (
                 <label key={v}><input type="radio" name={`sello-${l.clave}`} checked={l.sello === v} onChange={() => poner({ sello: v })} /><span>{t}</span></label>
@@ -824,24 +823,24 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
           {(c.frio || p.es_perecedero) && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '.5rem', marginTop: '.5rem' }}>
               {c.frio && (
-                <label style={campo}>Temperatura al llegar (°C){p.temp_max !== null && ` · máx. ${p.temp_max}`}
+                <label className="campo">Temperatura al llegar (°C){p.temp_max !== null && ` · máx. ${p.temp_max}`}
                   <input inputMode="decimal" value={l.temperatura} onChange={(e) => poner({ temperatura: e.target.value })}
                          style={c.caliente ? { borderColor: 'var(--aviso)', borderWidth: 2 } : undefined} />
                 </label>
               )}
-              <label style={campo}>Vence
+              <label className="campo">Vence
                 <input type="date" value={l.vencimiento} onChange={(e) => poner({ vencimiento: e.target.value })} />
               </label>
               {c.frio && (
-                <label style={campo}>Lote del proveedor
+                <label className="campo">Lote del proveedor
                   <input value={l.lote} onChange={(e) => poner({ lote: e.target.value })} />
                 </label>
               )}
             </div>
           )}
-          {c.caliente && <div className="aviso" style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>Llegó por encima de {p.temp_max} °C. Queda anotado; no impide guardar.</div>}
+          {c.caliente && <div className="aviso aviso-chico">Llegó por encima de {p.temp_max} °C. Queda anotado; no impide guardar.</div>}
 
-          <label style={{ ...campo, marginTop: '.5rem' }}>Observaciones
+          <label className="campo mt-2">Observaciones
             <input value={l.obs} onChange={(e) => poner({ obs: e.target.value })} />
           </label>
 
@@ -857,7 +856,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
       )}
 
       {!l.confirmada && (
-        <div className="acciones" style={{ marginTop: '.6rem' }}>
+        <div className="acciones mt-2">
           <button type="button" disabled={!l.producto_id} onClick={() => poner({ confirmada: true })}>
             {l.producto_id ? 'Confirmar línea' : 'Elija el producto para confirmar'}
           </button>
@@ -905,25 +904,25 @@ function CrearRapido({ area, otraArea, l, listo, cancelar }: { area: Area; otraA
       <strong>Producto nuevo</strong>
       <span className="ayuda">Queda provisional hasta que lo valide el jefe del área. Se recibe a granel: se cuenta o se pesa al llegar.</span>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '.5rem', marginTop: '.5rem' }}>
-        <label style={campo}>Nombre
+        <label className="campo">Nombre
           <input value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus />
         </label>
-        <label style={campo}>Se lleva en
+        <label className="campo">Se lleva en
           <select value={ub} onChange={(e) => setUb(e.target.value as 'g' | 'ml' | 'und')}>
             <option value="g">gramos</option><option value="ml">mililitros</option><option value="und">unidades</option>
           </select>
         </label>
       </div>
       {otraArea && (
-        <div className="segmentos" role="radiogroup" aria-label="Área del producto" style={{ marginTop: '.5rem' }}>
+        <div className="segmentos mt-2" role="radiogroup" aria-label="Área del producto">
           {[area, otraArea].map((a) => (
             <label key={a}><input type="radio" checked={para === a} onChange={() => setPara(a)} /><span>Para {nombreArea(a)}</span></label>
           ))}
         </div>
       )}
       {error && (
-        <div className={bloqueado ? 'aviso' : 'error'} style={{ margin: '.5rem 0 0', padding: '.4rem .6rem', fontSize: '.85rem' }}>
-          <ul style={{ margin: 0 }}>{[...error.fatales, ...error.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul>
+        <div className={`${bloqueado ? 'aviso' : 'error'} aviso-chico`}>
+          <ul className="m-0">{[...error.fatales, ...error.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul>
           {bloqueado && (
             <label style={{ ...campo, marginTop: '.4rem' }}>Si no es ninguno de esos, escriba por qué (mínimo 15 caracteres)
               <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej.: es la fruta fresca, no la pulpa" />
@@ -931,7 +930,7 @@ function CrearRapido({ area, otraArea, l, listo, cancelar }: { area: Area; otraA
           )}
         </div>
       )}
-      <div className="acciones" style={{ marginTop: '.6rem' }}>
+      <div className="acciones mt-2">
         <button type="button" className="chico" disabled={enviando || nombre.trim().length < 3 || (bloqueado && motivo.trim().length < 15)} onClick={crear}>
           {enviando ? 'Creando…' : bloqueado ? 'Crear con este motivo' : 'Crear y usar'}
         </button>

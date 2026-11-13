@@ -32,7 +32,7 @@ export default async function Proveedores() {
   return (
     <>
       <h1 className="pagina-ancha titulo-gestion">Proveedores</h1>
-      <p className="suave pagina-ancha" style={{ marginTop: 0 }}>
+      <p className="suave pagina-ancha mt-0">
         Para estudiar y organizar a quién le compramos: cuánto dependemos de cada uno, qué riesgos vienen, quién está repetido y qué le
         compramos a cada quien. Las compras y los precios se registran en Recibir y en Precios desde fotos.
       </p>

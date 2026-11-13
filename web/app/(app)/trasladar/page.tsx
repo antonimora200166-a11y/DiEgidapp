@@ -38,7 +38,7 @@ export default async function PaginaTrasladar() {
             {recientes.map((t) => (
               <li key={t.id} className="linea">
                 <span><span className="cod">{t.codigo}</span><br />{nombre(t.origen)} → {nombre(t.destino)}</span>
-                <span className="suave" style={{ fontSize: '.85rem', textAlign: 'right' }}>
+                <span className="suave texto-nota der">
                   {fmtFecha(t.fecha)}
                   {t.forzado && <><br /><span className="etiqueta provisional">forzado</span></>}
                 </span>

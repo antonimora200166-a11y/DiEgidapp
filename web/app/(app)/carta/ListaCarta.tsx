@@ -36,7 +36,7 @@ function Estado({ f }: { f: PlatoCarta }) {
       <span className="etiqueta" style={{ color, fontSize: '.8rem', padding: '.1rem .45rem' }}>
         {ESTADO[f.estado_ficha]}{f.estado_ficha === 'PARCIAL' ? ` ${f.lineas_con_costo}/${f.lineas}` : ''}
       </span>
-      {f.estimado && <div className="suave" style={{ fontSize: '.75rem' }} title="Sin kardex todavía: precios de referencia y recetas de las MPI">estimado</div>}
+      {f.estimado && <div className="suave texto-mini" title="Sin kardex todavía: precios de referencia y recetas de las MPI">estimado</div>}
     </span>
   );
 }
@@ -50,7 +50,7 @@ function Precio({ f }: { f: PlatoCarta }) {
   const [enviando, iniciar] = useTransition();
   if (!abierto) {
     return (
-      <span style={{ whiteSpace: 'nowrap' }}>
+      <span className="nowrap">
         {f.precio ? pesos(f.precio) : <span className="suave">—</span>}
         <button type="button" className="discreto mini" onClick={() => { setValor(f.precio ? String(f.precio) : ''); setAbierto(true); }}>
           {f.precio ? 'Cambiar' : 'Poner'}</button>
@@ -80,7 +80,7 @@ function Precio({ f }: { f: PlatoCarta }) {
 // Ingredientes de la ficha con su costo: se abre al tocar la fila.
 function Ingredientes({ f }: { f: PlatoCarta }) {
   if (f.estado_ficha === 'SIN_FICHA') {
-    return <p className="suave" style={{ margin: '.3rem 0' }}>{f.nombre} no tiene ficha técnica todavía. <Link href={`/fichas/${f.generico_id}`}>Crear o abrir la ficha</Link></p>;
+    return <p className="suave mt-1 mb-1">{f.nombre} no tiene ficha técnica todavía. <Link href={`/fichas/${f.generico_id}`}>Crear o abrir la ficha</Link></p>;
   }
   return (
     <div style={{ padding: '.3rem 0', maxWidth: 640 }}>
@@ -88,23 +88,23 @@ function Ingredientes({ f }: { f: PlatoCarta }) {
         <strong>Ficha {f.ficha_codigo}{f.ficha_version ? ` · versión ${f.ficha_version}` : ''}</strong>
         <Link href={`/fichas/${f.generico_id}`} className="mini">Abrir la ficha técnica</Link>
       </div>
-      <table className="tabla" style={{ fontSize: '.9rem' }}>
-        <thead><tr><th>Insumo</th><th style={{ textAlign: 'right' }}>Cantidad</th><th style={{ textAlign: 'right' }}>Costo</th><th style={{ textAlign: 'right' }}>Peso</th></tr></thead>
+      <table className="tabla texto-nota">
+        <thead><tr><th>Insumo</th><th className="der">Cantidad</th><th className="der">Costo</th><th className="der">Peso</th></tr></thead>
         <tbody>
           {f.ingredientes.map((i) => (
             <tr key={i.linea}>
               <td>
                 <Link href={i.tipo === 'MPI' ? `/fichas/${i.generico_id}` : `/catalogo/generico/${i.generico_id}`}>{i.nombre}</Link>
-                {i.tipo === 'MPI' && <span className="suave" style={{ fontSize: '.75rem' }}> · MPI</span>}
+                {i.tipo === 'MPI' && <span className="suave texto-mini"> · MPI</span>}
                 {i.falta && <div style={{ color: 'var(--aviso)', fontSize: '.8rem' }}>{i.falta}</div>}
               </td>
-              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{i.cantidad === null ? <span className="suave">al gusto</span> : `${Number(i.cantidad).toLocaleString('es-CO')} ${i.unidad}`}</td>
-              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{i.falta ? <span style={{ color: 'var(--error)' }}>sin costo</span> : pesos(i.costo)}{i.estimado && !i.falta && <span className="suave" title="estimado"> *</span>}</td>
-              <td style={{ textAlign: 'right' }}>{!i.falta && f.costo ? `${Math.round(Number(i.costo ?? 0) / Number(f.costo) * 100)} %` : '—'}</td>
+              <td className="der nowrap">{i.cantidad === null ? <span className="suave">al gusto</span> : `${Number(i.cantidad).toLocaleString('es-CO')} ${i.unidad}`}</td>
+              <td className="der nowrap">{i.falta ? <span className="c-error">sin costo</span> : pesos(i.costo)}{i.estimado && !i.falta && <span className="suave" title="estimado"> *</span>}</td>
+              <td className="der">{!i.falta && f.costo ? `${Math.round(Number(i.costo ?? 0) / Number(f.costo) * 100)} %` : '—'}</td>
             </tr>
           ))}
         </tbody>
-        <tfoot><tr><td><strong>Total</strong></td><td /><td style={{ textAlign: 'right' }}><strong>{pesos(f.costo)}</strong></td><td /></tr></tfoot>
+        <tfoot><tr><td><strong>Total</strong></td><td /><td className="der"><strong>{pesos(f.costo)}</strong></td><td /></tr></tfoot>
       </table>
       {f.estimado && <p className="suave" style={{ fontSize: '.8rem', margin: '.3rem 0 0' }}>* Costo estimado: precio de referencia o receta de la MPI, mientras no haya kardex.</p>}
     </div>
@@ -128,7 +128,7 @@ function AlBaul({ elegidas, limpiar }: { elegidas: PlatoCarta[]; limpiar: () => 
   };
   return (
     <div className="barra-bloque">
-      <div className="linea" style={{ flexWrap: 'wrap' }}>
+      <div className="linea wrap">
         <strong>{elegidas.length} seleccionado(s)</strong>
         <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo (opcional)" aria-label="Motivo"
@@ -182,7 +182,7 @@ export default function ListaCarta({ filas, variasAreas }: { filas: PlatoCarta[]
   const columnas: Columna<PlatoCarta>[] = [
     { k: 'codigo', t: 'Código', orden: (f) => f.codigo, ver: (f) => <span className="suave" style={{ fontSize: '.8rem', fontFamily: 'ui-monospace, monospace' }}>{f.codigo}</span> },
     { k: 'nombre', t: 'Nombre', orden: (f) => f.nombre, ver: (f) => <strong>{f.nombre}</strong> },
-    { k: 'seccion', t: 'Sección', orden: seccion, ver: (f) => <span style={{ fontSize: '.88rem' }}>{seccion(f)}</span> },
+    { k: 'seccion', t: 'Sección', orden: seccion, ver: (f) => <span className="texto-nota">{seccion(f)}</span> },
     { k: 'ficha', t: 'Ficha', orden: (f) => f.estado_ficha, ver: (f) => <Estado f={f} /> },
     { k: 'costo', t: 'Costo', der: true, orden: (f) => f.costo, ver: (f) => (f.estado_ficha === 'SIN_FICHA' ? <span className="suave">—</span> : pesos(f.costo)) },
     { k: 'precio', t: 'Precio carta', der: true, orden: (f) => f.precio, ver: (f) => <Precio f={f} /> },
@@ -206,7 +206,7 @@ export default function ListaCarta({ filas, variasAreas }: { filas: PlatoCarta[]
                       const con = vis.filter((f) => f.pct_costo !== null);
                       const prom = con.length ? con.reduce((t, f) => t + Number(f.pct_costo), 0) / con.length : null;
                       return (
-                        <p className="suave" style={{ fontSize: '.88rem' }}>
+                        <p className="suave texto-nota">
                           {vis.length} productos · {con.length} con % de costo
                           {prom !== null && <> · promedio simple <strong>{pct(prom)}</strong></>}
                           {' '}· {vis.filter((f) => f.semaforo === 'ROJO').length} sobre la meta

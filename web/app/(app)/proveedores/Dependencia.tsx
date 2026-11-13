@@ -46,30 +46,30 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
       <p className="suave">Compras de los últimos 12 meses ({fechaCorta(datos.desde)} a {fechaCorta(datos.hasta)}): recepciones, fotos de precios y libros anteriores.</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '.5rem', marginBottom: '.8rem' }}>
-        <div className="tarjeta"><div className="suave" style={{ fontSize: '.8rem' }}>Comprado</div><strong style={{ fontSize: '1.2rem' }}>{pesos(datos.total)}</strong></div>
-        <div className="tarjeta"><div className="suave" style={{ fontSize: '.8rem' }}>Proveedores</div><strong style={{ fontSize: '1.2rem' }}>{datos.n_proveedores}</strong></div>
-        <div className="tarjeta"><div className="suave" style={{ fontSize: '.8rem' }}>Concentración (HHI)</div><strong style={{ fontSize: '1.2rem' }}>{datos.hhi ?? '—'}</strong>
-          <div className="suave" style={{ fontSize: '.78rem' }}>{lecturaHHI(datos.hhi)}</div></div>
-        <div className="tarjeta"><div className="suave" style={{ fontSize: '.8rem' }}>Insumos con un solo proveedor</div><strong style={{ fontSize: '1.2rem' }}>{datos.un_solo_proveedor.length}{datos.un_solo_proveedor.length >= 40 ? '+' : ''}</strong></div>
+        <div className="tarjeta"><div className="suave texto-mini">Comprado</div><strong className="texto-grande">{pesos(datos.total)}</strong></div>
+        <div className="tarjeta"><div className="suave texto-mini">Proveedores</div><strong className="texto-grande">{datos.n_proveedores}</strong></div>
+        <div className="tarjeta"><div className="suave texto-mini">Concentración (HHI)</div><strong className="texto-grande">{datos.hhi ?? '—'}</strong>
+          <div className="suave texto-mini">{lecturaHHI(datos.hhi)}</div></div>
+        <div className="tarjeta"><div className="suave texto-mini">Insumos con un solo proveedor</div><strong className="texto-grande">{datos.un_solo_proveedor.length}{datos.un_solo_proveedor.length >= 40 ? '+' : ''}</strong></div>
       </div>
 
       {/* ------------------------------------------------ riesgos con IA: cada vez que se pide */}
       <section className="tarjeta" style={{ marginBottom: '.8rem', display: 'grid', gap: '.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <h2 style={{ margin: 0 }}>Riesgos de abastecimiento</h2>
+          <h2 className="m-0">Riesgos de abastecimiento</h2>
           {puedeAnalizar && (
             <button type="button" disabled={analizando} onClick={analizar}>
               {analizando ? 'Analizando… (1 a 3 minutos)' : '🔎 Analizar riesgos ahora'}
             </button>
           )}
         </div>
-        <span className="suave" style={{ fontSize: '.85rem' }}>
+        <span className="suave texto-nota">
           Cada vez que toca el botón, la IA busca en la web lo que está pasando hoy (clima, vías, paros, vedas, temporadas, precios)
           y lo cruza con la dependencia de proveedores de arriba. Cada análisis queda guardado con su fecha.
         </span>
         {error && <div className="aviso" role="status">{error}</div>}
         {lista.length > 1 && (
-          <label style={{ margin: 0 }}>Análisis
+          <label className="m-0">Análisis
             <select value={verId ?? ''} onChange={(e) => setVerId(e.target.value)}>
               {lista.map((a, i) => <option key={a.id} value={a.id}>{fechaHora(a.creado_en)}{i === 0 ? ' (el más reciente)' : ''}</option>)}
             </select>
@@ -78,24 +78,24 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
         {!actual && !analizando && <p className="suave">Todavía no hay ningún análisis. {puedeAnalizar ? 'Toque «Analizar riesgos ahora».' : ''}</p>}
         {actual && (
           <>
-            <p style={{ margin: 0 }}><span className="suave">{actual.resultado.fecha} · </span>{actual.resultado.resumen}</p>
+            <p className="m-0"><span className="suave">{actual.resultado.fecha} · </span>{actual.resultado.resumen}</p>
             {actual.resultado.riesgos.map((r, i) => (
               <div key={i} style={{ borderLeft: `4px solid ${COLOR[r.nivel]}`, padding: '.3rem .6rem', display: 'grid', gap: '.2rem' }}>
                 <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', alignItems: 'baseline' }}>
                   <strong>{r.titulo}</strong>
                   <span className="etiqueta" style={{ color: COLOR[r.nivel] }}>{r.nivel}</span>
                   <span className="etiqueta">{TIPO[r.tipo] ?? r.tipo}</span>
-                  <span className="suave" style={{ fontSize: '.82rem' }}>{r.cuando}</span>
+                  <span className="suave texto-mini">{r.cuando}</span>
                 </div>
-                <span style={{ fontSize: '.9rem' }}>{r.por_que}</span>
-                {r.afecta.length > 0 && <span className="suave" style={{ fontSize: '.82rem' }}>Afecta: {r.afecta.join(', ')}</span>}
-                <span style={{ fontSize: '.9rem' }}><strong>Qué hacer:</strong> {r.que_hacer}</span>
+                <span className="texto-nota">{r.por_que}</span>
+                {r.afecta.length > 0 && <span className="suave texto-mini">Afecta: {r.afecta.join(', ')}</span>}
+                <span className="texto-nota"><strong>Qué hacer:</strong> {r.que_hacer}</span>
               </div>
             ))}
             {actual.resultado.calendario.length > 0 && (
               <details>
                 <summary><strong>Calendario de los próximos meses</strong></summary>
-                <ul style={{ margin: '.3rem 0' }}>
+                <ul className="mt-1 mb-1">
                   {actual.resultado.calendario.map((c, i) => <li key={i}><strong>{c.cuando}:</strong> {c.evento} — <span className="suave">{c.efecto}</span></li>)}
                 </ul>
               </details>
@@ -114,7 +114,7 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
 
       {/* ------------------------------------------------ dependencia (datos de la app) */}
       <section className="tarjeta" style={{ marginBottom: '.8rem' }}>
-        <h2 style={{ marginTop: 0 }}>Cuánto pesa cada proveedor</h2>
+        <h2 className="mt-0">Cuánto pesa cada proveedor</h2>
         {datos.proveedores.map((p) => (
           <div key={p.id} style={{ padding: '.35rem 0', borderTop: '1px solid var(--borde)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.5rem', flexWrap: 'wrap' }}>
@@ -124,7 +124,7 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
             <div style={{ height: 6, background: 'var(--borde)', borderRadius: 3, margin: '.2rem 0' }}>
               <div style={{ width: `${Math.min(100, p.participacion)}%`, height: '100%', background: p.participacion >= 25 ? 'var(--error)' : 'var(--tinta)', borderRadius: 3 }} />
             </div>
-            <div className="suave" style={{ fontSize: '.8rem' }}>
+            <div className="suave texto-mini">
               {p.insumos} insumo(s){p.insumos_solo_el ? ` · ${p.insumos_solo_el} solo se los compramos a él` : ''} · {p.compras} compra(s) · última {fechaCorta(p.ultima)}
               {p.categorias?.length ? ` · ${p.categorias.join(', ')}` : ''}
             </div>
@@ -134,7 +134,7 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
 
       {concentradas.length > 0 && (
         <section className="tarjeta" style={{ marginBottom: '.8rem' }}>
-          <h2 style={{ marginTop: 0 }}>Categorías que dependen de un proveedor</h2>
+          <h2 className="mt-0">Categorías que dependen de un proveedor</h2>
           {concentradas.map((c) => (
             <div key={`${c.area}-${c.categoria}`} style={{ padding: '.3rem 0', borderTop: '1px solid var(--borde)' }}>
               <strong>{c.categoria}</strong> <span className="suave">({c.area === 'BAR' ? 'bar' : 'cocina'})</span>
@@ -146,7 +146,7 @@ export default function Dependencia({ datos, analisis, puedeAnalizar }: { datos:
       )}
 
       <section className="tarjeta">
-        <h2 style={{ marginTop: 0 }}>Insumos que solo trae un proveedor</h2>
+        <h2 className="mt-0">Insumos que solo trae un proveedor</h2>
         <p className="suave" style={{ marginTop: 0, fontSize: '.85rem' }}>Los que más se compran primero. Si ese proveedor falla, no hay a quién llamar.</p>
         {datos.un_solo_proveedor.map((u) => (
           <div key={`${u.insumo}-${u.proveedor}`} style={{ padding: '.25rem 0', borderTop: '1px solid var(--borde)', display: 'flex', justifyContent: 'space-between', gap: '.5rem', flexWrap: 'wrap' }}>

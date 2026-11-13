@@ -20,14 +20,14 @@ function Columna({ titulo, lado }: { titulo: string; lado: Lado }) {
   const g = lado.generico;
   return (
     <div className="tarjeta" style={{ padding: '.75rem' }}>
-      <div className="suave" style={{ fontSize: '.8rem' }}>{titulo} · {FUENTE[lado.fuente] ?? lado.fuente}</div>
+      <div className="suave texto-mini">{titulo} · {FUENTE[lado.fuente] ?? lado.fuente}</div>
       <strong style={{ display: 'block', fontSize: '1.05rem', margin: '.2rem 0' }}>{lado.nombre}</strong>
       {g ? (
         <>
           <div className="cod">
             {g.codigo} · {g.unidad_base} · <span className={`etiqueta ${g.activo ? g.estado.toLowerCase() : 'inactivo'}`}>{g.activo ? g.estado : 'INACTIVO'}</span>
           </div>
-          {g.nombre !== lado.nombre && <div className="suave" style={{ fontSize: '.85rem' }}>Genérico: {g.nombre}</div>}
+          {g.nombre !== lado.nombre && <div className="suave texto-nota">Genérico: {g.nombre}</div>}
           <ul style={{ margin: '.4rem 0 0', paddingLeft: '1.1rem', fontSize: '.88rem' }}>
             {lado.productos.slice(0, 5).map((p) => (
               <li key={p.codigo} className={p.activo ? '' : 'suave'}>{[p.marca, p.presentacion].filter(Boolean).join(' · ') || 'sin presentación'}</li>
@@ -78,14 +78,14 @@ export default function TarjetaPar({ par }: { par: Par }) {
 
   if (resultado?.ok) {
     return (
-      <li className="tarjeta exito" style={{ margin: 0 }}>
+      <li className="tarjeta exito m-0">
         <strong>{par.a.nombre}</strong> / <strong>{par.b.nombre}</strong>: decidido.
         {resultado.avisos.length > 0 && <span className="suave"> {resultado.avisos.join(' ')}</span>}
       </li>
     );
   }
   return (
-    <li className="tarjeta" style={{ margin: 0 }}>
+    <li className="tarjeta m-0">
       <div className="linea" style={{ marginBottom: '.6rem' }}>
         <span className="suave">{par.tipo === 'DUPLICADO' ? 'Duplicado exacto' : 'Se parecen'} · sugerencia: <strong>{par.propuesta === 'FUSIONAR' ? 'son el mismo' : par.propuesta === 'SEPARAR' ? 'son distintos' : 'revisar'}</strong></span>
         <span className="pct">{Math.round(par.parecido * 100)} %</span>
@@ -94,10 +94,10 @@ export default function TarjetaPar({ par }: { par: Par }) {
         <Columna titulo="A" lado={par.a} />
         <Columna titulo="B" lado={par.b} />
       </div>
-      {par.motivo && <p className="suave" style={{ margin: '.6rem 0 0', fontSize: '.88rem' }}>{par.motivo}</p>}
-      {mismoGenerico && <p className="suave" style={{ margin: '.6rem 0 0', fontSize: '.88rem' }}>Los dos ya son el mismo genérico: «son el mismo» desactiva el producto repetido.</p>}
+      {par.motivo && <p className="suave mt-2 mb-0 texto-nota">{par.motivo}</p>}
+      {mismoGenerico && <p className="suave mt-2 mb-0 texto-nota">Los dos ya son el mismo genérico: «son el mismo» desactiva el producto repetido.</p>}
       {ubDistinta && !eligiendo && (
-        <p className="suave" style={{ margin: '.6rem 0 0', fontSize: '.88rem' }}>
+        <p className="suave mt-2 mb-0 texto-nota">
           Van en unidades distintas ({par.a.generico!.unidad_base} / {par.b.generico!.unidad_base}). Si son el mismo, al unirlos le
           preguntaremos la equivalencia y los productos del que se absorbe pasan a la unidad del que queda.
           {(par.a.generico!.unidad_base === 'und') !== (par.b.generico!.unidad_base === 'und') && (
@@ -106,11 +106,11 @@ export default function TarjetaPar({ par }: { par: Par }) {
         </p>
       )}
       {p && (
-        <div className="aviso" style={{ marginBottom: 0 }}>
+        <div className="aviso mb-0">
           <strong>Quedarse con «{ladoQueda.nombre}» ({ladoQueda.generico!.unidad_base})</strong> y pasar «{ladoVa.nombre}» desde {ladoVa.generico!.unidad_base}.
           <label htmlFor={`factor-${par.id}`}>{p.texto}</label>
           <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-            <span style={{ whiteSpace: 'nowrap' }}>1 {p.de} =</span>
+            <span className="nowrap">1 {p.de} =</span>
             <input id={`factor-${par.id}`} inputMode="decimal" value={respuesta} onChange={(e) => setRespuesta(e.target.value)} style={{ maxWidth: 140 }} autoFocus />
             <span>{p.a}</span>
           </div>
@@ -125,11 +125,11 @@ export default function TarjetaPar({ par }: { par: Par }) {
       )}
       {resultado && !resultado.ok && (
         <div className="error" role="alert">
-          <ul style={{ margin: 0 }}>{[...resultado.fatales, ...resultado.avisos].map((m) => <li key={m}>{m}</li>)}</ul>
+          <ul className="m-0">{[...resultado.fatales, ...resultado.avisos].map((m) => <li key={m}>{m}</li>)}</ul>
         </div>
       )}
       {!eligiendo && (
-        <div className="acciones" style={{ marginTop: '.8rem' }}>
+        <div className="acciones mt-3">
           {mismoGenerico || !par.b.generico || !par.a.generico ? (
             <button type="button" disabled={enviando} onClick={() => decidir('FUSIONAR', 'A')}>Son el mismo</button>
           ) : (

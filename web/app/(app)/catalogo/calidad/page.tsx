@@ -46,7 +46,7 @@ export default async function Calidad() {
     <>
       <PestanasCalidad activa="bandeja" esAdmin={esAdmin} />
       <h1 className="pagina-ancha titulo-gestion">Calidad del catálogo</h1>
-      <p className="suave" style={{ marginTop: 0 }}>
+      <p className="suave mt-0">
         {total ? <>Quedan <strong>{total.toLocaleString('es-CO')}</strong> revisiones pendientes. Empiece por los insumos A/B: son los que más mueven el costo.</>
           : 'El catálogo está al día: no hay revisiones pendientes.'}
       </p>

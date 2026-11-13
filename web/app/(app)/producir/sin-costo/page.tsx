@@ -20,7 +20,7 @@ export default async function SinCosto() {
 
   return (
     <>
-      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href="/producir">← Producir</Link></p>
+      <p className="pagina-ancha m-0 mb-1"><Link href="/producir">← Producir</Link></p>
       <h1>Lotes sin costo completo</h1>
       <p className="suave">
         Lotes a los que les falta el costo de algún insumo: su costo por gramo no es confiable. {filas.length - historicos} de la app

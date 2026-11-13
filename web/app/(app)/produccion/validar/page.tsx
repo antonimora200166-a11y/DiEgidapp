@@ -43,9 +43,9 @@ export default async function Validar({ searchParams }: { searchParams: Promise<
   return (
     <>
       {F.area === 'COCINA' && <PestanasProduccion activa="fichas" area="COCINA" />}
-      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href={F.volver.href}>← {F.volver.texto}</Link></p>
+      <p className="pagina-ancha m-0 mb-1"><Link href={F.volver.href}>← {F.volver.texto}</Link></p>
       <h1 style={{ marginBottom: '.3rem' }}>{F.titulo}</h1>
-      <p className="suave" style={{ marginTop: 0 }}>
+      <p className="suave mt-0">
         {F.conIngredientes
           ? 'Tres pasos: empareje los ingredientes del recetario con el catálogo, dígale a cada MPI cuál es su receta y apruebe la propuesta como ficha.'
           : F.lineasDeReceta
@@ -62,7 +62,7 @@ export default async function Validar({ searchParams }: { searchParams: Promise<
         {clave === 'platos' && cocina && <div className="cifra"><span>MPI de cocina con ficha</span><b>{cocina.mpi.con_ficha} / {cocina.mpi.total}</b>
           <small><Link href="/produccion/validar?tab=mpi">Validar MPI</Link></small></div>}
       </div>
-      <nav className="segmentos pagina-ancha" aria-label="Pasos" style={{ marginBottom: '1rem' }}>
+      <nav className="segmentos pagina-ancha mb-3" aria-label="Pasos">
         {tabs.map((t, i) => (
           <Link key={t} href={q(t)} aria-current={t === tab ? 'true' : undefined}>
             <span>

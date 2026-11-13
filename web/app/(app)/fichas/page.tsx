@@ -31,14 +31,14 @@ export default async function Fichas() {
         Por defecto se ven las que les falta algo, incluidas las que no tienen ficha; quita el filtro de estado para verlas todas.
         Con «Forma de venta» separas los cócteles de las botellas, shots, copas y reventa.</p>
       {carta && carta.mpi.aprobadas < carta.mpi.total && (
-        <Link href="/produccion/validar?fuente=cocteles" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--tinta)' }}>
+        <Link href="/produccion/validar?fuente=cocteles" className="tarjeta pagina-ancha tarjeta-enlace">
           <span><strong>Completar las fichas de cócteles con la carta</strong><br />
             <span className="suave">{carta.mpi.aprobadas} de {carta.mpi.total} bebidas con procedimiento, presentación y alérgenos de la carta.</span></span>
           <span className="boton">Continuar</span>
         </Link>
       )}
       {platos && platos.mpi.total > 0 && platos.mpi.con_ficha < platos.mpi.total && (
-        <Link href="/produccion/validar?fuente=platos" className="tarjeta pagina-ancha" style={{ display: 'flex', gap: '.75rem', justifyContent: 'space-between', alignItems: 'center', textDecoration: 'none', marginBottom: '1rem', borderColor: 'var(--tinta)' }}>
+        <Link href="/produccion/validar?fuente=platos" className="tarjeta pagina-ancha tarjeta-enlace">
           <span><strong>Fichas de los platos de la carta</strong><br />
             <span className="suave">{platos.mpi.con_ficha} de {platos.mpi.total} platos con ficha · {platos.mpi.sin_receta} sin receta en el recetario.</span></span>
           <span className="boton">Continuar</span>

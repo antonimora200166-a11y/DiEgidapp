@@ -73,9 +73,9 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
   if (resultado?.ok) {
     return (
       <div className="tarjeta">
-        <p className="exito" role="status" style={{ marginTop: 0 }}><strong>Traslado guardado: {resultado.codigo}</strong><br />
+        <p className="exito mt-0" role="status"><strong>Traslado guardado: {resultado.codigo}</strong><br />
           {lineas.length} producto(s) de {nombre(origen)} a {nombre(destino)}.</p>
-        {resultado.avisos.length > 0 && <div className="aviso"><ul style={{ margin: 0 }}>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
+        {resultado.avisos.length > 0 && <div className="aviso"><ul className="m-0">{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
         <div className="acciones">
           <button type="button" onClick={otro}>Otro traslado</button>
           <Link className="boton secundario" href="/existencias">Ver existencias</Link>
@@ -90,14 +90,14 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
       <section className="tarjeta">
         <div className="fila">
           <div>
-            <label htmlFor="origen" style={{ marginTop: 0 }}>Sale de</label>
+            <label className="mt-0" htmlFor="origen">Sale de</label>
             <select id="origen" value={origen} onChange={(e) => cambiarOrigen(e.target.value)}>
               <option value="">— Zona —</option>
               <OpcionesZonas zonas={zonas} />
             </select>
           </div>
           <div>
-            <label htmlFor="destino" style={{ marginTop: 0 }}>Llega a</label>
+            <label className="mt-0" htmlFor="destino">Llega a</label>
             <select id="destino" value={destino} onChange={(e) => setDestino(e.target.value)}>
               <option value="">— Zona —</option>
               <OpcionesZonas zonas={zonas} excepto={origen} />
@@ -108,7 +108,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
         <input id="fecha" type="date" max={hoyCali()} value={fecha} onChange={(e) => setFecha(e.target.value)} style={{ maxWidth: 200 }} />
       </section>
 
-      <h2>Productos {lineas.length > 0 && <span className="suave" style={{ fontWeight: 400 }}>({lineas.length})</span>}</h2>
+      <h2>Productos {lineas.length > 0 && <span className="suave fw-400">({lineas.length})</span>}</h2>
       {origen
         ? <LineasInventario productos={lista} zona={origen} lineas={lineas} setLineas={setLineas} ofrecerTodo />
         : <p className="suave">Elija primero de qué zona sale.</p>}
@@ -131,7 +131,7 @@ export default function Trasladar({ zonas, productos }: { zonas: Zona[]; product
         </div>
       )}
       {lineas.length > 0 && (!destino || malas > 0) && (
-        <p className="suave" style={{ fontSize: '.85rem' }}>{!destino ? 'Elija a qué zona llega. ' : ''}{malas > 0 ? `Falta la cantidad en ${malas} producto(s).` : ''}</p>
+        <p className="suave texto-nota">{!destino ? 'Elija a qué zona llega. ' : ''}{malas > 0 ? `Falta la cantidad en ${malas} producto(s).` : ''}</p>
       )}
     </>
   );

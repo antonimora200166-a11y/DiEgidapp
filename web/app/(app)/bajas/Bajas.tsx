@@ -61,9 +61,9 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
   if (resultado?.ok) {
     return (
       <div className="tarjeta">
-        <p className="exito" role="status" style={{ marginTop: 0 }}><strong>Baja guardada: {resultado.codigo}</strong><br />
+        <p className="exito mt-0" role="status"><strong>Baja guardada: {resultado.codigo}</strong><br />
           {lineas.length} producto(s) salieron del kardex{total > 0 && ` por ${pesos(total)}`}.</p>
-        {resultado.avisos.length > 0 && <div className="aviso"><ul style={{ margin: 0 }}>{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
+        {resultado.avisos.length > 0 && <div className="aviso"><ul className="m-0">{resultado.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
         <div className="acciones">
           <button type="button" onClick={otra}>Registrar otra</button>
           <Link className="boton secundario" href="/existencias">Ver existencias</Link>
@@ -78,14 +78,14 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
       <section className="tarjeta">
         <div className="fila">
           <div>
-            <label htmlFor="zona" style={{ marginTop: 0 }}>Zona</label>
+            <label className="mt-0" htmlFor="zona">Zona</label>
             <select id="zona" value={zona} onChange={(e) => setZona(e.target.value)}>
               <option value="">— Zona —</option>
               {zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}</option>)}
             </select>
           </div>
           <div>
-            <label htmlFor="fecha" style={{ marginTop: 0 }}>Fecha</label>
+            <label className="mt-0" htmlFor="fecha">Fecha</label>
             <input id="fecha" type="date" max={hoyCali()} value={fecha} onChange={(e) => setFecha(e.target.value)} />
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
         </div>
       </section>
 
-      <h2>Productos {lineas.length > 0 && <span className="suave" style={{ fontWeight: 400 }}>({lineas.length})</span>}</h2>
+      <h2>Productos {lineas.length > 0 && <span className="suave fw-400">({lineas.length})</span>}</h2>
       <LineasInventario productos={productos} zona={zona} lineas={lineas} setLineas={setLineas} />
 
       <label htmlFor="obs">Observaciones <span className="ayuda">{causa === 'OTRO' ? 'obligatorias si la causa es «Otro»' : 'opcional'}</span></label>
@@ -119,7 +119,7 @@ export default function Bajas({ area, productos, zonas }: { area: Area; producto
         </div>
       )}
       {lineas.length > 0 && (!zona || !causa || malas > 0 || faltaObs) && (
-        <p className="suave" style={{ fontSize: '.85rem' }}>
+        <p className="suave texto-nota">
           {!zona ? 'Elija la zona. ' : ''}{!causa ? 'Elija la causa. ' : ''}
           {malas > 0 ? `Falta la cantidad en ${malas} producto(s). ` : ''}{faltaObs ? 'Escriba qué pasó en observaciones.' : ''}
         </p>

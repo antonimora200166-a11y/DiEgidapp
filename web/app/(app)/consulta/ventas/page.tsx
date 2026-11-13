@@ -23,7 +23,7 @@ export default async function CargarVentasPagina() {
 
   return (
     <>
-      <p style={{ margin: '0 0 .3rem' }}><Link href="/consulta">← Consulta</Link></p>
+      <p className="m-0 mb-1"><Link href="/consulta">← Consulta</Link></p>
       <h1 className="pagina-ancha titulo-gestion">Cargar ventas de Odoo</h1>
       <p className="suave">Cada lunes suba el reporte de la semana tal como sale de Odoo. La app lo lee, revisa que cuadre día por día y lo guarda;
         los días que ya estaban cargados no se cuentan dos veces. La app no escribe nada en Odoo.</p>
@@ -35,16 +35,16 @@ export default async function CargarVentasPagina() {
 
       <h2>Cargas</h2>
       {cargas?.length ? (
-        <div className="desborde tarjeta" style={{ padding: 0 }}>
+        <div className="desborde tarjeta p-0">
           <table className="tabla">
-            <thead><tr><th>Desde</th><th>Hasta</th><th>Archivo</th><th style={{ textAlign: 'right' }}>Líneas</th><th style={{ textAlign: 'right' }}>Unidades</th><th style={{ textAlign: 'right' }}>Total Odoo</th></tr></thead>
+            <thead><tr><th>Desde</th><th>Hasta</th><th>Archivo</th><th className="der">Líneas</th><th className="der">Unidades</th><th className="der">Total Odoo</th></tr></thead>
             <tbody>{cargas.map((c) => (
               <tr key={c.id}>
                 <td>{fecha(c.desde)}</td><td>{fecha(c.hasta)}</td>
                 <td>{c.archivo}{c.formato === 'DETALLE_PDF' && <span className="suave"> · histórico sin día</span>}{c.neto_estimado && <span className="suave"> · neto estimado</span>}</td>
-                <td style={{ textAlign: 'right' }}>{c.lineas}</td>
-                <td style={{ textAlign: 'right' }}>{Number(c.unidades).toLocaleString('es-CO')}</td>
-                <td style={{ textAlign: 'right' }}>{Number(c.total_odoo).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}</td>
+                <td className="der">{c.lineas}</td>
+                <td className="der">{Number(c.unidades).toLocaleString('es-CO')}</td>
+                <td className="der">{Number(c.total_odoo).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}</td>
               </tr>
             ))}</tbody>
           </table>

@@ -107,20 +107,20 @@ export default function Propuestas({ filas, categorias, soloLectura, esAdmin }: 
     { k: 'producto', t: 'Producto', orden: (p) => p.generico, ver: (p) => (
       <div style={{ minWidth: 190 }}>
         <Link href={`/catalogo/producto/${p.producto_id}`}><strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}</Link>
-        <div className="suave" style={{ fontSize: '.82rem' }}>{p.presentacion} · <span className="cod">{p.codigo}</span></div>
+        <div className="suave texto-mini">{p.presentacion} · <span className="cod">{p.codigo}</span></div>
       </div>) },
     { k: 'unidad', t: 'Unidad base', orden: (p) => p.cambios.unidad_base ?? p.actual.unidad_base ?? '', ver: (p) => celda(p.actual.unidad_base, p.cambios.unidad_base) },
     { k: 'presentacion', t: 'Presentación', ver: (p) => celda(p.actual.presentacion ?? p.presentacion, p.cambios.presentacion) },
     { k: 'compra', t: 'Compra', ver: (p) => celda(p.actual.unidad_compra, p.cambios.unidad_compra) },
     { k: 'contenido', t: 'Contenido', ver: (p) => {
       const a = p.actual, c = p.cambios;
-      return <span style={{ whiteSpace: 'nowrap' }}>{celda(a.contenido_variable ? 'variable' : `${cant(a.contenido_base)} ${a.unidad_base ?? ''}`,
+      return <span className="nowrap">{celda(a.contenido_variable ? 'variable' : `${cant(a.contenido_base)} ${a.unidad_base ?? ''}`,
         c.contenido_variable ? 'se pesa al recibir' : c.contenido_base !== undefined ? `${cant(c.contenido_base)} ${c.unidad_base ?? a.unidad_base}` : undefined)}</span>;
     } },
     { k: 'categoria', t: 'Categoría', orden: (p) => p.categoria_propuesta ?? p.actual.categoria ?? '',
       ver: (p) => celda(p.actual.categoria ?? 'sin categoría', p.cambios.categoria ? (p.categoria_propuesta ?? p.cambios.categoria) : undefined) },
     { k: 'almacen', t: 'Almacenamiento', ver: (p) => (
-      <span style={{ whiteSpace: 'nowrap' }}>{celda(almacen(p.actual.conservacion, p.actual.vida_util_dias) || '—',
+      <span className="nowrap">{celda(almacen(p.actual.conservacion, p.actual.vida_util_dias) || '—',
         p.cambios.conservacion || p.cambios.vida_util_dias ? almacen(p.cambios.conservacion ?? p.actual.conservacion, p.cambios.vida_util_dias ?? p.actual.vida_util_dias) : undefined)}</span>) },
     { k: 'seguridad', t: 'Seguridad', orden: (p) => ({ ALTA: 0, MEDIA: 1, BAJA: 2 })[p.seguridad],
       ver: (p) => <span className="etiqueta" style={{ color: COLOR[p.seguridad] }}>{p.seguridad.toLowerCase()}</span> },
@@ -132,31 +132,31 @@ export default function Propuestas({ filas, categorias, soloLectura, esAdmin }: 
         {p.estado !== 'PENDIENTE' && <div className="suave" style={{ marginTop: '.2rem' }}>{ESTADO[p.estado].toLowerCase()}{p.decidido_por ? ` · ${p.decidido_por}` : ''}</div>}
         {corrigiendo === p.id && (
           <div className="tarjeta" style={{ marginTop: '.5rem', display: 'grid', gap: '.4rem' }}>
-            <label style={{ margin: 0 }}>Unidad base
+            <label className="m-0">Unidad base
               <select value={borrador.unidad_base ?? ''} onChange={(e) => setBorrador((b) => ({ ...b, unidad_base: e.target.value }))}>
                 <option value="g">g</option><option value="ml">ml</option><option value="und">und</option>
               </select>
             </label>
-            <label style={{ margin: 0 }}>Unidad de compra
+            <label className="m-0">Unidad de compra
               <input value={borrador.unidad_compra ?? ''} onChange={(e) => setBorrador((b) => ({ ...b, unidad_compra: e.target.value }))} />
             </label>
-            <label style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400 }}>
-              <input type="checkbox" checked={!!borrador.contenido_variable} style={{ width: 20, minHeight: 20 }}
+            <label className="check">
+              <input type="checkbox" checked={!!borrador.contenido_variable}
                      onChange={(e) => setBorrador((b) => ({ ...b, contenido_variable: e.target.checked }))} />
               Se pesa al recibir (contenido variable)
             </label>
             {!borrador.contenido_variable && (
-              <label style={{ margin: 0 }}>Contenido por unidad de compra ({borrador.unidad_base})
+              <label className="m-0">Contenido por unidad de compra ({borrador.unidad_base})
                 <input inputMode="decimal" value={borrador.contenido_texto ?? ''} onChange={(e) => setBorrador((b) => ({ ...b, contenido_texto: e.target.value }))} />
               </label>
             )}
-            <label style={{ margin: 0 }}>Categoría
+            <label className="m-0">Categoría
               <select value={borrador.categoria ?? ''} onChange={(e) => setBorrador((b) => ({ ...b, categoria: e.target.value }))}>
                 <option value="">— sin cambiar —</option>
                 {categorias.filter((x) => x.area === p.area).map((x) => <option key={x.codigo} value={x.codigo}>{x.nombre}</option>)}
               </select>
             </label>
-            <div style={{ display: 'flex', gap: '.4rem' }}>
+            <div className="fila-flex">
               <button type="button" disabled={enviando} onClick={() => guardarCorreccion(p)}>Aplicar corrección</button>
               <button type="button" className="secundario" disabled={enviando} onClick={() => setCorrigiendo(null)}>Cancelar</button>
             </div>
@@ -164,7 +164,7 @@ export default function Propuestas({ filas, categorias, soloLectura, esAdmin }: 
         )}
       </div>) },
     { k: 'acciones', t: '', ver: (p) => (!soloLectura && p.estado === 'PENDIENTE' && corrigiendo !== p.id ? (
-      <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
+      <div className="fila-flex wrap">
         <button className="mini" type="button" disabled={enviando} onClick={() => decidir([p.id], 'ACEPTAR')}>Aceptar</button>
         <button type="button" className="secundario mini" disabled={enviando} onClick={() => abrirCorreccion(p)}>Corregir</button>
         <button type="button" className="secundario mini" disabled={enviando} onClick={() => decidir([p.id], 'RECHAZAR')}>Rechazar</button>
@@ -189,9 +189,9 @@ export default function Propuestas({ filas, categorias, soloLectura, esAdmin }: 
                       vacio="No quedan propuestas con estos filtros. ✔"
                       acciones={(elegidas, limpiar) => (
                         <div className="barra-bloque">
-                          <div className="linea" style={{ flexWrap: 'wrap' }}>
+                          <div className="linea wrap">
                             <strong>{elegidas.length} seleccionada(s)</strong>
-                            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                            <div className="fila-flex wrap">
                               <button type="button" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'ACEPTAR', null, limpiar)}>{enviando ? 'Aplicando…' : `Aceptar ${elegidas.length}`}</button>
                               <button type="button" className="secundario" disabled={enviando} onClick={() => decidir(elegidas.map((p) => p.id), 'RECHAZAR', null, limpiar)}>Rechazar {elegidas.length}</button>
                               {esAdmin && <EliminarProductos productos={[...new Set(elegidas.map((p) => p.producto_id))].map((id) => ({ id }))} alTerminar={limpiar} etiqueta={`Eliminar los productos (${new Set(elegidas.map((p) => p.producto_id)).size})`} />}

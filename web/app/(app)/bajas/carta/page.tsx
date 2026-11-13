@@ -34,11 +34,11 @@ export default async function PaginaBajasCarta({ searchParams }: { searchParams:
     <>
       <h1>Reportar pérdida</h1>
       <PestanasPerdida activa="carta" area={area} />
-      <p className="suave" style={{ marginTop: 0 }}>Se registran como producto de la carta («2 Gin Sour»): la app descarga del kardex los ingredientes de su ficha y guarda quién
+      <p className="suave mt-0">Se registran como producto de la carta («2 Gin Sour»): la app descarga del kardex los ingredientes de su ficha y guarda quién
         lo autorizó y quién responde por el costo.</p>
-      <p className="aviso" style={{ fontSize: '.9rem' }}>Las cortesías se registran solo aquí: no las marques a $0 en Odoo, porque contarían dos veces.</p>
+      <p className="aviso texto-nota">Las cortesías se registran solo aquí: no las marques a $0 en Odoo, porque contarían dos veces.</p>
       {lista.length > 1 && (
-        <nav className="segmentos" style={{ marginBottom: '1rem' }}>
+        <nav className="segmentos mb-3">
           {lista.map((a) => (
             <Link key={a} href={`/bajas/carta?area=${a}`} aria-current={a === area ? 'true' : undefined}>
               <span>{a === 'BAR' ? 'Bar' : 'Cocina'}</span>

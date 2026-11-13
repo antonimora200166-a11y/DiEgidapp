@@ -38,10 +38,10 @@ export default function PrecioProducto({ id, unidadBase, unidadCompra, contenido
 
   return (
     <div className="tarjeta" style={{ display: 'grid', gap: '.5rem' }}>
-      <p style={{ margin: 0 }}>
+      <p className="m-0">
         {actual
           ? <>Costo actual: <strong>{pesos(actual.cu)} por {unidadBase}</strong>{enCompra(actual.cu)}<br />
-              <span className="suave" style={{ fontSize: '.85rem' }}>{actual.deKardex ? 'Del kardex (promedio de lo recibido)' : actual.fuente}{actual.fecha && ` · ${actual.fecha}`}</span></>
+              <span className="suave texto-nota">{actual.deKardex ? 'Del kardex (promedio de lo recibido)' : actual.fuente}{actual.fecha && ` · ${actual.fecha}`}</span></>
           : <span className="suave">Aún no tiene precio: las fichas que lo usan salen sin costo.</span>}
       </p>
       {conKardex
@@ -60,10 +60,10 @@ export default function PrecioProducto({ id, unidadBase, unidadCompra, contenido
             });
           }} style={{ display: 'grid', gap: '.4rem' }}>
             <div className="fila">
-              <label style={{ marginTop: 0 }}>{actual ? 'Precio nuevo en pesos' : 'Precio en pesos'}
+              <label className="mt-0">{actual ? 'Precio nuevo en pesos' : 'Precio en pesos'}
                 <input inputMode="decimal" placeholder="Ej.: 20.000" value={valor} onChange={(e) => setValor(e.target.value)} />
               </label>
-              <label style={{ marginTop: 0 }}>Por
+              <label className="mt-0">Por
                 <select value={por} onChange={(e) => setPor(e.target.value as Por)}>
                   {opciones.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
                 </select>
@@ -71,8 +71,8 @@ export default function PrecioProducto({ id, unidadBase, unidadCompra, contenido
             </div>
             {cu != null && <span className="suave">= {pesos(cu)} por {unidadBase}</span>}
             {hermanos > 0 && (
-              <label style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400 }}>
-                <input type="checkbox" checked={otras} style={{ width: 20, minHeight: 20 }} onChange={(e) => setOtras(e.target.checked)} />
+              <label className="check">
+                <input type="checkbox" checked={otras} onChange={(e) => setOtras(e.target.checked)} />
                 También a sus otras {hermanos} presentación(es) sin precio propio
               </label>
             )}

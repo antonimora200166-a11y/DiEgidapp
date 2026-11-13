@@ -23,10 +23,10 @@ export default async function Cuenta() {
       )}
       <h2>Tema</h2>
       <SelectorTema />
-      <p className="suave" style={{ fontSize: '.88rem' }}>Se guarda en este equipo. «Automático» sigue al celular o iPad; en la barra conviene «Oscuro».</p>
+      <p className="suave texto-nota">Se guarda en este equipo. «Automático» sigue al celular o iPad; en la barra conviene «Oscuro».</p>
       <h2>Cambiar contraseña</h2>
       <FormClave temporal={perfil.debe_cambiar_clave} />
-      <p className="suave" style={{ fontSize: '.88rem' }}>¿La olvidó? Pídale a administración que le dé una temporal desde la pantalla Usuarios.</p>
+      <p className="suave texto-nota">¿La olvidó? Pídale a administración que le dé una temporal desde la pantalla Usuarios.</p>
       {autoriza && (
         <>
           <h2>PIN para autorizar</h2>
@@ -41,7 +41,7 @@ export default async function Cuenta() {
       <form action={salir}>
         <button type="submit" className="secundario peligro"><Icono nombre="salir" /> Salir de la app</button>
       </form>
-      <p className="suave" style={{ fontSize: '.88rem' }}>En un celular compartido, salga al terminar el turno: lo que se registre después quedaría a su nombre.</p>
+      <p className="suave texto-nota">En un celular compartido, salga al terminar el turno: lo que se registre después quedaría a su nombre.</p>
     </>
   );
 }

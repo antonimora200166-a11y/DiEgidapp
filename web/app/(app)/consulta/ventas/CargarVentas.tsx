@@ -36,15 +36,15 @@ export default function CargarVentas() {
 
   return (
     <section className="tarjeta" style={{ display: 'grid', gap: '.8rem' }}>
-      <label style={{ margin: 0 }}>Reporte de ventas de Odoo (Excel)
+      <label className="m-0">Reporte de ventas de Odoo (Excel)
         <span className="ayuda">Punto de venta → Informes → Pedidos, en tabla dinámica con los días en las columnas → Descargar xlsx.
           Mejor si tiene la medida «Subtotal sin impuestos».</span>
-        <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={enviando}
-               onChange={(e) => leer(e.target.files?.[0])} style={{ marginTop: '.4rem' }} />
+        <input className="mt-1" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={enviando}
+               onChange={(e) => leer(e.target.files?.[0])} />
       </label>
-      {enviando && <p className="suave" style={{ margin: 0 }}>Trabajando…</p>}
-      {error && <p className="aviso" style={{ margin: 0 }}>{error}</p>}
-      {resultado && <p className="exito" style={{ margin: 0 }} role="status">{resultado}</p>}
+      {enviando && <p className="suave m-0">Trabajando…</p>}
+      {error && <p className="aviso m-0">{error}</p>}
+      {resultado && <p className="exito m-0" role="status">{resultado}</p>}
       {r && (
         <>
           <div className="cifras">
@@ -53,10 +53,10 @@ export default function CargarVentas() {
             <div className="cifra"><span>Ventas sin impuesto</span><b>{pesos(r.total)}</b><small>{r.netoEstimado ? 'estimado ÷ 1,08' : 'del reporte'}</small></div>
             <div className={`cifra${cuadra ? '' : ' alerta'}`}><span>Cuadre</span><b>{cuadra ? 'Exacto' : 'No cuadra'}</b><small>día por día con la fila Total</small></div>
           </div>
-          {r.netoEstimado && <p className="aviso" style={{ margin: 0 }}>El reporte no trae la medida «Subtotal sin impuestos». Se estima el neto dividiendo por 1,08;
+          {r.netoEstimado && <p className="aviso m-0">El reporte no trae la medida «Subtotal sin impuestos». Se estima el neto dividiendo por 1,08;
             si hay productos con IVA del 19 % o sin impuesto, su valor queda un poco distinto. Para la próxima, agregue esa medida en Odoo.</p>}
-          {!cuadra && <p className="aviso" style={{ margin: 0 }}>La suma de los productos no da el total de algún día: el archivo no se guarda. Revise que no tenga filtros.</p>}
-          <div className="acciones" style={{ margin: 0 }}>
+          {!cuadra && <p className="aviso m-0">La suma de los productos no da el total de algún día: el archivo no se guarda. Revise que no tenga filtros.</p>}
+          <div className="acciones m-0">
             <button type="button" disabled={enviando || !cuadra} onClick={guardar}>Guardar ventas</button>
             <button type="button" className="secundario" disabled={enviando} onClick={() => setLectura(null)}>Cancelar</button>
           </div>

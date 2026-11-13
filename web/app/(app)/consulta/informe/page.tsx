@@ -45,7 +45,7 @@ export default async function InformePagina({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <p className="no-imprimir" style={{ margin: '0 0 .3rem' }}><Link href="/consulta">← Consulta</Link></p>
+      <p className="no-imprimir m-0 mb-1"><Link href="/consulta">← Consulta</Link></p>
       <h1 className="pagina-ancha titulo-gestion">Informe quincenal{p ? ` · ${p.area === 'BAR' ? 'Bar' : 'Cocina'} · ${fechaC(p.desde)} al ${fechaC(p.hasta)}` : ''}</h1>
       {!cerrados.length ? (
         <p className="tarjeta">Todavía no hay períodos cerrados. El informe se arma con el cierre de cada quincena:
@@ -53,7 +53,7 @@ export default async function InformePagina({ searchParams }: { searchParams: Pr
       ) : (
         <>
           <form method="get" className="no-imprimir" style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem' }}>
-            <label style={{ margin: 0 }}>Período
+            <label className="m-0">Período
               <select name="periodo" defaultValue={id}>
                 {cerrados.map((c) => <option key={c.id} value={c.id}>{c.area === 'BAR' ? 'Bar' : 'Cocina'} · {fechaC(c.desde)} al {fechaC(c.hasta)}</option>)}
               </select>
@@ -73,18 +73,18 @@ export default async function InformePagina({ searchParams }: { searchParams: Pr
               <div className="cifra"><span>No explicado</span><b>{pesos(p.no_explicado)}</b><small>real − teórico − pérdidas</small></div>
             </div>
 
-            <section className="tarjeta" style={{ marginBottom: '1rem' }}>
-              <h2 style={{ marginTop: 0 }}>Resumen</h2>
+            <section className="tarjeta mb-3">
+              <h2 className="mt-0">Resumen</h2>
               {informes[0] ? (
                 <>
                   <div style={{ whiteSpace: 'pre-line', lineHeight: 1.5 }}>{informes[0].resumen}</div>
-                  <p className="suave" style={{ fontSize: '.82rem' }}>Versión {informes[0].version} · {informes[0].modelo ? `redactado con IA (${informes[0].modelo}) y revisado por` : 'escrito por'} {informes[0].generado_por ?? '—'}
+                  <p className="suave texto-mini">Versión {informes[0].version} · {informes[0].modelo ? `redactado con IA (${informes[0].modelo}) y revisado por` : 'escrito por'} {informes[0].generado_por ?? '—'}
                     {' '}· {new Date(informes[0].generado_en).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' })}</p>
                 </>
               ) : <p className="suave">Todavía no hay resumen guardado para este período.</p>}
               <div className="no-imprimir"><Redactar periodo_id={p.id} hay={informes.length > 0} /></div>
               {informes.length > 1 && (
-                <details className="no-imprimir" style={{ marginTop: '.6rem' }}><summary>Versiones anteriores ({informes.length - 1})</summary>
+                <details className="no-imprimir mt-2"><summary>Versiones anteriores ({informes.length - 1})</summary>
                   {informes.slice(1).map((i) => <div key={i.id} style={{ margin: '.5rem 0', whiteSpace: 'pre-line', fontSize: '.9rem' }}>
                     <b>Versión {i.version}</b> · {i.generado_por ?? '—'}{'\n'}{i.resumen}</div>)}
                 </details>)}
@@ -94,23 +94,23 @@ export default async function InformePagina({ searchParams }: { searchParams: Pr
               <section>
                 <h2>Insumos con más diferencia</h2>
                 {cifras.insumos.length === 0 ? <p className="suave">Sin diferencias.</p> : (
-                  <table className="tabla"><thead><tr><th>Insumo</th><th style={{ textAlign: 'right' }}>Teórico</th><th style={{ textAlign: 'right' }}>Real</th><th style={{ textAlign: 'right' }}>Diferencia</th></tr></thead>
+                  <table className="tabla"><thead><tr><th>Insumo</th><th className="der">Teórico</th><th className="der">Real</th><th className="der">Diferencia</th></tr></thead>
                     <tbody>{cifras.insumos.map((i) => <tr key={i.nombre}><td>{i.nombre}</td>
-                      <td style={{ textAlign: 'right' }}>{Number(i.teorico).toLocaleString('es-CO')} {i.unidad}</td>
-                      <td style={{ textAlign: 'right' }}>{Number(i.real).toLocaleString('es-CO')} {i.unidad}</td>
-                      <td style={{ textAlign: 'right' }}>{pesos(i.diferencia_pesos)}</td></tr>)}</tbody></table>)}
+                      <td className="der">{Number(i.teorico).toLocaleString('es-CO')} {i.unidad}</td>
+                      <td className="der">{Number(i.real).toLocaleString('es-CO')} {i.unidad}</td>
+                      <td className="der">{pesos(i.diferencia_pesos)}</td></tr>)}</tbody></table>)}
               </section>
               <section>
                 <h2>Alertas abiertas ({cifras.alertas_abiertas})</h2>
                 {cifras.alertas.length === 0 ? <p className="suave">Ninguna.</p> : (
-                  <table className="tabla"><thead><tr><th>Alerta</th><th>Responsable</th><th style={{ textAlign: 'right' }}>Impacto</th></tr></thead>
+                  <table className="tabla"><thead><tr><th>Alerta</th><th>Responsable</th><th className="der">Impacto</th></tr></thead>
                     <tbody>{cifras.alertas.map((a, k) => <tr key={k}><td>{a.titulo}</td><td>{a.responsable ?? <span className="suave">sin asignar</span>}</td>
-                      <td style={{ textAlign: 'right' }}>{pesos(a.impacto)}</td></tr>)}</tbody></table>)}
-                {cifras.propuestas_pendientes > 0 && <p className="suave" style={{ fontSize: '.88rem' }}>
+                      <td className="der">{pesos(a.impacto)}</td></tr>)}</tbody></table>)}
+                {cifras.propuestas_pendientes > 0 && <p className="suave texto-nota">
                   {cifras.propuestas_pendientes} propuesta(s) de carta sin decidir · <Link href="/consulta/simulador">Simulador</Link></p>}
               </section>
             </div>
-            <p className="suave" style={{ fontSize: '.82rem' }}>Inventario inicial {pesos(p.inv_inicial)} + compras {pesos(p.compras)} − inventario final {pesos(p.inv_final)} (con traslados) = CMV real {pesos(p.cmv_real)}.
+            <p className="suave texto-mini">Inventario inicial {pesos(p.inv_inicial)} + compras {pesos(p.compras)} − inventario final {pesos(p.inv_final)} (con traslados) = CMV real {pesos(p.cmv_real)}.
               {p.fichas_incompletas ? ` ${p.fichas_incompletas} producto(s) vendidos sin ficha completa no entran en el teórico.` : ''}</p>
           </>}
         </>

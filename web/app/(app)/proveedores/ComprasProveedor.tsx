@@ -49,19 +49,19 @@ export default function ComprasProveedor({ filas }: { filas: CompraProveedor[] }
               <span className="suave">{g.filas.length} producto(s) {ver ? '▴' : '▾'}</span>
             </button>
             {ver && (
-              <div style={{ marginTop: '.4rem' }}>
+              <div className="mt-1">
                 {g.filas.map((f) => (
                   <div key={f.producto_id} style={{ borderTop: '1px solid var(--borde)', padding: '.4rem 0', display: 'flex', justifyContent: 'space-between', gap: '.6rem', flexWrap: 'wrap' }}>
                     <div style={{ minWidth: 200, flex: 1 }}>
                       <Link href={`/catalogo/producto/${f.producto_id}`}><strong>{f.generico}</strong>{f.marca && ` · ${f.marca}`}</Link>
-                      <div className="suave" style={{ fontSize: '.8rem' }}>
+                      <div className="suave texto-mini">
                         {f.presentacion} · {f.area === 'BAR' ? 'Bar' : 'Cocina'}
                         {f.nombre_factura && <> · en su factura: «{f.nombre_factura}»</>}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', fontSize: '.88rem' }}>
                       {pesos(f.ultimo_costo_base)} / {f.unidad_base}
-                      <div className="suave" style={{ fontSize: '.78rem' }}>
+                      <div className="suave texto-mini">
                         {f.veces} {f.veces === 1 ? 'vez' : 'veces'} · última {fecha(f.ultima_fecha)} ({ORIGEN[f.origen]})
                       </div>
                     </div>

@@ -169,7 +169,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
 
   return (
     <>
-      <p className="suave" style={{ marginTop: 0 }}>
+      <p className="suave mt-0">
         {receta ? <>Revise la propuesta y apruébela: nace la <strong>versión {(f?.version ?? 0) + 1}</strong> de la ficha, con origen {(receta.fuente === 'CARTA COCINA' ? 'RECETARIO COCINA' : receta.fuente).toLowerCase()}.</>
           : f ? <>Al guardar nace la <strong>versión {f.version + 1}</strong>; la {f.version} queda tal cual
           {Number(f.lotes) > 0 ? ` para los ${f.lotes} lote(s) que se hicieron con ella` : ''}.</> : 'Primera versión de esta ficha.'}
@@ -181,11 +181,11 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
             <h2 className="sec-tit">Encabezado</h2>
             <div className="fila">
               <div>
-                <label htmlFor="codigo" style={{ marginTop: 0 }}>Código de la ficha</label>
+                <label className="mt-0" htmlFor="codigo">Código de la ficha</label>
                 <input id="codigo" value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="#5, MPi-012…" />
               </div>
               <div>
-                <label htmlFor="neto" style={{ marginTop: 0 }}>{esMpi ? 'Neto esperado' : 'Rinde'} ({ub})</label>
+                <label className="mt-0" htmlFor="neto">{esMpi ? 'Neto esperado' : 'Rinde'} ({ub})</label>
                 <input id="neto" inputMode="decimal" value={neto} onChange={(e) => setNeto(e.target.value)} />
               </div>
             </div>
@@ -216,15 +216,15 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                 const marcas = i?.productos ?? [];
                 return (
                   <li key={l.clave} style={!i || num(l.cantidad) === null || (sinConv && !(num(l.factor)! > 0)) ? { borderColor: 'var(--aviso)', borderWidth: 2 } : undefined}>
-                    <div className="linea" style={{ alignItems: 'flex-start' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <span className="suave" style={{ fontSize: '.8rem' }}>{idx + 1}. </span>
+                    <div className="linea arriba">
+                      <div className="min-0">
+                        <span className="suave texto-mini">{idx + 1}. </span>
                         {(i?.tipo ?? original?.tipo) === 'MPI'
                           ? <Link href={`/fichas/${l.generico_id}`} title={`Ver la ficha técnica de ${nombre}`}><strong>{nombre}</strong> ↗</Link>
                           : (i?.tipo ?? original?.tipo) === 'MPe'
                             ? <Link href={`/catalogo/generico/${l.generico_id}`} title={`Ver ${nombre} en el catálogo`}><strong>{nombre}</strong> ↗</Link>
                             : <strong>{nombre}</strong>}
-                        {i && <span className="suave" style={{ fontSize: '.82rem' }}> · {i.tipo === 'SIN_COSTO' ? 'sin costo' : i.tipo} · base {i.unidad_base}</span>}
+                        {i && <span className="suave texto-mini"> · {i.tipo === 'SIN_COSTO' ? 'sin costo' : i.tipo} · base {i.unidad_base}</span>}
                       </div>
                       <div style={{ display: 'flex', gap: '.3rem' }}>
                         <button type="button" className="secundario chico" disabled={idx === 0} onClick={() => mover(idx, -1)} aria-label="Subir">↑</button>
@@ -241,15 +241,15 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                       </label>
                     )}
                     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 2fr)', gap: '.5rem', marginTop: '.45rem', alignItems: 'end' }}>
-                      <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Cantidad
+                      <label className="campo">Cantidad
                         <input inputMode="decimal" value={l.cantidad} onChange={(e) => poner(l.clave, { cantidad: e.target.value })} />
                       </label>
-                      <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Unidad
+                      <label className="campo">Unidad
                         <select value={l.unidad} onChange={(e) => poner(l.clave, { unidad: e.target.value, factor: '' })} style={{ minWidth: 84 }}>
                           {unidades.map((u) => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </label>
-                      <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Nota
+                      <label className="campo">Nota
                         <input value={l.nota} onChange={(e) => poner(l.clave, { nota: e.target.value })} placeholder="en brunoise, para decorar…" />
                       </label>
                     </div>
@@ -257,7 +257,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                       <div className="aviso" style={{ margin: '.5rem 0 0', padding: '.45rem .6rem', fontSize: '.85rem' }}>
                         {nombre} no tiene conversión de {l.unidad} a {i.unidad_base}. Mídala una vez y la ficha podrá costearlo:
                         <div style={{ display: 'flex', gap: '.4rem', alignItems: 'center', marginTop: '.35rem' }}>
-                          <span style={{ whiteSpace: 'nowrap' }}>1 {l.unidad} =</span>
+                          <span className="nowrap">1 {l.unidad} =</span>
                           <input inputMode="decimal" value={l.factor} onChange={(e) => poner(l.clave, { factor: e.target.value })} style={{ maxWidth: 110 }} aria-label={`Equivalencia de ${l.unidad} en ${i.unidad_base}`} />
                           <span>{i.unidad_base}</span>
                         </div>
@@ -274,9 +274,9 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
             <label htmlFor="ing">Agregar ingrediente</label>
             <input id="ing" placeholder="Buscar insumo, MPI o agua…" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
             {opciones.length > 0 && (
-              <ul className="lista" style={{ marginTop: '.4rem' }}>
+              <ul className="lista mt-1">
                 {opciones.map((i) => (
-                  <li key={i.id} style={{ padding: 0 }}>
+                  <li className="p-0" key={i.id}>
                     <button type="button" className="secundario" style={{ width: '100%', textAlign: 'left', justifyContent: 'flex-start', border: 0, color: 'inherit' }}
                             onClick={() => { setLineas((ls) => [...ls, { clave: crypto.randomUUID(), generico_id: i.id, producto_id: '', cantidad: '', unidad: i.unidad_base, nota: '', factor: '' }]); setBuscar(''); }}>
                       <strong>{i.nombre}</strong> <span className="suave">· {i.tipo === 'SIN_COSTO' ? 'sin costo' : i.tipo} · {i.unidad_base}{(i.productos?.length ?? 0) > 1 ? ` · ${i.productos!.length} marcas` : ''}</span>
@@ -301,12 +301,12 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                 </li>
               ))}
             </ol>
-            <button type="button" className="secundario chico" style={{ marginTop: '.5rem' }} onClick={() => setPasos((ps) => [...ps, ''])}>+ Paso</button>
+            <button type="button" className="secundario chico mt-2" onClick={() => setPasos((ps) => [...ps, ''])}>+ Paso</button>
           </section>
 
           <section className="tarjeta">
             <h2 className="sec-tit">Descripción y presentación</h2>
-            <label htmlFor="desc" style={{ marginTop: 0 }}>Descripción <span className="ayuda">qué es y cómo debe quedar (color, textura, sabor)</span></label>
+            <label className="mt-0" htmlFor="desc">Descripción <span className="ayuda">qué es y cómo debe quedar (color, textura, sabor)</span></label>
             <textarea id="desc" rows={esFinal ? 3 : 2} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
             {esFinal && (
               <div style={{ marginTop: '.45rem' }}>
@@ -346,7 +346,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
             {puntos.length === 0 && <div className="vacio">Sin puntos críticos. Escriba lo que no se puede olvidar: temperaturas, tiempos, higiene, calidad.</div>}
             {puntos.map((p, i) => (
               <div key={i} style={{ display: 'grid', gap: '.35rem', padding: '.5rem 0', borderBottom: '1px solid var(--borde)' }}>
-                <div style={{ display: 'flex', gap: '.4rem' }}>
+                <div className="fila-flex">
                   <select value={p.tipo} aria-label={`Tipo del punto ${i + 1}`} style={{ maxWidth: 170 }}
                           onChange={(e) => setPuntos((ps) => ps.map((x, j) => (j === i ? { ...x, tipo: e.target.value as TipoPunto } : x)))}>
                     {TIPOS_PUNTO.map((t) => <option key={t.v} value={t.v}>{t.t}</option>)}
@@ -357,12 +357,12 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                           onChange={(e) => setPuntos((ps) => ps.map((x, j) => (j === i ? { ...x, texto: e.target.value } : x)))} />
               </div>
             ))}
-            <div className="chips-sel" style={{ marginTop: '.6rem' }}>
+            <div className="chips-sel mt-2">
               {TIPOS_PUNTO.slice(0, 4).map((t) => (
                 <button key={t.v} type="button" onClick={() => setPuntos((ps) => [...ps, { tipo: t.v, texto: '' }])}>+ {t.t}</button>
               ))}
             </div>
-            <h3 className="sec-tit" style={{ marginTop: '1rem' }}>Alérgenos</h3>
+            <h3 className="sec-tit mt-3">Alérgenos</h3>
             <div className="chips-sel">
               {[...ALERGENOS, ...alergenos.filter((a) => !ALERGENOS.includes(a))].map((a) => (
                 <button key={a} type="button" aria-pressed={alergenos.includes(a)}
@@ -373,7 +373,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
 
           <section className="tarjeta">
             <h2 className="sec-tit">Empaque y vida útil</h2>
-            <label htmlFor="empaque" style={{ marginTop: 0 }}>Método de empaque</label>
+            <label className="mt-0" htmlFor="empaque">Método de empaque</label>
             <input id="empaque" value={empaque} onChange={(e) => setEmpaque(e.target.value)} placeholder="Bolsa de vacío, frasco hermético…" />
 
             <label>Presentaciones <span className="ayuda">en qué porciones se guarda lo que sale de una tanda</span></label>
@@ -381,20 +381,20 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
               Sin presentaciones: se guarda todo junto. Agregue una por cada forma de porcionar (p. ej. 200 {ub} y 150 {ub}, o 22 porciones de 3 tapas).</div>}
             {pres.map((p, i) => (
               <div key={p.clave} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '.4rem', padding: '.5rem 0', borderBottom: '1px solid var(--borde)' }}>
-                <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Cada una lleva ({ub})
+                <label className="campo">Cada una lleva ({ub})
                   <input inputMode="decimal" value={p.contenido} onChange={(e) => ponerPres(p.clave, { contenido: e.target.value })} placeholder="200" />
                 </label>
-                <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Qué lleva
+                <label className="campo">Qué lleva
                   <input value={p.detalle} maxLength={120} onChange={(e) => ponerPres(p.clave, { detalle: e.target.value })} placeholder="3 tapas, porción individual…" />
                 </label>
-                <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Salen por tanda <span className="ayuda">si es fijo</span>
+                <label className="campo">Salen por tanda <span className="ayuda">si es fijo</span>
                   <input inputMode="numeric" value={p.por_tanda} onChange={(e) => ponerPres(p.clave, { por_tanda: e.target.value })} placeholder="22" />
                 </label>
-                <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>Empaque <span className="ayuda">si es otro</span>
+                <label className="campo">Empaque <span className="ayuda">si es otro</span>
                   <input value={p.empaque} maxLength={120} onChange={(e) => ponerPres(p.clave, { empaque: e.target.value })} placeholder={empaque || 'Bolsa de vacío…'} />
                 </label>
                 <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.4rem' }}>
-                  <span className="suave" style={{ fontSize: '.8rem' }}>Presentación {i + 1}</span>
+                  <span className="suave texto-mini">Presentación {i + 1}</span>
                   <button type="button" className="secundario chico" onClick={() => setPres((xs) => xs.filter((x) => x.clave !== p.clave))} aria-label={`Quitar presentación ${i + 1}`}>Quitar</button>
                 </div>
               </div>
@@ -408,7 +408,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                   Las porciones fijas suman {cant(suma)} {ub} de {cant(n)} {ub} por tanda{suma > n * 1.02 ? ': pesan más que la tanda.' : suma < n ? ` · quedan ${cant(n - suma)} ${ub} para las demás.` : '.'}
                 </div>) : null;
             })()}
-            <button type="button" className="secundario chico" style={{ marginTop: '.5rem' }}
+            <button type="button" className="secundario chico mt-2"
                     onClick={() => setPres((xs) => [...xs, { clave: crypto.randomUUID(), contenido: '', detalle: '', por_tanda: '', empaque: '' }])}>+ Presentación</button>
 
             <label>Vida útil según dónde se guarde</label>
@@ -440,7 +440,7 @@ export default function EditorFicha({ datos, inicial, receta, volverA }: {
                 {sug.emp && <li><span>Empaque: {sug.emp.empaque} <span className="suave">· {sug.emp.codigo}</span></span>
                   <button type="button" className="secundario mini" onClick={() => setEmpaque(sug.emp!.empaque!)}>Usar</button></li>}
                 {sug.obs.map((l) => (
-                  <li key={l.codigo}><span style={{ minWidth: 0 }}>«{l.observaciones}» <span className="suave">· {l.codigo}</span></span>
+                  <li key={l.codigo}><span className="min-0">«{l.observaciones}» <span className="suave">· {l.codigo}</span></span>
                     <button type="button" className="secundario mini" onClick={() => setPuntos((ps) => [...ps, { tipo: 'OTRO', texto: l.observaciones!.slice(0, 400) }])}>A punto crítico</button></li>
                 ))}
               </ul>

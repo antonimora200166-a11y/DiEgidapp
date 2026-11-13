@@ -72,9 +72,9 @@ export default function BarraBloque({ elegidos, categorias, setSel, esAdmin }: {
       )}
       {elegidos.length > 0 && (
         <div className="barra-bloque">
-          <div className="linea" style={{ flexWrap: 'wrap' }}>
+          <div className="linea wrap">
             <strong>{elegidos.length} seleccionado(s)</strong>
-            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+            <div className="fila-flex wrap">
               <button type="button" disabled={enviando} onClick={() => aplicar(true)}>{enviando ? 'Aplicando…' : `Validar (${elegidos.length})`}</button>
               <button type="button" className="secundario" disabled={enviando} onClick={() => setPanel((x) => !x)}>{panel ? 'Ocultar cambios' : 'Cambiar…'}</button>
               {esAdmin && <EliminarProductos productos={elegidos} alTerminar={() => setSel(new Set())} />}
@@ -84,12 +84,12 @@ export default function BarraBloque({ elegidos, categorias, setSel, esAdmin }: {
           {panel && (
             <>
               <div style={{ display: 'grid', gap: '.6rem', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', marginTop: '.4rem' }}>
-                <label style={{ margin: 0 }}>Unidad base
+                <label className="m-0">Unidad base
                   <select value={ub} onChange={(e) => setUb(e.target.value)}>
                     <option value={NO}>— no cambiar —</option><option value="g">g (peso)</option><option value="ml">ml (volumen)</option><option value="und">und (unidades)</option>
                   </select>
                 </label>
-                <label style={{ margin: 0 }}>Categoría
+                <label className="m-0">Categoría
                   <select value={cat} onChange={(e) => setCat(e.target.value)}>
                     <option value={NO}>— no cambiar —</option>
                     {categorias.filter((c) => areasSel.length !== 1 || c.area === areasSel[0]).map((c) => (
@@ -97,24 +97,24 @@ export default function BarraBloque({ elegidos, categorias, setSel, esAdmin }: {
                     ))}
                   </select>
                 </label>
-                <label style={{ margin: 0 }}>Conservación
+                <label className="m-0">Conservación
                   <select value={cons} onChange={(e) => setCons(e.target.value)}>
                     <option value={NO}>— no cambiar —</option><option>Ambiente</option><option>Refrigerado</option><option>Congelado</option>
                   </select>
                 </label>
-                <label style={{ margin: 0 }}>Unidad de compra
+                <label className="m-0">Unidad de compra
                   <input value={ucompra} onChange={(e) => setUcompra(e.target.value)} placeholder="— no cambiar — (KG, UND, BOT…)" />
                 </label>
-                <label style={{ margin: 0 }}>Contenido por unidad de compra
+                <label className="m-0">Contenido por unidad de compra
                   <input inputMode="decimal" value={contenido} onChange={(e) => setContenido(e.target.value)} placeholder="— no cambiar — (1000, 750…)" />
                 </label>
               </div>
-              {ub && <p className="ayuda" style={{ marginTop: '.4rem' }}>Cambiar la unidad base no convierte el contenido: si pasa de und a g, ponga también el contenido en g. No se cambia si el producto ya tiene kardex o está en una ficha.</p>}
+              {ub && <p className="ayuda mt-1">Cambiar la unidad base no convierte el contenido: si pasa de und a g, ponga también el contenido en g. No se cambia si el producto ya tiene kardex o está en una ficha.</p>}
               <label style={{ display: 'flex', gap: '.5rem', alignItems: 'center', fontWeight: 400, margin: '.6rem 0 0' }}>
-                <input type="checkbox" checked={validar} onChange={(e) => setValidar(e.target.checked)} style={{ width: 22, minHeight: 22 }} />
+                <input type="checkbox" checked={validar} onChange={(e) => setValidar(e.target.checked)} />
                 Y validarlos de una vez
               </label>
-              <div className="acciones" style={{ marginTop: '.6rem' }}>
+              <div className="acciones mt-2">
                 <button type="button" disabled={enviando || (!ub && !cat && !cons && !ucompra.trim() && num(contenido) === null && !validar)} onClick={() => aplicar(false)}>
                   {enviando ? 'Aplicando…' : `Aplicar a ${elegidos.length}`}
                 </button>

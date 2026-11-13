@@ -15,7 +15,7 @@ export default function RegistrarTara({ productoId, nombre, contenido, unidad, o
 
   if (!abierto) {
     return (
-      <button type="button" className="discreto mini" style={{ marginTop: '.4rem' }} onClick={() => setAbierto(true)}>
+      <button type="button" className="discreto mini mt-1" onClick={() => setAbierto(true)}>
         ⚖ Registrar la tara para poder pesar la abierta
       </button>
     );
@@ -31,7 +31,7 @@ export default function RegistrarTara({ productoId, nombre, contenido, unidad, o
   };
   return (
     <div className="tarjeta" style={{ marginTop: '.5rem', padding: '.6rem' }}>
-      <strong style={{ fontSize: '.9rem' }}>Tara de {nombre}</strong>
+      <strong className="texto-nota">Tara de {nombre}</strong>
       <div className="segmentos" role="radiogroup" aria-label="Qué botella pesaste" style={{ margin: '.4rem 0' }}>
         {contenido && (
           <label><input type="radio" checked={modo === 'LLENA'} onChange={() => setModo('LLENA')} />
@@ -39,20 +39,20 @@ export default function RegistrarTara({ productoId, nombre, contenido, unidad, o
         )}
         <label><input type="radio" checked={modo === 'VACIA'} onChange={() => setModo('VACIA')} /><span>Vacía</span></label>
       </div>
-      <div className="suave" style={{ fontSize: '.8rem' }}>
+      <div className="suave texto-mini">
         {modo === 'LLENA'
           ? `Pese una botella cerrada de ${contenido} ${unidad}, con tapa. La app le resta el contenido (${contenido} ${unidad} × la densidad del licor).`
           : 'Pese la botella vacía, con su tapa y su pico vertedor si lo usa.'}
       </div>
       <div className="fila" style={{ gridTemplateColumns: '1fr auto', alignItems: 'end', marginTop: '.4rem' }}>
-        <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>
+        <label className="campo">
           Peso (g)
           <input inputMode="decimal" value={peso} onChange={(e) => setPeso(e.target.value)} />
         </label>
         <button type="button" className="chico" disabled={enviando} onClick={guardar}>{enviando ? 'Guardando…' : 'Guardar tara'}</button>
       </div>
       {msg && <div className={msg.ok ? 'exito' : 'error'} role="status" style={{ marginTop: '.4rem', fontSize: '.85rem' }}>{msg.texto}</div>}
-      {!msg?.ok && <button type="button" className="discreto mini" style={{ marginTop: '.3rem' }} onClick={() => setAbierto(false)}>Cancelar</button>}
+      {!msg?.ok && <button type="button" className="discreto mini mt-1" onClick={() => setAbierto(false)}>Cancelar</button>}
     </div>
   );
 }

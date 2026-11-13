@@ -160,13 +160,13 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
             <Link href="/consulta/informe" className="boton secundario chico">Informe quincenal</Link>
           </div>
           <Exportar params={{ desde, hasta, area }} bloques={[{ bloque: 'ventas', t: 'Ventas y teórico' }, ...(area !== 'TODO' ? [{ bloque: 'periodo', t: 'Real vs. teórico' }] : [])]} />
-          <p className="suave" style={{ fontSize: '.8rem' }}>Costo de cada ficha con los costos de hoy (estimado mientras no haya kardex); los cierres de período lo congelarán.</p>
+          <p className="suave texto-mini">Costo de cada ficha con los costos de hoy (estimado mientras no haya kardex); los cierres de período lo congelarán.</p>
           {area === 'TODO' && c.sin_equivalencia.productos > 0 && (
             <p className="aviso">{c.sin_equivalencia.productos} producto(s) de Odoo sin equivalencia con la carta: {pesos(c.sin_equivalencia.valor)} vendidos que no entran
               en el teórico. <Link href="/consulta/ventas">Resolverlos</Link></p>
           )}
           {Number(c.combos_sin_venta) > 0 && (
-            <p className="suave" style={{ fontSize: '.88rem' }}>En el período hay {Number(c.combos_sin_venta).toLocaleString('es-CO')} menús Yuga a $0. Cuentan como combos: sus platos y bebidas consumen
+            <p className="suave texto-nota">En el período hay {Number(c.combos_sin_venta).toLocaleString('es-CO')} menús Yuga a $0. Cuentan como combos: sus platos y bebidas consumen
               ingredientes sin venta en Odoo, por eso el % teórico se muestra con y sin lo que salió a $0.</p>
           )}
           <h3>Lo más urgente de la bandeja</h3>
@@ -174,47 +174,47 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
             <ul className="renglones tarjeta" style={{ padding: '0 1rem' }}>
               {alertas.slice(0, 5).map((x) => (
                 <li key={x.id}>
-                  <span style={{ minWidth: 0 }}><Link href="/alertas">{x.titulo}</Link>
-                    <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{x.estado === 'EN_CURSO' ? 'En curso' : 'Abierta'}{x.responsable ? ` · ${x.responsable}` : ' · sin responsable'}</span></span>
+                  <span className="min-0"><Link href="/alertas">{x.titulo}</Link>
+                    <span className="suave bloque texto-mini">{x.estado === 'EN_CURSO' ? 'En curso' : 'Abierta'}{x.responsable ? ` · ${x.responsable}` : ' · sin responsable'}</span></span>
                   <strong className="n">{pesos(x.impacto)}</strong>
                 </li>
               ))}
             </ul>
           ) : <p className="suave">No hay alertas abiertas.</p>}
-          <p style={{ fontSize: '.88rem' }}><Link href={enlace({ vista: 'alertas' })}>Ver las {alertas.length} alertas abiertas →</Link></p>
+          <p className="texto-nota"><Link href={enlace({ vista: 'alertas' })}>Ver las {alertas.length} alertas abiertas →</Link></p>
           </>}
 
           {vista === 'ventas' && <>
           {/* ------------------------------------------------ bloque 1 */}
           <h2>Costo y margen por sección</h2>
-          <div className="desborde tarjeta" style={{ padding: 0 }}>
+          <div className="desborde tarjeta p-0">
             <table className="tabla">
               <thead><tr>
                 <th>Sección</th>{area === 'TODO' && <th>Área</th>}
-                <th style={{ textAlign: 'right' }}>Und</th><th style={{ textAlign: 'right' }}>% carta</th>
-                <th style={{ textAlign: 'right' }}>% teórico</th><th style={{ textAlign: 'right' }}>sin $0</th><th style={{ textAlign: 'right' }}>Meta</th>
-                <th style={{ textAlign: 'right' }}>Ventas netas</th><th style={{ textAlign: 'right' }}>Margen $</th><th style={{ textAlign: 'right' }}>Margen %</th>
+                <th className="der">Und</th><th className="der">% carta</th>
+                <th className="der">% teórico</th><th className="der">sin $0</th><th className="der">Meta</th>
+                <th className="der">Ventas netas</th><th className="der">Margen $</th><th className="der">Margen %</th>
               </tr></thead>
               <tbody>{c.secciones.map((s) => {
                 const tono = tonoMeta(s.pct_teorico, s.meta_pct);
                 return (
                   <tr key={`${s.area}-${s.seccion}`}>
-                    <td><strong>{s.seccion ?? 'Sin sección'}</strong>{s.sin_ficha_completa > 0 && <div className="suave" style={{ fontSize: '.78rem' }}>{s.sin_ficha_completa} sin ficha completa</div>}</td>
+                    <td><strong>{s.seccion ?? 'Sin sección'}</strong>{s.sin_ficha_completa > 0 && <div className="suave texto-mini">{s.sin_ficha_completa} sin ficha completa</div>}</td>
                     {area === 'TODO' && <td>{s.area === 'BAR' ? 'Bar' : 'Cocina'}</td>}
-                    <td style={{ textAlign: 'right' }}>{Number(s.unidades).toLocaleString('es-CO')}{s.unidades_sin_valor > 0 && <div className="suave" style={{ fontSize: '.78rem' }}>{s.unidades_sin_valor} a $0</div>}</td>
-                    <td style={{ textAlign: 'right' }}>{pct(s.pct_carta)}</td>
-                    <td style={{ textAlign: 'right' }}><span className="con-estado"><strong>{pct(s.pct_teorico)}</strong>{tono && <Insignia tono={tono}>{tono === 'aviso' ? 'Cerca' : undefined}</Insignia>}</span></td>
-                    <td style={{ textAlign: 'right' }}>{s.unidades_sin_valor > 0 ? pct(s.pct_teorico_con_venta) : <span className="suave">=</span>}</td>
-                    <td style={{ textAlign: 'right' }} className="suave">{s.meta_pct} %</td>
-                    <td style={{ textAlign: 'right' }}>{pesos(s.ventas)}</td>
-                    <td style={{ textAlign: 'right' }}>{pesos(s.margen)}</td>
-                    <td style={{ textAlign: 'right' }}>{s.margen !== null && s.ventas ? pct((s.margen / s.ventas) * 100) : '—'}</td>
+                    <td className="der">{Number(s.unidades).toLocaleString('es-CO')}{s.unidades_sin_valor > 0 && <div className="suave texto-mini">{s.unidades_sin_valor} a $0</div>}</td>
+                    <td className="der">{pct(s.pct_carta)}</td>
+                    <td className="der"><span className="con-estado"><strong>{pct(s.pct_teorico)}</strong>{tono && <Insignia tono={tono}>{tono === 'aviso' ? 'Cerca' : undefined}</Insignia>}</span></td>
+                    <td className="der">{s.unidades_sin_valor > 0 ? pct(s.pct_teorico_con_venta) : <span className="suave">=</span>}</td>
+                    <td className="suave der">{s.meta_pct} %</td>
+                    <td className="der">{pesos(s.ventas)}</td>
+                    <td className="der">{pesos(s.margen)}</td>
+                    <td className="der">{s.margen !== null && s.ventas ? pct((s.margen / s.ventas) * 100) : '—'}</td>
                   </tr>
                 );
               })}</tbody>
             </table>
           </div>
-          <p className="suave" style={{ fontSize: '.82rem' }}>% carta: promedio simple de las fichas de la sección. % teórico: costo de lo vendido (unidades de Odoo × costo de la ficha) sobre las ventas netas
+          <p className="suave texto-mini">% carta: promedio simple de las fichas de la sección. % teórico: costo de lo vendido (unidades de Odoo × costo de la ficha) sobre las ventas netas
             de los productos con ficha completa. Las secciones sin ficha completa no tienen %.</p>
 
           <div className="dos-col pagina-ancha" style={{ alignItems: 'start' }}>
@@ -233,18 +233,18 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
           <div className="dos-col pagina-ancha" style={{ alignItems: 'start' }}>
             <section>
               <h2>Top 10 por margen $ total</h2>
-              <table className="tabla"><thead><tr><th>Producto</th><th style={{ textAlign: 'right' }}>Und</th><th style={{ textAlign: 'right' }}>Margen total</th></tr></thead>
+              <table className="tabla"><thead><tr><th>Producto</th><th className="der">Und</th><th className="der">Margen total</th></tr></thead>
                 <tbody>{topMargen.map((p) => <tr key={p.generico_id}><td><Link href={`/fichas/${p.generico_id}`}>{p.nombre}</Link></td>
-                  <td style={{ textAlign: 'right' }}>{p.unidades.toLocaleString('es-CO')}</td><td style={{ textAlign: 'right' }}>{pesos(p.unidades * p.margen_unit)}</td></tr>)}</tbody></table>
-              <p className="suave" style={{ fontSize: '.8rem' }}>Unidades cobradas × margen por unidad de la carta.</p>
+                  <td className="der">{p.unidades.toLocaleString('es-CO')}</td><td className="der">{pesos(p.unidades * p.margen_unit)}</td></tr>)}</tbody></table>
+              <p className="suave texto-mini">Unidades cobradas × margen por unidad de la carta.</p>
             </section>
             <section>
               <h2>Top 10 con peor % costo</h2>
-              <table className="tabla"><thead><tr><th>Producto</th><th style={{ textAlign: 'right' }}>% costo</th><th style={{ textAlign: 'right' }}>Meta</th></tr></thead>
+              <table className="tabla"><thead><tr><th>Producto</th><th className="der">% costo</th><th className="der">Meta</th></tr></thead>
                 <tbody>{topCosto.map((p) => <tr key={p.generico_id}><td><Link href={`/fichas/${p.generico_id}`}>{p.nombre}</Link></td>
-                  <td style={{ textAlign: 'right' }}><span className="con-estado"><strong>{pct(p.pct_carta)}</strong><Insignia tono={tonoMeta(Number(p.pct_carta), p.meta_pct)!}>{tonoMeta(Number(p.pct_carta), p.meta_pct) === 'aviso' ? 'Cerca' : undefined}</Insignia></span></td>
-                  <td style={{ textAlign: 'right' }} className="suave">{p.meta_pct} %</td></tr>)}</tbody></table>
-              <p className="suave" style={{ fontSize: '.8rem' }}>Solo productos que se vendieron en el período.</p>
+                  <td className="der"><span className="con-estado"><strong>{pct(p.pct_carta)}</strong><Insignia tono={tonoMeta(Number(p.pct_carta), p.meta_pct)!}>{tonoMeta(Number(p.pct_carta), p.meta_pct) === 'aviso' ? 'Cerca' : undefined}</Insignia></span></td>
+                  <td className="suave der">{p.meta_pct} %</td></tr>)}</tbody></table>
+              <p className="suave texto-mini">Solo productos que se vendieron en el período.</p>
             </section>
           </div>
           </>}
@@ -262,14 +262,14 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
             <ul className="renglones tarjeta" style={{ padding: '0 1rem' }}>
               {[...alertas].sort((a, b) => Number(b.impacto ?? 0) - Number(a.impacto ?? 0)).map((x) => (
                 <li key={x.id}>
-                  <span style={{ minWidth: 0 }}><strong>{x.titulo}</strong>
-                    <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{x.estado === 'EN_CURSO' ? 'En curso' : 'Abierta'}{x.responsable ? ` · ${x.responsable}` : ' · sin responsable'}</span></span>
+                  <span className="min-0"><strong>{x.titulo}</strong>
+                    <span className="suave bloque texto-mini">{x.estado === 'EN_CURSO' ? 'En curso' : 'Abierta'}{x.responsable ? ` · ${x.responsable}` : ' · sin responsable'}</span></span>
                   <strong className="n">{pesos(x.impacto)}</strong>
                 </li>
               ))}
             </ul>
           ) : <p className="suave">No hay alertas abiertas.</p>}
-          <p style={{ fontSize: '.88rem' }}><Link href="/alertas" className="boton secundario chico">Asignar y resolver en Alertas →</Link></p>
+          <p className="texto-nota"><Link href="/alertas" className="boton secundario chico">Asignar y resolver en Alertas →</Link></p>
         </section>
       )}
     </>

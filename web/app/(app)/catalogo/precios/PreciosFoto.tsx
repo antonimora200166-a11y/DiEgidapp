@@ -290,19 +290,19 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
   return (
     <>
       <div className="tarjeta pagina-ancha" style={{ display: 'grid', gap: '.6rem' }}>
-        {dosAreas && <span className="suave" style={{ fontSize: '.85rem' }}>Se busca en bar y cocina a la vez; la IA sugiere la zona de cada línea.</span>}
+        {dosAreas && <span className="suave texto-nota">Se busca en bar y cocina a la vez; la IA sugiere la zona de cada línea.</span>}
         <label className="boton" style={{ margin: 0, textAlign: 'center', cursor: 'pointer' }}>
           📷 Tomar o subir fotos
           <input type="file" accept="image/*,application/pdf" multiple style={{ display: 'none' }}
                  onChange={(e) => { subir(e.target.files); e.target.value = ''; }} />
         </label>
-        <span className="suave" style={{ fontSize: '.85rem' }}>
+        <span className="suave texto-nota">
           Puede subir varias a la vez. Cada foto se lee aparte; nada se guarda hasta que toque «Guardar precios».
         </span>
       </div>
 
       {fotos.map((f) => (
-        <section key={f.id} className="tarjeta pagina-ancha" style={{ marginTop: '.8rem' }}>
+        <section key={f.id} className="tarjeta pagina-ancha mt-3">
           <div style={{ display: 'flex', gap: '.8rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             {f.vista && <a href={f.vista} target="_blank" rel="noreferrer"><img src={f.vista} alt="Foto" style={{ width: 90, borderRadius: 6 }} /></a>}
             <div style={{ flex: 1, minWidth: 220 }}>
@@ -312,7 +312,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
               {f.error && <p className="aviso" role="status">{f.error}</p>}
               {(f.estado === 'listo' || f.estado === 'guardado') && (
                 <div className="fila">
-                  <label style={{ margin: 0 }}>Proveedor
+                  <label className="m-0">Proveedor
                     <select value={f.proveedor_id} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, proveedor_id: e.target.value }))}>
                       <option value="">{f.proveedor ? `No está en la lista («${f.proveedor}»)` : '— sin proveedor —'}</option>
                       {f.sugeridos.length > 0 && <optgroup label="Parecidos al de la foto">
@@ -323,11 +323,11 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                     {f.proveedor_razon && <span className="ayuda">{f.proveedor_razon}{f.proveedor ? ` (en la foto: «${f.proveedor}»)` : ''}</span>}
                     {!f.proveedor_id && f.proveedor && <span className="ayuda">Se guarda con el nombre de la foto. Para que quede en la lista, créelo en Recibir o pídaselo a administración.</span>}
                   </label>
-                  <label style={{ margin: 0 }}>Fecha<input type="date" value={f.fecha} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, fecha: e.target.value }))} /></label>
-                  <label style={{ margin: 0 }}>N° documento<input value={f.documento} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, documento: e.target.value }))} /></label>
+                  <label className="m-0">Fecha<input type="date" value={f.fecha} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, fecha: e.target.value }))} /></label>
+                  <label className="m-0">N° documento<input value={f.documento} onChange={(e) => cambiarFoto(f.id, (x) => ({ ...x, documento: e.target.value }))} /></label>
                 </div>
               )}
-              {f.notas && <p className="suave" style={{ fontSize: '.85rem' }}>La IA dice: {f.notas}</p>}
+              {f.notas && <p className="suave texto-nota">La IA dice: {f.notas}</p>}
             </div>
           </div>
 
@@ -349,26 +349,26 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.5rem', flexWrap: 'wrap' }}>
                   <span><span className="suave">{l.n}.</span> <strong>«{l.descripcion}»</strong>
                     {l.leida.presentacion && <span className="suave"> · {l.leida.presentacion}</span>}</span>
-                  <label style={{ margin: 0, display: 'flex', gap: '.3rem', alignItems: 'center', fontWeight: 400 }}>
-                    <input type="checkbox" checked={l.ignorar} style={{ width: 18, minHeight: 18 }}
+                  <label className="check">
+                    <input type="checkbox" checked={l.ignorar}
                            onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, ignorar: e.target.checked }))} />No guardar esta
                   </label>
                 </div>
                 {!l.ignorar && (
                   <>
-                    <label style={{ margin: 0 }}>Producto del catálogo
+                    <label className="m-0">Producto del catálogo
                       <select value={l.producto_id ?? ''} onChange={(e) => elegir(f.id, l.n, e.target.value || null)}>
                         <option value="">— elija —</option>
                         {opciones.map((id) => { const x = porId.get(id); return x ? <option key={id} value={id}>{nombre(x)}</option> : null; })}
                       </select>
                     </label>
                     {dosAreas && l.leida.area_sugerida && (
-                      <span className="suave" style={{ fontSize: '.8rem' }}>
+                      <span className="suave texto-mini">
                         Zona sugerida: <strong>{l.leida.area_sugerida === 'AMBAS' ? 'bar y cocina' : zona(l.leida.area_sugerida)}</strong>
                         {p && l.leida.area_sugerida !== 'AMBAS' && p.area !== l.leida.area_sugerida && <> · el producto elegido es de {zona(p.area)}</>}
                       </span>
                     )}
-                    {l.leida.sugerencia_ia?.razon && <span className="suave" style={{ fontSize: '.8rem' }}>IA: {l.leida.sugerencia_ia.razon}</span>}
+                    {l.leida.sugerencia_ia?.razon && <span className="suave texto-mini">IA: {l.leida.sugerencia_ia.razon}</span>}
                     {p && f.del_proveedor.includes(p.producto_id) && <span style={{ fontSize: '.8rem', color: 'var(--ok)' }}>✓ Ya se le compra este producto a este proveedor.</span>}
                     {p && (() => {
                       const otroNombre = l.leida.nombre_generico && normal(l.leida.nombre_generico) !== normal(p.generico);
@@ -376,10 +376,10 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                       if (!otroNombre && !otraMarca && !l.ren.cambiarNombre && !l.ren.cambiarMarca) return null;
                       return (
                         <div className="tarjeta" style={{ display: 'grid', gap: '.35rem', padding: '.5rem' }}>
-                          <span style={{ fontSize: '.85rem' }}>Según la factura, la IA sugiere:</span>
+                          <span className="texto-nota">Según la factura, la IA sugiere:</span>
                           {(otroNombre || l.ren.cambiarNombre) && (
                             <label style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400, flexWrap: 'wrap' }}>
-                              <input type="checkbox" checked={l.ren.cambiarNombre} style={{ width: 18, minHeight: 18 }}
+                              <input type="checkbox" checked={l.ren.cambiarNombre}
                                      onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, ren: { ...x.ren, cambiarNombre: e.target.checked } }))} />
                               Cambiar el nombre «{p.generico}» a
                               <input value={l.ren.nombre} style={{ flex: 1, minWidth: 140 }} disabled={!l.ren.cambiarNombre}
@@ -388,14 +388,14 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                           )}
                           {(otraMarca || l.ren.cambiarMarca) && (
                             <label style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400, flexWrap: 'wrap' }}>
-                              <input type="checkbox" checked={l.ren.cambiarMarca} style={{ width: 18, minHeight: 18 }}
+                              <input type="checkbox" checked={l.ren.cambiarMarca}
                                      onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, ren: { ...x.ren, cambiarMarca: e.target.checked } }))} />
                               {p.marca ? <>Cambiar la marca «{p.marca}» a</> : <>Ponerle marca</>}
                               <input value={l.ren.marca} style={{ flex: 1, minWidth: 140 }} disabled={!l.ren.cambiarMarca}
                                      onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, ren: { ...x.ren, marca: e.target.value } }))} />
                             </label>
                           )}
-                          <span className="suave" style={{ fontSize: '.78rem' }}>El nombre aplica a todas las presentaciones del genérico; la marca, solo a esta.</span>
+                          <span className="suave texto-mini">El nombre aplica a todas las presentaciones del genérico; la marca, solo a esta.</span>
                         </div>
                       );
                     })()}
@@ -419,8 +419,8 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                           <strong>Agregar al catálogo</strong>
                           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                             {(['nuevo', 'presentacion'] as const).map((m) => (
-                              <label key={m} style={{ margin: 0, display: 'flex', gap: '.3rem', alignItems: 'center', fontWeight: 400 }}>
-                                <input type="radio" checked={nv.modo === m} style={{ width: 18, minHeight: 18 }} onChange={() => set({ modo: m, generico_id: '' })} />
+                              <label className="check" key={m}>
+                                <input type="radio" checked={nv.modo === m} onChange={() => set({ modo: m, generico_id: '' })} />
                                 {m === 'nuevo' ? 'Producto nuevo' : 'Otra marca o presentación de uno que ya existe'}
                               </label>
                             ))}
@@ -430,10 +430,10 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                               {genSel ? (
                                 <span>De: <strong>{genSel.generico}</strong> ({genSel.unidad_base}{dosAreas ? ` · ${zona(genSel.area)}` : ''}) <button type="button" className="secundario mini" onClick={() => set({ generico_id: '' })}>cambiar</button></span>
                               ) : (
-                                <label style={{ margin: 0 }}>¿De qué producto es? <input value={nv.nombre} onChange={(e) => set({ nombre: e.target.value })} placeholder="Escriba para buscar…" /></label>
+                                <label className="m-0">¿De qué producto es? <input value={nv.nombre} onChange={(e) => set({ nombre: e.target.value })} placeholder="Escriba para buscar…" /></label>
                               )}
                               {busca.length > 0 && (
-                                <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
+                                <div className="fila-flex wrap">
                                   {[...new Map(busca.map((x) => [x.generico, x])).values()].map((x) => (
                                     <button key={x.producto_id} type="button" className="secundario mini" onClick={() => set({ generico_id: x.producto_id })}>{x.generico}{dosAreas ? ` (${zona(x.area)})` : ''}</button>
                                   ))}
@@ -442,28 +442,28 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                             </>
                           ) : (
                             <div className="fila">
-                              <label style={{ margin: 0 }}>Nombre genérico <span className="ayuda">sin marca ni tamaño</span>
+                              <label className="m-0">Nombre genérico <span className="ayuda">sin marca ni tamaño</span>
                                 <input value={nv.nombre} onChange={(e) => set({ nombre: e.target.value })} />
                               </label>
-                              <label style={{ margin: 0 }}>Tipo
+                              <label className="m-0">Tipo
                                 <select value={nv.tipo} onChange={(e) => set({ tipo: e.target.value as TipoInsumo })}>
                                   {TIPOS_INSUMO.filter((t) => t.v !== 'MPI').map((t) => <option key={t.v} value={t.v}>{t.t}</option>)}
                                 </select>
                               </label>
-                              <label style={{ margin: 0 }}>Unidad base
+                              <label className="m-0">Unidad base
                                 <select value={nv.unidad_base} onChange={(e) => set({ unidad_base: e.target.value as Nuevo['unidad_base'] })}>
                                   <option value="g">gramos (g)</option><option value="ml">mililitros (ml)</option><option value="und">unidades (und)</option>
                                 </select>
                               </label>
                               {dosAreas && (
-                                <label style={{ margin: 0 }}>Zona
+                                <label className="m-0">Zona
                                   <select value={nv.area} onChange={(e) => set({ area: e.target.value as Area, categoria: '' })}>
                                     {areas.map((a) => <option key={a} value={a}>{a === 'BAR' ? 'Bar' : 'Cocina'}{a === zonaDe(l.leida.area_sugerida) ? ' (sugerida)' : ''}</option>)}
                                   </select>
                                 </label>
                               )}
                               {nv.tipo === 'MPe' && (
-                                <label style={{ margin: 0 }}>Categoría
+                                <label className="m-0">Categoría
                                   <select value={nv.categoria} onChange={(e) => set({ categoria: e.target.value })}>
                                     <option value="">— sin categoría —</option>
                                     {categorias.filter((c) => c.area === nv.area).map((c) => <option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
@@ -473,15 +473,15 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                             </div>
                           )}
                           <div className="fila">
-                            <label style={{ margin: 0 }}>Marca <input value={nv.marca} onChange={(e) => set({ marca: e.target.value })} /></label>
-                            <label style={{ margin: 0 }}>Presentación <input value={nv.presentacion} placeholder="Bolsa 1.000 g, Granel…" onChange={(e) => set({ presentacion: e.target.value })} /></label>
-                            <label style={{ margin: 0 }}>Se compra por <input value={nv.unidad_compra} placeholder="BOLSA, BOT, KG…" onChange={(e) => set({ unidad_compra: e.target.value })} /></label>
+                            <label className="m-0">Marca <input value={nv.marca} onChange={(e) => set({ marca: e.target.value })} /></label>
+                            <label className="m-0">Presentación <input value={nv.presentacion} placeholder="Bolsa 1.000 g, Granel…" onChange={(e) => set({ presentacion: e.target.value })} /></label>
+                            <label className="m-0">Se compra por <input value={nv.unidad_compra} placeholder="BOLSA, BOT, KG…" onChange={(e) => set({ unidad_compra: e.target.value })} /></label>
                             {!nv.variable && (
-                              <label style={{ margin: 0 }}>Trae ({ub}) <input inputMode="decimal" value={nv.contenido} onChange={(e) => set({ contenido: e.target.value })} /></label>
+                              <label className="m-0">Trae ({ub}) <input inputMode="decimal" value={nv.contenido} onChange={(e) => set({ contenido: e.target.value })} /></label>
                             )}
                           </div>
-                          <label style={{ margin: 0, display: 'flex', gap: '.3rem', alignItems: 'center', fontWeight: 400 }}>
-                            <input type="checkbox" checked={nv.variable} style={{ width: 18, minHeight: 18 }} onChange={(e) => set({ variable: e.target.checked })} />
+                          <label className="check">
+                            <input type="checkbox" checked={nv.variable} onChange={(e) => set({ variable: e.target.checked })} />
                             Se pesa al recibir (contenido variable)
                           </label>
                           {nv.bloqueos.length > 0 && (
@@ -493,7 +493,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                             </div>
                           )}
                           {nv.error && <div className="aviso">{nv.error}</div>}
-                          <div style={{ display: 'flex', gap: '.4rem' }}>
+                          <div className="fila-flex">
                             <button type="button" disabled={nv.enviando} onClick={() => crear(f, l)}>{nv.enviando ? 'Creando…' : 'Crear y usar en esta línea'}</button>
                             <button type="button" className="secundario" onClick={() => cambiarLinea(f.id, l.n, (x) => ({ ...x, nuevo: null }))}>Cancelar</button>
                           </div>
@@ -501,50 +501,50 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                       );
                     })()}
                     {encontrados.length > 0 && (
-                      <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
+                      <div className="fila-flex wrap">
                         {encontrados.map((x) => <button key={x.producto_id} type="button" className="secundario mini" onClick={() => elegir(f.id, l.n, x.producto_id)}>{nombre(x)}</button>)}
                       </div>
                     )}
                     <div className="fila">
-                      <label style={{ margin: 0 }}>Cantidad
+                      <label className="m-0">Cantidad
                         <input inputMode="decimal" value={l.cantidad} onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, cantidad: e.target.value }))} />
                       </label>
-                      <label style={{ margin: 0 }}>Unidad
+                      <label className="m-0">Unidad
                         <select value={l.unidad} onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, unidad: e.target.value as Unidad }))}>
                           {UNIDADES.map((u) => <option key={u.v} value={u.v}>{u.v === 'empaque' && p ? `${p.unidad_compra} (${p.contenido_variable ? 'variable' : `${cant(p.contenido_base)} ${p.unidad_base}`})` : u.t}</option>)}
                         </select>
                       </label>
-                      <label style={{ margin: 0 }}>Valor total ($)
+                      <label className="m-0">Valor total ($)
                         <input inputMode="decimal" value={l.valor} onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, valor: e.target.value }))} />
                       </label>
                     </div>
                     {p && l.unidad === 'und' && p.unidad_base !== 'und' && (
-                      <label style={{ margin: 0 }}>Cada unidad pesa aprox. ({p.unidad_base})
+                      <label className="m-0">Cada unidad pesa aprox. ({p.unidad_base})
                         <input inputMode="decimal" value={l.peso} placeholder={p.peso_und ? String(p.peso_und) : 'Ej.: 1200'}
                                onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, peso: e.target.value }))} />
                         <span className="ayuda">{p.peso_und && !l.peso.trim() ? `Se usa el que ya se sabe: ${cant(p.peso_und)} ${p.unidad_base}.` : 'Queda guardado para la próxima vez.'}</span>
                       </label>
                     )}
-                    <div style={{ fontSize: '.88rem' }}>
-                      {problema ? <span style={{ color: 'var(--error)' }}>{problema}</span> : cu != null && p && (
+                    <div className="texto-nota">
+                      {problema ? <span className="c-error">{problema}</span> : cu != null && p && (
                         <>
                           = {cant(base)} {p.unidad_base} · <strong>{pesos(cu)} por {p.unidad_base}</strong>
                           {!p.contenido_variable && p.contenido_base ? <> · 1 {p.unidad_compra} = {pesos(cu * Number(p.contenido_base))}</> : null}
                           {actual != null && <span className="suave"> · antes {pesos(actual)} por {p.unidad_base}{cambio != null && ` (${cambio >= 0 ? '+' : ''}${Math.round(cambio * 100)} %)`}</span>}
-                          {raro && <div style={{ color: 'var(--error)' }}>Ese costo no es creíble: revise la cantidad y su unidad.</div>}
-                          {cambio != null && Math.abs(cambio) > 0.5 && !raro && <div style={{ color: 'var(--aviso)' }}>Cambia más del 50 % frente al costo que tenía: revise que sea la misma presentación.</div>}
+                          {raro && <div className="c-error">Ese costo no es creíble: revise la cantidad y su unidad.</div>}
+                          {cambio != null && Math.abs(cambio) > 0.5 && !raro && <div className="c-aviso">Cambia más del 50 % frente al costo que tenía: revise que sea la misma presentación.</div>}
                         </>
                       )}
                     </div>
                     {p && (
                       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                        <label style={{ margin: 0, display: 'flex', gap: '.3rem', alignItems: 'center', fontWeight: 400 }}>
-                          <input type="checkbox" checked={l.fijar} style={{ width: 18, minHeight: 18 }}
+                        <label className="check">
+                          <input type="checkbox" checked={l.fijar}
                                  onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, fijar: e.target.checked }))} />
                           Usar como costo del producto
                         </label>
-                        <label style={{ margin: 0, display: 'flex', gap: '.3rem', alignItems: 'center', fontWeight: 400 }}>
-                          <input type="checkbox" checked={l.corregir} style={{ width: 18, minHeight: 18 }}
+                        <label className="check">
+                          <input type="checkbox" checked={l.corregir}
                                  onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, corregir: e.target.checked }))} />
                           Corregir su presentación
                         </label>
@@ -552,19 +552,19 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
                     )}
                     {p && l.corregir && (
                       <div className="fila">
-                        <label style={{ margin: 0 }}>Presentación
+                        <label className="m-0">Presentación
                           <input value={l.pres.presentacion} placeholder="Bolsa 1.000 g" onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, pres: { ...x.pres, presentacion: e.target.value } }))} />
                         </label>
-                        <label style={{ margin: 0 }}>Se compra por
+                        <label className="m-0">Se compra por
                           <input value={l.pres.unidad_compra} placeholder="BOLSA, CJA, KG…" onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, pres: { ...x.pres, unidad_compra: e.target.value } }))} />
                         </label>
                         {!l.pres.variable && (
-                          <label style={{ margin: 0 }}>Trae ({p.unidad_base})
+                          <label className="m-0">Trae ({p.unidad_base})
                             <input inputMode="decimal" value={l.pres.contenido} onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, pres: { ...x.pres, contenido: e.target.value } }))} />
                           </label>
                         )}
-                        <label style={{ margin: 0, display: 'flex', gap: '.3rem', alignItems: 'center', fontWeight: 400 }}>
-                          <input type="checkbox" checked={l.pres.variable} style={{ width: 18, minHeight: 18 }}
+                        <label className="check">
+                          <input type="checkbox" checked={l.pres.variable}
                                  onChange={(e) => cambiarLinea(f.id, l.n, (x) => ({ ...x, pres: { ...x.pres, variable: e.target.checked } }))} />
                           Se pesa al recibir
                         </label>
@@ -593,7 +593,7 @@ export default function PreciosFoto({ areas, productos: inicial, proveedores, ca
       ))}
 
       {fotos.some((f) => f.estado === 'guardado') && (
-        <p className="pagina-ancha" style={{ marginTop: '.8rem' }}><Link href="/catalogo/verificar">Ver los precios en la hoja de verificación →</Link></p>
+        <p className="pagina-ancha mt-3"><Link href="/catalogo/verificar">Ver los precios en la hoja de verificación →</Link></p>
       )}
     </>
   );

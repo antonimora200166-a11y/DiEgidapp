@@ -26,7 +26,7 @@ export default async function Lotes({ searchParams }: { searchParams: Promise<{ 
     <>
       <PestanasProduccion activa="lotes" area={area} />
       <div className="pagina-ancha" style={{ display: 'flex', flexWrap: 'wrap', gap: '.6rem', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.6rem' }}>
-        <h1 style={{ margin: 0 }}>Lotes · {area === 'BAR' ? 'Bar' : 'Cocina'}</h1>
+        <h1 className="m-0">Lotes · {area === 'BAR' ? 'Bar' : 'Cocina'}</h1>
         {areas.length > 1 && (
           <nav className="segmentos" aria-label="Área">
             {areas.map((a) => (

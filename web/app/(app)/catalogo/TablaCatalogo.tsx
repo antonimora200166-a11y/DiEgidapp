@@ -26,11 +26,11 @@ const COLUMNAS: Col[] = [
   { k: 'area', t: 'Área', def: false, ver: (p) => (p.area === 'BAR' ? 'Bar' : 'Cocina') },
   { k: 'tipo', t: 'Tipo', def: true, edit: 'tipo', campo: ['generico', 'tipo'], ver: (p) => p.tipo, valor: (p) => p.tipo },
   { k: 'categoria', t: 'Categoría', def: true, edit: 'cat', campo: ['generico', 'categoria'], bloque: true,
-    ver: (p) => p.categoria_nombre ?? <span style={{ color: 'var(--aviso)' }}>Sin categoría</span>, valor: (p) => p.categoria ?? '' },
+    ver: (p) => p.categoria_nombre ?? <span className="c-aviso">Sin categoría</span>, valor: (p) => p.categoria ?? '' },
   { k: 'unidad_base', t: 'Unidad base', def: true, edit: 'ub', campo: ['generico', 'unidad_base'], bloque: true, ver: (p) => p.unidad_base, valor: (p) => p.unidad_base },
   { k: 'unidad_compra', t: 'Unidad compra', def: true, edit: 'mayus', campo: ['producto', 'unidad_compra'], bloque: true, ver: (p) => p.unidad_compra || '—', valor: (p) => p.unidad_compra },
   { k: 'contenido', t: 'Contenido', def: true, edit: 'num', campo: ['producto', 'contenido_base'], bloque: true, der: true,
-    ver: (p) => (p.contenido_variable ? <span className="suave">variable</span> : p.contenido_base ? `${cant(p.contenido_base)} ${p.unidad_base}` : <span style={{ color: 'var(--aviso)' }}>—</span>),
+    ver: (p) => (p.contenido_variable ? <span className="suave">variable</span> : p.contenido_base ? `${cant(p.contenido_base)} ${p.unidad_base}` : <span className="c-aviso">—</span>),
     valor: (p) => (p.contenido_base === null ? '' : String(p.contenido_base)) },
   { k: 'conservacion', t: 'Conservación', def: true, edit: 'cons', campo: ['generico', 'conservacion'], bloque: true,
     ver: (p) => p.conservacion ?? <span className="suave">—</span>, valor: (p) => p.conservacion ?? '' },
@@ -133,15 +133,15 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
   return (
     <>
       <div ref={menuRef} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.5rem', margin: '0 0 .4rem', position: 'relative' }}>
-        <span className="suave" style={{ fontSize: '.85rem' }}>
+        <span className="suave texto-nota">
           Toque una celda para corregirla{sel.size > 1 ? `; con ${sel.size} filas seleccionadas, el cambio se ofrece para todas` : ''}. Enter guarda, Esc cancela.
         </span>
-        <button type="button" className={menu ? 'herramienta chico activa' : 'herramienta chico'} style={{ whiteSpace: 'nowrap' }} onClick={() => setMenu((m) => !m)}>⚙ Columnas</button>
+        <button type="button" className={`${menu ? 'herramienta chico activa' : 'herramienta chico'} nowrap`} onClick={() => setMenu((m) => !m)}>⚙ Columnas</button>
         {menu && (
           <div className="tarjeta" style={{ position: 'absolute', right: 0, top: '100%', zIndex: 20, minWidth: 230, boxShadow: '0 8px 28px rgb(0 0 0 / .25)' }}>
             {disponibles.map((c) => (
-              <label key={c.k} style={{ display: 'flex', gap: '.45rem', alignItems: 'center', fontWeight: 400, margin: '.15rem 0' }}>
-                <input type="checkbox" checked={visibles.includes(c.k)} onChange={() => alternarCol(c.k)} style={{ width: 20, minHeight: 20 }} />
+              <label className="check" key={c.k}>
+                <input type="checkbox" checked={visibles.includes(c.k)} onChange={() => alternarCol(c.k)} />
                 {c.t}
               </label>
             ))}
@@ -153,13 +153,13 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
           {mensaje.texto}{mensaje.lista && mensaje.lista.length > 0 && <ul>{mensaje.lista.map((m) => <li key={m}>{m}</li>)}</ul>}
         </div>
       )}
-      <div className="desborde tarjeta" style={{ padding: 0 }}>
+      <div className="desborde tarjeta p-0">
         <table className="tabla tabla-catalogo tabla-movil">
           <thead>
             <tr>
               <th style={{ width: 36 }}>
                 {editables.length > 0 && (
-                  <input type="checkbox" aria-label="Seleccionar todos" checked={todas} style={{ width: 20, minHeight: 20 }}
+                  <input type="checkbox" aria-label="Seleccionar todos" checked={todas}
                          onChange={() => setSel(todas ? new Set() : new Set(editables.map((f) => f.id)))} />
                 )}
               </th>
@@ -176,7 +176,7 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
                   </tr>
                 )}
                 <tr className={sel.has(p.id) ? 'elegida' : undefined}>
-                  <td className="celda-sel">{p.edita && <input type="checkbox" aria-label={`Seleccionar ${p.generico}`} checked={sel.has(p.id)} onChange={() => cambia(p.id)} style={{ width: 20, minHeight: 20 }} />}</td>
+                  <td className="celda-sel">{p.edita && <input type="checkbox" aria-label={`Seleccionar ${p.generico}`} checked={sel.has(p.id)} onChange={() => cambia(p.id)} />}</td>
                   {cols.map((c) => {
                     const puede = p.edita && !!c.edit && !(c.edit === 'tipo' && !['MPe', 'MPI'].includes(p.tipo));
                     return (
@@ -187,8 +187,8 @@ export default function TablaCatalogo({ filas, categorias, esAdmin }: { filas: P
                       </td>
                     );
                   })}
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {p.edita && <Link href={`/catalogo/producto/${p.id}`} className="suave" style={{ fontSize: '.85rem' }}>Abrir</Link>}
+                  <td className="nowrap">
+                    {p.edita && <Link href={`/catalogo/producto/${p.id}`} className="suave texto-nota">Abrir</Link>}
                     {p.edita && p.estado === 'PROVISIONAL' && p.activo && (
                       <form action={validarProducto} style={{ display: 'inline', marginLeft: '.5rem' }}>
                         <input type="hidden" name="id" value={p.id} />

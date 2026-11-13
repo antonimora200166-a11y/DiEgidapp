@@ -44,7 +44,7 @@ export default async function PaginaRecibir({ searchParams }: { searchParams: Pr
     <>
       <h1>Recibir</h1>
       {areas.length > 1 && (
-        <nav className="segmentos" style={{ marginBottom: '1rem' }}>
+        <nav className="segmentos mb-3">
           {areas.map((a) => (
             <Link key={a} href={`/recibir?area=${a}`} aria-current={a === area ? 'true' : undefined}>
               <span>
@@ -66,7 +66,7 @@ export default async function PaginaRecibir({ searchParams }: { searchParams: Pr
                   <span className="cod">{r.codigo}</span><br />
                   {(r.proveedores as unknown as { nombre: string } | null)?.nombre ?? '—'}
                 </span>
-                <span className="suave" style={{ fontSize: '.85rem', textAlign: 'right' }}>
+                <span className="suave texto-nota der">
                   {fmtFecha(r.fecha)}
                   {r.forzada && <><br /><span className="etiqueta provisional">forzada</span></>}
                 </span>

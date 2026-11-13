@@ -74,7 +74,7 @@ export default async function Catalogo({ searchParams }: { searchParams: Promise
       <div className="linea" style={{ flexWrap: 'wrap', margin: '0 0 .6rem' }}>
         <span className="suave">{total ? `${desde}-${Math.min(pag * por, total)} de ${total} producto(s)` : '0 productos'}</span>
         <span style={{ display: 'flex', gap: '.4rem', alignItems: 'center' }}>
-          <span className="suave" style={{ fontSize: '.85rem' }}>Por página:</span>
+          <span className="suave texto-nota">Por página:</span>
           {TAMANOS.map((t) => (
             <Link key={t} href={enlace({ por: t === TAMANOS[0] ? undefined : String(t), pag: undefined })}
                   className={`boton secundario`} style={{ minHeight: 32, padding: '.1rem .55rem', ...(t === por ? { background: 'var(--marca)', color: 'var(--marca-texto)' } : {}) }}>{t}</Link>

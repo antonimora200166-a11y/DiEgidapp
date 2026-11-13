@@ -44,7 +44,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
   return (
     <>
       {esMpi && <PestanasProduccion activa="fichas" area={r.area} />}
-      <p style={{ margin: '0 0 .3rem' }}><Link href={volver}>← {esMpi ? 'Fichas de producción' : 'Fichas técnicas'}</Link></p>
+      <p className="m-0 mb-1"><Link href={volver}>← {esMpi ? 'Fichas de producción' : 'Fichas técnicas'}</Link></p>
 
       {baul?.en_baul && (
         <p className="aviso">Esta ficha está en el <strong>baúl</strong>
@@ -60,16 +60,16 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
       )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '.9rem' }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ margin: 0 }}>{r.nombre}</h1>
+        <div className="min-0">
+          <h1 className="m-0">{r.nombre}</h1>
           <span className="cod">{r.codigo}{f ? ` · ficha ${f.codigo} · v${f.version} desde ${fechaLarga(f.vigente_desde)}` : ''} · {r.area === 'BAR' ? 'Bar' : 'Cocina'} · {TIPO[r.tipo]}</span>
-          {f && <div className="suave" style={{ fontSize: '.82rem' }}>
+          {f && <div className="suave texto-mini">
             {f.origen === 'APP' ? `Escrita en la app${f.creado_por ? ` por ${f.creado_por}` : ''}` : `Cargada de ${f.origen}`}
             {f.motivo_cambio && <> · Cambio: {f.motivo_cambio}</>}
           </div>}
         </div>
         {d.es_vigente && (
-          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+          <div className="fila-flex wrap">
             {d.puede_editar && <Link className="boton secundario" href={`/fichas/${r.id}/editar`}>{f ? 'Editar' : 'Crear ficha'}</Link>}
             {esMpi && f && puedeOperar(perfil, r.area) && <Link className="boton" href={`/producir?area=${r.area}&generico=${r.id}`}>Producir esta ficha</Link>}
           </div>
@@ -100,16 +100,16 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
                 <ul className="renglones">
                   {d.lineas.map((l, i) => (
                     <li key={i}>
-                      <span style={{ minWidth: 0 }}>
+                      <span className="min-0">
                         {l.tipo === 'MPI'
                           ? <Link href={`/fichas/${l.generico_id}`}><strong>{l.generico}</strong></Link>
                           : <strong>{l.generico}</strong>}
                         {l.marca && <span className="suave"> · {l.marca}</span>}
-                        {l.nota && <span className="suave" style={{ display: 'block', fontSize: '.82rem' }}>{l.nota}</span>}
+                        {l.nota && <span className="suave bloque texto-mini">{l.nota}</span>}
                       </span>
                       <span className="n">
                         <strong>{cant(l.cantidad)} {l.unidad}</strong>
-                        {vePesos && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>
+                        {vePesos && <span className="suave bloque texto-mini">
                           {l.tipo === 'SIN_COSTO' ? 'sin costo'
                             : l.costo !== null && l.costo_unitario !== null ? `${pesos(l.costo_unitario, 2)}/${l.unidad_base} = ${pesos(l.costo)}${l.estimado ? ' *' : ''}`
                             : 'sin costo vigente'}
@@ -131,8 +131,8 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
 
               {(f.descripcion || f.presentacion) && (
                 <section className="tarjeta">
-                  {f.descripcion && <><h2 className="sec-tit">Descripción</h2><p style={{ marginTop: 0 }}>{f.descripcion}</p></>}
-                  {f.presentacion && <><h2 className="sec-tit">Presentación</h2><p style={{ margin: 0 }}>{f.presentacion}</p></>}
+                  {f.descripcion && <><h2 className="sec-tit">Descripción</h2><p className="mt-0">{f.descripcion}</p></>}
+                  {f.presentacion && <><h2 className="sec-tit">Presentación</h2><p className="m-0">{f.presentacion}</p></>}
                 </section>
               )}
             </div>
@@ -142,7 +142,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
                 <h2 className="sec-tit">Puntos críticos</h2>
                 {d.puntos.length
                   ? d.puntos.map((p, i) => <div key={i} className="punto"><span className={`pill ${tipoPunto(p.tipo).c}`}>{tipoPunto(p.tipo).t}</span><span>{p.texto}</span></div>)
-                  : <div className="aviso" style={{ margin: 0 }}><strong>Ficha sin puntos críticos</strong>
+                  : <div className="aviso m-0"><strong>Ficha sin puntos críticos</strong>
                       <div>Antes de producir no se mostrará ninguna indicación.{d.puede_editar && d.es_vigente ? ' Complételos en Editar.' : ''}</div></div>}
                 <div className="punto"><span className="pill aviso">Alérgenos</span>
                   <span>{f.alergenos.length ? f.alergenos.join(', ') : <span className="suave">Ninguno declarado</span>}</span></div>
@@ -154,9 +154,9 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
                   <li><span>Método de empaque</span><strong>{f.empaque ?? '—'}</strong></li>
                   {(d.presentaciones ?? []).map((p, i) => (
                     <li key={i}>
-                      <span style={{ minWidth: 0 }}>
+                      <span className="min-0">
                         <strong>{textoPresentacion(p, ub)}</strong>
-                        {p.empaque && <span className="suave" style={{ display: 'block', fontSize: '.82rem' }}>{p.empaque}</span>}
+                        {p.empaque && <span className="suave bloque texto-mini">{p.empaque}</span>}
                       </span>
                       <span className="n">{p.por_tanda ? <strong>{cant(p.por_tanda)} por tanda</strong> : <span className="suave">las que salgan</span>}</span>
                     </li>
@@ -172,7 +172,7 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
               {(f.observaciones || f.nota) && (
                 <section className="tarjeta">
                   <h2 className="sec-tit">Observaciones</h2>
-                  {f.observaciones && <p style={{ marginTop: 0 }}>{f.observaciones}</p>}
+                  {f.observaciones && <p className="mt-0">{f.observaciones}</p>}
                   {f.nota && <p className="suave" style={{ margin: 0, fontSize: '.88rem' }}>{f.nota}</p>}
                 </section>
               )}
@@ -182,14 +182,14 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
                 <ul className="renglones">
                   {d.versiones.map((x) => (
                     <li key={x.id}>
-                      <span style={{ minWidth: 0 }}>
+                      <span className="min-0">
                         {x.id === f.id ? <strong>v{x.version}</strong> : <Link href={`/fichas/${r.id}?v=${x.id}`}>v{x.version}</Link>}
                         {' · '}{fechaLarga(x.vigente_desde)}{x.motivo_cambio ? ` · ${x.motivo_cambio}` : x.origen !== 'APP' ? ` · ${x.origen}` : ''}
-                        {x.creado_por && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{x.creado_por}</span>}
+                        {x.creado_por && <span className="suave bloque texto-mini">{x.creado_por}</span>}
                       </span>
                       <span className="n">
                         {x.vigente_hasta === null ? <span className="pill ok">vigente</span> : <span className="pill gris">reemplazada</span>}
-                        {Number(x.lotes) > 0 && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{x.lotes} lote(s)</span>}
+                        {Number(x.lotes) > 0 && <span className="suave bloque texto-mini">{x.lotes} lote(s)</span>}
                       </span>
                     </li>
                   ))}

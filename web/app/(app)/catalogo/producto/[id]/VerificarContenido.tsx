@@ -9,12 +9,12 @@ export default function VerificarContenido({ id, texto, verificado }: { id: stri
   const [hecho, setHecho] = useState(verificado);
   const [error, setError] = useState<string | null>(null);
   const [pend, start] = useTransition();
-  if (hecho) return <p className="suave" style={{ fontSize: '.88rem' }}>✔ Contenido verificado ({texto}) el {hecho}.</p>;
+  if (hecho) return <p className="suave texto-nota">✔ Contenido verificado ({texto}) el {hecho}.</p>;
   return (
-    <div className="aviso" style={{ fontSize: '.9rem' }}>
+    <div className="aviso texto-nota">
       <strong>Contenido sin verificar:</strong> la app cuenta cada unidad como {texto}. Mire una unidad real (etiqueta o báscula) y confírmelo.
       {error && <p className="error" style={{ margin: '.4rem 0 0' }}>{error}</p>}
-      <div className="acciones" style={{ marginTop: '.4rem' }}>
+      <div className="acciones mt-1">
         <button type="button" className="chico" disabled={pend} onClick={() => start(async () => {
           const r = await verificarContenido(id);
           if (r.ok) setHecho(fmtFecha(new Date())); else setError(r.error ?? 'No se pudo verificar.');

@@ -32,8 +32,8 @@ export default function ListaFichasProduccion({ filas, vePesos }: { filas: FilaP
   ];
   const columnas: Columna<FilaProd>[] = [
     { k: 'nombre', t: 'MPI', orden: (f) => f.nombre, ver: (f) => (
-      <Link href={`/fichas/${f.generico_id}`} style={{ textDecoration: 'none' }}>
-        <strong style={{ display: 'block' }}>{f.nombre}</strong>
+      <Link className="sin-subrayado" href={`/fichas/${f.generico_id}`}>
+        <strong className="bloque">{f.nombre}</strong>
         <span className="cod">{f.generico_codigo}{f.ficha_codigo ? ` · ficha ${f.ficha_codigo}` : ''}</span>
       </Link>) },
     { k: 'rend', t: 'Rend. esp.', der: true, orden: (f) => f.rendimiento, ver: (f) => pct(f.rendimiento) },
@@ -49,9 +49,9 @@ export default function ListaFichasProduccion({ filas, vePesos }: { filas: FilaP
       const p = pendientes(f);
       return <>
         <span className={`pill ${ESTADO[f.estado].c}`}>{ESTADO[f.estado].t}</span>
-        {f.estado === 'INCOMPLETA' && f.primer_falta && <span className="suave" style={{ display: 'block', fontSize: '.78rem', marginTop: '.15rem' }}>{f.primer_falta}</span>}
-        {f.estado === 'INCOMPLETA' && !f.primer_falta && f.neto_esperado === null && <span className="suave" style={{ display: 'block', fontSize: '.78rem', marginTop: '.15rem' }}>Falta el neto esperado</span>}
-        {p.length > 0 && <span className="suave" style={{ display: 'block', fontSize: '.78rem', marginTop: '.15rem' }}>{p.join(' · ')}</span>}
+        {f.estado === 'INCOMPLETA' && f.primer_falta && <span className="suave bloque texto-mini">{f.primer_falta}</span>}
+        {f.estado === 'INCOMPLETA' && !f.primer_falta && f.neto_esperado === null && <span className="suave bloque texto-mini">Falta el neto esperado</span>}
+        {p.length > 0 && <span className="suave bloque texto-mini">{p.join(' · ')}</span>}
       </>;
     } },
     { k: 'lotes', t: 'Lotes', der: true, def: false, orden: (f) => f.lotes, ver: (f) => f.lotes || '—' },
@@ -60,7 +60,7 @@ export default function ListaFichasProduccion({ filas, vePesos }: { filas: FilaP
     <VistaFiltrable clave="produccion-fichas" filas={filas} id={(f) => f.generico_id}
                     buscar={(f) => `${f.generico_codigo} ${f.ficha_codigo ?? ''} ${f.nombre}`}
                     grupos={grupos} columnas={columnas.filter((c) => vePesos || !['costo', 'cg'].includes(c.k))}
-                    pie={(v) => <p className="suave" style={{ fontSize: '.82rem' }}>
+                    pie={(v) => <p className="suave texto-mini">
                       {v.length} de {filas.length} MPI.
                       {vePesos && ' Costo de tanda = Σ cantidad de la ficha × costo promedio vigente; lo que no se compra (agua) vale $0.'}
                       {vePesos && v.some((f) => f.estimado) && ' * Estimado: aún sin kardex, usa precios de referencia.'}</p>}

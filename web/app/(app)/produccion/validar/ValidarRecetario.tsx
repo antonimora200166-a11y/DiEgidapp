@@ -53,8 +53,8 @@ function Buscador({ opciones, alElegir, placeholder }: { opciones: { id: string;
       {lista.length > 0 && (
         <ul className="lista" style={{ marginTop: '.3rem', gap: '.25rem' }}>
           {lista.map((o) => (
-            <li key={o.id} style={{ padding: 0 }}>
-              <button type="button" className="secundario" style={{ width: '100%', justifyContent: 'flex-start', textAlign: 'left', border: 0, color: 'inherit' }}
+            <li className="p-0" key={o.id}>
+              <button type="button" className="secundario opcion-lista"
                       onClick={() => { alElegir(o.id); setQ(''); }}>
                 <strong>{o.nombre}</strong>{o.extra && <span className="suave">&nbsp;· {o.extra}</span>}
               </button>
@@ -135,7 +135,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
     ];
     const columnas: Columna<Ing>[] = [
       { k: 'nombre', t: 'En el recetario', orden: (f) => f.nombre, ver: (f) => <>
-        <strong style={{ display: 'block' }}>{f.nombre}</strong>
+        <strong className="bloque">{f.nombre}</strong>
         <span className="cod">{f.codigo}{f.presentacion ? ` · ${f.presentacion}` : ''}{f.unidad ? ` · en ${f.unidad}` : ''}</span></> },
       { k: 'usos', t: 'Recetas', der: true, orden: (f) => f.usos, ver: (f) => <span title={`${f.usos_subrecetas} MPI`}>{f.usos}</span> },
       { k: 'propuesta', t: 'En el catálogo', orden: (f) => f.similitud, ver: (f) => f.estado === 'CONFIRMADO'
@@ -149,7 +149,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
             <Buscador opciones={gens} placeholder="Buscar en el catálogo…" alElegir={(id) => correr(() => decidirIngredientes([f.codigo], 'CONFIRMAR', id, fuente))} />
             <button type="button" className="secundario mini" onClick={() => setAbierto(null)}>×</button>
           </div>
-        : <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        : <div className="fila-flex wrap fin">
             {f.estado === 'PENDIENTE' && f.propuesto_id && <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => decidirIngredientes([f.codigo], 'CONFIRMAR', null, fuente))}>Es este</button>}
             <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(f.codigo)}>{f.estado === 'CONFIRMADO' ? 'Cambiar' : 'Otro'}</button>
             {f.estado === 'PENDIENTE' && <>
@@ -193,23 +193,23 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
     ];
     const columnas: Columna<Mpi>[] = [
       { k: 'nombre', t: F.resultados, orden: (m) => m.nombre, ver: (m) => <>
-        <Link href={`/fichas/${m.generico_id}`} style={{ textDecoration: 'none' }}><strong style={{ display: 'block' }}>{m.nombre}</strong></Link>
+        <Link className="sin-subrayado" href={`/fichas/${m.generico_id}`}><strong className="bloque">{m.nombre}</strong></Link>
         <span className="cod">{m.codigo} · {m.unidad_base}{m.estado_catalogo === 'PROVISIONAL' ? ' · provisional' : ''}</span></> },
       { k: 'estado', t: 'Estado', orden: estado, ver: (m) => <>
         <span className={`pill ${ESTADOS[estado(m)].c}`}>{ESTADOS[estado(m)].t}</span>
-        {m.nota && <span className="suave" style={{ display: 'block', fontSize: '.78rem' }}>{m.nota}</span>}</> },
+        {m.nota && <span className="suave bloque texto-mini">{m.nota}</span>}</> },
       { k: 'receta', t: F.lineasDeReceta ? 'Receta del recetario' : 'Cóctel de la carta', ver: (m) => {
         if (hecha(m)) return <span className="suave">{F.lineasDeReceta && m.ficha_origen !== 'RECETARIO COCINA' ? `Ficha de ${m.ficha_origen}` : 'Aprobada'}</span>;
-        if (m.receta) return <><strong>{m.receta.nombre}</strong> <span className="cod">{m.receta.codigo}</span><span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{rinde(m.receta)}</span></>;
+        if (m.receta) return <><strong>{m.receta.nombre}</strong> <span className="cod">{m.receta.codigo}</span><span className="suave bloque texto-mini">{rinde(m.receta)}</span></>;
         if (!m.candidatas.length) return <span className="suave">—</span>;
         const c = m.candidatas[0];
         return <>{c.nombre} <span className="cod">{c.codigo}</span> {pillSim(c.similitud)}
-          {m.candidatas.length > 1 && <span className="suave" style={{ display: 'block', fontSize: '.78rem' }}>
+          {m.candidatas.length > 1 && <span className="suave bloque texto-mini">
             o {m.candidatas.slice(1).map((x) => `${x.nombre} (${Math.round(x.similitud * 100)} %)`).join(', ')}</span>}</>;
       } },
       ...(puedeEditar ? [{ k: 'acc', t: '', ver: (m: Mpi) => {
         if (hecha(m)) return null;
-        if (m.receta) return <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        if (m.receta) return <div className="fila-flex wrap fin">
           <Link className="boton mini" href={urlReceta(m.receta.codigo)}>Revisar y aprobar</Link>
           <button type="button" className="discreto mini" disabled={enviando} onClick={() => correr(() => elegirReceta(m.receta!.codigo, null, fuente))}>No es esta</button>
         </div>;
@@ -218,7 +218,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
                     opciones={datos.recetas.filter((r) => r.estado === 'PENDIENTE' && !r.generico_id).map((r) => ({ id: r.codigo, nombre: r.nombre, extra: `${r.codigo} · ${rinde(r)}` }))} />
           <button type="button" className="secundario mini" onClick={() => setAbierto(null)}>×</button>
         </div>;
-        return <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        return <div className="fila-flex wrap fin">
           {m.candidatas[0] && !m.revision && <button type="button" className="mini" disabled={enviando}
             onClick={() => correr(() => elegirReceta(m.candidatas[0].codigo, m.generico_id, fuente), () => router.push(urlReceta(m.candidatas[0].codigo)))}>{F.lineasDeReceta ? 'Es esta' : 'Es este'}</button>}
           <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(m.generico_id)}>{F.lineasDeReceta ? 'Otra receta' : 'Otro cóctel'}</button>
@@ -263,7 +263,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
   const grupos: Grupo<Receta>[] = [{ clave: 'estado', titulo: 'Estado', valor: estadoR, opciones: Object.entries(ESTR).map(([v, x]) => ({ v, t: x.t })) }];
   const columnas: Columna<Receta>[] = [
     { k: 'nombre', t: 'Receta', orden: (r) => r.nombre, ver: (r) => <>
-      <Link href={urlReceta(r.codigo)} style={{ textDecoration: 'none' }}><strong style={{ display: 'block' }}>{r.nombre}</strong></Link>
+      <Link className="sin-subrayado" href={urlReceta(r.codigo)}><strong className="bloque">{r.nombre}</strong></Link>
       <span className="cod">{r.codigo} · {r.componentes} ingredientes · {r.pasos} pasos · {rinde(r)}</span></> },
     { k: 'estado', t: 'Estado', orden: estadoR, ver: (r) => <span className={`pill ${ESTR[estadoR(r)].c}`}>{ESTR[estadoR(r)].t}</span> },
     { k: 'mpi', t: F.resultados, ver: (r) => r.mpi ? <strong>{r.mpi}</strong>
@@ -276,7 +276,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
         <button type="button" className="secundario mini" onClick={() => setAbierto(null)}>Cancelar</button>
       </div>;
       return <div style={{ display: 'grid', gap: '.3rem', justifyItems: 'end' }}>
-        <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div className="fila-flex wrap fin">
           {r.propuesto_id && <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => elegirReceta(r.codigo, r.propuesto_id, fuente))}>{F.conIngredientes ? 'Es esta MPI' : clave === 'platos' ? 'Es este plato' : 'Es esta bebida'}</button>}
           <button type="button" className="secundario mini" disabled={enviando} onClick={() => setAbierto(r.codigo)}>{clave === 'platos' ? 'Otro plato' : `Otra ${F.resultado}`}</button>
           {F.conIngredientes && <button type="button" className="secundario mini" disabled={enviando} onClick={() => {
@@ -291,7 +291,7 @@ export default function ValidarRecetario({ tab, datos, puedeEditar, exactos, cla
         </div>
         {bloqueo?.codigo === r.codigo && <div className="aviso" style={{ margin: 0, fontSize: '.85rem', maxWidth: 360 }}>
           {bloqueo.mensajes.map((m) => <div key={m}>{m}</div>)}
-          <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="No es la misma porque…" style={{ marginTop: '.3rem' }} aria-label="Motivo para crearla igual" />
+          <input className="mt-1" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="No es la misma porque…" aria-label="Motivo para crearla igual" />
           <span className="suave">Escriba el motivo y toque «Crear MPI» otra vez.</span>
         </div>}
       </div>;

@@ -11,7 +11,7 @@ export default function FormPin({ tiene }: { tiene: boolean }) {
     <form action={accion} className="tarjeta">
       {tiene && (
         <>
-          <label htmlFor="pin-anterior" style={{ marginTop: 0 }}>PIN actual</label>
+          <label className="mt-0" htmlFor="pin-anterior">PIN actual</label>
           <input id="pin-anterior" name="anterior" type="password" inputMode="numeric" autoComplete="off" maxLength={6} required />
         </>
       )}

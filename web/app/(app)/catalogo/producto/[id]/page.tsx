@@ -55,7 +55,7 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
         {fila.clase_abc && <> · clase {fila.clase_abc}</>}
         {nPres > 1 && <> · el genérico tiene {nPres} presentaciones</>}
       </p>
-      {fila.nota && <p className="suave" style={{ fontSize: '.88rem' }}>{fila.nota}</p>}
+      {fila.nota && <p className="suave texto-nota">{fila.nota}</p>}
       <EditarProducto ficha={fila} categorias={categorias ?? []} ubBloqueada={ubBloqueada} />
       {fila.contenido_base != null && !fila.contenido_variable && (
         <VerificarContenido id={fila.id}
@@ -63,7 +63,7 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
           verificado={fila.contenido_verificado_en ? fmtFecha(fila.contenido_verificado_en) : null} />
       )}
       {fila.generico.tipo === 'SIN_COSTO' && (
-        <p className="suave" style={{ fontSize: '.88rem' }}>Sin costo: no lleva precio y suma $0 en las fichas{(enFicha ?? 0) > 0 ? ` (está en ${enFicha} línea${enFicha === 1 ? '' : 's'} de ficha)` : ''}.</p>
+        <p className="suave texto-nota">Sin costo: no lleva precio y suma $0 en las fichas{(enFicha ?? 0) > 0 ? ` (está en ${enFicha} línea${enFicha === 1 ? '' : 's'} de ficha)` : ''}.</p>
       )}
       {fila.generico.tipo === 'MPe' && perfil.rol === 'admin' && (
         <>
@@ -74,12 +74,12 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
         </>
       )}
       <h2>Pedido</h2>
-      <p className="suave" style={{ marginTop: 0, fontSize: '.88rem' }}>Cuando lo que hay llega al mínimo, sale en el <a href="/pedido">pedido sugerido</a> con lo que falta para el máximo.</p>
+      <p className="suave mt-0 texto-nota">Cuando lo que hay llega al mínimo, sale en el <a href="/pedido">pedido sugerido</a> con lo que falta para el máximo.</p>
       <StockMinMax id={fila.id} minimo={fila.stock_minimo === null ? null : Number(fila.stock_minimo)} maximo={fila.stock_maximo === null ? null : Number(fila.stock_maximo)} unidad={fila.unidad_compra || 'und'} />
       {perfil.rol === 'admin' && (
         <>
           <h2>Administración</h2>
-          <p className="suave" style={{ marginTop: 0, fontSize: '.88rem' }}>
+          <p className="suave mt-0 texto-nota">
             Eliminar lo saca de todas las listas y pantallas; queda en la bitácora con el motivo y se puede reactivar.
             No se puede si tiene saldo en el kardex o si su genérico está en una ficha vigente.
           </p>
@@ -89,7 +89,7 @@ export default async function Producto({ params }: { params: Promise<{ id: strin
       {(alias?.length ?? 0) > 0 && (
         <>
           <h2>Nombres con que aparece</h2>
-          <p className="suave" style={{ marginTop: 0, fontSize: '.88rem' }}>En facturas, inventarios y fichas. La búsqueda los reconoce.</p>
+          <p className="suave mt-0 texto-nota">En facturas, inventarios y fichas. La búsqueda los reconoce.</p>
           <ul className="lista">
             {alias!.map((a) => <li key={a.fuente + a.alias}>{a.alias} <span className="cod">· {a.fuente.toLowerCase()}</span></li>)}
           </ul>

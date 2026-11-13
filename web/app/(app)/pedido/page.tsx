@@ -23,7 +23,7 @@ export default async function PaginaPedido({ searchParams }: { searchParams: Pro
     <>
       <h1>Pedido sugerido</h1>
       {areas.length > 1 && (
-        <nav className="segmentos" style={{ marginBottom: '1rem' }}>
+        <nav className="segmentos mb-3">
           {areas.map((a) => (
             <Link key={a} href={`/pedido?area=${a}`} aria-current={a === area ? 'true' : undefined}>
               <span>
@@ -44,7 +44,7 @@ export default async function PaginaPedido({ searchParams }: { searchParams: Pro
         </p>
       )}
       {lineas.length ? <Pedido lineas={lineas} /> : <p className="exito">Nada está en el mínimo. ✔</p>}
-      <p className="suave" style={{ fontSize: '.85rem' }}>Los mínimos y máximos se cambian en la ficha de cada producto del catálogo.</p>
+      <p className="suave texto-nota">Los mínimos y máximos se cambian en la ficha de cada producto del catálogo.</p>
     </>
   );
 }

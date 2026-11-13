@@ -24,7 +24,7 @@ export default function TarjetaCierre({ periodos }: { periodos: PeriodoAbierto[]
             </li>
           ))}
         </ul>
-        <span className="suave" style={{ fontSize: '.85rem' }}>Antes, el jefe del área cuenta todas las zonas en la fecha de cierre.</span>
+        <span className="suave texto-nota">Antes, el jefe del área cuenta todas las zonas en la fecha de cierre.</span>
       </div>
     </section>
   );

@@ -48,7 +48,7 @@ export default function ListaFichas({ filas, variasAreas }: { filas: FilaFicha[]
       const e = estadoFicha(f);
       return <span style={{ color: e === 'Completa' ? 'var(--ok)' : 'var(--aviso)', fontSize: '.88rem' }}>
         {e}{f.faltan > 0 && ` (${f.faltan})`}
-        {f.primer_falta && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{f.primer_falta}</span>}
+        {f.primer_falta && <span className="suave bloque texto-mini">{f.primer_falta}</span>}
       </span>;
     } },
     { k: 'lotes', t: 'Lotes', der: true, orden: (f) => f.lotes, ver: (f) => f.lotes || '—' },

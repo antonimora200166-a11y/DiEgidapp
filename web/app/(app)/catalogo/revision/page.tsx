@@ -76,7 +76,7 @@ export default async function Revision({ searchParams }: { searchParams: Promise
           <div style={{ width: `${Math.round(((decididos ?? 0) / total) * 100)}%`, height: '100%', background: 'var(--ok)' }} />
         </div>
       )}
-      <nav className="segmentos" aria-label="Filtros" style={{ marginBottom: '1rem' }}>
+      <nav className="segmentos mb-3" aria-label="Filtros">
         {valida.length > 1 && (
           <>
             <Link href={enlace({ area: null })} aria-current={area ? undefined : 'true'}><span>Todas</span></Link>

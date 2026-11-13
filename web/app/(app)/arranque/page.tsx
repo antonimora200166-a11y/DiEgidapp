@@ -54,10 +54,10 @@ export default async function Arranque() {
               const ir = p.estado !== 'ok' ? enlace(p.clave, area, perfil.rol === 'admin') : null;
               return (
                 <li key={p.clave} style={p.estado !== 'ok' ? { borderColor: MARCA[p.estado].c } : undefined}>
-                  <div className="linea" style={{ alignItems: 'flex-start' }}>
-                    <div style={{ minWidth: 0 }}>
+                  <div className="linea arriba">
+                    <div className="min-0">
                       <strong>{p.titulo}</strong>
-                      <div className="suave" style={{ fontSize: '.88rem' }}>{p.valor}</div>
+                      <div className="suave texto-nota">{p.valor}</div>
                     </div>
                     <span aria-label={p.estado} style={{ color: MARCA[p.estado].c, fontWeight: 800, fontSize: '1.2rem' }}>{MARCA[p.estado].s}</span>
                   </div>
@@ -75,10 +75,10 @@ export default async function Arranque() {
       <h2>General</h2>
       <ul className="lista">
         <li>
-          <div className="linea" style={{ alignItems: 'flex-start' }}>
+          <div className="linea arriba">
             <div>
               <strong>Lectura de facturas con IA</strong>
-              <div className="suave" style={{ fontSize: '.88rem' }}>{conIA ? 'Activa' : 'Apagada: las líneas de la recepción se escriben a mano'}</div>
+              <div className="suave texto-nota">{conIA ? 'Activa' : 'Apagada: las líneas de la recepción se escriben a mano'}</div>
             </div>
             <span style={{ color: conIA ? 'var(--ok)' : 'var(--suave)', fontWeight: 800, fontSize: '1.2rem' }}>{conIA ? '✓' : '–'}</span>
           </div>

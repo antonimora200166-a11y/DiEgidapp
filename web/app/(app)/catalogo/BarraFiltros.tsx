@@ -74,7 +74,7 @@ export default function BarraFiltros({ areas, categorias }: { areas: string[]; c
             style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem', alignItems: 'center', border: '1px solid var(--borde)', borderRadius: 10, padding: '.35rem', background: 'var(--tarjeta)' }}>
         {chips.map((c) => (
           <span key={c.g.clave + c.v} className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--tinta)' }}>
-            <span className="suave" style={{ fontWeight: 400 }}>{c.g.titulo}:</span> {c.t}
+            <span className="suave fw-400">{c.g.titulo}:</span> {c.t}
             <button type="button" aria-label={`Quitar ${c.t}`} onClick={() => alternar(c.g, c.v)}
                     className="quitar">×</button>
           </span>
@@ -108,7 +108,7 @@ export default function BarraFiltros({ areas, categorias }: { areas: string[]; c
             <option value="unidad">Unidad base</option><option value="creado">Más recientes</option><option value="costo">Costo (mayor)</option><option value="saldo">Saldo (mayor)</option>
           </select>
         </label>
-        {cargando && <span className="suave" role="status" style={{ fontSize: '.85rem' }}>Actualizando…</span>}
+        {cargando && <span className="suave texto-nota" role="status">Actualizando…</span>}
         <span style={{ flex: 1 }} />
         <div className="segmentos" role="radiogroup" aria-label="Vista">
           {[['lista', '☰ Lista'], ['tarjetas', '▦ Tarjetas']].map(([v, t]) => (
@@ -125,8 +125,8 @@ export default function BarraFiltros({ areas, categorias }: { areas: string[]; c
               <legend style={{ fontWeight: 700, marginBottom: '.3rem' }}>{g.titulo}</legend>
               <div style={g.clave === 'cat' ? { maxHeight: 260, overflow: 'auto' } : undefined}>
                 {g.opciones.map((o) => (
-                  <label key={o.v} style={{ display: 'flex', gap: '.45rem', alignItems: 'center', fontWeight: 400, margin: '.15rem 0' }}>
-                    <input type="checkbox" checked={valores(g.clave).includes(o.v)} onChange={() => alternar(g, o.v)} style={{ width: 20, minHeight: 20 }} />
+                  <label className="check" key={o.v}>
+                    <input type="checkbox" checked={valores(g.clave).includes(o.v)} onChange={() => alternar(g, o.v)} />
                     {o.t}
                   </label>
                 ))}
@@ -139,7 +139,7 @@ export default function BarraFiltros({ areas, categorias }: { areas: string[]; c
         <div className="tarjeta" style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, minWidth: 240, boxShadow: '0 8px 28px rgb(0 0 0 / .25)' }}>
           {AGRUPAR.filter((a) => a.v !== 'area' || areas.length > 1).map((a) => (
             <label key={a.v} style={{ display: 'flex', gap: '.45rem', alignItems: 'center', fontWeight: 400, margin: '.2rem 0' }}>
-              <input type="radio" name="agrupar" checked={agrupar === a.v} onChange={() => { ir({ agrupar: a.v }); setAbierto(null); }} style={{ width: 20, minHeight: 20 }} />
+              <input type="radio" name="agrupar" checked={agrupar === a.v} onChange={() => { ir({ agrupar: a.v }); setAbierto(null); }} />
               {a.t}
             </label>
           ))}

@@ -24,7 +24,7 @@ export default function ListaHistorial({ filas, variasAreas, vePesos }: { filas:
     ...(variasAreas ? [{ v: 'area', t: 'Área', valor: (f: FilaHistorial) => (f.area === 'BAR' ? 'Bar' : 'Cocina') }] : []),
   ];
   const columnas: Columna<FilaHistorial>[] = [
-    { k: 'fecha', t: 'Fecha', orden: (f) => f.registrado_en, ver: (f) => <span style={{ whiteSpace: 'nowrap' }}>{fmtFecha(f.fecha)}</span> },
+    { k: 'fecha', t: 'Fecha', orden: (f) => f.registrado_en, ver: (f) => <span className="nowrap">{fmtFecha(f.fecha)}</span> },
     { k: 'tipo', t: 'Documento', orden: (f) => f.tipo, ver: (f) => NOMBRE_TIPO[f.tipo]?.singular ?? f.tipo },
     { k: 'codigo', t: 'Código', orden: (f) => f.codigo, ver: (f) => <Link href={`/historial/${f.tipo.toLowerCase()}/${f.id}`} className="cod">{f.codigo}</Link> },
     { k: 'detalle', t: 'Detalle', ver: (f) => <span style={f.anulado ? { textDecoration: 'line-through' } : undefined}>{f.detalle}</span> },

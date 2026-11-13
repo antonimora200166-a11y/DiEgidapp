@@ -142,7 +142,7 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
     { k: 'producto', t: 'Producto', orden: (f) => f.generico, ver: (f) => (
       <div style={{ minWidth: 190 }}>
         <Link href={`/catalogo/producto/${f.producto_id}`}><strong>{f.generico}</strong>{f.marca && ` · ${f.marca}`}</Link>
-        <div className="suave" style={{ fontSize: '.82rem' }}>
+        <div className="suave texto-mini">
           {f.presentacion} · <span className="cod">{f.codigo}</span>
           {f.clase_abc && <> · <span className="etiqueta">clase {f.clase_abc}</span></>}
           {f.clase && f.clase !== 'MATERIA_PRIMA' && <> · <span className="etiqueta">{(NOMBRE_CLASE[f.clase] ?? f.clase).toLowerCase()}</span></>}
@@ -152,7 +152,7 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
             <span className="suave">También: {f.hermanos.map((h) => [h.marca, h.presentacion].filter(Boolean).join(' · ')).join(' / ')}</span>
             {!soloLectura && (panel?.tipo === 'repetido' && panel.id === f.producto_id ? (
               <div className="tarjeta" style={{ display: 'grid', gap: '.35rem', marginTop: '.3rem' }}>
-                <label style={{ margin: 0 }}>Esta presentación está repetida de:
+                <label className="m-0">Esta presentación está repetida de:
                   <select value={panel.queda} onChange={(e) => setPanel({ ...panel, queda: e.target.value })}>
                     {f.hermanos.map((h) => <option key={h.producto_id} value={h.producto_id}>{[h.marca, h.presentacion].filter(Boolean).join(' · ')} ({h.codigo})</option>)}
                   </select>
@@ -173,26 +173,26 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
         {f.verificado_en && <div style={{ color: 'var(--ok)', fontSize: '.82rem' }}>✓ verificado{f.verificado_por ? ` · ${f.verificado_por}` : ''} · {fecha(f.verificado_en)}</div>}
       </div>) },
     { k: 'unidad', t: 'Unidad y contenido', orden: (f) => f.unidad_base, ver: (f) => (
-      <div style={{ whiteSpace: 'nowrap' }}>
+      <div className="nowrap">
         <strong>1 {f.unidad_compra}</strong> = {f.contenido_variable ? <em>se pesa al recibir</em> : <>{cant(f.contenido_base)} {f.unidad_base}</>}
-        <div className="suave" style={{ fontSize: '.82rem' }}>unidad base: {f.unidad_base}</div>
+        <div className="suave texto-mini">unidad base: {f.unidad_base}</div>
       </div>) },
     { k: 'precio', t: 'Último precio', orden: (f) => f.ult_fecha ?? '', ver: (f) => (f.ult_valor == null ? <span className="suave">sin compras</span> : (
       <div style={{ fontSize: '.88rem', minWidth: 170 }}>
         <strong>{pesos(f.ult_valor)}</strong> por {cant(f.ult_cantidad_base)} {f.unidad_base}
-        <div className="suave" style={{ fontSize: '.8rem' }}>{fecha(f.ult_fecha)} · {f.ult_proveedor ?? 'sin proveedor'}{f.n_compras > 1 ? ` · ${f.n_compras} compras` : ''}</div>
-        {f.ult_nombre && f.ult_nombre !== f.generico && <div className="suave" style={{ fontSize: '.8rem' }}>«{f.ult_nombre}»</div>}
+        <div className="suave texto-mini">{fecha(f.ult_fecha)} · {f.ult_proveedor ?? 'sin proveedor'}{f.n_compras > 1 ? ` · ${f.n_compras} compras` : ''}</div>
+        {f.ult_nombre && f.ult_nombre !== f.generico && <div className="suave texto-mini">«{f.ult_nombre}»</div>}
       </div>)) },
     { k: 'costo', t: 'Costo', der: true, orden: (f) => f.costo_base, ver: (f) => (f.costo_base == null ? <span className="suave">—</span> : (
       <div style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
         {pesos(f.costo_base)} / {f.unidad_base}
         {!f.contenido_variable && f.contenido_base && (
-          <div style={{ fontSize: '.85rem' }}><strong>1 {f.unidad_compra} = {pesos(Number(f.costo_base) * Number(f.contenido_base))}</strong></div>
+          <div className="texto-nota"><strong>1 {f.unidad_compra} = {pesos(Number(f.costo_base) * Number(f.contenido_base))}</strong></div>
         )}
         {f.costo_min != null && f.costo_max != null && Number(f.costo_max) > Number(f.costo_min) * 1.05 && (
-          <div className="suave" style={{ fontSize: '.78rem' }}>{pesos(f.costo_min)} a {pesos(f.costo_max)}</div>
+          <div className="suave texto-mini">{pesos(f.costo_min)} a {pesos(f.costo_max)}</div>
         )}
-        <div className="suave" style={{ fontSize: '.75rem' }}>{f.costo_fuente}</div>
+        <div className="suave texto-mini">{f.costo_fuente}</div>
       </div>)) },
     { k: 'alertas', t: 'Alertas', orden: (f) => -f.alertas.filter((a) => GRAVES.includes(a)).length, ver: (f) => (
       <div style={{ display: 'flex', gap: '.25rem', flexWrap: 'wrap', minWidth: 120 }}>
@@ -217,14 +217,14 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
               <div className="tarjeta" style={{ display: 'grid', gap: '.35rem', marginTop: '.3rem' }}>
                 <strong>¿Cuál nombre se queda?</strong>
                 {(['ESTE', 'OTRO'] as const).map((k) => (
-                  <label key={k} style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400 }}>
-                    <input type="radio" name={`queda-${f.producto_id}-${p.generico_id}`} checked={panel.queda === k} style={{ width: 18, minHeight: 18 }}
+                  <label className="check" key={k}>
+                    <input type="radio" name={`queda-${f.producto_id}-${p.generico_id}`} checked={panel.queda === k}
                            onChange={() => setPanel({ ...panel, queda: k })} />
                     {k === 'ESTE' ? `${f.generico} (${f.unidad_base})` : `${p.nombre} (${p.unidad_base})`}
                   </label>
                 ))}
                 {p.unidad_base !== f.unidad_base && (
-                  <label style={{ margin: 0 }}>
+                  <label className="m-0">
                     Van en unidades distintas: 1 {panel.queda === 'ESTE' ? p.unidad_base : f.unidad_base} = ¿cuántos {panel.queda === 'ESTE' ? f.unidad_base : p.unidad_base}?
                     <input inputMode="decimal" value={panel.factor} onChange={(e) => setPanel({ ...panel, factor: e.target.value })} />
                   </label>
@@ -241,34 +241,34 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
       </div>) : null) },
     { k: 'acciones', t: '', ver: (f) => (soloLectura ? null : corrigiendo === f.producto_id ? (
       <div className="tarjeta" style={{ display: 'grid', gap: '.4rem', minWidth: 220 }}>
-        <label style={{ margin: 0 }}>Presentación
+        <label className="m-0">Presentación
           <input value={b.presentacion} onChange={(e) => setB({ ...b, presentacion: e.target.value })} />
         </label>
-        <label style={{ margin: 0 }}>Unidad base
+        <label className="m-0">Unidad base
           <select value={b.unidad_base} disabled={f.tiene_kardex || f.tiene_ficha} onChange={(e) => setB({ ...b, unidad_base: e.target.value })}>
             <option value="g">g</option><option value="ml">ml</option><option value="und">und</option>
           </select>
-          {(f.tiene_kardex || f.tiene_ficha) && <span className="suave" style={{ fontSize: '.78rem' }}>No se cambia: ya tiene {f.tiene_kardex ? 'kardex' : 'ficha técnica'}.</span>}
+          {(f.tiene_kardex || f.tiene_ficha) && <span className="suave texto-mini">No se cambia: ya tiene {f.tiene_kardex ? 'kardex' : 'ficha técnica'}.</span>}
         </label>
-        <label style={{ margin: 0 }}>Unidad de compra (BOT, PAQ, KG…)
+        <label className="m-0">Unidad de compra (BOT, PAQ, KG…)
           <input value={b.unidad_compra} onChange={(e) => setB({ ...b, unidad_compra: e.target.value })} />
         </label>
-        <label style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400 }}>
-          <input type="checkbox" checked={b.variable} style={{ width: 20, minHeight: 20 }} onChange={(e) => setB({ ...b, variable: e.target.checked })} />
+        <label className="check">
+          <input type="checkbox" checked={b.variable} onChange={(e) => setB({ ...b, variable: e.target.checked })} />
           Se pesa al recibir (contenido variable)
         </label>
         {!b.variable && (
-          <label style={{ margin: 0 }}>Cuánto trae 1 {b.unidad_compra || 'unidad'} ({b.unidad_base})
+          <label className="m-0">Cuánto trae 1 {b.unidad_compra || 'unidad'} ({b.unidad_base})
             <input inputMode="decimal" value={b.contenido} onChange={(e) => setB({ ...b, contenido: e.target.value })} />
           </label>
         )}
-        <div style={{ display: 'flex', gap: '.4rem' }}>
+        <div className="fila-flex">
           <button type="button" disabled={enviando} onClick={() => guardar(f)}>{enviando ? 'Guardando…' : 'Guardar y verificar'}</button>
           <button type="button" className="secundario" disabled={enviando} onClick={() => setCorrigiendo(null)}>Cancelar</button>
         </div>
       </div>
     ) : (
-      <div style={{ display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
+      <div className="fila-flex wrap">
         {f.verificado_en
           ? <button type="button" className="secundario mini" disabled={enviando} onClick={() => correr(() => verificar([f.producto_id], false), `${f.generico}: vuelve a pendiente.`)}>Quitar ✓</button>
           : <button type="button" className="mini" disabled={enviando} onClick={() => correr(() => verificar([f.producto_id]), `${f.generico}: verificado.`)}>Verificado</button>}
@@ -289,22 +289,22 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
           ];
           return (
             <div className="tarjeta" style={{ display: 'grid', gap: '.4rem', minWidth: 220, width: '100%' }}>
-              <label style={{ margin: 0 }}>Precio en pesos
+              <label className="m-0">Precio en pesos
                 <input inputMode="decimal" autoFocus placeholder="Ej.: 20.000" value={panel.valor} onChange={(e) => setPanel({ ...panel, valor: e.target.value })} />
               </label>
-              <label style={{ margin: 0 }}>Por
+              <label className="m-0">Por
                 <select value={panel.por} onChange={(e) => setPanel({ ...panel, por: e.target.value as 'COMPRA' | 'KILO' | 'BASE' })}>
                   {opciones.map((o) => <option key={o.v} value={o.v}>{o.t}</option>)}
                 </select>
               </label>
               {cu != null && <span className="suave">= {pesos(cu)} por {f.unidad_base}</span>}
               {f.hermanos.length > 0 && (
-                <label style={{ margin: 0, display: 'flex', gap: '.4rem', alignItems: 'center', fontWeight: 400 }}>
-                  <input type="checkbox" checked={panel.otras} style={{ width: 20, minHeight: 20 }} onChange={(e) => setPanel({ ...panel, otras: e.target.checked })} />
+                <label className="check">
+                  <input type="checkbox" checked={panel.otras} onChange={(e) => setPanel({ ...panel, otras: e.target.checked })} />
                   También a sus otras presentaciones sin precio propio
                 </label>
               )}
-              <div style={{ display: 'flex', gap: '.4rem' }}>
+              <div className="fila-flex">
                 <button type="button" disabled={enviando} onClick={() => guardarPrecio(f)}>{enviando ? 'Guardando…' : 'Guardar precio'}</button>
                 <button type="button" className="secundario" onClick={() => setPanel(null)}>Cancelar</button>
               </div>
@@ -330,9 +330,9 @@ export default function Hoja({ filas: filasBase, soloLectura, vePesos }: { filas
                       vacio="Nada pendiente con estos filtros. ✔"
                       acciones={(elegidas, limpiar) => (
                         <div className="barra-bloque">
-                          <div className="linea" style={{ flexWrap: 'wrap' }}>
+                          <div className="linea wrap">
                             <strong>{elegidas.length} seleccionado(s)</strong>
-                            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                            <div className="fila-flex wrap">
                               <button type="button" disabled={enviando}
                                       onClick={() => correr(() => verificar(elegidas.map((f) => f.producto_id)), `${elegidas.length} verificado(s).`, limpiar)}>
                                 Marcar {elegidas.length} como verificados

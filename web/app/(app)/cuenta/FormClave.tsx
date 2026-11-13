@@ -8,7 +8,7 @@ export default function FormClave({ temporal }: { temporal: boolean }) {
   if (estado.ok) {
     return (
       <div className="tarjeta">
-        <p className="exito" role="status" style={{ marginTop: 0 }}>Listo: su contraseña cambió. Úsela la próxima vez que entre.</p>
+        <p className="exito mt-0" role="status">Listo: su contraseña cambió. Úsela la próxima vez que entre.</p>
         <Link className="boton" href="/">Ir al inicio</Link>
       </div>
     );

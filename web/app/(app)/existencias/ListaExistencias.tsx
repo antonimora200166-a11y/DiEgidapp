@@ -28,10 +28,10 @@ export default function ListaExistencias({ filas, zonaInicial, variasAreas, vePe
   ];
   const todas: Columna<FilaExistencia>[] = [
     { k: 'producto', t: 'Producto', orden: (f) => f.generico, ver: (f) => (
-      <div style={{ minWidth: 180 }}>{f.generico}{f.marca && ` · ${f.marca}`}<div className="suave" style={{ fontSize: '.8rem' }}>{f.presentacion}</div></div>) },
+      <div style={{ minWidth: 180 }}>{f.generico}{f.marca && ` · ${f.marca}`}<div className="suave texto-mini">{f.presentacion}</div></div>) },
     { k: 'codigo', t: 'Código', def: false, orden: (f) => f.producto_codigo, ver: (f) => <span className="cod">{f.producto_codigo}</span> },
-    { k: 'categoria', t: 'Categoría', orden: (f) => f.categoria, ver: (f) => <span className="suave" style={{ fontSize: '.88rem' }}>{f.categoria}</span> },
-    { k: 'zona', t: 'Zona', orden: (f) => f.zona, ver: (f) => <span className="suave" style={{ fontSize: '.88rem' }}>{f.zona}</span> },
+    { k: 'categoria', t: 'Categoría', orden: (f) => f.categoria, ver: (f) => <span className="suave texto-nota">{f.categoria}</span> },
+    { k: 'zona', t: 'Zona', orden: (f) => f.zona, ver: (f) => <span className="suave texto-nota">{f.zona}</span> },
     { k: 'area', t: 'Área', def: false, ver: (f) => (f.area === 'BAR' ? 'Bar' : 'Cocina') },
     { k: 'cantidad', t: 'Cantidad', der: true, orden: (f) => Number(f.cantidad),
       ver: (f) => <span style={{ color: f.cantidad < 0 ? 'var(--error)' : undefined }}>{fmtCantidad(Number(f.cantidad))} {f.unidad_base}</span> },
@@ -48,7 +48,7 @@ export default function ListaExistencias({ filas, zonaInicial, variasAreas, vePe
                     pie={(vis) => {
                       if (!vePesos) {
                         const neg = vis.filter((f) => f.cantidad < 0).length;
-                        return <p className="suave" style={{ fontSize: '.88rem' }}>{vis.length} línea(s){neg > 0 && ` · ${neg} en negativo`}</p>;
+                        return <p className="suave texto-nota">{vis.length} línea(s){neg > 0 && ` · ${neg} en negativo`}</p>;
                       }
                       const total = vis.reduce((t, f) => t + Number(f.valor ?? 0), 0);
                       // valor por área y categoría de lo filtrado, de mayor a menor
@@ -60,10 +60,10 @@ export default function ListaExistencias({ filas, zonaInicial, variasAreas, vePe
                       }
                       const areasVis = [...new Set(vis.map((x) => x.area))];
                       return (
-                        <div className="tarjeta" style={{ marginTop: '.8rem' }}>
-                          <div className="suave" style={{ fontSize: '.85rem' }}>Valor de lo filtrado</div>
+                        <div className="tarjeta mt-3">
+                          <div className="suave texto-nota">Valor de lo filtrado</div>
                           <strong style={{ fontSize: '1.4rem' }}>{pesos(total)}</strong>
-                          <div className="suave" style={{ fontSize: '.85rem' }}>
+                          <div className="suave texto-nota">
                             {vis.length} línea(s){vis.some((f) => f.costo_promedio === null) && ` · ${vis.filter((f) => f.costo_promedio === null).length} sin costo todavía`}
                             {vis.some((f) => f.cantidad < 0) && ` · ${vis.filter((f) => f.cantidad < 0).length} en negativo`}
                           </div>
@@ -73,12 +73,12 @@ export default function ListaExistencias({ filas, zonaInicial, variasAreas, vePe
                             return (
                               <div key={a} style={{ overflowX: 'auto' }}>
                                 <h3 style={{ margin: '.9rem 0 .3rem', fontSize: '1rem' }}>{a === 'BAR' ? 'Bar' : 'Cocina'}: {pesos(totalA)}</h3>
-                                <table className="tabla" style={{ fontSize: '.88rem' }}>
-                                  <thead><tr><th>Categoría</th><th style={{ textAlign: 'right' }}>Líneas</th><th style={{ textAlign: 'right' }}>Valor</th><th style={{ textAlign: 'right' }}>%</th></tr></thead>
+                                <table className="tabla texto-nota">
+                                  <thead><tr><th>Categoría</th><th className="der">Líneas</th><th className="der">Valor</th><th className="der">%</th></tr></thead>
                                   <tbody>{filasA.map((v) => (
-                                    <tr key={v.categoria}><td>{v.categoria}</td><td style={{ textAlign: 'right' }}>{v.lineas}</td>
-                                      <td style={{ textAlign: 'right' }}>{pesos(v.valor)}</td>
-                                      <td style={{ textAlign: 'right' }}>{totalA > 0 ? Math.round((v.valor / totalA) * 1000) / 10 : 0} %</td></tr>
+                                    <tr key={v.categoria}><td>{v.categoria}</td><td className="der">{v.lineas}</td>
+                                      <td className="der">{pesos(v.valor)}</td>
+                                      <td className="der">{totalA > 0 ? Math.round((v.valor / totalA) * 1000) / 10 : 0} %</td></tr>
                                   ))}</tbody>
                                 </table>
                               </div>

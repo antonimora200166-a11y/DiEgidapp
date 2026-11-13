@@ -58,7 +58,7 @@ export default function Propuestas({ propuestas }: { propuestas: Propuesta[] }) 
                 <strong>{p.codigo} · <Link href={`/consulta/simulador?producto=${p.generico_id}`}>{p.nombre}</Link></strong>
                 <span className={`etiqueta ${p.estado === 'APROBADA' ? 'validado' : p.estado === 'DESCARTADA' ? 'inactivo' : 'provisional'}`}>
                   {p.estado === 'PROPUESTA' ? 'sin decidir' : p.estado.toLowerCase()}</span>
-                <small className="suave" style={{ marginLeft: 'auto' }}>{p.creada_por ?? '—'} · {fecha(p.creada_en)}</small>
+                <small className="suave ml-auto">{p.creada_por ?? '—'} · {fecha(p.creada_en)}</small>
               </div>
               <div style={{ fontSize: '.92rem', marginTop: '.3rem' }}>
                 {p.precio_nuevo !== p.precio_actual && <>Precio {pesos(p.precio_actual)} → <b>{pesos(p.precio_nuevo)}</b> · </>}
@@ -67,9 +67,9 @@ export default function Propuestas({ propuestas }: { propuestas: Propuesta[] }) 
                   {' '}({p.resultado.area.dif_margen >= 0 ? '+' : '−'}{pesos(Math.abs(p.resultado.area.dif_margen))} de margen en el período)</>}
               </div>
               {p.cambios.length > 0 && (
-                <div className="suave" style={{ fontSize: '.88rem' }}>Receta: {p.cambios.map((c) =>
+                <div className="suave texto-nota">Receta: {p.cambios.map((c) =>
                   `${c.nombre} ${Number(c.cantidad_actual).toLocaleString('es-CO')} → ${Number(c.cantidad_nueva).toLocaleString('es-CO')} ${c.unidad}`).join(' · ')}</div>)}
-              {p.nota && <div style={{ fontSize: '.88rem' }}>«{p.nota}»</div>}
+              {p.nota && <div className="texto-nota">«{p.nota}»</div>}
               {p.estado === 'PROPUESTA' ? <Decidir p={p} /> : (
                 <div className="suave" style={{ fontSize: '.88rem', marginTop: '.3rem' }}>
                   {p.estado === 'APROBADA' ? 'Aprobada' : 'Descartada'} por {p.decidida_por ?? '—'}{p.decidida_en ? ` el ${fecha(p.decidida_en)}` : ''}

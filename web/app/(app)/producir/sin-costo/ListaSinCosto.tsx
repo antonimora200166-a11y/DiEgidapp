@@ -39,7 +39,7 @@ export default function ListaSinCosto({ filas }: { filas: LoteSinCosto[] }) {
   ];
   const columnas: Columna<LoteSinCosto>[] = [
     { k: 'codigo', t: 'Lote', orden: (f) => f.codigo, ver: (f) => <span className="cod">{f.codigo}</span> },
-    { k: 'fecha', t: 'Fecha', orden: (f) => f.fecha, ver: (f) => <span style={{ whiteSpace: 'nowrap' }}>{fmtFecha(f.fecha)}</span> },
+    { k: 'fecha', t: 'Fecha', orden: (f) => f.fecha, ver: (f) => <span className="nowrap">{fmtFecha(f.fecha)}</span> },
     { k: 'mpi', t: 'MPI', orden: (f) => f.mpi, ver: (f) => <strong>{f.mpi}</strong> },
     { k: 'neto', t: 'Neto', der: true, orden: (f) => f.neto, ver: (f) => (f.neto ? `${Number(f.neto).toLocaleString('es-CO')} ${f.unidad}` : '—') },
     { k: 'costo', t: 'Costo parcial', der: true, orden: (f) => f.costo_total, ver: (f) => (f.costo_total ? pesos(Number(f.costo_total)) : '—') },

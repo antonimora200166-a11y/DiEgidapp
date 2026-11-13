@@ -28,7 +28,7 @@ export default async function Usuarios() {
               <tr key={p.id} className={p.activo ? '' : 'suave'}>
                 <td>
                   {p.nombre}
-                  {p.debe_cambiar_clave && p.activo && <div className="suave" style={{ fontSize: '.8rem' }}>con contraseña temporal</div>}
+                  {p.debe_cambiar_clave && p.activo && <div className="suave texto-mini">con contraseña temporal</div>}
                 </td>
                 <td className="cod">{p.usuario ?? '—'}</td>
                 <td>{nombreRol(p.rol)}</td>

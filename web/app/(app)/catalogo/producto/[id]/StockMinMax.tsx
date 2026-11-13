@@ -21,14 +21,14 @@ export default function StockMinMax({ id, minimo, maximo, unidad }: { id: string
       });
     }}>
       <div className="fila">
-        <label style={{ marginTop: 0 }}>Mínimo ({unidad.toLowerCase()})
+        <label className="mt-0">Mínimo ({unidad.toLowerCase()})
           <input inputMode="decimal" value={min} onChange={(e) => setMin(e.target.value)} placeholder="sin mínimo" />
         </label>
-        <label style={{ marginTop: 0 }}>Máximo ({unidad.toLowerCase()})
+        <label className="mt-0">Máximo ({unidad.toLowerCase()})
           <input inputMode="decimal" value={max} onChange={(e) => setMax(e.target.value)} placeholder="el doble del mínimo" />
         </label>
       </div>
-      <div className="acciones" style={{ marginTop: '.6rem' }}>
+      <div className="acciones mt-2">
         <button type="submit" className="secundario chico" disabled={enviando || !cambio}>{enviando ? 'Guardando…' : 'Guardar mínimo y máximo'}</button>
         {msg && <span role="status" style={{ color: msg.ok ? 'var(--ok)' : 'var(--error)', alignSelf: 'center' }}>{msg.texto}</span>}
       </div>

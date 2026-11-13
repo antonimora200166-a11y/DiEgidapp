@@ -39,9 +39,9 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
   return (
     <>
       {F.area === 'COCINA' && <PestanasProduccion activa="fichas" area="COCINA" />}
-      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href={volver}>← {F.titulo}</Link></p>
+      <p className="pagina-ancha m-0 mb-1"><Link href={volver}>← {F.titulo}</Link></p>
       <h1 style={{ marginBottom: '.2rem' }}>{r.nombre}</h1>
-      <p className="suave" style={{ marginTop: 0 }}>
+      <p className="suave mt-0">
         <span className="cod">{r.codigo}</span> de {(clave === 'platos' ? FUENTES.cocina.fuente : F.fuente).toLowerCase()}{F.lineasDeReceta && r.rendimiento ? ` · rinde ${Number(r.rendimiento).toLocaleString('es-CO')} ${r.unidad}` : ''}
         {pr.concepto ? ` · ${pr.concepto.toLowerCase()}` : ''}
         {datos && <> · {datos.ficha ? 'completa' : 'será'} la ficha de <Link href={`/fichas/${datos.resultado.id}`}><strong>{datos.resultado.nombre}</strong></Link>
@@ -54,7 +54,7 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
         <p className="aviso">Aún no tiene {F.resultado} elegida. Elíjala en <Link href={`/produccion/validar?${pf}tab=recetas`}>{F.recetas}</Link>.</p>
       ) : (
         <>
-          <div className="dos-col pagina-ancha" style={{ marginBottom: '1rem' }}>
+          <div className="dos-col pagina-ancha mb-3">
             <section className="tarjeta">
               <h2 className="sec-tit">Antes de aprobar, revise</h2>
               <ul style={{ margin: 0, paddingLeft: '1.1rem', display: 'grid', gap: '.35rem' }}>
@@ -76,18 +76,18 @@ export default async function AprobarReceta({ params, searchParams }: { params: 
                 {(pr.puntos ?? []).length > 0 && <li><strong>Puntos críticos</strong>: los propuso la app con el texto de los pasos ({(pr.puntos ?? []).map((x) => tipoPunto(x.tipo).t.toLowerCase()).join(', ')}). Quite o ajuste los que no sirvan.</li>}
                 {sugeridos.length > 0 && <li><strong>Alérgenos sugeridos por los ingredientes</strong>: {sugeridos.join(', ')}. Ya van marcados; desmarque los que no apliquen.</li>}
                 {(pr.observaciones ?? []).length > 0 && <li><strong>Notas del documento</strong>: van en observaciones.</li>}
-                {faltan.length > 0 && <li style={{ color: 'var(--aviso)' }}><strong>{faltan.length} ingrediente(s) sin emparejar</strong> no entran a la ficha:{' '}
+                {faltan.length > 0 && <li className="c-aviso"><strong>{faltan.length} ingrediente(s) sin emparejar</strong> no entran a la ficha:{' '}
                   {faltan.map((l) => l.nombre ?? l.codigo).join(', ')}. <Link href={faltan.some((l) => l.tipo === 'ing') ? '/produccion/validar?tab=ingredientes' : '/produccion/validar?tab=recetas'}>Emparéjelos</Link> y vuelva, o agréguelos abajo.</li>}
               </ul>
             </section>
             <details className="tarjeta" open={!F.lineasDeReceta}>
               <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{F.lineasDeReceta ? 'Receta original del recetario' : 'Así está en la carta'}</summary>
-              <ul className="renglones" style={{ marginTop: '.5rem' }}>
+              <ul className="renglones mt-2">
                 {p.lineas.map((l, i) => <li key={i}><span>{l.nombre ?? l.codigo}{l.generico && l.generico !== l.nombre ? <span className="suave"> → {l.generico}</span> : ''}
-                  {l.nota && <span className="suave" style={{ display: 'block', fontSize: '.78rem' }}>{l.nota}</span>}</span>
+                  {l.nota && <span className="suave bloque texto-mini">{l.nota}</span>}</span>
                   <span className="n">{l.cantidad ?? '—'} {l.unidad}</span></li>)}
               </ul>
-              {(pr.decoracion ?? []).length > 0 && <p style={{ fontSize: '.88rem' }}><strong>Decoración:</strong> {pr.decoracion!.join(' · ')}</p>}
+              {(pr.decoracion ?? []).length > 0 && <p className="texto-nota"><strong>Decoración:</strong> {pr.decoracion!.join(' · ')}</p>}
               <p style={{ whiteSpace: 'pre-line', fontSize: '.9rem' }}>{r.procedimiento ?? 'Sin procedimiento.'}</p>
             </details>
           </div>

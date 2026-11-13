@@ -8,9 +8,9 @@ export default function Restablecer({ id, nombre }: { id: string; nombre: string
   const confirmado = useRef(false);
   if (estado.clave) {
     return (
-      <div className="aviso" role="status" style={{ margin: 0 }}>
+      <div className="aviso m-0" role="status">
         Temporal de {nombre.split(' ')[0]}: <strong className="cod" style={{ fontSize: '1rem', color: 'inherit' }}>{estado.clave}</strong>
-        <div className="suave" style={{ fontSize: '.8rem' }}>Díctesela en persona. Solo se muestra esta vez; al entrar pondrá una suya.</div>
+        <div className="suave texto-mini">Díctesela en persona. Solo se muestra esta vez; al entrar pondrá una suya.</div>
       </div>
     );
   }

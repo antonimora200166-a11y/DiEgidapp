@@ -79,7 +79,7 @@ export default function Escaner({ onCodigo, onCerrar, titulo = 'Escanear', conti
     <dialog ref={dialogo} className="dialogo escaner" onCancel={(e) => { e.preventDefault(); onCerrar(); }}>
       <h2 style={{ margin: '0 0 .6rem', display: 'flex', alignItems: 'center', gap: '.4rem' }}><Icono nombre="escanear" /> {titulo}</h2>
       {estado === 'sin-permiso' ? (
-        <p className="aviso" style={{ marginTop: 0 }}>
+        <p className="aviso mt-0">
           No hay permiso para usar la cámara. En iPhone: Ajustes → Safari → Cámara → Permitir (o toque «aA» en la barra de dirección →
           Ajustes del sitio web → Cámara). En Android: el candado de la barra de dirección → Permisos → Cámara. Luego vuelve a abrir el escáner.
         </p>
@@ -90,7 +90,7 @@ export default function Escaner({ onCodigo, onCerrar, titulo = 'Escanear', conti
           {estado === 'iniciando' && <span className="suave">Abriendo la cámara…</span>}
         </div>
       ) : (
-        <p className="aviso" style={{ marginTop: 0 }}>Este navegador no lee códigos con la cámara. Escriba el número o use un lector conectado.</p>
+        <p className="aviso mt-0">Este navegador no lee códigos con la cámara. Escriba el número o use un lector conectado.</p>
       )}
       {ultimo && <p className="exito" style={{ margin: '.6rem 0 0', padding: '.4rem .6rem' }}>Leído: <span className="cod">{ultimo}</span></p>}
       <form onSubmit={(e) => { e.preventDefault(); if (manual.trim()) { cb.current(manual.trim()); setUltimo(manual.trim()); setManual(''); } }}

@@ -29,21 +29,21 @@ const TIPO_DESTINO: Record<string, string> = { SALIDA_A_PRODUCCION: 'Producción
 
 // De dónde salió un insumo: recepción (proveedor) → 1 toque; otro lote → su cadena, plegada
 function Origenes({ o, ub, vePesos }: { o: Origen[]; ub: string; vePesos: boolean }) {
-  if (!o.length) return <div className="suave" style={{ fontSize: '.85rem' }}>Sin costo: no sale del kardex.</div>;
+  if (!o.length) return <div className="suave texto-nota">Sin costo: no sale del kardex.</div>;
   return <div className="traza">
     {o.map((x, i) => (
       <div key={i} className="nodo-traza">
         {x.tipo === 'RECEPCION' && x.documento_id ? (
           <Link href={`/historial/recepcion/${x.documento_id}`} className="enlace-traza">
             <span><strong>{x.proveedor ?? 'Proveedor'}</strong> · <span className="cod">{x.codigo}</span>
-              <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>Recepción del {fecha(x.fecha)}{x.documento ? ` · factura ${x.documento}` : ''}{x.lote_proveedor ? ` · lote ${x.lote_proveedor}` : ''}{x.vence ? ` · vence ${fecha(x.vence)}` : ''}</span></span>
+              <span className="suave bloque texto-mini">Recepción del {fecha(x.fecha)}{x.documento ? ` · factura ${x.documento}` : ''}{x.lote_proveedor ? ` · lote ${x.lote_proveedor}` : ''}{x.vence ? ` · vence ${fecha(x.vence)}` : ''}</span></span>
             <span className="n">{num(x.cantidad, 1)} {ub} ›</span>
           </Link>
         ) : x.tipo === 'LOTE' && x.codigo ? (
           <details>
             <summary className="enlace-traza">
               <span><strong>{x.mpi}</strong> · <span className="cod">{x.codigo}</span> <span className="pill info">MPI</span>
-                <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>Lote del {fecha(x.fecha)} · toque para ver de dónde salió · <Link href={`/produccion/lotes/${encodeURIComponent(x.codigo)}`}>abrir</Link></span></span>
+                <span className="suave bloque texto-mini">Lote del {fecha(x.fecha)} · toque para ver de dónde salió · <Link href={`/produccion/lotes/${encodeURIComponent(x.codigo)}`}>abrir</Link></span></span>
               <span className="n">{num(x.cantidad, 1)} {ub}</span>
             </summary>
             {x.cadena && <div className="hijos-traza"><Atras insumos={x.cadena} vePesos={vePesos} /></div>}
@@ -51,8 +51,8 @@ function Origenes({ o, ub, vePesos }: { o: Origen[]; ub: string; vePesos: boolea
         ) : (
           <div className="enlace-traza">
             <span>{x.tipo === 'SALDO_INICIAL' ? <>Conteo inicial <span className="cod">{x.codigo}</span></> : x.tipo === 'AJUSTE' ? <>Ajuste de conteo <span className="cod">{x.codigo}</span></>
-              : x.tipo === null ? <span style={{ color: 'var(--aviso)' }}>Sin origen registrado (había menos en el kardex)</span> : 'Otro origen'}
-              {x.fecha && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{fecha(x.fecha)}</span>}</span>
+              : x.tipo === null ? <span className="c-aviso">Sin origen registrado (había menos en el kardex)</span> : 'Otro origen'}
+              {x.fecha && <span className="suave bloque texto-mini">{fecha(x.fecha)}</span>}</span>
             <span className="n">{num(x.cantidad, 1)} {ub}</span>
           </div>
         )}
@@ -64,12 +64,12 @@ function Origenes({ o, ub, vePesos }: { o: Origen[]; ub: string; vePesos: boolea
 function Atras({ insumos, vePesos }: { insumos: Insumo[]; vePesos: boolean }) {
   return <ul className="renglones">
     {insumos.map((i) => (
-      <li key={i.linea} style={{ display: 'block' }}>
+      <li className="bloque" key={i.linea}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.6rem' }}>
           <span><strong>{i.producto}</strong>{i.presentacion && <span className="suave"> · {i.presentacion}</span>}
-            {i.zona && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>de {i.zona}</span>}</span>
+            {i.zona && <span className="suave bloque texto-mini">de {i.zona}</span>}</span>
           <span className="n"><strong>{i.gramos ? `${num(i.gramos)} g` : `${num(i.cantidad_base, 1)} ${i.unidad_base}`}</strong>
-            {vePesos && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{i.tipo === 'SIN_COSTO' ? 'sin costo' : i.costo !== null ? `${pesos(i.costo)} · ${pesos(i.costo_unitario, 2)}/${i.unidad_base}` : 'sin costo en el kardex'}</span>}</span>
+            {vePesos && <span className="suave bloque texto-mini">{i.tipo === 'SIN_COSTO' ? 'sin costo' : i.costo !== null ? `${pesos(i.costo)} · ${pesos(i.costo_unitario, 2)}/${i.unidad_base}` : 'sin costo en el kardex'}</span>}</span>
         </div>
         <Origenes o={i.origenes} ub={i.unidad_base} vePesos={vePesos} />
       </li>
@@ -88,7 +88,7 @@ function Adelante({ d, ub }: { d: Destino[]; ub: string }) {
               : x.documento_id && ['BAJA', 'TRASLADO', 'CONTEO'].includes(x.documento_tipo)
                 ? <Link href={`/historial/${x.documento_tipo.toLowerCase()}/${x.documento_id}`}><span className="cod">{x.codigo}</span>{x.detalle ? ` · ${CAUSA[x.detalle] ?? x.detalle}` : ''}</Link>
                 : <span>{x.detalle ?? x.codigo ?? ''}</span>}
-            <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{fecha(x.fecha)}{x.zona ? ` · ${x.zona}` : ''}{x.reversado ? ' · reversado' : ''}</span>
+            <span className="suave bloque texto-mini">{fecha(x.fecha)}{x.zona ? ` · ${x.zona}` : ''}{x.reversado ? ' · reversado' : ''}</span>
           </span>
           <span className="n">{num(x.cantidad, 1)} {ub}</span>
         </div>
@@ -117,12 +117,12 @@ export default async function DetalleLote({ params }: { params: Promise<{ codigo
   return (
     <>
       <PestanasProduccion activa="lotes" area={String(l.area)} />
-      <p className="pagina-ancha" style={{ margin: '0 0 .3rem' }}><Link href={`/produccion/lotes?area=${l.area}`}>← Lotes</Link></p>
+      <p className="pagina-ancha m-0 mb-1"><Link href={`/produccion/lotes?area=${l.area}`}>← Lotes</Link></p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '.9rem' }}>
         <div>
-          <h1 style={{ margin: 0 }}>{l.mpi}</h1>
+          <h1 className="m-0">{l.mpi}</h1>
           <span className="cod">{l.codigo} · {fecha(l.fecha)}{app ? ` · ${l.responsable}` : ' · SGI-COSTOS'}{l.zona ? ` · ${l.zona}` : ''}</span>
-          {app && <div className="suave" style={{ fontSize: '.82rem' }}>Registró {String(l.usuario ?? '—')}{l.registrado_en ? ` el ${new Date(String(l.registrado_en)).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}` : ''}
+          {app && <div className="suave texto-mini">Registró {String(l.usuario ?? '—')}{l.registrado_en ? ` el ${new Date(String(l.registrado_en)).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}` : ''}
             {l.ficha ? <> · ficha <Link href={`/fichas/${l.generico_id}${l.ficha_id ? `?v=${l.ficha_id}` : ''}`}>{String(l.ficha)}</Link></> : ' · sin ficha'}</div>}
         </div>
         <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -143,7 +143,7 @@ export default async function DetalleLote({ params }: { params: Promise<{ codigo
         <div className="cifra"><span>Vence</span><b>{l.vence ? fecha(l.vence) : '—'}</b>{l.conservacion ? <small>{String(l.conservacion)}</small> : null}</div>
         {app && <div className="cifra"><span>Queda</span><b>{num(l.restante, 1)}</b><small>{ub}</small></div>}
       </div>
-      {Array.isArray(l.avisos) && (l.avisos as string[]).length > 0 && <div className="aviso pagina-ancha"><ul style={{ margin: 0 }}>{(l.avisos as string[]).map((a) => <li key={a}>{a}</li>)}</ul></div>}
+      {Array.isArray(l.avisos) && (l.avisos as string[]).length > 0 && <div className="aviso pagina-ancha"><ul className="m-0">{(l.avisos as string[]).map((a) => <li key={a}>{a}</li>)}</ul></div>}
       {Boolean(l.observaciones) && <p className="suave pagina-ancha">Observaciones: {String(l.observaciones)}</p>}
 
       <div className="dos-col pagina-ancha">
@@ -152,7 +152,7 @@ export default async function DetalleLote({ params }: { params: Promise<{ codigo
           {app ? (
             <>
               <Atras insumos={t.atras as Insumo[]} vePesos={vePesos} />
-              {Number(t.sin_partida) > 0 && <p className="aviso" style={{ marginBottom: 0 }}>Parte de lo consumido no tenía origen en el kardex (se produjo con menos existencia registrada).</p>}
+              {Number(t.sin_partida) > 0 && <p className="aviso mb-0">Parte de lo consumido no tenía origen en el kardex (se produjo con menos existencia registrada).</p>}
             </>
           ) : (
             <ul className="renglones">
@@ -160,8 +160,8 @@ export default async function DetalleLote({ params }: { params: Promise<{ codigo
                 <li key={i.linea}>
                   <span><strong>{i.producto}</strong>
                     {i.lote_origen && <span style={{ display: 'block', fontSize: '.85rem' }}>del lote <Link href={`/produccion/lotes/${encodeURIComponent(i.lote_origen)}`} className="cod">{i.lote_origen}</Link></span>}
-                    {vePesos && i.fuente_costo && <span className="suave" style={{ display: 'block', fontSize: '.78rem' }}>costo: {i.fuente_costo.toLowerCase()}</span>}</span>
-                  <span className="n"><strong>{num(i.cantidad, 1)} {i.unidad}</strong>{vePesos && <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{pesos(i.costo)}</span>}</span>
+                    {vePesos && i.fuente_costo && <span className="suave bloque texto-mini">costo: {i.fuente_costo.toLowerCase()}</span>}</span>
+                  <span className="n"><strong>{num(i.cantidad, 1)} {i.unidad}</strong>{vePesos && <span className="suave bloque texto-mini">{pesos(i.costo)}</span>}</span>
                 </li>
               ))}
             </ul>
@@ -173,7 +173,7 @@ export default async function DetalleLote({ params }: { params: Promise<{ codigo
             : app ? <Adelante d={t.adelante as Destino[]} ub={ub} />
             : <ul className="renglones">{(t.adelante as HistDestino[]).map((x) => (
                 <li key={x.codigo}><span><Link href={`/produccion/lotes/${encodeURIComponent(x.codigo)}`}><strong>{x.mpi}</strong> <span className="cod">{x.codigo}</span></Link>
-                  <span className="suave" style={{ display: 'block', fontSize: '.8rem' }}>{fecha(x.fecha)}</span></span>
+                  <span className="suave bloque texto-mini">{fecha(x.fecha)}</span></span>
                   <span className="n">{num(x.cantidad, 1)} {x.unidad}</span></li>))}</ul>}
           {app && <p className="suave" style={{ fontSize: '.8rem', margin: '.6rem 0 0' }}>Los cócteles y platos vendidos aparecerán aquí cuando se conecte el punto de venta.</p>}
         </section>

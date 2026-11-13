@@ -656,3 +656,44 @@ button:not(.secundario):not(.discreto):not(.herramienta):not(.peligro):not(.quit
    escrito en cada pantalla (GEN-10) */
 .segmentos a { text-decoration: none; }
 .segmentos a[aria-current] > span { background: var(--marca); color: var(--marca-texto); border-color: var(--tinta); }
+
+/* ================================================================ Utilidades del sistema (GEN-10)
+   Reemplazan los estilos que se repetían escritos dentro de las pantallas. Van al final y con !important
+   porque hacen el papel del estilo en línea: ganan sobre la regla del componente. Escala de texto corta:
+   mini (.8rem) para metadatos y nota (.875rem) para ayudas y avisos. */
+.m-0 { margin: 0 !important; }
+.mt-0 { margin-top: 0 !important; }
+.mb-0 { margin-bottom: 0 !important; }
+.mt-1 { margin-top: .4rem !important; }
+.mt-2 { margin-top: .6rem !important; }
+.mt-3 { margin-top: 1rem !important; }
+.mb-1 { margin-bottom: .3rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.ml-auto { margin-left: auto !important; }
+.p-0 { padding: 0 !important; }
+.min-0 { min-width: 0 !important; }
+.der { text-align: right !important; }
+.nowrap { white-space: nowrap !important; }
+.bloque { display: block !important; }
+.fila-flex { display: flex !important; gap: .4rem; }
+.wrap { flex-wrap: wrap !important; }
+.fin { justify-content: flex-end !important; }
+.arriba { align-items: flex-start !important; }
+.fw-400 { font-weight: 400 !important; }
+.sin-subrayado { text-decoration: none !important; }
+.texto-mini { font-size: .8rem !important; }
+.texto-nota { font-size: .875rem !important; }
+.texto-grande { font-size: 1.2rem !important; }
+.c-error { color: var(--error) !important; }
+.c-aviso { color: var(--aviso) !important; }
+/* rótulo compacto de un campo dentro de una tarjeta (cantidad, valor, zona) */
+.campo { margin: 0 !important; font-weight: 400 !important; font-size: .875rem !important; }
+/* casilla con su texto al lado */
+.check { margin: 0 !important; display: flex !important; gap: .4rem; align-items: center; font-weight: 400 !important; }
+/* aviso pequeño dentro de una tarjeta */
+.aviso-chico { margin: .5rem 0 0 !important; padding: .4rem .6rem !important; font-size: .875rem !important; }
+/* tarjeta que entera es un enlace (aviso que lleva a otra pantalla, con su botón a la derecha) */
+.tarjeta-enlace { display: flex !important; gap: .75rem; justify-content: space-between; align-items: center; text-decoration: none !important;
+                  margin-bottom: 1rem !important; border-color: var(--tinta) !important; }
+/* resultado de una búsqueda dentro de una lista: botón plano, a todo lo ancho y alineado a la izquierda */
+.opcion-lista { width: 100% !important; justify-content: flex-start !important; text-align: left !important; border: 0 !important; color: inherit !important; }

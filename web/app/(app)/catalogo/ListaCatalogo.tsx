@@ -16,7 +16,7 @@ export default function ListaCatalogo({ filas, categorias, esAdmin }: { filas: P
     <>
       {editables.length > 0 && (
         <label style={{ display: 'flex', gap: '.5rem', alignItems: 'center', fontWeight: 500, margin: '0 0 .6rem' }}>
-          <input type="checkbox" checked={todas} style={{ width: 22, minHeight: 22 }}
+          <input type="checkbox" checked={todas}
                  onChange={() => setSel(todas ? new Set() : new Set(editables.map((f) => f.id)))} />
           Seleccionar los {editables.length} de esta página
         </label>
@@ -31,18 +31,18 @@ export default function ListaCatalogo({ filas, categorias, esAdmin }: { filas: P
                   <input type="checkbox" aria-label={`Seleccionar ${p.generico}`} checked={sel.has(p.id)} onChange={() => cambia(p.id)}
                          style={{ width: 22, minHeight: 22, marginTop: '.1rem', flex: 'none' }} />
                 )}
-                <div style={{ minWidth: 0 }}>
+                <div className="min-0">
                   {p.edita
                     ? <Link href={`/catalogo/producto/${p.id}`}><strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}</Link>
                     : <><strong>{p.generico}</strong>{p.marca && ` · ${p.marca}`}</>}
-                  <div className="suave" style={{ fontSize: '.88rem' }}>{p.presentacion}</div>
+                  <div className="suave texto-nota">{p.presentacion}</div>
                 </div>
               </div>
               <div className="cod">
                 {p.codigo} · {p.area} · {p.tipo} · <span className={`etiqueta ${p.activo ? p.estado.toLowerCase() : 'inactivo'}`}>{p.activo ? p.estado : 'INACTIVO'}</span>
                 {p.clase_abc && <> · clase {p.clase_abc}</>}
               </div>
-              <div className="suave" style={{ fontSize: '.82rem' }}>
+              <div className="suave texto-mini">
                 {p.categoria_nombre ?? 'Sin categoría'} · base {p.unidad_base} · compra {p.unidad_compra || '—'}
                 {p.contenido_variable ? ' · contenido variable' : p.contenido_base ? ` de ${Number(p.contenido_base).toLocaleString('es-CO')} ${p.unidad_base}` : ''}
               </div>

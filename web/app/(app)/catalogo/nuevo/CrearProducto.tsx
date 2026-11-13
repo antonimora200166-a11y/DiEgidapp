@@ -145,7 +145,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
         <>
           <h2>No está: crear</h2>
           <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend className="suave" style={{ marginBottom: '.4rem' }}>¿Es otra marca o presentación de un genérico que ya existe?</legend>
+            <legend className="suave mb-1">¿Es otra marca o presentación de un genérico que ya existe?</legend>
             <div className="segmentos">
               {genericosParecidos.map((p) => (
                 <label key={p.generico_id}>
@@ -158,7 +158,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
           </fieldset>
 
           {!generico && (
-            <div className="tarjeta" style={{ marginTop: '1rem' }}>
+            <div className="tarjeta mt-3">
               <label htmlFor="nombre">Nombre genérico <span className="ayuda">sin marca ni tamaño: «Azúcar morena», «Ginebra»</span></label>
               <input id="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={busqueda} />
               <div className="fila">
@@ -186,7 +186,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
             </div>
           )}
 
-          <div className="tarjeta" style={{ marginTop: '1rem' }}>
+          <div className="tarjeta mt-3">
             <label htmlFor="marca">Marca <span className="ayuda">vacío si no tiene (fruver, granel)</span></label>
             <input id="marca" value={marca} onChange={(e) => setMarca(e.target.value)} />
             <div className="fila">
@@ -199,7 +199,7 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
               {!granel && !(ub === 'und' && envase === 'Unidad') && (
                 <div>
                   <label htmlFor="contenido">Cada {envase.toLowerCase()} trae <span className="ayuda">factor de compra</span></label>
-                  <div style={{ display: 'flex', gap: '.4rem' }}>
+                  <div className="fila-flex">
                     <input id="contenido" inputMode="decimal" value={contenido} onChange={(e) => setContenido(e.target.value)}
                            disabled={variable} required={!variable} style={{ flex: 1 }} />
                     <select aria-label="Unidad del contenido" value={unidadContenido} onChange={(e) => setUnidadContenido(e.target.value)} disabled={variable} style={{ width: '5.5rem' }}>
@@ -211,11 +211,11 @@ export default function CrearProducto({ areas, categorias }: { areas: Area[]; ca
             </div>
             {!granel && (
               <label style={{ fontWeight: 400, display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                <input type="checkbox" checked={variable} onChange={(e) => setVariable(e.target.checked)} style={{ width: 22, minHeight: 22 }} />
+                <input type="checkbox" checked={variable} onChange={(e) => setVariable(e.target.checked)} />
                 El contenido cambia en cada compra (se pesa al recibir)
               </label>
             )}
-            <p className="suave" style={{ marginBottom: 0 }}>
+            <p className="suave mb-0">
               Quedará: <strong>{generico?.nombre || nombre || busqueda}</strong>{marca && ` · ${marca}`} · {presentacion}
               {' '}— unidad de compra <span className="cod">{unidadCompra}</span>
               {!variable && contenidoBase > 0 && <> = {fmtCantidad(contenidoBase)} {ub}</>}

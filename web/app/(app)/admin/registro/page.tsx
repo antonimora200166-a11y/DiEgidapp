@@ -65,7 +65,7 @@ export default async function Registro({ searchParams }: { searchParams: Promise
   return (
     <>
       <h1>Registro</h1>
-      <nav className="segmentos" style={{ marginBottom: '1rem' }}>
+      <nav className="segmentos mb-3">
         <Link href={enlace({ ver: undefined, pag: undefined })} aria-current={ver === 'actividad' ? 'true' : undefined}><span>Actividad</span></Link>
         <Link href={enlace({ ver: 'errores', pag: undefined, q: undefined, sistema: undefined })} aria-current={ver === 'errores' ? 'true' : undefined}>
           <span>Errores{(erroresSemana ?? 0) > 0 && ` · ${erroresSemana} esta semana`}</span>
@@ -82,7 +82,7 @@ export default async function Registro({ searchParams }: { searchParams: Promise
             </div>
             <button type="submit">Buscar</button>
           </form>
-          <p className="suave" style={{ fontSize: '.88rem' }}>
+          <p className="suave texto-nota">
             {total} evento(s){paginas > 1 && ` · página ${pag} de ${paginas}`} ·{' '}
             <Link href={enlace({ sistema: conSistema ? undefined : '1', pag: undefined })}>
               {conSistema ? 'ocultar cargas y cambios automáticos' : 'incluir cargas y cambios automáticos'}
@@ -96,12 +96,12 @@ export default async function Registro({ searchParams }: { searchParams: Promise
                     <div>
                       <strong>{ACCION[e.accion] ? `${ACCION[e.accion]} de ${ENTIDAD[e.entidad ?? ''] ?? e.entidad}` : e.accion.charAt(0) + e.accion.slice(1).toLowerCase()}</strong>
                       {e.entidad_id && <span className="cod"> · {e.entidad_id.length > 40 ? e.entidad_id.slice(0, 8) + '…' : e.entidad_id}</span>}
-                      <div className="suave" style={{ fontSize: '.85rem' }}>{nombre(e.usuario_id)} · {fecha(e.ocurrido_en)}</div>
-                      {e.motivo && <div style={{ fontSize: '.88rem' }}>Motivo: {e.motivo}</div>}
+                      <div className="suave texto-nota">{nombre(e.usuario_id)} · {fecha(e.ocurrido_en)}</div>
+                      {e.motivo && <div className="texto-nota">Motivo: {e.motivo}</div>}
                     </div>
                   </div>
                   {e.detalle != null && (
-                    <details style={{ marginTop: '.3rem' }}>
+                    <details className="mt-1">
                       <summary className="suave" style={{ cursor: 'pointer', fontSize: '.85rem' }}>Detalle</summary>
                       <pre className="cod" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 260, overflow: 'auto' }}>{JSON.stringify(e.detalle, null, 2)}</pre>
                     </details>
@@ -113,21 +113,21 @@ export default async function Registro({ searchParams }: { searchParams: Promise
         </>
       ) : (
         <>
-          <p className="suave" style={{ fontSize: '.88rem' }}>
+          <p className="suave texto-nota">
             Lo que falló en el servidor o en el celular de alguien. Si un error se repite, pásele el mensaje a quien mantiene la app.
           </p>
           {errores.length ? (
             <ul className="lista">
               {errores.map((e) => (
                 <li key={e.id}>
-                  <strong style={{ color: 'var(--error)' }}>{e.mensaje}</strong>
-                  <div className="suave" style={{ fontSize: '.85rem' }}>
+                  <strong className="c-error">{e.mensaje}</strong>
+                  <div className="suave texto-nota">
                     {e.origen === 'SERVIDOR' ? 'Servidor' : 'Celular / navegador'} · {e.origen === 'NAVEGADOR' ? nombre(e.usuario_id) + ' · ' : ''}{fecha(e.ocurrido_en)}
                     {e.ruta && <> · <span className="cod">{e.ruta}</span></>}
                     {e.huella && <> · código <span className="cod">{e.huella}</span></>}
                   </div>
                   {(e.detalle || e.agente) && (
-                    <details style={{ marginTop: '.3rem' }}>
+                    <details className="mt-1">
                       <summary className="suave" style={{ cursor: 'pointer', fontSize: '.85rem' }}>Detalle técnico</summary>
                       <pre className="cod" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 260, overflow: 'auto' }}>{[e.agente, e.detalle].filter(Boolean).join('\n\n')}</pre>
                     </details>

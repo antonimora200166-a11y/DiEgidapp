@@ -54,10 +54,10 @@ export default function Directorio({ proveedores, soloLectura }: { proveedores: 
           {editando?.id === p.id ? (
             <>
               <div className="fila">
-                <label style={{ margin: 0 }}>Nombre <input value={editando.nombre} onChange={(e) => setEditando({ ...editando, nombre: e.target.value })} /></label>
-                <label style={{ margin: 0 }}>NIT <input value={editando.nit} inputMode="numeric" onChange={(e) => setEditando({ ...editando, nit: e.target.value })} /></label>
+                <label className="m-0">Nombre <input value={editando.nombre} onChange={(e) => setEditando({ ...editando, nombre: e.target.value })} /></label>
+                <label className="m-0">NIT <input value={editando.nit} inputMode="numeric" onChange={(e) => setEditando({ ...editando, nit: e.target.value })} /></label>
               </div>
-              <div style={{ display: 'flex', gap: '.4rem' }}>
+              <div className="fila-flex">
                 <button type="button" disabled={enviando} onClick={() => guardar(p, { nombre: editando.nombre, nit: editando.nit }, 'Proveedor actualizado.')}>Guardar</button>
                 <button type="button" className="secundario" onClick={() => setEditando(null)}>Cancelar</button>
               </div>
@@ -67,8 +67,8 @@ export default function Directorio({ proveedores, soloLectura }: { proveedores: 
               <div>
                 <strong>{p.nombre}</strong>{p.nit && <span className="suave"> · NIT {p.nit}</span>}
                 {p.unido_en && <span className="etiqueta" style={{ marginLeft: '.4rem' }}>unido a {p.unido_en}</span>}
-                {p.alias.length > 0 && <div className="suave" style={{ fontSize: '.8rem' }}>También se escribe: {p.alias.join(' · ')}</div>}
-                <div className="suave" style={{ fontSize: '.8rem' }}>
+                {p.alias.length > 0 && <div className="suave texto-mini">También se escribe: {p.alias.join(' · ')}</div>}
+                <div className="suave texto-mini">
                   {p.productos} producto(s) · {p.compras} compra(s) · {p.recepciones} recepción(es) en la app · última compra {fecha(p.ultima_compra)}
                 </div>
               </div>

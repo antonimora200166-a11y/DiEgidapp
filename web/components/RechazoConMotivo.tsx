@@ -37,7 +37,7 @@ export function Revisiones({ resultado, confirmados, setConfirmados }: {
       <strong>Revise antes de guardar. Todavía no se guardó nada:</strong>
       <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
         {lista.map((r) => (
-          <li key={r.producto_id + r.motivo} style={{ marginTop: '.5rem' }}>
+          <li className="mt-2" key={r.producto_id + r.motivo}>
             <div>{r.mensaje}</div>
             {setConfirmados && (
               <label style={{ fontWeight: 600, display: 'flex', gap: '.4rem', alignItems: 'center', marginTop: '.3rem' }}>

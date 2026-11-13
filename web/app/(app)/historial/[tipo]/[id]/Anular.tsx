@@ -46,7 +46,7 @@ export default function Anular({ tipo, id, lineaId, etiqueta, pequeno, exigePin 
   }
   return (
     <div className="tarjeta" style={{ marginTop: '.5rem', width: '100%' }}>
-      <label htmlFor={`motivo-${lineaId ?? id}`} style={{ marginTop: 0 }}>¿Por qué se anula?</label>
+      <label className="mt-0" htmlFor={`motivo-${lineaId ?? id}`}>¿Por qué se anula?</label>
       <textarea id={`motivo-${lineaId ?? id}`} rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)}
                 placeholder="Ej.: se registró dos veces / el producto se devolvió al proveedor" />
       <span className="ayuda">Mínimo 15 caracteres. Queda en la bitácora con su nombre.</span>
@@ -57,7 +57,7 @@ export default function Anular({ tipo, id, lineaId, etiqueta, pequeno, exigePin 
                  onChange={(e) => setPin(e.target.value.replace(/D/g, ''))} />
         </div>)}
       {resultado && !resultado.ok && (
-        <div className="error" role="alert"><ul style={{ margin: 0 }}>{resultado.fatales.map((m) => <li key={m}>{m}</li>)}</ul></div>
+        <div className="error" role="alert"><ul className="m-0">{resultado.fatales.map((m) => <li key={m}>{m}</li>)}</ul></div>
       )}
       <div className="acciones">
         <button type="button" disabled={enviando || motivo.trim().length < 15 || (!!exigePin && !/^[0-9]{4,6}$/.test(pin))} onClick={anular}>{enviando ? 'Anulando…' : etiqueta}</button>

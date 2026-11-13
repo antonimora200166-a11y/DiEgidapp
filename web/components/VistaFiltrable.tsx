@@ -119,7 +119,7 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem', alignItems: 'center', border: '1px solid var(--borde)', borderRadius: 10, padding: '.35rem', background: 'var(--tarjeta)' }}>
           {chips.map((c) => (
             <span key={c.g.clave + c.v} className="etiqueta" style={{ display: 'inline-flex', gap: '.3rem', alignItems: 'center', fontSize: '.85rem', padding: '.2rem .5rem', color: 'var(--tinta)' }}>
-              <span className="suave" style={{ fontWeight: 400 }}>{c.g.titulo}:</span> {c.t}
+              <span className="suave fw-400">{c.g.titulo}:</span> {c.t}
               <button type="button" aria-label={`Quitar ${c.t}`} onClick={() => alternar(c.g, c.v)} className="quitar">×</button>
             </span>
           ))}
@@ -139,7 +139,7 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
           <button type="button" className={boton(menu === 'filtros')} onClick={() => setMenu(menu === 'filtros' ? null : 'filtros')}>Filtros{chips.length ? ` (${chips.length})` : ''} ▾</button>
           {agrupar.length > 0 && <button type="button" className={boton(menu === 'agrupar')} onClick={() => setMenu(menu === 'agrupar' ? null : 'agrupar')}>Agrupar por ▾</button>}
           <button type="button" className={boton(menu === 'columnas')} onClick={() => setMenu(menu === 'columnas' ? null : 'columnas')}>⚙ Columnas</button>
-          <span className="suave" style={{ marginLeft: 'auto' }}>{visibles.length} de {filas.length}</span>
+          <span className="suave ml-auto">{visibles.length} de {filas.length}</span>
         </div>
         {menu === 'filtros' && (
           <div className="tarjeta" style={{ ...panel, left: 0, right: 0, display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))' }}>
@@ -148,9 +148,9 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
                 <legend style={{ fontWeight: 700, marginBottom: '.3rem' }}>{g.titulo}</legend>
                 <div style={{ maxHeight: 240, overflow: 'auto' }}>
                   {(opciones[g.clave] ?? []).map((o) => (
-                    <label key={o.v} style={{ display: 'flex', gap: '.45rem', alignItems: 'center', fontWeight: 400, margin: '.15rem 0' }}>
-                      <input type="checkbox" checked={(e.f[g.clave] ?? []).includes(o.v)} onChange={() => alternar(g, o.v)} style={{ width: 20, minHeight: 20 }} />
-                      {o.t} <span className="suave" style={{ fontSize: '.8rem' }}>({o.n})</span>
+                    <label className="check" key={o.v}>
+                      <input type="checkbox" checked={(e.f[g.clave] ?? []).includes(o.v)} onChange={() => alternar(g, o.v)} />
+                      {o.t} <span className="suave texto-mini">({o.n})</span>
                     </label>
                   ))}
                 </div>
@@ -162,7 +162,7 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
           <div className="tarjeta" style={{ ...panel, left: 0, minWidth: 230 }}>
             {agrupar.map((a) => (
               <label key={a.v} style={{ display: 'flex', gap: '.45rem', alignItems: 'center', fontWeight: 400, margin: '.2rem 0' }}>
-                <input type="radio" name={`agrupar-${clave}`} checked={e.agrupar === a.v} onChange={() => { setE((x) => ({ ...x, agrupar: a.v })); setMenu(null); }} style={{ width: 20, minHeight: 20 }} />
+                <input type="radio" name={`agrupar-${clave}`} checked={e.agrupar === a.v} onChange={() => { setE((x) => ({ ...x, agrupar: a.v })); setMenu(null); }} />
                 {a.t}
               </label>
             ))}
@@ -172,8 +172,8 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
         {menu === 'columnas' && (
           <div className="tarjeta" style={{ ...panel, right: 0, minWidth: 230 }}>
             {columnas.map((c) => (
-              <label key={c.k} style={{ display: 'flex', gap: '.45rem', alignItems: 'center', fontWeight: 400, margin: '.15rem 0' }}>
-                <input type="checkbox" checked={cols.some((x) => x.k === c.k)} style={{ width: 20, minHeight: 20 }}
+              <label className="check" key={c.k}>
+                <input type="checkbox" checked={cols.some((x) => x.k === c.k)}
                        onChange={() => setE((x) => { const act = cols.map((y) => y.k); const n = act.includes(c.k) ? act.filter((y) => y !== c.k) : columnas.filter((y) => act.includes(y.k) || y.k === c.k).map((y) => y.k); return { ...x, cols: n }; })} />
                 {c.t}
               </label>
@@ -183,13 +183,13 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
       </div>
 
       {visibles.length ? (
-        <div className="desborde tarjeta" style={{ padding: 0 }}>
+        <div className="desborde tarjeta p-0">
           <table className="tabla tabla-catalogo tabla-movil">
             <thead>
               <tr>
                 {seleccionable && (
                   <th style={{ width: 36 }}>{elegibles.length > 0 && (
-                    <input type="checkbox" aria-label="Seleccionar las visibles" checked={todas} style={{ width: 20, minHeight: 20 }}
+                    <input type="checkbox" aria-label="Seleccionar las visibles" checked={todas}
                            onChange={() => setSel(todas ? new Set() : new Set(elegibles.slice(0, mostrar).map(id)))} />
                   )}</th>
                 )}
@@ -213,7 +213,7 @@ export default function VistaFiltrable<T>({ clave, filas, id, buscar, grupos, co
                     <tr className={sel.has(id(f)) ? 'elegida' : undefined} onClick={detalle ? (ev) => tocarFila(ev, id(f)) : undefined}
                         style={detalle ? { cursor: 'pointer' } : undefined} aria-expanded={detalle ? abiertas.has(id(f)) : undefined}>
                       {seleccionable && (
-                        <td className="celda-sel">{seleccionable(f) && <input type="checkbox" aria-label="Seleccionar" checked={sel.has(id(f))} style={{ width: 20, minHeight: 20 }}
+                        <td className="celda-sel">{seleccionable(f) && <input type="checkbox" aria-label="Seleccionar" checked={sel.has(id(f))}
                                                        onChange={() => setSel((s) => { const n = new Set(s); if (n.has(id(f))) n.delete(id(f)); else n.add(id(f)); return n; })} />}</td>
                       )}
                       {cols.map((c) => <td key={c.k} data-t={c.t} style={c.der ? { textAlign: 'right', whiteSpace: 'nowrap' } : undefined}>{c.ver(f)}</td>)}

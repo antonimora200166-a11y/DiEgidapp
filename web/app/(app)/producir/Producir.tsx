@@ -281,7 +281,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   const avisoRetomado = retomado && (
     <div className="aviso retomado" role="alert">
       <span>Retomó un lote empezado el <strong>{fechaCorta(retomado)}</strong>. Quedó con la fecha de hoy, {fechaCorta(hoyCali())}.</span>
-      <div className="acciones" style={{ marginTop: '.5rem' }}>
+      <div className="acciones mt-2">
         <button type="button" onClick={() => setRetomado(null)}>Seguir con este</button>
         <button type="button" className="secundario" onClick={() => { setRetomado(null); empezarDeNuevo(); }}>Empezar de nuevo</button>
       </div>
@@ -294,11 +294,11 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
     return (
       <div className="dos-col pagina-ancha">
         <div className="pila">
-          <div className="exito" role="status" style={{ margin: 0 }}>
+          <div className="exito m-0" role="status">
             <strong style={{ fontSize: '1.15rem' }}>Lote {r.codigo} guardado</strong><br />
             {mpi.generico} · {g(r.neto_g ?? netoG)} en {nombreZona(destino)} · {datos.responsables.find((x) => x.id === responsable)?.nombre}
           </div>
-          <div className="cifras" style={{ margin: 0 }}>
+          <div className="cifras m-0">
             <div className="cifra"><span>Entrada</span><b>{g(r.entrada_g ?? null)}</b></div>
             <div className="cifra"><span>Merma</span><b>{g(r.merma_g ?? null)}</b></div>
             <div className="cifra"><span>Rendimiento</span><b>{r.rendimiento != null ? `${r2(r.rendimiento * 100)} %` : '—'}</b>
@@ -306,7 +306,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             {vePesos && <div className="cifra"><span>Costo</span><b>{pesos(r.costo_total ?? null)}</b><small>{r.estado_costo === 'PARCIAL' ? 'parcial' : `${pesos(r.costo_gramo ?? null, 2)}/g`}</small></div>}
             <div className="cifra"><span>Vence</span><b>{r.vence ? fechaCorta(r.vence) : '—'}</b>{r.conservacion && <small>{r.conservacion.toLowerCase()}</small>}</div>
           </div>
-          {r.avisos.length > 0 && <div className="aviso" style={{ margin: 0 }}><ul style={{ margin: 0 }}>{r.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
+          {r.avisos.length > 0 && <div className="aviso m-0"><ul className="m-0">{r.avisos.map((m) => <li key={m}>{m}</li>)}</ul></div>}
           <section className="tarjeta">
             <h2 className="sec-tit">Lo que quedó en el kardex</h2>
             <ul className="renglones">
@@ -348,7 +348,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
         {deSiempre.length > 0 && (
           <>
             <h2 className="sec-tit">Lo de siempre</h2>
-            <div className="rejilla-mpi" style={{ marginBottom: '1rem' }}>{deSiempre.map(boton)}</div>
+            <div className="rejilla-mpi mb-3">{deSiempre.map(boton)}</div>
             <h2 className="sec-tit">Todas</h2>
           </>
         )}
@@ -362,7 +362,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
   const cabecera = (
     // una sola línea con lo que se produce; marca la pantalla para ocultar pestañas y título (CSS :has)
     <div className="cab-mpi producir-con-mpi">
-      <div style={{ minWidth: 0 }}>
+      <div className="min-0">
         <strong>{mpi.generico}</strong>
         <span className="suave">{ficha ? `Ficha ${ficha.codigo} v${ficha.version}` : 'Sin ficha técnica'} · ×{fmtCantidad(k)}</span>
       </div>
@@ -385,7 +385,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                 <button key={t} type="button" aria-pressed={k === t} onClick={() => cambiarTandas(String(t))}>×{fmtCantidad(t)}</button>
               ))}
             </div>
-            <div className="fila" style={{ marginTop: '.4rem' }}>
+            <div className="fila mt-1">
               <div>
                 <label htmlFor="tandas">Tandas de la ficha</label>
                 <input id="tandas" inputMode="decimal" value={tandas} onChange={(e) => cambiarTandas(e.target.value)} />
@@ -426,9 +426,9 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
       <>
         {cabecera}{barra}{avisoRetomado}
         <section className="tarjeta" style={{ maxWidth: 760 }}>
-          <h2 style={{ marginTop: 0 }}>Indicaciones importantes</h2>
+          <h2 className="mt-0">Indicaciones importantes</h2>
           {!ficha ? (
-            <div className="aviso" style={{ margin: 0 }}><strong>Sin ficha técnica</strong><div>No hay indicaciones registradas para {mpi.generico}.</div></div>
+            <div className="aviso m-0"><strong>Sin ficha técnica</strong><div>No hay indicaciones registradas para {mpi.generico}.</div></div>
           ) : ficha.puntos.length === 0 ? (
             <div className="aviso" style={{ margin: 0, fontSize: '1.05rem' }}><strong>Ficha sin puntos críticos</strong>
               <div>Esta ficha no tiene temperaturas, tiempos ni cuidados de higiene registrados. Avísele al {area === 'BAR' ? 'jefe de barra' : 'chef'} para que los complete.</div></div>
@@ -466,7 +466,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
         )}
         <section className="tarjeta pagina-ancha">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '.6rem', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0 }}>Pese cada ingrediente</h2>
+            <h2 className="m-0">Pese cada ingrediente</h2>
             <span className="suave">Entrada: <strong style={{ color: 'var(--texto)', fontSize: '1.25rem' }}>{g(calc.entrada)}</strong></span>
           </div>
           {filas.map(({ c, ins, gr, hay, falta, sinCosto, pidefactor, base }) => {
@@ -475,9 +475,9 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             const otrosProductos = falta ? opciones.filter((o) => o.producto_id !== c.producto_id && saldoTotal(o.producto_id) >= (base ?? 0)) : [];
             return (
               <div key={c.clave} className={`ing-prod${falta ? ' mal' : ''}`}>
-                <div style={{ minWidth: 0 }}>
+                <div className="min-0">
                   <strong style={{ fontSize: '1.08rem' }}>{c.generico}</strong>
-                  <div className="suave" style={{ fontSize: '.88rem' }}>
+                  <div className="suave texto-nota">
                     {c.linea_ficha !== null ? <>Ficha: {c.esperado_und !== null ? `${fmtCantidad(c.esperado_und)} und` : g(c.esperado_g)}</> : 'Agregado'}
                     {c.nota && <> · {c.nota}</>}
                   </div>
@@ -489,14 +489,14 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                       {opciones.map((o) => <option key={o.producto_id} value={o.producto_id}>{[o.marca, o.presentacion].filter(Boolean).join(' · ') || o.codigo} — hay {fmtCantidad(r2(saldoTotal(o.producto_id)))} {o.unidad_base}</option>)}
                     </select>
                   ) : !opciones.length ? <span className="error" style={{ margin: 0, padding: '.3rem .5rem' }}>No tiene producto en el catálogo.</span>
-                    : <span className="suave" style={{ fontSize: '.9rem' }}>{[opciones[0].marca, opciones[0].presentacion].filter(Boolean).join(' · ') || opciones[0].codigo}</span>}
+                    : <span className="suave texto-nota">{[opciones[0].marca, opciones[0].presentacion].filter(Boolean).join(' · ') || opciones[0].codigo}</span>}
                   {ins && !sinCosto && (
                     <select aria-label={`Zona de ${c.generico}`} value={c.zona} onChange={(e) => poner(c.clave, { zona: e.target.value })}>
                       <option value="">— ¿De dónde lo coges? —</option>
                       {zonas.map((z) => { const q = saldo(ins.producto_id, z.codigo); return <option key={z.codigo} value={z.codigo}>{z.nombre}{q ? ` — hay ${fmtCantidad(r2(q))} ${ins.unidad_base}` : ''}</option>; })}
                     </select>
                   )}
-                  {ins && <span className="suave" style={{ fontSize: '.85rem' }}>
+                  {ins && <span className="suave texto-nota">
                     {sinCosto ? 'Sin costo: no mueve kardex' : <>Hay <strong>{fmtCantidad(r2(hay))} {ins.unidad_base}</strong>{c.zona ? ` en ${nombreZona(c.zona)}` : ''}{ins.costo_promedio !== null ? ` · ${pesos(ins.costo_promedio)}/${ins.unidad_base}` : ' · sin costo en el kardex'}</>}
                   </span>}
                 </div>
@@ -513,7 +513,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                     setLlenado(c.clave); setTimeout(() => setLlenado((x) => (x === c.clave ? null : x)), 900);
                   }}>Pesé {fmtCantidad(Math.round(c.esperado_g))} g</button>}
                   {ins?.unidad_base === 'und' && !sinCosto && (
-                    <label style={{ margin: 0, fontWeight: 400, fontSize: '.85rem' }}>¿Cuántas unidades?
+                    <label className="campo">¿Cuántas unidades?
                       <input inputMode="decimal" value={c.unidades} onChange={(e) => poner(c.clave, { unidades: e.target.value })} placeholder={c.esperado_und !== null ? String(c.esperado_und) : ''} />
                     </label>
                   )}
@@ -542,10 +542,10 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
           {leido && <p className={leido.ok ? 'exito' : 'aviso'} style={{ margin: '.4rem 0', padding: '.4rem .6rem' }}>{leido.texto}</p>}
           {escaneando && <Escaner titulo="Escanear lote o producto" onCerrar={() => setEscaneando(false)} onCodigo={escaneado} />}
           {opcionesInsumo.length > 0 && (
-            <ul className="lista" style={{ marginTop: '.4rem' }}>
+            <ul className="lista mt-1">
               {opcionesInsumo.map((i) => (
-                <li key={i.producto_id} style={{ padding: 0 }}>
-                  <button type="button" className="secundario" style={{ width: '100%', justifyContent: 'flex-start', textAlign: 'left', border: 0, color: 'inherit' }} onClick={() => agregarInsumo(i)}>
+                <li className="p-0" key={i.producto_id}>
+                  <button type="button" className="secundario opcion-lista" onClick={() => agregarInsumo(i)}>
                     <strong>{i.generico}</strong>&nbsp;<span className="suave">· {[i.marca, i.presentacion].filter(Boolean).join(' · ')} · hay {fmtCantidad(r2(saldoTotal(i.producto_id)))} {i.unidad_base}</span>
                   </button>
                 </li>
@@ -597,9 +597,9 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
                 <ul className="renglones">
                   {ps.map((p, i) => (
                     <li key={i}>
-                      <span style={{ minWidth: 0 }}>
+                      <span className="min-0">
                         <strong>{textoPresentacion(p, ubm)}</strong>
-                        <span className="suave" style={{ display: 'block', fontSize: '.82rem' }}>
+                        <span className="suave bloque texto-mini">
                           {p.por_tanda ? `${cant(p.por_tanda * k)} por ${k === 1 ? 'tanda' : `${cant(k)} tandas`}` : 'las que convengan'}
                           {p.empaque ? ` · ${p.empaque}` : ''}
                           {enGramos && p.contenido && netoG ? ` · el neto alcanza para ${Math.floor(netoG / p.contenido)}` : ''}
@@ -642,7 +642,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
               {zonas.map((z) => <option key={z.codigo} value={z.codigo}>{z.nombre}{zonaDe[mpi.producto_id] === z.codigo ? ' · su lugar' : ''}</option>)}
             </select>
             {ficha && ficha.almacenamientos.length > 0 ? (
-              <div className="chips-sel" style={{ marginTop: '.6rem' }}>
+              <div className="chips-sel mt-2">
                 {ficha.almacenamientos.map((a) => (
                   <button key={a.conservacion} type="button" aria-pressed={conservacion === a.conservacion} onClick={() => setConservacion(a.conservacion)}>
                     {a.conservacion} · {a.vida_util_dias} d{a.nota ? ` · ${a.nota}` : ''}</button>
@@ -659,7 +659,7 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
           </details>
         </div>
         <div className="pila">
-          <div className="cifras" style={{ margin: 0 }}>
+          <div className="cifras m-0">
             <div className="cifra"><span>Entrada</span><b>{g(calc.entrada)}</b></div>
             <div className="cifra"><span>Merma proceso</span><b>{g(calc.merma)}</b></div>
             <div className="cifra"><span>Rendimiento</span><b>{calc.rendimiento !== null ? `${r2(calc.rendimiento * 100)} %` : '—'}</b>{rendFicha && <small>ficha {r2(rendFicha * 100)} %</small>}</div>
@@ -669,17 +669,17 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             {vePesos && <div className="cifra"><span>$/g</span><b>{pesos(calc.costoGramo, 2)}</b></div>}
             <div className="cifra"><span>Vence</span><b>{venceEl ? fechaCorta(venceEl) : '—'}</b>{vida && <small>+{vida} d {conservacion.toLowerCase()}</small>}</div>
           </div>
-          {calc.alerta && <div className="aviso" style={{ margin: 0 }}><strong>Rendimiento fuera de lo esperado.</strong> Revise los pesos; si están bien, guarde y anote qué pasó en observaciones.</div>}
-          {vePesos && calc.estado === 'PARCIAL' && <div className="aviso" style={{ margin: 0 }}>Algún insumo no tiene costo en el kardex: el lote quedará con costo parcial.</div>}
+          {calc.alerta && <div className="aviso m-0"><strong>Rendimiento fuera de lo esperado.</strong> Revise los pesos; si están bien, guarde y anote qué pasó en observaciones.</div>}
+          {vePesos && calc.estado === 'PARCIAL' && <div className="aviso m-0">Algún insumo no tiene costo en el kardex: el lote quedará con costo parcial.</div>}
           {resultadoMalo && !!resultado.revisar?.length && (
             <Revisiones resultado={resultado} confirmados={envio.confirmados} setConfirmados={envio.setConfirmados} />
           )}
           {resultadoMalo && !resultado.revisar?.length && (
-            <div className="error" role="alert" style={{ margin: 0 }}><strong>No se guardó:</strong>
-              <ul style={{ margin: 0 }}>{[...resultado.fatales, ...resultado.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul></div>
+            <div className="error m-0" role="alert"><strong>No se guardó:</strong>
+              <ul className="m-0">{[...resultado.fatales, ...resultado.bloqueos].map((m) => <li key={m}>{m}</li>)}</ul></div>
           )}
           {pideMotivo && (
-            <label style={{ margin: 0 }}>Motivo para guardar igual
+            <label className="m-0">Motivo para guardar igual
               <input value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Qué pasó (mínimo 15 letras)" />
             </label>
           )}
