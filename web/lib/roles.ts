@@ -54,11 +54,11 @@ export function menuDe(p: Perfil): Opcion[] {
   if (vePrecios(p)) m.push({ ruta: '/proveedores', titulo: 'Proveedores', detalle: 'Dependencia, riesgos, repetidos y qué le compramos a cada uno', icono: 'proveedores' });
   // precios y costos de la carta: solo administración (decisión de Anthony, 06/11/2026)
   if (p.rol === 'admin') m.push({ ruta: '/carta', titulo: 'Carta y margen', detalle: 'Costo de cada cóctel y plato contra su precio', icono: 'carta' });
-  if (p.rol === 'admin') m.push({ ruta: '/alertas', titulo: 'Alertas', detalle: 'Lo que hay que revisar, a quién se asignó y cómo se resolvió', icono: 'registro' });
-  else if (p.rol !== 'servicio' && p.rol !== 'auditor') m.push({ ruta: '/alertas', titulo: 'Mis alertas', detalle: 'Lo que administración le pidió revisar', icono: 'registro' });
-  if (p.rol === 'admin') m.push({ ruta: '/consulta', titulo: 'Consulta', detalle: 'Ventas de Odoo, costo teórico, margen e ingeniería de menú', icono: 'existencias' });
+  if (p.rol === 'admin') m.push({ ruta: '/alertas', titulo: 'Alertas', detalle: 'Lo que hay que revisar, a quién se asignó y cómo se resolvió', icono: 'alerta' });
+  else if (p.rol !== 'servicio' && p.rol !== 'auditor') m.push({ ruta: '/alertas', titulo: 'Mis alertas', detalle: 'Lo que administración le pidió revisar', icono: 'alerta' });
+  if (p.rol === 'admin') m.push({ ruta: '/consulta', titulo: 'Consulta', detalle: 'Ventas de Odoo, costo teórico, margen e ingeniería de menú', icono: 'consulta' });
   if (p.rol !== 'servicio') m.push({ ruta: '/catalogo', titulo: 'Catálogo', detalle: 'Buscar productos y validar los provisionales', icono: 'catalogo' });
-  if (p.rol === 'admin' || p.rol === 'auditor' || areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/catalogo/calidad', titulo: 'Calidad del catálogo', detalle: 'Verificar A/B, duplicados, unidades y clases en una bandeja', icono: 'revision' });
+  if (p.rol === 'admin' || p.rol === 'auditor' || areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/catalogo/calidad', titulo: 'Calidad del catálogo', detalle: 'Verificar A/B, duplicados, unidades y clases en una bandeja', icono: 'calidad' });
   if (areasDe(p).some((a) => puedeOperar(p, a))) m.push({ ruta: '/catalogo/nuevo', titulo: 'Crear producto', detalle: 'Alta provisional, con búsqueda de parecidos', icono: 'nuevo' });
   if (p.rol === 'admin' || p.rol === 'auditor' || areasDe(p).some((a) => editaArea(p, a))) m.push({ ruta: '/arranque', titulo: '¿Listo para arrancar?', detalle: 'Lo que falta para operar con la app', icono: 'arranque' });
   if (p.rol === 'admin') m.push({ ruta: '/admin/usuarios', titulo: 'Usuarios', detalle: 'Crear usuarios y asignar roles', icono: 'usuarios' });

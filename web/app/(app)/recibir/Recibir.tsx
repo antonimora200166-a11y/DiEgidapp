@@ -107,6 +107,8 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
 }) {
   // líneas marcadas para mandarlas juntas a una zona
   const [elegidas, setElegidas] = useState<Set<string>>(new Set());
+  // REC-08: las casillas solo aparecen en el modo «Elegir varias» (para mandar varias líneas a una zona)
+  const [variasModo, setVariasModo] = useState(false);
   const [zonaGrupo, setZonaGrupo] = useState('');
   // los creados desde una línea de la factura se suman a la lista sin recargar la página
   const [extras, setExtras] = useState<ProductoRecepcion[]>([]);
@@ -549,7 +551,7 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
         {lineas.map((l, i) => (
           <TarjetaLinea key={l.clave} vePesos={vePesos} n={i + 1} l={l} c={calculo(l)} productos={todos} porId={porId} area={area} otraArea={otra?.area ?? null}
                         zonas={areaDe(l) === area ? zonas : otra?.zonas ?? []} zonaDefecto={areaDe(l) === area ? enc.ubicacion : enc.ubicacion_otra ?? ''}
-                        zonaDe={zonaDe} elegida={elegidas.has(l.clave)}
+                        zonaDe={zonaDe} elegida={elegidas.has(l.clave)} modoVarias={variasModo}
                         marcar={() => setElegidas((s) => { const x = new Set(s); if (x.has(l.clave)) x.delete(l.clave); else x.add(l.clave); return x; })}
                         creado={(x) => setExtras((xs) => [...xs, x])}
                         poner={(cambio) => poner(l.clave, cambio)}
@@ -569,15 +571,20 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
               // la zona solo se aplica a los artículos de su misma área
               const areaZona: Area = zonas.some((z) => z.codigo === zonaGrupo) ? area : otra!.area;
               setLineas((ls) => ls.map((l) => (elegidas.has(l.clave) && areaDe(l) === areaZona ? { ...l, zona: zonaGrupo } : l)));
-              setElegidas(new Set()); setZonaGrupo('');
+              setElegidas(new Set()); setZonaGrupo(''); setVariasModo(false);
             }}>Aplicar</button>
-            <button type="button" className="discreto chico" onClick={() => setElegidas(new Set())}>Quitar marcas</button>
+            <button type="button" className="discreto chico" onClick={() => { setElegidas(new Set()); setVariasModo(false); }}>Quitar marcas</button>
           </div>
           {otra && <span className="ayuda">Una zona de {nombreArea(area)} solo se aplica a lo de {nombreArea(area)}, y una de {nombreArea(otra.area)} a lo suyo.</span>}
         </div>
       )}
       <div className="acciones mt-2">
         <button type="button" className="secundario" onClick={() => setLineas((ls) => [...ls, nueva()])}>+ Agregar producto</button>
+        {lineas.length > 1 && (
+          <button type="button" className="discreto" aria-pressed={variasModo} onClick={() => { setVariasModo((v) => !v); setElegidas(new Set()); }}>
+            {variasModo ? 'Terminar de elegir' : 'Elegir varias para una zona'}
+          </button>
+        )}
         <button type="button" className="secundario" onClick={() => { setLeido(null); setEscaneando(true); }}><Icono nombre="escanear" /> Escanear</button>
       </div>
       {leido && <p className={leido.ok ? 'exito' : 'aviso'} style={{ margin: '.5rem 0', padding: '.4rem .6rem' }}>{leido.texto}</p>}
@@ -685,7 +692,8 @@ export default function Recibir({ area, proveedores, zonas, productos, otra, zon
 // ==================================================================== una línea
 type Calculo = ReturnType<typeof calcular>;
 
-function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDefecto, zonaDe, elegida, marcar, creado, poner, quitar, vePesos }: {
+function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDefecto, zonaDe, elegida, marcar, creado, poner, quitar, vePesos, modoVarias }: {
+  modoVarias: boolean;
   vePesos: boolean;   // costo promedio y referencia: solo administración; el valor de la factura lo ven todos
   n: number; l: Linea; c: Calculo; productos: ProductoRecepcion[]; porId: Map<string, ProductoRecepcion>; area: Area; otraArea: Area | null;
   zonas: { codigo: string; nombre: string }[]; zonaDefecto: string; zonaDe: Record<string, string>; elegida: boolean; marcar: () => void;
@@ -727,7 +735,7 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
     const zona = l.zona ? zonas.find((z) => z.codigo === l.zona)?.nombre : zonas.find((z) => z.codigo === zonaDefecto)?.nombre;
     return (
       <li id={`linea-${l.clave}`} className="linea-compacta">
-        <input type="checkbox" checked={elegida} onChange={marcar} aria-label={`Marcar la línea ${n}`} />
+        {modoVarias && <label className="toque-check"><input type="checkbox" checked={elegida} onChange={marcar} aria-label={`Marcar la línea ${n}`} /></label>}
         <span className="lc-txt">
           <strong>{nombreDe(p)}</strong>
           <small>
@@ -748,8 +756,8 @@ function TarjetaLinea({ n, l, c, productos, porId, area, otraArea, zonas, zonaDe
       {lista && <button type="button" className="discreto chico lc-cerrar" onClick={() => setAbierta(false)}>Listo, cerrar</button>}
       <div className="linea arriba">
         <div className="min-0">
-          <label style={{ display: 'inline-flex', gap: '.35rem', alignItems: 'center', margin: 0, fontWeight: 400 }}>
-            <input type="checkbox" checked={elegida} onChange={marcar} aria-label={`Marcar la línea ${n}`} />
+          <label className={modoVarias ? 'toque-check' : undefined} style={{ display: 'inline-flex', gap: '.35rem', alignItems: 'center', margin: 0, fontWeight: 400 }}>
+            {modoVarias && <input type="checkbox" checked={elegida} onChange={marcar} aria-label={`Marcar la línea ${n}`} />}
             <span className="suave texto-mini">Línea {n}{l.ia ? ' · leída por la IA' : ''}</span>
           </label>
           {l.nombre_factura && <div className="suave texto-nota">Factura: «{l.nombre_factura}»</div>}

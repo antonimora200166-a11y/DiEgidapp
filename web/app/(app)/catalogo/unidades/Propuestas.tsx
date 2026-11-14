@@ -6,6 +6,7 @@ import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/compon
 import { decidirPropuestas } from './acciones';
 import EliminarProductos from '@/components/EliminarProductos';
 import { confirmar } from '@/components/Dialogo';
+import AlDia from '@/components/AlDia';
 
 type Cambios = { unidad_base?: string; unidad_compra?: string; contenido_base?: number; contenido_variable?: boolean; categoria?: string;
                  presentacion?: string; conservacion?: string; vida_util_dias?: number };
@@ -173,6 +174,7 @@ export default function Propuestas({ filas, categorias, soloLectura, esAdmin }: 
 
   return (
     <>
+      {filas.length > 0 && !pendientes.length && <AlDia titulo="Todas las unidades quedaron revisadas" siguiente={{ href: '/catalogo/clases', t: 'Seguir con la clasificación' }} />}
       <p style={{ margin: '0 0 .4rem' }}>
         <strong>{pendientes.length}</strong> pendientes de {filas.length}
         <span className="suave"> · seguridad alta {pendientes.filter((p) => p.seguridad === 'ALTA').length} · media {pendientes.filter((p) => p.seguridad === 'MEDIA').length} · baja {pendientes.filter((p) => p.seguridad === 'BAJA').length}</span>

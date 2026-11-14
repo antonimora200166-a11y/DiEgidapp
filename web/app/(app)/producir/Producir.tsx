@@ -314,10 +314,10 @@ export default function Producir({ area, datos, zonas, zonaDe, generico, perfilI
             <h2 className="sec-tit">Lo que quedó en el kardex</h2>
             <ul className="renglones">
               {filas.map(({ c, ins, base, sinCosto }) => (
-                <li key={c.clave}><span><span className={`pill ${sinCosto ? 'gris' : 'error'}`}>{sinCosto ? 'Sin costo' : 'Consumo de producción'}</span> {ins?.generico}{!sinCosto && c.zona ? ` · ${nombreZona(c.zona)}` : ''}</span>
+                <li key={c.clave}><span><span className="pill gris">{sinCosto ? 'Sin costo' : '− Consumo'}</span> {ins?.generico}{!sinCosto && c.zona ? ` · ${nombreZona(c.zona)}` : ''}</span>
                   <strong className="n">{sinCosto ? <span className="suave">no mueve kardex</span> : `−${fmtCantidad(r2(base ?? 0))} ${ins?.unidad_base}`}</strong></li>
               ))}
-              <li><span><span className="pill ok">Entrada de producción</span> {mpi.generico} · {nombreZona(destino)}</span>
+              <li><span><span className="pill info">+ Entrada</span> {mpi.generico} · {nombreZona(destino)}</span>
                 <strong className="n">+{mpi.unidad_base === 'und' ? `${num(unidades)} und` : g(r.neto_g ?? netoG)}</strong></li>
             </ul>
           </section>

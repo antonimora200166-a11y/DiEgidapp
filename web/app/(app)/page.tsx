@@ -53,7 +53,6 @@ export default async function Inicio() {
   const varias = (resumen?.areas.length ?? 0) > 1;
   const orden = { urgente: 0, aviso: 1, info: 2 } as const;
   const pendientes = (resumen?.areas ?? []).flatMap((r) => pendientesDe(r, varias, resumen!.hoy, esAdmin)).sort((a, b) => orden[a.tono] - orden[b.tono]);
-  if (resumen?.errores_semana) pendientes.push({ cifra: resumen.errores_semana, texto: `${plural(resumen.errores_semana, 'error', 'errores')} de la app esta semana`, href: '/admin/registro?ver=errores', icono: 'registro', tono: 'info' });
   const hecho = (resumen?.areas ?? []).reduce((t, r) => ({ rec: t.rec + r.recepciones_hoy, lotes: t.lotes + r.lotes_hoy }), { rec: 0, lotes: 0 });
   const porCerrar = periodosPorCerrar(((periodos.data as { abiertos?: PeriodoAbierto[] } | null)?.abiertos) ?? []);
   const grupos = GRUPOS_MENU.map((g) => ({ g, items: menu.filter((o) => grupoDe(o.ruta) === g) })).filter((x) => x.items.length);
@@ -61,7 +60,7 @@ export default async function Inicio() {
   return (
     <>
       <h1>Hola, {perfil.nombre.split(' ')[0]}</h1>
-      {areas.length > 0 && <p className="suave" style={{ marginTop: '-.6rem' }}>Operas en: {areas.map(nombreArea).join(' y ')}.</p>}
+      {areas.length > 0 && <p className="suave" style={{ marginTop: '-.6rem' }}>Opera en: {areas.map(nombreArea).join(' y ')}.</p>}
 
       {porCerrar.length > 0 && <TarjetaCierre periodos={porCerrar} />}
 
@@ -108,6 +107,14 @@ export default async function Inicio() {
         </section>
       )) : (
         <p className="tarjeta">Todavía no hay pantallas para su rol. Las de servicio llegan con la carta y las fichas.</p>
+      )}
+      {!!resumen?.errores_semana && (
+        // lo técnico va al final y plegado: no compite con lo de cocina y barra (INI-06)
+        <details className="sistema tarjeta">
+          <summary><span className="sec-tit m-0">Sistema</span> <span className="suave texto-nota">{resumen.errores_semana} {plural(resumen.errores_semana, 'error', 'errores')} de la app esta semana</span></summary>
+          <p className="texto-nota mb-0">Fallas que la app registró en el servidor o en algún celular. Si se repiten, páselas a quien mantiene la app.{' '}
+            <Link href="/admin/registro?ver=errores">Ver el registro de errores</Link></p>
+        </details>
       )}
     </>
   );

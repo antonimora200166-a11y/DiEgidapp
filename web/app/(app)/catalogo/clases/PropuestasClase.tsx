@@ -6,6 +6,7 @@ import VistaFiltrable, { type Agrupar, type Columna, type Grupo } from '@/compon
 import { confirmar } from '@/components/Dialogo';
 import { NOMBRE_CLASE, type Clase } from '@/lib/clases';
 import { decidirClases } from './acciones';
+import AlDia from '@/components/AlDia';
 
 export type PropuestaClase = {
   id: string; generico_id: string; codigo: string; generico: string; area: 'BAR' | 'COCINA'; categoria: string | null;
@@ -81,6 +82,7 @@ export default function PropuestasClase({ filas, soloLectura }: { filas: Propues
 
   return (
     <>
+      {filas.length > 0 && !pendientes.length && <AlDia titulo="Todos los insumos quedaron clasificados" siguiente={{ href: '/catalogo/verificar', t: 'Seguir con la verificación A/B' }} />}
       <p className="pagina-ancha" style={{ margin: '0 0 .4rem' }}>
         <strong>{pendientes.length}</strong> pendientes de {filas.length}
         <span className="suave"> · {OPCIONES.map((c) => `${NOMBRE_CLASE[c].toLowerCase()} ${pendientes.filter((p) => p.clase === c).length}`).join(' · ')}</span>

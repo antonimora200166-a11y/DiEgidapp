@@ -5,6 +5,7 @@ import { supabaseServidor } from '@/lib/supabase/server';
 import { areasDe, editaArea, type Area } from '@/lib/roles';
 import TarjetaPar, { type Par } from './TarjetaPar';
 import PestanasCalidad from '@/components/PestanasCalidad';
+import AlDia from '@/components/AlDia';
 
 export const metadata = { title: 'Revisar duplicados' };
 const POR_PAGINA = 150;
@@ -107,7 +108,8 @@ export default async function Revision({ searchParams }: { searchParams: Promise
           )}
         </>
       ) : (
-        <p className="tarjeta">No quedan pares por revisar{area ? ` en ${area === 'BAR' ? 'bar' : 'cocina'}` : ''}. ✔</p>
+        <AlDia titulo={`No quedan duplicados por decidir${area ? ` en ${area === 'BAR' ? 'bar' : 'cocina'}` : ''}`} detalle="Cada par quedó unido o marcado como distinto."
+               siguiente={{ href: '/catalogo/unidades', t: 'Seguir con las unidades' }} />
       )}
     </>
   );

@@ -222,7 +222,17 @@ export default async function ConsultaPagina({ searchParams }: { searchParams: P
             <section>
               <h2>Evolución mensual</h2>
               {c.meses.length >= 2 ? (
-                <ul className="renglones">{c.meses.map((m) => <li key={m.mes}><span>{m.mes}</span><strong className="n">{pesos(m.ventas)}</strong></li>)}</ul>
+                // barras con su valor al lado (CONS-07): la tendencia se ve sin leer cifra por cifra
+                <ul className="barras-mes">{c.meses.map((m) => {
+                  const max = Math.max(...c.meses.map((x) => Number(x.ventas)), 1);
+                  return (
+                    <li key={m.mes}>
+                      <span className="bm-mes">{m.mes}</span>
+                      <span className="bm-barra" aria-hidden><span style={{ width: `${Math.max(2, (Number(m.ventas) / max) * 100)}%` }} /></span>
+                      <strong className="n">{pesos(m.ventas)}</strong>
+                    </li>
+                  );
+                })}</ul>
               ) : <p className="suave">Se arma con las cargas semanales, que traen el día de cada venta. El histórico de enero a noviembre vino sin día por línea.</p>}
             </section>
           </div>

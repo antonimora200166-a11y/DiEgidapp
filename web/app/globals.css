@@ -824,3 +824,65 @@ button.editar-precio:hover:not(:disabled) { background: color-mix(in srgb, var(-
 .atajos kbd { display: inline-block; min-width: 1.4em; padding: 0 .3em; border: 1px solid var(--borde-control); border-radius: var(--radio-sm);
               font: 600 .75rem var(--fuente); text-align: center; color: var(--texto); }
 @media (pointer: coarse) { .atajos { display: none; } }
+
+/* ---------------------------------------------------------------- Fase 4 */
+/* INI-06: bloque Sistema al final de Inicio, plegado */
+.sistema { margin-top: 1.6rem; }
+.sistema > summary { display: flex; align-items: center; gap: .6rem; min-height: 40px; cursor: pointer; list-style: none; flex-wrap: wrap; }
+.sistema > summary::-webkit-details-marker { display: none; }
+/* REC-08: casilla de «Elegir varias» con zona táctil de 48 px */
+.toque-check { display: inline-flex !important; align-items: center; justify-content: center; min-width: var(--toque); min-height: var(--toque); margin: -.6rem 0 -.6rem -.6rem !important; cursor: pointer; }
+/* FICH-02: modo «Cocinando», a pantalla completa y con letra grande */
+.modo-cocinando { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; border: 0; background: var(--fondo); color: var(--texto); }
+.modo-cocinando[open] { display: grid; grid-template-rows: auto auto 1fr auto; }
+.modo-cocinando::backdrop { background: var(--fondo); }
+.mc-cab { display: flex; align-items: center; gap: .8rem; padding: max(.6rem, env(safe-area-inset-top)) 1rem .6rem; background: var(--cabecera); color: var(--marca-texto); }
+.mc-cab strong { flex: 1; font-family: var(--fuente-titulos); font-size: 1.4rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-cab .suave { color: var(--dorado-claro); }
+.mc-cab .discreto { color: var(--marca-texto); }
+.mc-avance { height: 4px; background: var(--borde); }
+.mc-avance > span { display: block; height: 100%; background: var(--dorado); transition: width .2s ease; }
+.mc-cuerpo { overflow-y: auto; padding: 1.5rem max(1rem, 5vw); }
+.mc-paso { margin: 0; font-size: clamp(1.4rem, 3.4vw, 2.2rem); line-height: 1.35; display: flex; gap: 1rem; }
+.mc-n { flex: none; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; background: var(--cabecera); color: var(--dorado-claro);
+        font-family: var(--fuente-titulos); font-weight: 600; font-size: 1.5rem; }
+.mc-ingredientes { list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; font-size: clamp(1.1rem, 2.4vw, 1.5rem); }
+.mc-ingredientes li { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem 0; border-bottom: 1px solid var(--borde); }
+.mc-puntos { font-size: 1.05rem; }
+.mc-pie { display: flex; gap: .6rem; padding: .7rem 1rem calc(.7rem + env(safe-area-inset-bottom)); border-top: 1px solid var(--borde); }
+.mc-pie button { min-height: 64px; font-size: 1.1rem; }
+.mc-pie .principal { flex: 1; }
+/* CONS-07: evolución mensual en barras */
+.barras-mes { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; }
+.barras-mes li { display: grid; grid-template-columns: minmax(70px, 7rem) 1fr auto; gap: .6rem; align-items: center; font-size: .9rem; }
+.bm-barra { height: 12px; border-radius: var(--radio-sm); background: var(--tenue); overflow: hidden; }
+.bm-barra > span { display: block; height: 100%; background: var(--tinta); }
+/* CAL-03: revisión al día, con el siguiente paso */
+.al-dia { display: flex; flex-direction: column; align-items: center; gap: .4rem; text-align: center; padding: 1.6rem 1rem; border-top: 2px solid var(--ok); margin-bottom: 1rem; }
+.al-dia-marca { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: 50%; background: var(--ok-fondo); color: var(--ok); font-size: 1.5rem; font-weight: 800; }
+.al-dia strong { font-family: var(--fuente-titulos); font-size: 1.35rem; }
+.al-dia .boton { margin-top: .5rem; }
+
+/* CIE-03: informe quincenal imprimible con la marca */
+.solo-imprimir { display: none; }
+@media print {
+  @page { margin: 14mm 12mm; }
+  :root, :root[data-theme='dark'] { --fondo: #fff; --tarjeta: #fff; --tenue: #F1ECE2; --texto: #13241F; --suave: #5B635E; --borde: #E3DBCC;
+           --tinta: #0D3B33; --dorado-texto: #7A5F33; --ok: #2D6A4F; --aviso: #8A5A00; --error: #A33A2B; --ok-fondo: #E6F0EA; --aviso-fondo: #F7EEDB; --error-fondo: #F8E9E5; }
+  .menu-lateral, .nav-inferior, .pestanas-consulta, .boton-registrar, .avisos, .cab-consulta .menu-acciones { display: none !important; }
+  .contenido, .contenido:has(.pagina-ancha) { margin: 0 !important; max-width: none !important; padding: 0 !important; }
+  .solo-imprimir { display: flex; }
+  .portada-informe { flex-direction: column; align-items: center; gap: .35rem; text-align: center; padding: 2.2rem 1rem 1.6rem; margin-bottom: 1.2rem;
+                     border-top: 4px solid #B08D57; border-bottom: 1px solid #E3DBCC; break-after: avoid; }
+  .pi-monograma { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 8px; background: #0D3B33; color: #C9A86F;
+                  font-family: var(--fuente-titulos); font-weight: 600; font-size: 1.7rem; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pi-marca { font-family: var(--fuente-titulos); font-size: 1.3rem; font-weight: 600; color: #0D3B33; }
+  .pi-tagline { font-family: var(--fuente-titulos); font-style: italic; color: #7A5F33; }
+  .pi-titulo { font-family: var(--fuente-titulos); font-size: 1.8rem; margin-top: .6rem; }
+  .pi-periodo { font-size: 1rem; font-weight: 600; }
+  .pi-fecha { font-size: .8rem; color: #5B635E; }
+  .portada-informe ~ h1 { display: none; }
+  .cifras, .tarjeta, table, section { break-inside: avoid; }
+  .cifra { border-color: #E3DBCC; }
+  .insignia, .cifra.sv, .cifra.sa, .cifra.sr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

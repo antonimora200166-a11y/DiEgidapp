@@ -7,6 +7,7 @@ import { cant, fechaLarga, pct, pesos, textoPresentacion, tipoPunto } from '@/li
 import PestanasProduccion from '@/components/PestanasProduccion';
 import type { DatosFicha } from './EditorFicha';
 import { fecha as fmtFecha } from '@/lib/formato';
+import ModoCocinando from '@/components/ModoCocinando';
 
 export const metadata = { title: 'Ficha técnica' };
 const TIPO: Record<string, string> = { MPI: 'Producción (MPI)', BEBIDA: 'Cóctel o bebida', PLATO: 'Plato' };
@@ -71,6 +72,9 @@ export default async function Ficha({ params, searchParams }: { params: Promise<
         {d.es_vigente && (
           <div className="fila-flex wrap">
             {d.puede_editar && <Link className="boton secundario" href={`/fichas/${r.id}/editar`}>{f ? 'Editar' : 'Crear ficha'}</Link>}
+            {f && <ModoCocinando titulo={r.nombre} pasos={f.procedimiento}
+                                 ingredientes={d.lineas.map((l) => ({ nombre: l.generico + (l.marca ? ` · ${l.marca}` : ''), cantidad: `${cant(l.cantidad)} ${l.unidad}` }))}
+                                 puntos={d.puntos.map((p) => `${tipoPunto(p.tipo).t}: ${p.texto}`)} />}
             {esMpi && f && puedeOperar(perfil, r.area) && <Link className="boton" href={`/producir?area=${r.area}&generico=${r.id}`}>Producir esta ficha</Link>}
           </div>
         )}

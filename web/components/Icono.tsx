@@ -24,6 +24,9 @@ const TRAZOS: Record<string, string> = {
   escanear: 'M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10',
   mas: 'M5 5h5v5H5zM14 5h5v5h-5zM5 14h5v5H5zM14 14h5v5h-5z',
   tema: 'M12 3a9 9 0 1 0 0 18zM12 3a9 9 0 0 1 0 18',
+  consulta: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  alerta: 'M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0',
+  calidad: 'M12 3l2.4 1.6 2.9-.1.9 2.7 2.3 1.8-1 2.7 1 2.7-2.3 1.8-.9 2.7-2.9-.1L12 21l-2.4-1.6-2.9.1-.9-2.7-2.3-1.8 1-2.7-1-2.7 2.3-1.8.9-2.7 2.9.1zM8.5 12l2.5 2.5 4.5-5',
   microfono: 'M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1-6 0zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7',
 };
 export type NombreIcono = keyof typeof TRAZOS;

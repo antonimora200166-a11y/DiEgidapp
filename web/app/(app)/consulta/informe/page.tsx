@@ -46,6 +46,17 @@ export default async function InformePagina({ searchParams }: { searchParams: Pr
   return (
     <>
       <p className="no-imprimir m-0 mb-1"><Link href="/consulta">← Consulta</Link></p>
+      {/* portada con la marca: solo al imprimir o guardar en PDF (CIE-03) */}
+      {p && (
+        <header className="portada-informe solo-imprimir">
+          <span className="pi-monograma">D·É</span>
+          <span className="pi-marca">Di Égida · Tosca Bistró</span>
+          <span className="pi-tagline">Territorio · Ritual · Elegancia</span>
+          <strong className="pi-titulo">Informe quincenal de costos</strong>
+          <span className="pi-periodo">{p.area === 'BAR' ? 'Bar' : 'Cocina'} · {fechaC(p.desde)} al {fechaC(p.hasta)}</span>
+          <span className="pi-fecha">Impreso el {fechaC(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }))}</span>
+        </header>
+      )}
       <h1 className="pagina-ancha titulo-gestion">Informe quincenal{p ? ` · ${p.area === 'BAR' ? 'Bar' : 'Cocina'} · ${fechaC(p.desde)} al ${fechaC(p.hasta)}` : ''}</h1>
       {!cerrados.length ? (
         <p className="tarjeta">Todavía no hay períodos cerrados. El informe se arma con el cierre de cada quincena:
